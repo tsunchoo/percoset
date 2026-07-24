@@ -557,7 +557,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 03:30</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 04:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -629,6 +629,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:48px;margin-bottom:5px;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
+<div class="slot-bar" id="slotBar"></div>
 
 
 
@@ -834,7 +835,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   <span class="status" id="status"></span>
   <button class="ghost-btn" onclick="fullClear()">&#10005;</button>
 </div>
-<div class="slot-bar" id="slotBar"></div>
 
 <script>
 let _bgPulseEnabled = false, _bgStaticEnabled = false, _bgPulseSteps = 4, _bgPulseCounter = 0;
@@ -1495,8 +1495,8 @@ const VOL_MIN_DB = -40;
 // Discrete stop positions instead of a fully continuous slider — clustered
 // densely near the bottom (fine control at quiet levels) and sparse near
 // the top (coarser control near full volume), via a power curve.
-const VOL_STEP_COUNT = 13;
-const _volStepPositions = Array.from({ length: VOL_STEP_COUNT }, (_, i) => Math.pow(i / (VOL_STEP_COUNT - 1), 1.8));
+const VOL_STEP_COUNT = 18;
+const _volStepPositions = Array.from({ length: VOL_STEP_COUNT }, (_, i) => Math.pow(i / (VOL_STEP_COUNT - 1), 1.2));
 function snapVolPos(pos) {
   let best = _volStepPositions[0], bestDist = Infinity;
   for (const p of _volStepPositions) {
@@ -7711,9 +7711,10 @@ function _regenerateAmalgamChord() {
   // tonal track — so the amalgam echo genuinely reflects what's about to
   // play, rather than an arbitrary random chord unrelated to the pattern.
   const notes = [];
+  const _amalgamBassKeys = new Set(['sbass','sbass3','sbass4','dbass']);
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     const key = trackInstruments[tr];
-    if (!TONAL_KEYS.has(key)) continue;
+    if (!TONAL_KEYS.has(key) || _amalgamBassKeys.has(key)) continue;
     const scale = trackBassScale[tr];
     if (!scale) continue;
     let freq = scale[0];
@@ -7775,6 +7776,7 @@ function _scheduleAmalgamNotes() {
   const release = e => {
     wrap.style.filter = '';
     _fireAmalgamEcho();
+    _resetDownbeatToNow();
     try { wrap.releasePointerCapture(e.pointerId); } catch(err) {}
   };
   wrap.addEventListener('pointerup', release);
@@ -7790,7 +7792,7 @@ function _scheduleAmalgamNotes() {
     const t = e.changedTouches && e.changedTouches[0];
     if (!t) return;
     const el = document.elementFromPoint(t.clientX, t.clientY);
-    if (el && el.closest && el.closest('#rightReelWrap')) _fireAmalgamEcho();
+    if (el && el.closest && el.closest('#rightReelWrap')) { _fireAmalgamEcho(); _resetDownbeatToNow(); }
   }, { passive: true });
 })();
 (function() {
