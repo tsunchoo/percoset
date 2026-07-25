@@ -141,7 +141,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 
 .transport {
   width: 100%; max-width: 960px; display: flex; align-items: stretch;
-  gap: 5px; margin-bottom: 6px;
+  gap: 4px; margin-bottom: 6px;
   touch-action: none;
 }
 .transport .btn {
@@ -493,6 +493,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   font-family: 'DM Sans', sans-serif; font-size: 1.6rem; font-weight: 700; letter-spacing: 0;
   height: 54px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-align: center;
   touch-action: manipulation; transition: background 0.1s;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .slot-btn.saved  { color: #ffe033 !important; border: none; }
 .slot-btn.pending { animation: slot-pending 0.4s infinite alternate; color: #fff; }
@@ -557,7 +558,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 04:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 05:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6674,6 +6675,7 @@ function snapshotState() {
     beatPlaying: beatPlaying,
     beatType: _beatType,
     trackDelay: [...trackDelay],
+    trackPump: [...trackPump],
     trackAutoRand: [...Array(NUM_TRACKS)].map((_, tr) => !!autoShiftStops[tr])
   };
 }
@@ -6691,6 +6693,7 @@ function restoreState(snap) {
     else delete trackBassScale[tr];
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
+    if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) fb2.classList.toggle('blast-on', trackPump[tr]); }
     if (snap.trackFxMode) { trackFxMode[tr] = snap.trackFxMode[tr] || 0; }
     if (snap.trackSweep) { trackSweep[tr] = snap.trackSweep[tr] || false; }
     if (snap.trackChop)  { trackChop[tr]  = snap.trackChop[tr]  || false; }
