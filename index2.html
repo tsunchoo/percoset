@@ -141,7 +141,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 
 .transport {
   width: 100%; max-width: 960px; display: flex; align-items: stretch;
-  gap: 5px; margin-bottom: 6px;
+  gap: 4px; margin-bottom: 6px;
   touch-action: none;
 }
 .transport .btn {
@@ -493,6 +493,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   font-family: 'DM Sans', sans-serif; font-size: 1.6rem; font-weight: 700; letter-spacing: 0;
   height: 54px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-align: center;
   touch-action: manipulation; transition: background 0.1s;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .slot-btn.saved  { color: #ffe033 !important; border: none; }
 .slot-btn.pending { animation: slot-pending 0.4s infinite alternate; color: #fff; }
@@ -557,7 +558,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 04:30</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 06:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -870,6 +871,7 @@ const INSTRUMENTS = {
   sprkls: { name: 'SPARKLES',    soft: null, accent: null, group: 'tonal' },
   sflute: { name: 'XYLOPHONE',   soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
+  amlgm:  { name: 'AMALGAM',     soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
@@ -1422,6 +1424,7 @@ function getSynthConnectNode(tr) {
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
+  if (key === 'amlgm')  { triggerFxEnvelope(tr, time); playAmalgamStep(isAccent, time, tr); return; }
   if (key === 'sbass')   { return; } // handled in scheduler with legato duration
   if (key === 'ngate')   { return; } // handled in scheduler
   if (key === 'sbass3')  { return; }
@@ -6182,7 +6185,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'amlgm' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k));
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
@@ -6674,6 +6677,7 @@ function snapshotState() {
     beatPlaying: beatPlaying,
     beatType: _beatType,
     trackDelay: [...trackDelay],
+    trackPump: [...trackPump],
     trackAutoRand: [...Array(NUM_TRACKS)].map((_, tr) => !!autoShiftStops[tr])
   };
 }
@@ -6691,6 +6695,7 @@ function restoreState(snap) {
     else delete trackBassScale[tr];
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
+    if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) fb2.classList.toggle('blast-on', trackPump[tr]); }
     if (snap.trackFxMode) { trackFxMode[tr] = snap.trackFxMode[tr] || 0; }
     if (snap.trackSweep) { trackSweep[tr] = snap.trackSweep[tr] || false; }
     if (snap.trackChop)  { trackChop[tr]  = snap.trackChop[tr]  || false; }
@@ -6850,26 +6855,25 @@ function buildSlotBar() {
     let holdTimer = null, didHold = false;
     const onDown = () => {
       didHold = false;
-      holdTimer = setTimeout(() => { didHold = true; }, 600);
+      holdTimer = setTimeout(() => {
+        didHold = true;
+        // Threshold reached while still held — clear right now rather than
+        // waiting for release, so the button visibly returns to its empty/
+        // neutral state under the finger, not just after letting go.
+        if (slots[i] !== null) {
+          slots[i] = null; if (activeSlot===i) activeSlot=-1;
+          updateSlotButtons();
+        }
+      }, 600);
     };
     const onUp = () => {
       clearTimeout(holdTimer); holdTimer = null;
-      if (didHold && slots[i] !== null) {
-        // held on a full slot — clear it
-        slots[i] = null; if (activeSlot===i) activeSlot=-1;
-        updateSlotButtons();
-      } else if (!didHold) {
-        slotPress(i);
-      }
+      if (!didHold) slotPress(i);
+      didHold = false;
     };
     btn.addEventListener('mousedown', onDown);
     btn.addEventListener('mouseup', onUp);
     btn.addEventListener('mouseleave', () => {
-      // If hold threshold already passed, clear on leave; otherwise cancel
-      if (didHold && slots[i] !== null) {
-        slots[i] = null; if (activeSlot===i) activeSlot=-1;
-        updateSlotButtons();
-      }
       clearTimeout(holdTimer); holdTimer = null; didHold = false;
     });
     btn.addEventListener('touchstart', e => { e.preventDefault(); onDown(); }, { passive: false });
@@ -7691,9 +7695,9 @@ function _getAmalgamBaseBuffer() {
   _amalgamBaseBuffer = buf;
   return _amalgamBaseBuffer;
 }
-function _playPhantomNote(tr, key, freq, isAccent) {
+function _playPhantomNote(tr, key, freq, isAccent, when) {
   if (!ctx) return;
-  const t = ctx.currentTime;
+  const t = when !== undefined ? when : ctx.currentTime;
   const dest = getSynthConnectNode(tr);
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
   const src = ctx.createBufferSource();
@@ -7744,12 +7748,18 @@ function _fireAmalgamEcho() {
 function _scheduleAmalgamNotes() {
   if (!_amalgamChord) _regenerateAmalgamChord(); // first-ever touch, before any RAND press
   const notes = _amalgamChord;
+  // Normalize against chord size — summing N uncorrelated notes raises
+  // perceived loudness roughly by sqrt(N), not by N itself, so without this
+  // a pattern with 5-6 tonal tracks echoes noticeably louder overall than
+  // one with only 1-2. This keeps the total level roughly consistent
+  // regardless of how many tracks happen to be tonal in a given pattern.
+  const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
   const step32Ms = stepDuration() * 500; // tempo-relative 32nd-note length (half a 16th note)
   const totalSlots = 16; // 2 quarter notes = 16 thirty-second-note slots
   const decayRatio = 0.55; // each repeat quieter than the last — loosened slightly so more stay audible
   let i = 0;
   for (let s = 0; s < totalSlots; s += 2) { // 2 thirty-second-note slots = a 16th-note gap between repeats
-    const vol = 0.5 * Math.pow(decayRatio, i); // +12dB (was 0.1258)
+    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor; // +12dB (was 0.1258)
     i++;
     if (vol < 0.01) break; // fully faded, nothing left to schedule
     setTimeout(() => {
@@ -7762,6 +7772,33 @@ function _scheduleAmalgamNotes() {
       });
       _amalgamVolOverride = null;
     }, s * step32Ms);
+  }
+}
+// AMALGAM as a placeable instrument — the same phantom-chord echo the right
+// tape spool fires, but sequenced: every active step re-fires the current
+// pattern's captured chord with its decaying 16th-note repeats (the delay is
+// part of the sound, always on). Unlike the spool version, all notes are
+// routed through this track's own chain, so track volume, mute, FX, BLAST
+// and the per-track delay toggle behave like any other instrument. Repeats
+// are scheduled in audio time (not setTimeout) since the scheduler hands us
+// a future start time.
+function playAmalgamStep(isAccent, time, tr) {
+  if (!ctx) return;
+  _regenerateAmalgamChord(); // capture the pattern's tonal content as it is right now
+  let notes = _amalgamChord;
+  if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
+  const chordNormFactor = 1 / Math.sqrt(notes.length);
+  const step16 = stepDuration(); // tempo-relative 16th-note gap between repeats
+  const decayRatio = 0.55;
+  for (let i = 0; ; i++) {
+    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor * (isAccent ? 1.3 : 1);
+    if (vol < 0.01) break; // fully faded, nothing left to schedule
+    const t = time + i * step16;
+    notes.forEach(n => {
+      _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
+      _playPhantomNote(tr, n.key, n.freq, false, t);
+    });
+    _amalgamVolOverride = null;
   }
 }
 (function() {
