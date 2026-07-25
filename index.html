@@ -516,8 +516,8 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 #loadingOverlay.hidden { display: none; }
 
 </style>
-  <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="favicon.png?v=20260725">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=20260725">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute">
@@ -558,7 +558,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 05:10</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">25Jul26 00:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -871,6 +871,7 @@ const INSTRUMENTS = {
   sprkls: { name: 'SPARKLES',    soft: null, accent: null, group: 'tonal' },
   sflute: { name: 'XYLOPHONE',   soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
+  amlgm:  { name: 'AMALGAM',     soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
@@ -1423,6 +1424,7 @@ function getSynthConnectNode(tr) {
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
+  if (key === 'amlgm')  { triggerFxEnvelope(tr, time); playAmalgamStep(isAccent, time, tr); return; }
   if (key === 'sbass')   { return; } // handled in scheduler with legato duration
   if (key === 'ngate')   { return; } // handled in scheduler
   if (key === 'sbass3')  { return; }
@@ -1826,6 +1828,10 @@ function scheduler() {
             if (key === 'boog')    playPrimePiano(freq2, dur2, false, t2, tr);
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
             if (key === 'blunt')   playBlunt(freq2, dur2, false, t2, tr);
+          } else if (key === 'amlgm') {
+            // no 32nd-note re-hit for AMALGAM — it already fires its own
+            // cluster of decaying echo repeats per step, so a second full
+            // step here would double that cost with little audible gain
           } else {
             playBuffer(key, false, t2, tr);
           }
@@ -3065,7 +3071,7 @@ function playDoubleBass(freq, durSec, isAccent, time, tr) {
 // bright and fiery, dynamic swing between accent/normal. Same chord/strum
 // structure as RYTM GTR (root + 3rd-or-5th + octave), triangle body instead
 // of a sawtooth strum, plus a noise hammer transient for the percussive bite. ──
-function playBashPiano(freq, durSec, isAccent, time, tr) {
+function playBashPiano(freq, durSec, isAccent, time, tr, _isDouble) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const vel = isAccent ? 0.155 : 0.095; // bigger accent/normal swing — rhythmic, percussive character
@@ -3116,6 +3122,14 @@ function playBashPiano(freq, durSec, isAccent, time, tr) {
       if (i === strumDelays.length - 1) { try { lp.disconnect(); peak.disconnect(); } catch(e) {} }
     };
   });
+
+  // MARIO PIANO: on occasion, rearticulate the same note a 16th note later
+  // — a quick double-hit, like a repeated key strike. _isDouble guards
+  // against the echoed note re-triggering another echo of its own.
+  if (!_isDouble && Math.random() < 0.22) {
+    const t2 = time + stepDuration();
+    playBashPiano(freq, durSec, isAccent, t2, tr, true);
+  }
 }
 
 // ── Denialism: two sawtooths in parallel feeding a waveshaper directly
@@ -6183,7 +6197,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'amlgm' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k));
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
@@ -6513,9 +6527,7 @@ function randAll(mode, opts) {
   }
 
   _currentSpecies = getSpeciesName();
-  _currentBarColor = BAR_COLORS[Math.floor(Math.random() * BAR_COLORS.length)];
-  const barEl = document.querySelector('#nameDisplay').parentElement;
-  if (barEl) { barEl.style.background = _currentBarColor; document.documentElement.style.setProperty('--bar-color', _currentBarColor); }
+  applyBarColor(BAR_COLORS[Math.floor(Math.random() * BAR_COLORS.length)]);
   // Update key/scale display
   const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = (_currentSpecies || '');
   const kd = document.getElementById('keyDisplay');
@@ -7693,10 +7705,10 @@ function _getAmalgamBaseBuffer() {
   _amalgamBaseBuffer = buf;
   return _amalgamBaseBuffer;
 }
-function _playPhantomNote(tr, key, freq, isAccent) {
+function _playPhantomNote(tr, key, freq, isAccent, when, destOverride) {
   if (!ctx) return;
-  const t = ctx.currentTime;
-  const dest = getSynthConnectNode(tr);
+  const t = when !== undefined ? when : ctx.currentTime;
+  const dest = destOverride !== undefined ? destOverride : getSynthConnectNode(tr);
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
   const src = ctx.createBufferSource();
   src.buffer = _getAmalgamBaseBuffer();
@@ -7770,6 +7782,41 @@ function _scheduleAmalgamNotes() {
       });
       _amalgamVolOverride = null;
     }, s * step32Ms);
+  }
+}
+// AMALGAM as a placeable instrument — the same phantom-chord echo the right
+// tape spool fires, but sequenced: every active step re-fires the current
+// pattern's captured chord with its decaying 16th-note repeats (the delay is
+// part of the sound, always on). Unlike the spool version, all notes are
+// routed through this track's own chain, so track volume, mute, FX, BLAST
+// and the per-track delay toggle behave like any other instrument. Repeats
+// are scheduled in audio time (not setTimeout) since the scheduler hands us
+// a future start time.
+function playAmalgamStep(isAccent, time, tr) {
+  if (!ctx) return;
+  _regenerateAmalgamChord(); // capture the pattern's tonal content as it is right now
+  let notes = _amalgamChord;
+  if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
+  const chordNormFactor = 1 / Math.sqrt(notes.length);
+  const step16 = stepDuration(); // tempo-relative 16th-note gap between repeats
+  const decayRatio = 0.55;
+  for (let i = 0; ; i++) {
+    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor * (isAccent ? 1.3 : 1);
+    if (vol < 0.01) break; // fully faded, nothing left to schedule
+    const t = time + i * step16;
+    // Resolve the destination ONCE per repeat, not once per note in the
+    // chord. getSynthConnectNode() with BLAST on wraps the shared per-track
+    // pump chain's output in a fresh gain node and reconnects to it; calling
+    // it again for every simultaneous note in the chord kept ripping that
+    // connection away from the previous note before it could sound, which is
+    // why AMALGAM went silent under BLAST. One resolve, shared by all notes
+    // in this repeat, fixes that.
+    _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
+    const dest = getSynthConnectNode(tr);
+    _amalgamVolOverride = null;
+    notes.forEach(n => {
+      _playPhantomNote(tr, n.key, n.freq, false, t, dest);
+    });
   }
 }
 (function() {
