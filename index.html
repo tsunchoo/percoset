@@ -558,7 +558,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">25Jul26 00:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">25Jul26 00:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6346,6 +6346,8 @@ function randAll(mode, opts) {
       trackFx[tr] = { x: 0, y: 0 };
       if (ctx) setFxActive(tr, { x: 0, y: 0 });
       const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
+      trackPump[tr] = false;
+      if (fb) fb.classList.remove('blast-on');
       trackRLevel[tr] = 0;
       if (autoShiftStops[tr]) { autoShiftStops[tr](); delete autoShiftStops[tr]; }
       const rb = document.getElementById(`randbtn-${tr}`);
@@ -6359,7 +6361,16 @@ function randAll(mode, opts) {
     }
     trackInstruments[tr] = k;
     if (k === 'ngate' && typeof initNoiseGate === 'function' && ctx) initNoiseGate(tr);
-    if (ctx && trackFx[tr]) setFxActive(tr, trackFx[tr]);
+    // A new RAND pattern clears any Delay/FX/BLAST this (unlocked) track was
+    // carrying — those are tied to the old pattern, not the new one, so they
+    // shouldn't just ride along onto whatever RAND picks next.
+    trackDelay[tr] = false;
+    const db2 = document.getElementById(`delaybtn-${tr}`); if (db2) db2.classList.toggle('on', false);
+    trackFx[tr] = { x: 0, y: 0 };
+    trackPump[tr] = false;
+    if (ctx) setFxActive(tr, trackFx[tr]);
+    const fb2 = document.getElementById(`fxbtn-${tr}`);
+    if (fb2) { fb2.classList.remove('on'); fb2.classList.remove('blast-on'); }
     // EWOK VILLAGE usually arrives with per-track auto-randomization engaged
     if (k === 'clar' && Math.random() < 0.6 && !autoShiftStops[tr]) {
       const _erb = document.getElementById(`randbtn-${tr}`);
@@ -6496,7 +6507,12 @@ function randAll(mode, opts) {
       trackPump[tr] = blastOn;
       if (fb) fb.classList.toggle('blast-on', blastOn);
     } else if (!trackSweep[tr]) {
-      // Perc/non-tonal: FX already reset above, just update bar
+      // Perc/non-tonal: FX already reset above, just update bar. BLAST wasn't
+      // being cleared here at all, so a percussion track could carry a stale
+      // BLAST over from before this RAND pass — clear it like every other
+      // unlocked track's FX state.
+      trackPump[tr] = false;
+      const fb2 = document.getElementById(`fxbtn-${tr}`); if (fb2) fb2.classList.remove('blast-on');
       const vb = document.getElementById(`vbar-${tr}`);
       if (vb) { const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = '50%'; }
       if (trackGainNodes[tr] && ctx) trackGainNodes[tr].gain.setValueAtTime(0.5, ctx.currentTime);
@@ -6585,7 +6601,7 @@ function randAll(mode, opts) {
   // per track), so markModified()'s legato-visual refresh just now ran
   // before most tracks' legato data even exists yet. One final guaranteed
   // pass once all of those have genuinely completed.
-  setTimeout(updateLegatoVisuals, NUM_TRACKS * 30 + 50);
+  setTimeout(() => { updateLegatoVisuals(); autoSaveRandToSlot(); }, NUM_TRACKS * 30 + 50);
 }
 
 // Little downward sweep when a new RAND pattern actually starts playing —
@@ -6856,6 +6872,22 @@ function updateSlotButtons() {
       btn.style.border = '2px solid #555';
     }
   }
+}
+// Every freshly-generated RAND pattern gets auto-saved into the slot bar so
+// nothing good is ever lost to the next RAND press. Fills empty slots left
+// to right; once all NUM_SLOTS are full, the oldest (leftmost, slot 0) is
+// dropped and everything shifts left to make room at the end.
+function autoSaveRandToSlot() {
+  const snap = snapshotState();
+  let idx = slots.findIndex(s => s === null);
+  if (idx === -1) {
+    slots.shift();
+    slots.push(null);
+    idx = NUM_SLOTS - 1;
+  }
+  slots[idx] = snap;
+  activeSlot = idx;
+  updateSlotButtons();
 }
 function buildSlotBar() {
   const bar=document.getElementById('slotBar'); bar.innerHTML='';
