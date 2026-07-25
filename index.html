@@ -558,7 +558,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 05:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">24Jul26 05:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6853,26 +6853,25 @@ function buildSlotBar() {
     let holdTimer = null, didHold = false;
     const onDown = () => {
       didHold = false;
-      holdTimer = setTimeout(() => { didHold = true; }, 600);
+      holdTimer = setTimeout(() => {
+        didHold = true;
+        // Threshold reached while still held — clear right now rather than
+        // waiting for release, so the button visibly returns to its empty/
+        // neutral state under the finger, not just after letting go.
+        if (slots[i] !== null) {
+          slots[i] = null; if (activeSlot===i) activeSlot=-1;
+          updateSlotButtons();
+        }
+      }, 600);
     };
     const onUp = () => {
       clearTimeout(holdTimer); holdTimer = null;
-      if (didHold && slots[i] !== null) {
-        // held on a full slot — clear it
-        slots[i] = null; if (activeSlot===i) activeSlot=-1;
-        updateSlotButtons();
-      } else if (!didHold) {
-        slotPress(i);
-      }
+      if (!didHold) slotPress(i);
+      didHold = false;
     };
     btn.addEventListener('mousedown', onDown);
     btn.addEventListener('mouseup', onUp);
     btn.addEventListener('mouseleave', () => {
-      // If hold threshold already passed, clear on leave; otherwise cancel
-      if (didHold && slots[i] !== null) {
-        slots[i] = null; if (activeSlot===i) activeSlot=-1;
-        updateSlotButtons();
-      }
       clearTimeout(holdTimer); holdTimer = null; didHold = false;
     });
     btn.addEventListener('touchstart', e => { e.preventDefault(); onDown(); }, { passive: false });
