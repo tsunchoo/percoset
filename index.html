@@ -415,7 +415,7 @@ body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pul
 .step-lane {
   flex: 1; display: flex; flex-direction: column;
   border: none;
-  border-bottom: 3px solid var(--track-line-color, transparent);
+  border-bottom: 3px solid var(--track-line-color, #969594);
   overflow: visible;
 }
 .step-lane-cells {
@@ -433,7 +433,7 @@ body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pul
 /* teeth — positioned so bottom edge sits exactly on the lane border */
 .step-cell::before {
   content: ''; position: absolute; bottom: -3px; left: -1px;
-  width: 3px; background: var(--track-line-color, transparent); height: calc(30% + 3px); pointer-events: none;
+  width: 3px; background: var(--track-line-color, #969594); height: calc(30% + 3px); pointer-events: none;
   z-index: 1;
 }
 /* beat markers taller */
@@ -447,7 +447,7 @@ body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pul
 .step-cell::after {
   content: '';
   position: absolute;
-  background: var(--empty-cell-color, #bcbcbc);
+  background: var(--empty-cell-color, #DBDAD9);
   pointer-events: none;
   transition: background 0.05s, opacity 0.05s;
   top: 0; bottom: 0; left: 1px; right: 1px;
@@ -559,7 +559,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Jul26 23:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Jul26 23:59</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -719,7 +719,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK LINE COLOR</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="trackLineColorPicker" value="#bcbcbc" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <input type="color" id="trackLineColorPicker" value="#969594" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           <style>#trackLineColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackLineColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackLineColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
         </div>
       </div>
@@ -727,7 +727,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">NOTE BG COLOR</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="emptyCellColorPicker" value="#bcbcbc" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <input type="color" id="emptyCellColorPicker" value="#dbdad9" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           <style>#emptyCellColorPicker::-webkit-color-swatch-wrapper{padding:0;}#emptyCellColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#emptyCellColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
         </div>
       </div>
