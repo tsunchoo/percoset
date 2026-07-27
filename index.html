@@ -337,6 +337,13 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   color: #2a2a2a; margin-bottom: 12px;
 }
 #soundPickerList {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.sound-group-label {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 6px; font-family: 'DM Sans', sans-serif;
+}
+.sound-group-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
 }
 .sound-option {
@@ -559,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 03:06</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 03:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1645,7 +1652,7 @@ const trackOffset = new Array(NUM_TRACKS).fill(0);
 const trackMuted  = new Array(NUM_TRACKS).fill(false);
 const trackSweep  = new Array(NUM_TRACKS).fill(false); // L button toggle
 const trackChop   = new Array(NUM_TRACKS).fill(false);
-const trackVolume = [0.8, 0.505, 0.8, 0.8, 0.8, 0.8];
+const trackVolume = [0.48, 0.505, 0.8, 0.8, 0.8, 0.8];
 
 // Volume sliders drag in "position" space (0-1) but trackVolume stores the
 // actual linear gain applied to the audio graph. With a straight 1:1
@@ -1991,9 +1998,9 @@ function scheduler() {
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
             if (key === 'blunt')   playBlunt(freq2, dur2, false, t2, tr);
           } else if (key === 'amlgm') {
-            // no 32nd-note re-hit for AMALGAM — it already fires its own
-            // cluster of decaying echo repeats per step, so a second full
-            // step here would double that cost with little audible gain
+            // ECHO can't actually receive a 32nd-split value (it's not in
+            // split32Keys), so this is unreachable in practice — left as a
+            // no-op rather than removed, in case that ever changes.
           } else {
             playBuffer(key, false, t2, tr);
           }
@@ -4925,19 +4932,40 @@ function openSoundPicker(tr) {
   soundPickerTrack = tr;
   document.getElementById('soundPickerTitle').textContent = `TRK ${tr+1} — SOUND`;
   const list = document.getElementById('soundPickerList'); list.innerHTML = '';
-  INSTRUMENT_KEYS.forEach(k => {
-    const opt = document.createElement('div');
-    const _isBassOpt = ['sbass', 'sbass3', 'sbass4', 'dbass'].includes(k);
-    const _isPadOpt = ['fflute', 'blunt', 'sstring', 'sleg'].includes(k);
-    opt.className = 'sound-option inst-' + (INSTRUMENTS[k].group||'perc') + (_isBassOpt ? ' inst-bass' : '') + (_isPadOpt ? ' inst-pad' : '') + (trackInstruments[tr] === k ? ' active' : '');
-    opt.dataset.key = k;
-    opt.textContent = INSTRUMENTS[k].name;
-    opt.addEventListener('mouseenter', () => {
-      list.querySelectorAll('.sound-option').forEach(o => o.classList.toggle('active', o.dataset.key === k));
+  const _isBass = k => ['sbass', 'sbass3', 'sbass4', 'dbass'].includes(k);
+  const _isPad = k => ['fflute', 'blunt', 'sstring', 'sleg'].includes(k);
+  const GROUPS = [
+    { label: 'KIT',  match: k => INSTRUMENTS[k].group === 'kit' },
+    { label: 'PERC', match: k => INSTRUMENTS[k].group === 'perc' },
+    { label: 'LEAD', match: k => INSTRUMENTS[k].group === 'tonal' && !_isBass(k) && !_isPad(k) },
+    { label: 'PAD',  match: k => _isPad(k) },
+    { label: 'BASS', match: k => _isBass(k) },
+  ];
+  GROUPS.forEach(({ label, match }) => {
+    const keys = INSTRUMENT_KEYS.filter(match);
+    if (keys.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'sound-group';
+    const heading = document.createElement('div');
+    heading.className = 'sound-group-label';
+    heading.textContent = label;
+    section.appendChild(heading);
+    const grid = document.createElement('div');
+    grid.className = 'sound-group-grid';
+    keys.forEach(k => {
+      const opt = document.createElement('div');
+      opt.className = 'sound-option inst-' + (INSTRUMENTS[k].group||'perc') + (_isBass(k) ? ' inst-bass' : '') + (_isPad(k) ? ' inst-pad' : '') + (trackInstruments[tr] === k ? ' active' : '');
+      opt.dataset.key = k;
+      opt.textContent = INSTRUMENTS[k].name;
+      opt.addEventListener('mouseenter', () => {
+        list.querySelectorAll('.sound-option').forEach(o => o.classList.toggle('active', o.dataset.key === k));
+      });
+      opt.addEventListener('mouseup', e => { e.stopPropagation(); selectSound(tr, k); });
+      opt.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); selectSound(tr, k); }, { passive: false });
+      grid.appendChild(opt);
     });
-    opt.addEventListener('mouseup', e => { e.stopPropagation(); selectSound(tr, k); });
-    opt.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); selectSound(tr, k); }, { passive: false });
-    list.appendChild(opt);
+    section.appendChild(grid);
+    list.appendChild(section);
   });
   document.getElementById('soundPicker').classList.add('visible');
 }
@@ -6348,7 +6376,7 @@ function fullClear() {
     grid[tr].fill(0); trackOffset[tr] = 0; trackPatternState[tr] = 0;
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
     trackRLevel[tr] = 0;
-    trackVolume[tr] = tr === 1 ? 0.505 : 0.8;
+    trackVolume[tr] = tr === 0 ? 0.48 : (tr === 1 ? 0.505 : 0.8);
     trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (ECHO) always keeps FX engaged
     trackFxMode[tr] = 0;
     trackInstruments[tr] = defaultInstruments[tr] || 'tamb';
@@ -7318,6 +7346,33 @@ function randomizeTrack(tr) {
   const level = cappedLevel;
   trackRLevel[tr] = (trackRLevel[tr] + 1) % 3;
 
+  // ECHO has no pitch/scale of its own — it echoes whatever chord the other
+  // tracks capture — so it can't be routed through randomizeBassTrack (that
+  // would risk it picking a fresh root and setting it as the whole song's
+  // scale root before any real tonal track has). But its trigger pattern
+  // should be populated the same way DENIALISM's is: DENIALISM has no
+  // custom density table, so it just uses the generic tonal default —
+  // replicated here directly, plus the same "never more than 3 in a row" cap.
+  if (trackInstruments[tr] === 'amlgm') {
+    const [minN, maxN0, accentRatio] = [
+      [2, 5,  0.20],
+      [5, 8,  0.40],
+      [8, 13, 0.60],
+    ][Math.min(level, 2)];
+    const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor()));
+    const _cap = window._randNoteMax || maxN;
+    window._lastNoteMaxUsed = _cap;
+    const noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
+    placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
+    let run = 0;
+    for (let s = 0; s < NUM_STEPS * 2; s++) {
+      const idx = s % NUM_STEPS;
+      if (grid[tr][idx] > 0) { run++; if (run > 3) { grid[tr][idx] = 0; run = 0; } }
+      else run = 0;
+    }
+    redrawTrackCells(tr); markModified(); return;
+  }
+
   if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask') {
     randomizeBassTrack(tr, level); return;
   }
@@ -8130,151 +8185,23 @@ function _scheduleAmalgamNotes() {
 }
 // AMALGAM/ECHO as a placeable instrument — the same phantom-chord echo the
 // right tape spool fires, but sequenced: every active step re-fires the
-// current pattern's captured chord with its decaying 16th-note repeats.
-// Instead of live-scheduling ~8 separate node pairs per hit (the old
-// approach), the whole chord+cascade is bounced to a single buffer via
-// OfflineAudioContext once per chord/tempo, then every step trigger just
-// plays that one buffer back — one node, one FX/Delay/BLAST routing
-// resolution per hit, exactly like any other sample-based instrument. This
-// also structurally fixes the Delay-feedback compounding: there's only ever
-// one send into Delay per hit now, not one per internal repeat.
-let _amalgamBounce = { buffer: null, key: null, bpm: null };
-let _amalgamBouncing = false;
-
-function _amalgamChordKey(notes) {
-  return notes.map(n => `${n.tr}|${n.key}|${n.freq.toFixed(3)}`).join(',');
-}
-
-// Renders the chord's full decaying cascade offline. Mirrors the exact
-// volume math the old live version used, at a canonical (unaccented,
-// non-BLAST-reduced) level — isAccent and BLAST scale the whole rendered
-// buffer uniformly at playback time, which is mathematically the same
-// result since both were always flat multipliers applied across every
-// repeat and every note in the chord.
-async function _bounceAmalgamCascade(notes) {
-  const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
-  const step16 = stepDuration();
-  const decayRatio = 0.55;
-  const noteTail = 0.35; // matches the phantom note's own buffer length
-  let repeats = 0, lastT = 0;
-  for (let i = 0; ; i++) {
-    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor;
-    if (vol < 0.01) break;
-    repeats = i + 1;
-    lastT = i * step16;
-  }
-  const totalDur = Math.max(lastT + noteTail + 0.05, noteTail + 0.05);
-  const sr = ctx.sampleRate;
-  const offline = new OfflineAudioContext(1, Math.ceil(sr * totalDur), sr);
-  // Rebuild the same tiny sine-blip base waveform inside the offline
-  // context — AudioBuffers can't cross contexts, but the shape is
-  // deterministic (no randomness), so this is identical to _getAmalgamBaseBuffer().
-  const baseFreq = _amalgamBaseFreq;
-  const baseBuf = offline.createBuffer(1, Math.ceil(sr * noteTail), sr);
-  const bd = baseBuf.getChannelData(0);
-  for (let i = 0; i < bd.length; i++) {
-    const tt = i / sr;
-    const env = tt < 0.005 ? (tt / 0.005) : Math.exp(-(tt - 0.005) * 12);
-    bd[i] = Math.sin(2 * Math.PI * baseFreq * tt) * env;
-  }
-  for (let i = 0; i < repeats; i++) {
-    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor;
-    const t = i * step16;
-    notes.forEach(n => {
-      const src = offline.createBufferSource();
-      src.buffer = baseBuf;
-      src.playbackRate.value = n.freq / baseFreq;
-      const g = offline.createGain(); g.gain.value = vol;
-      src.connect(g); g.connect(offline.destination);
-      src.start(t);
-    });
-  }
-  return offline.startRendering();
-}
-
-// Kicks off an async re-bounce only when the chord content or tempo has
-// actually changed since the last one — otherwise every step trigger reuses
-// the cached buffer. If a render is already in flight, this is a no-op;
-// the next trigger will pick up whichever result lands.
-function _ensureAmalgamBounce(notes, key) {
-  if (_amalgamBounce.buffer && _amalgamBounce.key === key && _amalgamBounce.bpm === bpm) return;
-  if (_amalgamBouncing) return;
-  _amalgamBouncing = true;
-  _bounceAmalgamCascade(notes).then(buf => {
-    _amalgamBounce = { buffer: buf, key, bpm };
-    _amalgamBouncing = false;
-  }).catch(() => { _amalgamBouncing = false; });
-}
-
+// current pattern's captured chord as a single one-shot hit — no repeated
+// decaying echo trail. One note (or chord of notes) per grid marker, same
+// as any other instrument. This also means Delay/FX/BLAST all apply
+// completely normally, since there's only ever one event per hit.
 function playAmalgamStep(isAccent, time, tr) {
   if (!ctx) return;
   _regenerateAmalgamChord(); // capture the pattern's tonal content as it is right now
   let notes = _amalgamChord;
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
-  const key = _amalgamChordKey(notes);
-  _ensureAmalgamBounce(notes, key);
-
-  if (_amalgamBounce.buffer && _amalgamBounce.key === key && _amalgamBounce.bpm === bpm) {
-    // Fast path — cached buffer, one node, one routing resolution.
-    const src = ctx.createBufferSource();
-    src.buffer = _amalgamBounce.buffer;
-    const g = ctx.createGain();
-    g.gain.value = (isAccent ? 1.3 : 1) * (trackPump[tr] ? 0.5623 : 1);
-    // Same safety-net highpass as the live path — see _playPhantomNote.
-    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 178; hp.Q.value = 0.7;
-    _amalgamVolOverride = true; // flag only — routes through the amalgam limiter, see getSynthConnectNode
-    const dest = getSynthConnectNode(tr);
-    _amalgamVolOverride = null;
-    src.connect(g); g.connect(hp); hp.connect(dest);
-    src.start(time);
-    src.onended = () => { try { src.disconnect(); g.disconnect(); hp.disconnect(); } catch(e) {} };
-    return;
-  }
-
-  // Fallback — the bounce isn't ready yet (still rendering, or this is the
-  // very first trigger of a brand new chord). Live-schedule the cascade the
-  // old way so playback is never silent while the bounce catches up in the
-  // background; the next trigger of this same chord reuses the cached buffer.
-  _playAmalgamStepLive(isAccent, time, tr, notes);
-}
-
-function _playAmalgamStepLive(isAccent, time, tr, notes) {
-  const chordNormFactor = 1 / Math.sqrt(notes.length);
-  const step16 = stepDuration(); // tempo-relative 16th-note gap between repeats
-  const decayRatio = 0.55;
-  for (let i = 0; ; i++) {
-    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor * (isAccent ? 1.3 : 1);
-    if (vol < 0.01) break; // fully faded, nothing left to schedule
-    const t = time + i * step16;
-    // Resolve the destination ONCE per repeat, not once per note in the
-    // chord. getSynthConnectNode() with BLAST on wraps the shared per-track
-    // pump chain's output in a fresh gain node and reconnects to it; calling
-    // it again for every simultaneous note in the chord kept ripping that
-    // connection away from the previous note before it could sound, which is
-    // why AMALGAM went silent under BLAST. One resolve, shared by all notes
-    // in this repeat, fixes that.
-    _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
-    let dest;
-    if (i === 0) {
-      dest = getSynthConnectNode(tr);
-    } else {
-      // ECHO's own repeats (i > 0) are already a self-contained decaying
-      // cascade — that IS its delay. Feeding every one of those repeats into
-      // the external Delay effect too meant Delay's own feedback loop was
-      // re-echoing an already-multiplying signal, which is what made ECHO
-      // blow up in volume/density whenever Delay was switched on for its
-      // track. Only the step's first hit sends to Delay, same as any other
-      // instrument; later repeats still respect FX/BLAST, just not Delay.
-      const _savedDelay = trackDelay[tr];
-      trackDelay[tr] = false;
-      dest = getSynthConnectNode(tr);
-      trackDelay[tr] = _savedDelay;
-    }
-    _amalgamVolOverride = null;
-    notes.forEach(n => {
-      _playPhantomNote(tr, n.key, n.freq, false, t, dest);
-    });
-  }
+  const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
+  const vol = 0.5 * chordNormFactor * (isAccent ? 1.3 : 1);
+  _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
+  const dest = getSynthConnectNode(tr); // one resolution — Delay/FX/BLAST all behave like any other instrument now
+  _amalgamVolOverride = null;
+  notes.forEach(n => {
+    _playPhantomNote(tr, n.key, n.freq, false, time, dest);
+  });
 }
 (function() {
   const spool = document.getElementById('reel2');
@@ -8440,7 +8367,7 @@ function fullReset() {
 
   // Per-track state back to first-load defaults
   const defaultInstruments = ['amlgm', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo'];
-  const defaultVolumes = [0.8, 0.505, 0.8, 0.8, 0.8, 0.8];
+  const defaultVolumes = [0.48, 0.505, 0.8, 0.8, 0.8, 0.8];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0);
     trackOffset[tr] = 0;
