@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 04:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 04:19</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1652,7 +1652,7 @@ const trackOffset = new Array(NUM_TRACKS).fill(0);
 const trackMuted  = new Array(NUM_TRACKS).fill(false);
 const trackSweep  = new Array(NUM_TRACKS).fill(false); // L button toggle
 const trackChop   = new Array(NUM_TRACKS).fill(false);
-const trackVolume = [0.3155, 0.505, 0.8, 0.8, 0.8, 0.8];
+const trackVolume = [0.0631, 0.505, 0.8, 0.8, 0.8, 0.8];
 
 // Volume sliders drag in "position" space (0-1) but trackVolume stores the
 // actual linear gain applied to the audio graph. With a straight 1:1
@@ -6376,7 +6376,7 @@ function fullClear() {
     grid[tr].fill(0); trackOffset[tr] = 0; trackPatternState[tr] = 0;
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
     trackRLevel[tr] = 0;
-    trackVolume[tr] = tr === 0 ? 0.3155 : (tr === 1 ? 0.505 : 0.8);
+    trackVolume[tr] = tr === 0 ? 0.0631 : (tr === 1 ? 0.505 : 0.8);
     trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (ECHO) always keeps FX engaged
     trackFxMode[tr] = 0;
     trackInstruments[tr] = defaultInstruments[tr] || 'tamb';
@@ -8367,7 +8367,7 @@ function fullReset() {
 
   // Per-track state back to first-load defaults
   const defaultInstruments = ['amlgm', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo'];
-  const defaultVolumes = [0.3155, 0.505, 0.8, 0.8, 0.8, 0.8];
+  const defaultVolumes = [0.0631, 0.505, 0.8, 0.8, 0.8, 0.8];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0);
     trackOffset[tr] = 0;
