@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 18:55</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 19:11</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3838,26 +3838,17 @@ function playClarTest(freq, durSec, isAccent, time, tr) {
   drift.start(time); drift.stop(time + durSec + 0.15);
   osc.onended = () => { try { lp.disconnect(); env.disconnect(); bp.disconnect(); bEnv.disconnect(); } catch(err) {} };
 }
-// ── STEEL GUITAR: long, haunting sustain with a pronounced slide between
-// notes — the pedal-steel/lap-steel signature — plus a slow volume-swell
-// attack and gentle vibrato for that lonesome prairie-night feel. ──
+// ── STEEL GUITAR: long, haunting sustain, plus a slow volume-swell attack
+// for that lonesome prairie-night feel. No pitch slide or vibrato — pitch
+// sits cleanly on the note. ──
 function playSteelGuitar(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   let f = freq;
   while (f < 220) f *= 2;  // same two-octave roam as before, ~A3–A5
   while (f > 880) f /= 2;
-  const prev = _clarGlide[tr] || f;
-  _clarGlide[tr] = f;
   const vel = isAccent ? 0.075 : 0.05;
   const decay = Math.min(durSec + 1.8, 3.2); // long, haunting sustain
-  const glide = Math.min(durSec * 0.6, 0.35); // pronounced slide between notes
-
-  // Slow vibrato — the haunting wobble, applied to every partial below
-  const vibLfo = ctx.createOscillator(); vibLfo.type = 'sine'; vibLfo.frequency.value = 5.5;
-  const vibGain = ctx.createGain(); vibGain.gain.value = 8;
-  vibLfo.connect(vibGain);
-  vibLfo.start(time); vibLfo.stop(time + decay + 0.2);
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
   lp.frequency.setValueAtTime(f * 6, time);
@@ -3877,9 +3868,7 @@ function playSteelGuitar(freq, durSec, isAccent, time, tr) {
   ];
   partials.forEach(p => {
     const o = ctx.createOscillator(); o.type = 'triangle';
-    o.frequency.setValueAtTime(Math.max(prev * p.ratio, 1), time);
-    o.frequency.exponentialRampToValueAtTime(Math.max(f * p.ratio, 1), time + glide);
-    vibGain.connect(o.detune);
+    o.frequency.value = Math.max(f * p.ratio, 1);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, time);
     g.gain.linearRampToValueAtTime(vel * p.amp, time + 0.12); // slow volume-pedal-style swell, no click
@@ -3888,7 +3877,7 @@ function playSteelGuitar(freq, durSec, isAccent, time, tr) {
     o.start(time); o.stop(time + decay + 0.2);
     o.onended = () => { try { g.disconnect(); } catch(e) {} };
   });
-  setTimeout(() => { try { lp.disconnect(); mix.disconnect(); vibGain.disconnect(); } catch(e) {} }, (decay + 0.3) * 1000);
+  setTimeout(() => { try { lp.disconnect(); mix.disconnect(); } catch(e) {} }, (decay + 0.3) * 1000);
 }
 
 // ── Rhodes 2: warm electric piano, more fundamental, softer attack ──
@@ -9258,7 +9247,7 @@ async function initAudio() {
     attachCtxStateWatch();
     masterGain = ctx.createGain(); masterGain.gain.value = masterVol;
     try { _getAmalgamBaseBuffer(); } catch(e) {} // pre-warm the amalgam echo's cached buffer up front
-    const makeupGain = ctx.createGain(); makeupGain.gain.value = 1.7784; // +5dB fixed output boost (was +4dB)
+    const makeupGain = ctx.createGain(); makeupGain.gain.value = 2.2389; // +7dB fixed output boost (was +5dB)
     window._makeupGain = makeupGain;
     window._beatGain = ctx.createGain(); window._beatGain.gain.value = 0.402; window._beatGain.connect(masterGain);
     // UI Sounds
