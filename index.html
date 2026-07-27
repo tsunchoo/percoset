@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 16:39</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 16:53</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6860,11 +6860,11 @@ function randAll(mode, opts) {
   function buildPool(keys) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5);
     const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false;
-    // Bass gets a controlled 75% chance of being included at all, rather
-    // than leaving it purely to shuffle luck — with ~20 tonal options and
-    // only 4 basses, a plain shuffle rarely happened to draw one.
+    // Bass is always included when available, rather than leaving it to
+    // shuffle luck — with ~20 tonal options and only 5 basses, a plain
+    // shuffle rarely happened to draw one.
     const availableBass = keys.filter(k => bassKeys.has(k));
-    if (availableBass.length > 0 && Math.random() < 0.75) {
+    if (availableBass.length > 0) {
       result.push(availableBass[Math.floor(Math.random() * availableBass.length)]);
       bassUsed = true;
     }
@@ -6911,7 +6911,7 @@ function randAll(mode, opts) {
     // Bass: max one across all tracks — skip if a locked track already has bass
     const bassAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && bassKeys.has(trackInstruments[tr]));
     let bassChoice = null;
-    if (!bassAlreadyLocked && tonalSlots > 0 && Math.random() < 0.75) {
+    if (!bassAlreadyLocked && tonalSlots > 0) {
       const bassAvail = tonalKeys.filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const allBassAvail = Object.keys(INSTRUMENTS).filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const pool2 = bassAvail.length > 0 ? bassAvail : allBassAvail;
@@ -8509,8 +8509,25 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
   const playbackRate = freq / _amalgamBaseFreq;
 
+  // The reverse pre-swell and sustained body both share this destination —
+  // deliberately NOT the same as the main blip's `dest` when Delay is on.
+  // Three layers all feeding Delay's own feedback loop at full strength was
+  // what made ECHO snowball out of control once Delay was engaged; only the
+  // main blip below sends to Delay now, same as every other instrument only
+  // ever sends one voice into it per note.
+  let destNoDelay = dest;
+  if (tr !== undefined && trackDelay[tr]) {
+    const _savedDelay = trackDelay[tr];
+    trackDelay[tr] = false;
+    destNoDelay = getSynthConnectNode(tr);
+    trackDelay[tr] = _savedDelay;
+  }
+
   // Reverse pre-swell — the note's own sound played backwards, timed to
   // finish exactly as the real note begins, like a reverse-cymbal lead-in.
+  // Quieter than before — it was clustering with the main attack and the
+  // body's own attack right at the onset, summing loud enough to sound like
+  // clipping.
   const revBuf = _getAmalgamReversedBuffer();
   const revDurAtPitch = revBuf.duration / playbackRate;
   const revStart = t - revDurAtPitch;
@@ -8518,10 +8535,10 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
     const revSrc = ctx.createBufferSource();
     revSrc.buffer = revBuf;
     revSrc.playbackRate.value = playbackRate;
-    const revG = ctx.createGain(); revG.gain.value = vel * 0.6; // a touch quieter than the main hit
+    const revG = ctx.createGain(); revG.gain.value = vel * 0.35;
     const revHp1 = ctx.createBiquadFilter(); revHp1.type = 'highpass'; revHp1.frequency.value = 178; revHp1.Q.value = 0.7;
     const revHp2 = ctx.createBiquadFilter(); revHp2.type = 'highpass'; revHp2.frequency.value = 178; revHp2.Q.value = 0.7;
-    revSrc.connect(revG); revG.connect(revHp1); revHp1.connect(revHp2); revHp2.connect(dest);
+    revSrc.connect(revG); revG.connect(revHp1); revHp1.connect(revHp2); revHp2.connect(destNoDelay);
     revSrc.start(revStart);
     revSrc.onended = () => { try { revG.disconnect(); revHp1.disconnect(); revHp2.disconnect(); } catch(e) {} };
   }
@@ -8531,7 +8548,9 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   // only a short tail after that. Previously ECHO had no concept of note
   // duration at all — every hit was the same fixed ~0.35s blip regardless
   // of legato length, which is why it read as tiny and clipped with nothing
-  // to work with. This gives it real sustain to match.
+  // to work with. This gives it real sustain to match. Toned down from the
+  // first pass — its own attack was piling on top of the blip and reverse
+  // swell right at the onset.
   const sustain = Math.max(durSec || 0.35, 0.35);
   const bodyTail = 0.25;
   const bodyOsc1 = ctx.createOscillator(); bodyOsc1.type = 'sine'; bodyOsc1.frequency.value = freq;
@@ -8540,18 +8559,19 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   bodyOsc1.connect(bodyMix); bodyOsc2.connect(bodyMix);
   const bodyEnv = ctx.createGain();
   bodyEnv.gain.setValueAtTime(0, t);
-  bodyEnv.gain.linearRampToValueAtTime(vel * 0.8, t + 0.015);
-  bodyEnv.gain.setValueAtTime(vel * 0.8, t + sustain);
+  bodyEnv.gain.linearRampToValueAtTime(vel * 0.5, t + 0.02);
+  bodyEnv.gain.setValueAtTime(vel * 0.5, t + sustain);
   bodyEnv.gain.exponentialRampToValueAtTime(0.0005, t + sustain + bodyTail);
   const bodyHp1 = ctx.createBiquadFilter(); bodyHp1.type = 'highpass'; bodyHp1.frequency.value = 178; bodyHp1.Q.value = 0.7;
   const bodyHp2 = ctx.createBiquadFilter(); bodyHp2.type = 'highpass'; bodyHp2.frequency.value = 178; bodyHp2.Q.value = 0.7;
-  bodyMix.connect(bodyEnv); bodyEnv.connect(bodyHp1); bodyHp1.connect(bodyHp2); bodyHp2.connect(dest);
+  bodyMix.connect(bodyEnv); bodyEnv.connect(bodyHp1); bodyHp1.connect(bodyHp2); bodyHp2.connect(destNoDelay);
   const bodyStop = t + sustain + bodyTail + 0.05;
   bodyOsc1.start(t); bodyOsc1.stop(bodyStop);
   bodyOsc2.start(t); bodyOsc2.stop(bodyStop);
   bodyOsc1.onended = () => { try { bodyMix.disconnect(); bodyEnv.disconnect(); bodyHp1.disconnect(); bodyHp2.disconnect(); } catch(e) {} };
 
-  // The original transient blip — kept as the attack "ping" character
+  // The original transient blip — kept as the attack "ping" character, and
+  // the only layer that feeds Delay
   const src = ctx.createBufferSource();
   src.buffer = _getAmalgamBaseBuffer();
   src.playbackRate.value = playbackRate;
@@ -8622,7 +8642,7 @@ function _scheduleAmalgamNotes() {
   const decayRatio = 0.55; // each repeat quieter than the last — loosened slightly so more stay audible
   let i = 0;
   for (let s = 0; s < totalSlots; s += 2) { // 2 thirty-second-note slots = a 16th-note gap between repeats
-    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor; // +12dB (was 0.1258)
+    const vol = 0.3155 * Math.pow(decayRatio, i) * chordNormFactor; // -4dB from the previous 0.5 base
     i++;
     if (vol < 0.01) break; // fully faded, nothing left to schedule
     setTimeout(() => {
