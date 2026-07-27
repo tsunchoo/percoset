@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 05:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 05:53</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -632,6 +632,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div class="beat-type-item" data-beat="swagger">SWAGGER</div>
       <div class="beat-type-item" data-beat="cumbia">CUMBIA</div>
       <div class="beat-type-item" data-beat="afrobeat">AFROBEAT</div>
+      <div class="beat-type-item" data-beat="boogie">BOOGIE</div>
       <div class="beat-type-item" id="beatMenuBeatLock" title="lock beat type against RAND"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAADwCAYAAACg7+4yAAAD3ElEQVR4nO3bUW7bSBBAQTnI/a/s/QgS7GZtQBQpsh+n6gAKp+epTRvI4wEAAAAAAAAc7+PqBxjq8+oH+Ib7+suqA5ka6F7L3edKB75rtN9Z4m7vfsjVov3Obe/5rgcT7tdud993O5Bwn3Obe7/LQYT7mvz91w8g3GNkO/hx9QPsIN7jZGdZ/OZlhx2Q66H2wOI9R6aL0iuEeM+TmXUl4MxAbyQx80LAiUHe1PjZTw94/AAXMPoOJgc8enCLGXsXUwMeO7CFjbyTiQGPHBSPx2Pg3UwLeNyA+J9RdzQp4FGDoWFSwHSMWTZTAh4zEJ424s4mBDxiELzk8rubEDC87OqAL/8Gs9uld3hlwOJlt6s3MPdw2TK6KmDbl0PYwBzlkqUkYNKuCNjrA4exgTnS6cvp59n/YMi0/5nrJ9cXzr6k6ZcwLdrvTJ7jqTMU8C+VcP+2/DxXf4Wohvvb7+efGvLbnflL3LQh1+P9tzudZZNV/wpxxwufdKbTltWKAU+66KPd+WxfWi3gFS54hTP+sVrA3MxZAU/4BW6lzbTMWW1g3uWUpSVg0gRM2ioBL/NOuJpVAl7REl9aAZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkfRz8eZ8Hfx73dUh7R3yIaNljV4N7XyHEy167Gnq1fuHyDpt7fGUDi5d32dzW1oDFyyj+jMY0m5bkloBtX8axgZno6WUpYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImbUvAH297Cvivp1uzgUnbGrAtzLttaswGZpLNC/KVgG1hxnh1A4uYo73U1BEhfh7wGaxrV4NHb1Ix8ww/wQEAAAAAAGC0fwDhV0KVLoch3gAAAABJRU5ErkJggg==" style="pointer-events:none;" alt="">BEAT LOCK</div>
     </div>
   </div>
@@ -903,6 +904,8 @@ const INSTRUMENTS = {
   sprkls: { name: 'SPARKLES',    soft: null, accent: null, group: 'tonal' },
   sflute: { name: 'XYLOPHONE',   soft: null, accent: null, group: 'tonal' },
   damask: { name: 'DAMASK',      soft: null, accent: null, group: 'tonal' },
+  dulc:   { name: 'DULCIMER',    soft: null, accent: null, group: 'tonal' },
+  opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
   amlgm:  { name: 'ECHO',        soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
@@ -1439,7 +1442,7 @@ function triggerFxEnvelope(tr, time) {
   const fx = trackFx[tr];
   if (!fx || !(fx.x > 0 || fx.y > 0)) return;
   // Basses get the old treatment (crunch only) — no attack/tail shaping.
-  if (['sbass', 'sbass3', 'sbass4', 'dbass', 'sstring', 'sleg', 'fflute', 'blunt'].includes(trackInstruments[tr])) return;
+  if (['sbass', 'sbass3', 'sbass4', 'dbass', 'sstring', 'sleg', 'fflute', 'blunt', 'opening'].includes(trackInstruments[tr])) return;
   const g = trackFxNodes[tr].envGain;
   if (!g) return;
   const t0 = Math.max(time, ctx.currentTime);
@@ -1459,7 +1462,7 @@ function setFxActive(tr, fxVal) {
   const now = ctx.currentTime;
   // Basses keep the fully-wet routing exactly as it was before the 80/20
   // blend was introduced; every other instrument uses the new 20% wet mix.
-  const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'sstring', 'sleg', 'fflute', 'blunt'].includes(trackInstruments[tr]);
+  const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'sstring', 'sleg', 'fflute', 'blunt', 'opening'].includes(trackInstruments[tr]);
   const wetAmt = isBass ? 1 : 0.2;
   const dryAmt = isBass ? 0 : 0.8;
   dryGain.gain.cancelScheduledValues(now); dryGain.gain.setValueAtTime(on ? dryAmt : 1, now);
@@ -1613,6 +1616,8 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'urban')    { playUrban(isAccent, time, tr); return; }
   if (key === 'fflute')   { return; }
   if (key === 'damask')   { return; } // handled in scheduler
+  if (key === 'dulc')     { return; } // handled in scheduler
+  if (key === 'opening')  { return; } // handled in scheduler
   if (key === 'blunt')    { return; }
   const buf = buffers[key]?.[isAccent ? 'accent' : 'soft'];
   if (!buf) return;
@@ -1870,7 +1875,7 @@ function scheduler() {
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
         const key = trackInstruments[tr];
-        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'stab' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask') {
+        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'stab' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'dulc' || key === 'opening') {
           const scale = trackBassScale[tr] || [110];
           const noteIdx = gs % scale.length;
           const freq = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale[noteIdx];
@@ -1898,6 +1903,7 @@ function scheduler() {
             dur = Math.max(0.01, dur * (1 - trackFx[tr].x) + 0.01 * trackFx[tr].x);
           }
           if (sfxOn) triggerFxEnvelope(tr, t);
+          if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass') duckSlayTracks(t);
           if (key === 'sbass')   playSynthBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass3')  playMotownBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass4')  playPlunkBass(freq, dur, val === 2, t, tr);
@@ -1917,11 +1923,13 @@ function scheduler() {
           if (key === 'satk')    playSynthAttack(freq, dur, val === 2, t, tr);
           if (key === 'boog')    playPrimePiano(freq, dur, val === 2, t, tr);
           if (key === 'damask')  playDamask(freq, dur, val === 2, t, tr);
+          if (key === 'dulc')    playDulcimer(freq, dur, val === 2, t, tr);
+          if (key === 'opening') playOpening(freq, dur, val === 2, t, tr);
           if (key === 'fflute')  {
             playGlassBell(freq, dur, val === 2, t, tr);
           }
           // Duck all pad tracks when busiest track fires
-          const _padKeys = new Set(['fflute','sstring','sleg','sparkle','sprkls','rhodes','rhodes2']);
+          const _padKeys = new Set(['fflute','sstring','sleg','sparkle','sprkls','rhodes','rhodes2','opening']);
           if (!_padKeys.has(key)) {
             let _bestDensity = 0, _busiestTr = -1;
             for (let _i = 0; _i < NUM_TRACKS; _i++) {
@@ -1977,6 +1985,7 @@ function scheduler() {
             const freq2 = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale2[noteIdx2];
             const dur2 = stepDuration() * 0.5;
             if (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0)) triggerFxEnvelope(tr, t2);
+            if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass') duckSlayTracks(t2);
             if (key === 'sbass')   playSynthBass(freq2, dur2, false, t2, tr);
             if (key === 'sbass3')  playMotownBass(freq2, dur2, false, t2, tr);
             if (key === 'sbass4')  playPlunkBass(freq2, dur2, false, t2, tr);
@@ -1992,6 +2001,7 @@ function scheduler() {
             if (key === 'clar')    playSteelGuitar(freq2, dur2, false, t2, tr);
             if (key === 'rhodes')  playSpaceKoto(freq2, dur2, false, t2, tr);
             if (key === 'rhodes2') playRhodes2(freq2, dur2, false, t2, tr);
+            if (key === 'dulc')    playDulcimer(freq2, dur2, false, t2, tr);
             if (key === 'sflute')  playXylophone(freq2, dur2, false, t2, tr);
             if (key === 'satk')    playSynthAttack(freq2, dur2, false, t2, tr);
             if (key === 'boog')    playPrimePiano(freq2, dur2, false, t2, tr);
@@ -2084,6 +2094,20 @@ function scheduler() {
           // AFROBEAT — kick on beat 1 (syncopated hits handled below); hihat steady 8ths (handled below)
           doKick = (step === 0);
           doHat = true;
+        } else if (_beatType === 'boogie') {
+          // BOOGIE — true eighth-note-triplet shuffle, computed directly as
+          // exact thirds of the beat (16 straight steps can't represent a
+          // triplet on-grid). Hihat on triplet partials 1 & 3 every beat,
+          // skipping the middle — exactly the classic shuffle/swing feel.
+          // Kick alternates between the downbeat (beats 1 & 3) and the
+          // pushed partial-2 "and" (beats 2 & 4) — boogie-woogie bass pattern.
+          const _beatIdx = step / 4; // 0,1,2,3 for steps 0,4,8,12
+          const _beatDur = stepDuration() * 4;
+          const _third = _beatDur / 3;
+          playSynthHihat(false, t, -1);
+          playSynthHihat(false, t + 2 * _third, -1);
+          if (_beatIdx % 2 === 0) fireBeatKick(t);
+          else fireBeatKick(t + _third);
         }
         if (doKick) {
           fireBeatKick(t);
@@ -2287,6 +2311,7 @@ function reverseBuffer(buf, revLen) {
 function playSynthKick(isAccent, time, tr) {
   if (!ctx) return;
   const dest = getSynthConnectNode(tr);
+  duckSlayTracks(time);
   const osc = ctx.createOscillator(), g = ctx.createGain();
   osc.connect(g); g.connect(dest);
   osc.frequency.setValueAtTime(isAccent ? 180 : 140, time);
@@ -2465,7 +2490,7 @@ const trackBassScale = {}; // tr -> [freq, ...]
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
-const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','stab','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','satk','boog','fflute','blunt','damask']);
+const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','stab','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','satk','boog','fflute','blunt','damask','dulc','opening']);
 
 function buildScaleFromRoot(root, scaleOverride) {
   const scaleArr = scaleOverride || PENTA_MINOR;
@@ -2483,10 +2508,10 @@ function transposeRootToRange(root, roots) {
 }
 function getRangeRoots(key) {
   if (key === 'sparkle') return SPARKLE_ROOTS;
-  if (key === 'sflute' || key === 'boog' || key === 'fflute') return HIGH_ROOTS;
+  if (key === 'sflute' || key === 'boog' || key === 'fflute' || key === 'dulc') return HIGH_ROOTS;
   if (key === 'blunt') return MID_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
-  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask') return MELODY_ROOTS;
+  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'opening') return MELODY_ROOTS;
   return BASS_ROOTS;
 }
 
@@ -2551,6 +2576,8 @@ function randomizeBassTrack(tr, level) {
     sprkls:  [[2,3,0.30],[3,4,0.40],[3,5,0.50]],   // Sparkles — a few twinkles
     boog:    [[1,3,0.20],[3,4,0.40],[4,7,0.60]],   // BOOG — half the generic default density
     damask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // DAMASK — sparse, spacious, plaintive phrases
+    dulc:    [[2,4,0.35],[3,6,0.45],[5,8,0.60]],   // DULCIMER — bright twinkling runs, similar to Sparkles
+    opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
   };
   const levelTable = noteTables[key] || [
     [2, 5,  0.20],
@@ -2596,10 +2623,10 @@ function randomizeBassTrack(tr, level) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','sparkle','congHi','bongHi','rhodes','rhodes2']);
+  const split32Keys = new Set(['shihat','sparkle','congHi','bongHi','rhodes','rhodes2','dulc']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
-    const maxSplits = (key === 'rhodes' || key === 'rhodes2') ? 3 : 99;
+    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc') ? 3 : 99;
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < 0.18) {
         grid[tr][s] = 3;
@@ -2661,6 +2688,19 @@ function randomizeBassTrack(tr, level) {
       if (grid[tr][s] > 0 && Math.random() < 0.7) {
         const maxLen = _legatoMaxLen(tr, s);
         const wantLen = 3 + Math.floor(Math.random() * 4); // 3-6, biased long
+        trackLegatoLen[tr][s] = Math.min(wantLen, maxLen);
+      }
+    }
+  }
+
+  // OPENING: almost always a long held chord — it only ever plays up to 3
+  // times a bar, so each hit should unfold and sustain rather than stab.
+  if (key === 'opening' && trackBassScale[tr]) {
+    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    for (let s = 0; s < NUM_STEPS; s++) {
+      if (grid[tr][s] > 0 && Math.random() < 0.9) {
+        const maxLen = _legatoMaxLen(tr, s);
+        const wantLen = 4 + Math.floor(Math.random() * 3); // 4-6, long sustain
         trackLegatoLen[tr][s] = Math.min(wantLen, maxLen);
       }
     }
@@ -3391,7 +3431,7 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
     curve[i] = Math.tanh(x * 6) + Math.sin(x * 9) * 0.15; // hard clip plus a folded wobble for the "broken" character
   }
   ws.curve = curve; ws.oversample = '4x';
-  const outGain = ctx.createGain(); outGain.gain.value = 0.0708; // -23dB total — output level only, doesn't touch the distortion drive
+  const outGain = ctx.createGain(); outGain.gain.value = 0.0501; // -26dB total (was -23dB) — output level only, doesn't touch the distortion drive
 
   osc1.connect(env); osc2.connect(env);
   env.connect(ws); ws.connect(outGain); outGain.connect(dest);
@@ -4217,6 +4257,102 @@ function playXylophone(freq, durSec, isAccent, time, tr) {
   });
   setTimeout(() => { try { lp.disconnect(); mix.disconnect(); } catch(e) {} }, (decay + 0.3) * 1000);
 }
+// ── DULCIMER: hammered dulcimer — bright struck metal strings, tri-chorus
+// unison stringing (three slightly detuned strings per note, like a real
+// dulcimer's course), a sharp mallet-strike transient, and a metallic
+// inharmonic overtone for shimmer. Moderate ringing decay, not a long bell tail.
+function playDulcimer(freq, durSec, isAccent, time, tr) {
+  if (!ctx || !freq) return;
+  const dest = getSynthConnectNode(tr);
+  const vel = isAccent ? 0.072 : 0.048;
+  const decay = isAccent ? 1.8 : 1.4;
+
+  // Hammer strike — sharp, bright, harder-edged than a soft mallet
+  const clickLen = Math.ceil(ctx.sampleRate * 0.005);
+  const cBuf = ctx.createBuffer(1, clickLen, ctx.sampleRate);
+  const cd = cBuf.getChannelData(0);
+  for (let i = 0; i < clickLen; i++) cd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / clickLen, 1.5);
+  const click = ctx.createBufferSource(); click.buffer = cBuf;
+  const cHP = ctx.createBiquadFilter(); cHP.type = 'highpass'; cHP.frequency.value = freq * 3;
+  const cEnv = ctx.createGain(); cEnv.gain.value = vel * 0.6;
+  click.connect(cHP); cHP.connect(cEnv); cEnv.connect(dest);
+  click.start(time);
+  click.onended = () => { try { cHP.disconnect(); cEnv.disconnect(); } catch(e) {} };
+
+  // Tri-chorus stringing — three slightly detuned unison strings beating
+  // against each other, plus one bright inharmonic overtone for metallic shine.
+  const partials = [
+    { ratio: 1.0,  detune: -6, amp: 0.85, decayMul: 1.0 },
+    { ratio: 1.0,  detune: 0,  amp: 1.0,  decayMul: 1.0 },
+    { ratio: 1.0,  detune: 6,  amp: 0.85, decayMul: 1.0 },
+    { ratio: 2.76, detune: 0,  amp: 0.22, decayMul: 0.4 }, // inharmonic shimmer, like a struck steel string
+  ];
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = freq * 10; lp.Q.value = 0.5;
+  const mix = ctx.createGain(); mix.gain.value = 1;
+  mix.connect(lp); lp.connect(dest);
+  partials.forEach(p => {
+    const o = ctx.createOscillator(); o.type = 'triangle';
+    o.frequency.value = freq * p.ratio; o.detune.value = p.detune;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, time);
+    g.gain.linearRampToValueAtTime(vel * p.amp, time + 0.003); // fast, hard strike
+    g.gain.exponentialRampToValueAtTime(0.0001, time + decay * p.decayMul);
+    o.connect(g); g.connect(mix);
+    o.start(time); o.stop(time + decay + 0.2);
+    o.onended = () => { try { g.disconnect(); } catch(e) {} };
+  });
+  setTimeout(() => { try { lp.disconnect(); mix.disconnect(); } catch(e) {} }, (decay + 0.3) * 1000);
+}
+// ── OPENING: a light, airy pad — root, 3rd, and 6th unfold in one at a time,
+// then sustain together, like a chord blooming open. Bright and hopeful,
+// deliberately sparse (only ever up to 3 hits a bar), so each one gets room
+// to breathe rather than competing with itself.
+function playOpening(freq, durSec, isAccent, time, tr) {
+  if (!ctx || !freq) return;
+  const dest = getSynthConnectNode(tr);
+  const vel = isAccent ? 0.052 : 0.036;
+  const sustain = Math.max(durSec, 1.2); // always has room to unfold and hold, even off a short grid note
+  const release = Math.min(sustain * 0.4, 1.4);
+
+  const _isMajorish = (currentScaleName === 'major' || currentScaleName === 'penta-maj' || currentScaleName === 'mixolydian');
+  const thirdRatio = _isMajorish ? 1.2599 : 1.1892; // major or minor 3rd, matching the current scale's mood
+  const sixthRatio = _isMajorish ? 1.6818 : 1.5874; // major or minor 6th
+
+  const chordGain = ctx.createGain();
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = freq * 6; lp.Q.value = 0.5;
+  chordGain.connect(lp); lp.connect(dest);
+
+  const notes = [
+    { ratio: 1.0,        delay: 0.00, amp: 1.0  }, // root
+    { ratio: thirdRatio, delay: 0.16, amp: 0.85 }, // 3rd unfolds in
+    { ratio: sixthRatio, delay: 0.34, amp: 0.7  }, // 6th unfolds in last
+  ];
+
+  notes.forEach(n => {
+    const t0 = time + n.delay;
+    const noteDur = sustain - n.delay + release;
+    const holdAt = Math.max(noteDur - release, 0.4);
+    // Two gently detuned voices for a soft, airy chorus, plus one quiet
+    // octave-up shimmer layer for the sparkle.
+    [-4, 4, 0].forEach((detune, i) => {
+      const isShimmer = i === 2;
+      const o = ctx.createOscillator(); o.type = isShimmer ? 'sine' : 'triangle';
+      o.frequency.value = freq * n.ratio * (isShimmer ? 4 : 1);
+      o.detune.value = detune;
+      const ampScale = isShimmer ? 0.06 : 0.5;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(vel * n.amp * ampScale, t0 + 0.4); // slow, soft bloom — no percussive attack
+      g.gain.setValueAtTime(vel * n.amp * ampScale, t0 + holdAt);
+      g.gain.linearRampToValueAtTime(0, t0 + noteDur);
+      o.connect(g); g.connect(chordGain);
+      o.start(t0); o.stop(t0 + noteDur + 0.1);
+      o.onended = () => { try { g.disconnect(); } catch(e) {} };
+    });
+  });
+
+  setTimeout(() => { try { chordGain.disconnect(); lp.disconnect(); } catch(e) {} }, (sustain + release + 0.6) * 1000);
+}
 // ── STINGER: aggressive impact + long atmospheric tail — 80s John Carpenter style ──
 function playCarpenterStinger(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
@@ -4409,7 +4545,9 @@ function playGlassBell(freq, durSec, isAccent, time, tr) {
   ampEnv.gain.setValueAtTime(vel * 0.65, time + sustain * 0.6);
   ampEnv.gain.linearRampToValueAtTime(0, time + sustain);
 
-  dryGain.connect(ampEnv); wetGain.connect(ampEnv); ampEnv.connect(dest);
+  dryGain.connect(ampEnv); wetGain.connect(ampEnv);
+  const slayDuck = getSlaySidechainGain(tr, dest);
+  ampEnv.connect(slayDuck);
 
   saw1.start(time); saw1.stop(time + sustain + 0.1);
   saw2.start(time); saw2.stop(time + sustain + 0.1);
@@ -4601,6 +4739,38 @@ function hideCelestialMap() {
 }
 // Fire the beat's kick with the master-duck sidechain pump — shared by every
 // beat-type branch (including off-beat 8th-note kicks like BREAKS/BOUNCE 2&/3&)
+// ── SLAY sidechain — a dedicated, always-on duck applied only to fflute
+// (SLAY) tracks, triggered by every kick and every bass note. Deeper and
+// punchier than the general master duck, since this is meant to be a real
+// characteristic of the instrument, not a subtle mix glue effect.
+const _slaySidechainGains = {};
+function getSlaySidechainGain(tr, dest) {
+  if (!_slaySidechainGains[tr]) {
+    const g = ctx.createGain(); g.gain.value = 1;
+    _slaySidechainGains[tr] = { gain: g, dest: null };
+  }
+  const nodes = _slaySidechainGains[tr];
+  // Only reconnect the output when dest actually changed (FX/Delay/BLAST
+  // toggled between notes) — reconnecting on every note would sever a
+  // still-ringing previous note sharing this same persistent gain node.
+  if (nodes.dest !== dest) {
+    try { nodes.gain.disconnect(); } catch(e) {}
+    nodes.gain.connect(dest);
+    nodes.dest = dest;
+  }
+  return nodes.gain;
+}
+function duckSlayTracks(t) {
+  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    if (trackInstruments[tr] === 'fflute' && _slaySidechainGains[tr]) {
+      const g = _slaySidechainGains[tr].gain.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(1, t);
+      g.linearRampToValueAtTime(0.1, t + 0.008); // heavy duck — most of the signal drops out
+      g.setTargetAtTime(1, t + 0.03, 0.16); // recovers over the following stretch
+    }
+  }
+}
 function fireBeatKick(t) {
   playKick(t);
   if (window._duckGain) {
@@ -4610,6 +4780,7 @@ function fireBeatKick(t) {
     dg.setTargetAtTime(1, t + 0.020, 0.08);
   }
   duckPumpTracks(t);
+  duckSlayTracks(t);
 }
 function playKick(t) {
   // Matches playSynthKick — same character, slightly louder for the beat,
@@ -4938,7 +5109,7 @@ function openSoundPicker(tr) {
   document.getElementById('soundPickerTitle').textContent = `TRK ${tr+1} — SOUND`;
   const list = document.getElementById('soundPickerList'); list.innerHTML = '';
   const _isBass = k => ['sbass', 'sbass3', 'sbass4', 'dbass'].includes(k);
-  const _isPad = k => ['fflute', 'blunt', 'sstring', 'sleg'].includes(k);
+  const _isPad = k => ['fflute', 'blunt', 'sstring', 'sleg', 'opening'].includes(k);
   const GROUPS = [
     { label: 'KIT',  match: k => INSTRUMENTS[k].group === 'kit' },
     { label: 'PERC', match: k => INSTRUMENTS[k].group === 'perc' },
@@ -4980,7 +5151,7 @@ function setTrackNameColor(tr, key) {
   const g = INSTRUMENTS[key]?.group || 'perc';
   const _laneColors = {'kit':'#0b5394','perc':'#85A838','tonal':'#fd475d'};
   const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass'].includes(key);
-  const isPad = ['fflute', 'blunt', 'sstring', 'sleg'].includes(key);
+  const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening'].includes(key);
   let laneColor = _laneColors[g] || 'var(--text)';
   if (isBass) laneColor = '#8d3ba8';
   else if (isPad) laneColor = '#76f898';
@@ -5291,6 +5462,8 @@ function previewNote(tr, isAccent) {
     else if (key === 'satk')    playSynthAttack(freq, dur, isAccent, t, tr);
     else if (key === 'boog')    playPrimePiano(freq, dur, isAccent, t, tr);
     else if (key === 'damask')  playDamask(freq, dur, isAccent, t, tr);
+    else if (key === 'dulc')    playDulcimer(freq, dur, isAccent, t, tr);
+    else if (key === 'opening') playOpening(freq, dur, isAccent, t, tr);
     else if (key === 'fflute')  playGlassBell(freq, dur, isAccent, t, tr);
     else if (key === 'blunt')   playBlunt(freq, dur, isAccent, t, tr);
   } else if (key === 'ngate') {
@@ -5827,7 +6000,7 @@ async function renderSlotToWav(snap) {
           const curve = new Float32Array(1024);
           for (let i=0;i<1024;i++){const x=(i*2)/1024-1; curve[i]=Math.tanh(x*6)+Math.sin(x*9)*0.15;}
           ws.curve = curve; ws.oversample = '4x';
-          const outGain = o.createGain(); outGain.gain.value = 0.0708; // -23dB total
+          const outGain = o.createGain(); outGain.gain.value = 0.0501; // -26dB total (was -23dB)
           osc1.connect(env); osc2.connect(env); env.connect(ws); ws.connect(outGain); outGain.connect(offDest);
           const stopAt = t + decayTime + 0.1;
           osc1.start(t); osc1.stop(stopAt); osc2.start(t); osc2.stop(stopAt);
@@ -6490,7 +6663,7 @@ function randAll(mode, opts) {
   if (!_beatTypeLocked) {
     const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown');
     if (!onHalfFeel) {
-      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'fourfloor', 'holdup', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat'];
+      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'fourfloor', 'holdup', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie'];
       if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown');
       setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
     }
@@ -6854,7 +7027,7 @@ function randAll(mode, opts) {
     }
   }
   // Voice harmony: if >1 melody tonal track, shift 2nd+ up an octave + minor third
-  const melodyKeys = new Set(['sstring','sleg','sparkle','rhodes','rhodes2','stab','bashp','damask']);
+  const melodyKeys = new Set(['sstring','sleg','sparkle','rhodes','rhodes2','stab','bashp','damask','opening']);
   const melodyTracks = [];
   for (let tr = 1; tr < NUM_TRACKS; tr++) {
     if (melodyKeys.has(pool[tr])) melodyTracks.push(tr);
@@ -7384,10 +7557,17 @@ function randomizeTrack(tr) {
       if (grid[tr][idx] > 0) { run++; if (run > 3) { grid[tr][idx] = 0; run = 0; } }
       else run = 0;
     }
+    // FX now toggles randomly each time ECHO's pattern regenerates — 50%
+    // chance on, rather than staying permanently engaged.
+    const echoFxOn = Math.random() < 0.5;
+    trackFx[tr] = echoFxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
+    if (ctx) setFxActive(tr, trackFx[tr]);
+    const echoFxBtn = document.getElementById(`fxbtn-${tr}`);
+    if (echoFxBtn) echoFxBtn.classList.toggle('on', echoFxOn);
     redrawTrackCells(tr); markModified(); return;
   }
 
-  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask') {
+  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening') {
     randomizeBassTrack(tr, level); return;
   }
 
@@ -7491,10 +7671,10 @@ function randomizeTrack(tr) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','sparkle','congHi','bongHi','rhodes','rhodes2']);
+  const split32Keys = new Set(['shihat','sparkle','congHi','bongHi','rhodes','rhodes2','dulc']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
-    const maxSplits = (key === 'rhodes' || key === 'rhodes2') ? 3 : 99;
+    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc') ? 3 : 99;
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < 0.18) {
         grid[tr][s] = 3;
