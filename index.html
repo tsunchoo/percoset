@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 06:25</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 06:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3361,7 +3361,12 @@ function playPulseBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const vel = isAccent ? 0.5097 : 0.354; // -3dB
-  const decay = Math.min(durSec, isAccent ? 0.22 : 0.16); // very little tail by design
+  // Sustain now tracks the note's actual assigned length — so an 8th note
+  // genuinely sounds fuller/longer than a 16th — with only a short tail
+  // added on top. The old version capped the WHOLE envelope at ~0.2s
+  // regardless of note length, so every length sounded identical.
+  const sustain = Math.max(durSec - 0.02, 0.05);
+  const tail = isAccent ? 0.12 : 0.09; // the actual "little tail" — after the hold, not instead of it
 
   // "Bullet" attack — a fast pitched snap (sweeping down from well above the
   // note into it in ~12ms), not just a noise click — gives it that sharp,
@@ -3387,24 +3392,27 @@ function playPulseBass(freq, durSec, isAccent, time, tr) {
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 3;
   lp.frequency.setValueAtTime(freq * 10, time);
-  lp.frequency.exponentialRampToValueAtTime(freq * 1.8, time + decay * 0.6);
+  lp.frequency.exponentialRampToValueAtTime(freq * 1.8, time + Math.min(sustain * 0.6, 0.3));
 
-  // A little metallic edge — a fast-decaying inharmonic partial, kept quiet
+  // A little metallic edge — a fast-decaying inharmonic partial, kept quiet.
+  // This stays quick regardless of note length — it's an attack character,
+  // not something that should ring through a long held note.
   const metal = ctx.createOscillator(); metal.type = 'triangle'; metal.frequency.value = freq * 2.76;
   const metalEnv = ctx.createGain();
   metalEnv.gain.setValueAtTime(vel * 0.18, time);
-  metalEnv.gain.exponentialRampToValueAtTime(0.0005, time + decay * 0.3);
+  metalEnv.gain.exponentialRampToValueAtTime(0.0005, time + Math.min(sustain, 0.15));
   metal.connect(metalEnv); metalEnv.connect(mix);
 
   const ampEnv = ctx.createGain();
   ampEnv.gain.setValueAtTime(0, time);
   ampEnv.gain.linearRampToValueAtTime(vel, time + 0.002); // near-instant, punchy
-  ampEnv.gain.exponentialRampToValueAtTime(vel * 0.3, time + decay * 0.4);
-  ampEnv.gain.exponentialRampToValueAtTime(0.0006, time + decay);
+  ampEnv.gain.exponentialRampToValueAtTime(vel * 0.55, time + 0.05); // quick settle from the punch into the body
+  ampEnv.gain.setValueAtTime(vel * 0.55, time + sustain); // holds through the note's actual assigned length
+  ampEnv.gain.exponentialRampToValueAtTime(0.0006, time + sustain + tail); // short tail after that
 
   mix.connect(lp); lp.connect(ampEnv); ampEnv.connect(dest);
 
-  const stopAtP = time + decay + 0.05;
+  const stopAtP = time + sustain + tail + 0.05;
   [osc1, osc2, sub, metal].forEach(o => { o.start(time); o.stop(stopAtP); });
   osc1.onended = () => { try { mix.disconnect(); lp.disconnect(); ampEnv.disconnect(); subG.disconnect(); metalEnv.disconnect(); } catch(e) {} };
 }
