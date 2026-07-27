@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 18:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 18:30</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2426,7 +2426,7 @@ function playSynthSnare(isAccent, time, tr) {
 
 function playSynthHihat(isAccent, time, tr) {
   if (!ctx) return;
-  const dest = getSynthConnectNode(tr);
+  const dest = (tr === -1) ? (window._beatGain || masterGain) : getSynthConnectNode(tr);
   const dur = isAccent ? 0.12 : 0.06, vol = isAccent ? 0.1968 : 0.1238; // -3dB more (was -2dB)
   const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
   const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random()*2-1;
@@ -6535,6 +6535,23 @@ function queueRand(mode) {
 let _autoRandMode = undefined;
 let _mediaRecorder = null, _recChunks = [], _recArmed = false;
 
+// Small "Bouncing…" toast shown while a recorded file is being finalized
+// (bounced from chunks into a shareable/downloadable file).
+function _showBounceToast() {
+  let el = document.getElementById('_bounceToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_bounceToast';
+    el.textContent = 'Bouncing…';
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;color:#fff;padding:14px 28px;border-radius:6px;font-family:"DM Sans",sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:0.95rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.style.display = 'block';
+}
+function _hideBounceToast() {
+  const el = document.getElementById('_bounceToast');
+  if (el) el.style.display = 'none';
+}
 function updateRecBtn() {
   const btn = document.getElementById('saveBtn');
   if (!btn) return;
@@ -6626,13 +6643,18 @@ function toggleRecord() {
       try { masterGain.disconnect(dest); } catch(e) {}
       updateRecBtn();
       if (_recChunks.length === 0) return;
-      const blob = new Blob(_recChunks, { type: _mediaRecorder.mimeType || 'audio/webm' });
-      const ext = blob.type.includes('ogg') ? 'ogg' : blob.type.includes('mp4') ? 'mp4' : 'webm';
-      const key = getKeyName(); const keyPart = key ? ' ' + key.replace(/-/g, ' ') : '';
-      const rawName = `${_currentSpecies}${keyPart} ${Math.round(bpm)}bpm`;
-      const fname = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      const file = new File([blob], `${fname}.${ext}`, { type: blob.type });
-      await shareOrDownload([file]);
+      _showBounceToast();
+      try {
+        const blob = new Blob(_recChunks, { type: _mediaRecorder.mimeType || 'audio/webm' });
+        const ext = blob.type.includes('ogg') ? 'ogg' : blob.type.includes('mp4') ? 'mp4' : 'webm';
+        const key = getKeyName(); const keyPart = key ? ' ' + key.replace(/-/g, ' ') : '';
+        const rawName = `${_currentSpecies}${keyPart} ${Math.round(bpm)}bpm`;
+        const fname = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const file = new File([blob], `${fname}.${ext}`, { type: blob.type });
+        await shareOrDownload([file]);
+      } finally {
+        _hideBounceToast();
+      }
     };
     _recArmed = true;
     if (playing && _mediaRecorder.state === 'inactive') {
@@ -6928,8 +6950,9 @@ function randAll(mode, opts) {
   } else {
     // Equal chance: pick 3 tonal and 3 perc, then shuffle
     // Fixed 50/50 split by default (3 tonal + 3 perc); on the 5th RAND cycle
-    // (level 4) there's a 50% chance to go tonal-heavy instead (4 tonal + 2 perc).
-    const tonalTarget = (level === 4 && Math.random() < 0.5) ? 4 : 3;
+    // (level 4) there's now only a 20% chance to go tonal-heavy instead (4
+    // tonal + 2 perc — i.e. 3 other tonal instruments plus bass) — was 50%.
+    const tonalTarget = (level === 4 && Math.random() < 0.2) ? 4 : 3;
     const percTarget = NUM_TRACKS - tonalTarget;
     // Count how many of each are already locked in
     const lockedTonal = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr])).length;
@@ -8532,20 +8555,6 @@ function _getAmalgamBaseBuffer() {
   _amalgamBaseBuffer = buf;
   return _amalgamBaseBuffer;
 }
-// Same waveform, sample-reversed — the fast attack + decay play as a swell
-// building up into a peak right at the end, when reversed. Cached once,
-// same way as the forward buffer.
-let _amalgamReversedBuffer = null;
-function _getAmalgamReversedBuffer() {
-  if (_amalgamReversedBuffer) return _amalgamReversedBuffer;
-  const base = _getAmalgamBaseBuffer();
-  const rev = ctx.createBuffer(1, base.length, base.sampleRate);
-  const src = base.getChannelData(0);
-  const dst = rev.getChannelData(0);
-  for (let i = 0; i < src.length; i++) dst[i] = src[src.length - 1 - i];
-  _amalgamReversedBuffer = rev;
-  return _amalgamReversedBuffer;
-}
 function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   if (!ctx) return;
   const t = when !== undefined ? when : ctx.currentTime;
@@ -8553,38 +8562,17 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
   const playbackRate = freq / _amalgamBaseFreq;
 
-  // The reverse pre-swell and sustained body both share this destination —
-  // deliberately NOT the same as the main blip's `dest` when Delay is on.
-  // Three layers all feeding Delay's own feedback loop at full strength was
-  // what made ECHO snowball out of control once Delay was engaged; only the
-  // main blip below sends to Delay now, same as every other instrument only
-  // ever sends one voice into it per note.
+  // The sustained body doesn't share the main blip's `dest` when Delay is
+  // on — sending both layers into Delay's own feedback loop at full
+  // strength was what made ECHO snowball out of control once Delay was
+  // engaged; only the main blip below sends to Delay now, same as every
+  // other instrument only ever sends one voice into it per note.
   let destNoDelay = dest;
   if (tr !== undefined && trackDelay[tr]) {
     const _savedDelay = trackDelay[tr];
     trackDelay[tr] = false;
     destNoDelay = getSynthConnectNode(tr);
     trackDelay[tr] = _savedDelay;
-  }
-
-  // Reverse pre-swell — the note's own sound played backwards, timed to
-  // finish exactly as the real note begins, like a reverse-cymbal lead-in.
-  // Quieter than before — it was clustering with the main attack and the
-  // body's own attack right at the onset, summing loud enough to sound like
-  // clipping.
-  const revBuf = _getAmalgamReversedBuffer();
-  const revDurAtPitch = revBuf.duration / playbackRate;
-  const revStart = t - revDurAtPitch;
-  if (revStart >= 0) {
-    const revSrc = ctx.createBufferSource();
-    revSrc.buffer = revBuf;
-    revSrc.playbackRate.value = playbackRate;
-    const revG = ctx.createGain(); revG.gain.value = vel * 0.35;
-    const revHp1 = ctx.createBiquadFilter(); revHp1.type = 'highpass'; revHp1.frequency.value = 178; revHp1.Q.value = 0.7;
-    const revHp2 = ctx.createBiquadFilter(); revHp2.type = 'highpass'; revHp2.frequency.value = 178; revHp2.Q.value = 0.7;
-    revSrc.connect(revG); revG.connect(revHp1); revHp1.connect(revHp2); revHp2.connect(destNoDelay);
-    revSrc.start(revStart);
-    revSrc.onended = () => { try { revG.disconnect(); revHp1.disconnect(); revHp2.disconnect(); } catch(e) {} };
   }
 
   // Body — a soft, sustained sine+triangle pair underneath the transient
@@ -9268,7 +9256,7 @@ async function initAudio() {
     attachCtxStateWatch();
     masterGain = ctx.createGain(); masterGain.gain.value = masterVol;
     try { _getAmalgamBaseBuffer(); } catch(e) {} // pre-warm the amalgam echo's cached buffer up front
-    const makeupGain = ctx.createGain(); makeupGain.gain.value = 2.5121; // +8dB fixed output boost (was +4dB)
+    const makeupGain = ctx.createGain(); makeupGain.gain.value = 1.585; // +4dB fixed output boost — reverted the extra +4dB
     window._makeupGain = makeupGain;
     window._beatGain = ctx.createGain(); window._beatGain.gain.value = 0.402; window._beatGain.connect(masterGain);
     // UI Sounds
