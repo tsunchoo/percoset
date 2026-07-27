@@ -559,7 +559,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 00:10</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 00:25</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -979,6 +979,18 @@ function updateBgPulseSpeedReadout() {
     const a = hexToRgb(hexA), b = hexToRgb(hexB);
     return rgbToHex(a[0] * (1 - t) + b[0] * t, a[1] * (1 - t) + b[1] * t, a[2] * (1 - t) + b[2] * t);
   }
+  // Flips a grey to its dark counterpart (mirrored around mid-grey) so it
+  // stays legible against a dark background instead of staying light no
+  // matter what — e.g. D6D6D6 (light) <-> 292929 (dark).
+  function invertHex(hex) {
+    const [r, g, b] = hexToRgb(hex);
+    return rgbToHex(255 - r, 255 - g, 255 - b);
+  }
+  function relLuminance(hex) {
+    const [r, g, b] = hexToRgb(hex).map(v => v / 255);
+    const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  }
   const DEFAULT_APP_BG = '#f5f0e8'; // matches --bg in CSS
   const TINT_RATIO = 0.15; // how much of the current background hue bleeds into these greys
 
@@ -998,13 +1010,22 @@ function updateBgPulseSpeedReadout() {
     if (bgStaticCb && bgStaticCb.checked && bgColorPicker) return bgColorPicker.value;
     return DEFAULT_APP_BG;
   }
+  // Picks the light or dark variant of a base grey depending on whether the
+  // current background is dark or light, then tints that variant toward the
+  // background's hue — keeps the marker legible against either extreme
+  // instead of always staying light no matter how dark the bg gets.
+  function tintedFor(baseHex) {
+    const bg = getEffectiveBgHex();
+    const variant = relLuminance(bg) < 0.5 ? invertHex(baseHex) : baseHex;
+    return mixHex(variant, bg, TINT_RATIO);
+  }
   function applyTrackLineColor() {
     document.documentElement.style.setProperty('--track-line-color',
-      _trackLineTransparent ? 'transparent' : mixHex(_trackLineBaseColor, getEffectiveBgHex(), TINT_RATIO));
+      _trackLineTransparent ? 'transparent' : tintedFor(_trackLineBaseColor));
   }
   function applyEmptyCellColor() {
     document.documentElement.style.setProperty('--empty-cell-color',
-      _emptyCellTransparent ? 'transparent' : mixHex(_emptyCellBaseColor, getEffectiveBgHex(), TINT_RATIO));
+      _emptyCellTransparent ? 'transparent' : tintedFor(_emptyCellBaseColor));
   }
   // Exposed so the DISPLAY background controls can trigger a re-tint when the bg changes.
   window._applyTrackLineColor = applyTrackLineColor;
