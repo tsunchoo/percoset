@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 19:11</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 21:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -906,7 +906,7 @@ const INSTRUMENTS = {
   dulc:   { name: 'DULCIMER',    soft: null, accent: null, group: 'tonal' },
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
-  amlgm:  { name: 'ECHO',        soft: null, accent: null, group: 'tonal' },
+  amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
@@ -1724,7 +1724,7 @@ function updateVolFillDisplay(tr) {
   if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr]) * 100) + '%';
 }
 const trackFx = Array.from({length: NUM_TRACKS}, () => ({ x: 0, y: 0 }));
-trackFx[0] = { x: 0.5, y: 0.5 }; // Track 1 is always ECHO — FX stays engaged on it by default
+trackFx[0] = { x: 0.5, y: 0.5 }; // Track 1 is always TEXTURE — FX stays engaged on it by default
 const trackDelay = new Array(NUM_TRACKS).fill(false);
 // Pump/sustain/crunch — repurposed offset ("<") button. Chain order per
 // track: sidechain pump (ducks with BEAT's kick+snare) -> sustain boost
@@ -1914,7 +1914,7 @@ function scheduler() {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
-        if (tr !== 0) duckEchoTrack(t); // ECHO gets pumped by everything else going on
+        if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
         if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'dulc' || key === 'opening') {
           const scale = trackBassScale[tr] || [110];
@@ -2051,7 +2051,7 @@ function scheduler() {
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
             if (key === 'blunt')   playBlunt(freq2, dur2, false, t2, tr);
           } else if (key === 'amlgm') {
-            // ECHO can't actually receive a 32nd-split value (it's not in
+            // TEXTURE can't actually receive a 32nd-split value (it's not in
             // split32Keys), so this is unreachable in practice — left as a
             // no-op rather than removed, in case that ever changes.
           } else {
@@ -2443,7 +2443,7 @@ function playSynthHihat(isAccent, time, tr) {
 const _bassGlideState = {}; // tr -> lastFreq
 function playSynthBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq || freq < 10) return;
-  const vel = isAccent ? 0.7557 : 0.5335; // +5dB total (was +3dB)
+  const vel = isAccent ? 0.9514 : 0.6716; // +7dB total (was +5dB)
   const startFreq = _bassGlideState[tr] || freq;
   _bassGlideState[tr] = freq;
   let dest = (tr !== undefined && trackFxNodes[tr])
@@ -2896,13 +2896,13 @@ function playStringSynth(freq, durSec, isAccent, time, tr) {
 // ── Strings: natural bowed string feel with strong attack and warm body ──
 const _slegGlide = {};
 // ── SOLAR PAD: slow lush pad — thick layered sines, very gentle shimmer, evolving filter ──
-function playSynthLeg(freq, durSec, isAccent, time, tr) {
+function playSynthLeg(freq, durSec, isAccent, time, tr, extLevelMul) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const fxOn = tr !== undefined && trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0);
   const blastOn = tr !== undefined && trackPump[tr];
   const levelMul = (fxOn || blastOn) ? 0.7079 : 1; // -3dB when FX or BLAST is engaged — gets noticeably louder under either otherwise
-  const vol = (isAccent ? 0.330 : 0.216) * levelMul;
+  const vol = (isAccent ? 0.330 : 0.216) * levelMul * (extLevelMul !== undefined ? extLevelMul : 1);
   const tail = 2.4;
 
   // 5 detuned sine voices — thick, warm, chorus-like spread (trimmed from 7,
@@ -3241,7 +3241,7 @@ function playHopkins(freq, durSec, isAccent, time, tr) {
   let f = freq;
   while (f < 130) f *= 2;  // mid comping register, roughly C3–C5
   while (f >= 520) f /= 2;
-  const vel = isAccent ? 0.0461 : 0.0318; // -2dB
+  const vel = isAccent ? 0.0366 : 0.0253; // -4dB total (was -2dB)
   const decay = Math.max(1.2, Math.min(durSec + 1.0, 3.2)); // more sustain
 
   const chordTones = [
@@ -3408,7 +3408,7 @@ function playPulseBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const fxOn = tr !== undefined && trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0);
-  const vel = isAccent ? (fxOn ? 0.3608 : 0.4542) : (fxOn ? 0.2507 : 0.3155); // +2dB, on top of the earlier -3dB/-2dB FX adjustment
+  const vel = isAccent ? (fxOn ? 0.2866 : 0.3608) : (fxOn ? 0.1991 : 0.2506); // -2dB (net back to the earlier level, on top of FX adjustment)
   // Sustain now tracks the note's actual assigned length — so an 8th note
   // genuinely sounds fuller/longer than a 16th — with only a short tail
   // added on top. The old version capped the WHOLE envelope at ~0.2s
@@ -3642,7 +3642,7 @@ function playJcmGuitar(freq, durSec, isAccent, time, tr) {
   _jcmGlide[tr] = f;
 
   const legato = durSec > stepDuration() * 1.6; // longer than ~1.5 steps = legato
-  const vel = (isAccent ? 0.085 : 0.060) * (legato ? 1.15 : 1);
+  const vel = (isAccent ? 0.0675 : 0.0477) * (legato ? 1.15 : 1); // -2dB
   const glide = Math.min(durSec * 0.5, 0.1125); // slides easily between held notes — 25% longer
 
   // Two square oscillators, detuned against each other — SID-style PWM shimmer
@@ -3881,10 +3881,10 @@ function playSteelGuitar(freq, durSec, isAccent, time, tr) {
 }
 
 // ── Rhodes 2: warm electric piano, more fundamental, softer attack ──
-function playRhodes2(freq, durSec, isAccent, time, tr) {
+function playRhodes2(freq, durSec, isAccent, time, tr, extLevelMul) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.0755 : 0.0529; // +2dB
+  const vel = (isAccent ? 0.0755 : 0.0529) * (extLevelMul !== undefined ? extLevelMul : 1); // +2dB
 
   const B = 0.00008; // less inharmonicity = warmer
   const inharmonic = n => freq * n * Math.sqrt(1 + B * n * n);
@@ -4267,8 +4267,8 @@ function playBoog(freq, durSec, isAccent, time, tr) {
 // internal synthesis parameters, which gets the same "blended hybrid"
 // result with a fraction of the complexity. ──
 function playPrimePiano(freq, durSec, isAccent, time, tr) {
-  playSynthLeg(freq, durSec, isAccent, time, tr);
-  playRhodes2(freq, durSec, isAccent, time, tr);
+  playSynthLeg(freq, durSec, isAccent, time, tr, 0.8913); // -1dB
+  playRhodes2(freq, durSec, isAccent, time, tr, 0.8913); // -1dB
 }
 
 // ── Synth Flute: 80s FM-style breathy flute ──
@@ -4390,7 +4390,7 @@ function playXylophone(freq, durSec, isAccent, time, tr) {
 function playDulcimer(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.072 : 0.048;
+  const vel = isAccent ? 0.0642 : 0.0428; // -1dB
   const decay = isAccent ? 1.8 : 1.4;
 
   // Hammer strike — sharp, bright, harder-edged than a soft mallet
@@ -4577,7 +4577,7 @@ function playCarpenterStinger(freq, durSec, isAccent, time, tr) {
 function playSynthAttack(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.27 : 0.18;
+  const vel = isAccent ? 0.3029 : 0.202; // +1dB
   const tail = Math.max(durSec * 0.7, 0.4); // longer tail = more sustain
 
   // Bright sawtooth core — raw buzzy source, like the talkbox driver tone
@@ -4929,13 +4929,13 @@ function duckSidechainTracks(t) {
     }
   }
 }
-// ECHO (Track 1) gets its own extra pump on top of the shared sidechain —
+// TEXTURE (Track 1) gets its own extra pump on top of the shared sidechain —
 // reacting to literally everything else in the pattern, not just kick and
 // bass. Since this fires far more often (every other track's every hit),
 // the depth is more moderate than the general duck — a rhythmic breathing
 // pump driven by how busy the mix is, not a near-silence stab each time.
 function duckEchoTrack(t) {
-  if (!_sidechainDuckGains[0]) return; // ECHO hasn't played a note yet this session — nothing to duck
+  if (!_sidechainDuckGains[0]) return; // TEXTURE hasn't played a note yet this session — nothing to duck
   const g = _sidechainDuckGains[0].gain.gain;
   g.cancelScheduledValues(t);
   g.setValueAtTime(1, t);
@@ -6045,7 +6045,7 @@ async function renderSlotToWav(snap) {
 
         if (key === 'sbass') {
           // Match playSynthBass exactly
-          const vel = isAccent ? 0.7557 : 0.5335; // +5dB total (was +3dB)
+          const vel = isAccent ? 0.9514 : 0.6716; // +7dB total (was +5dB)
           const saw = o.createOscillator(); saw.type = 'sawtooth';
           const sub = o.createOscillator(); sub.type = 'sine';
           const sawG = o.createGain(); sawG.gain.value = 0.25;
@@ -6754,7 +6754,7 @@ function fullClear() {
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
     trackRLevel[tr] = 0;
     trackVolume[tr] = tr === 0 ? 0.0501 : (tr === 1 ? 0.505 : 0.8);
-    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (ECHO) always keeps FX engaged
+    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (TEXTURE) always keeps FX engaged
     trackFxMode[tr] = 0;
     trackInstruments[tr] = defaultInstruments[tr] || 'tamb';
     if (ctx) {
@@ -6772,7 +6772,7 @@ function fullClear() {
     if (vb) { vb.classList.remove('muted'); const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
     redrawTrackCells(tr);
   }
-  // Track 1 is always ECHO — its Auto-Random loop was just stopped along
+  // Track 1 is always TEXTURE — its Auto-Random loop was just stopped along
   // with everything else above; re-engage it since Track 1 always keeps it running.
   const rb0 = document.getElementById('randbtn-0');
   if (rb0 && rb0._restartAuto) rb0._restartAuto();
@@ -7001,22 +7001,6 @@ function randAll(mode, opts) {
     });
   }
 
-  // Sort pool: hihat top → perc → tonal → bass → kick bottom
-  pool.sort((a, b) => {
-    const rank = k => {
-      if (k === 'shihat') return 0;
-      if (!TONAL_KEYS.has(k) && k !== 'skick') return 1;
-      if (TONAL_KEYS.has(k) && !['sbass','sbass3','sbass4','dbass','pbass'].includes(k)) return 2;
-      if (['sbass','sbass3','sbass4','dbass','pbass'].includes(k)) return 3;
-      return 4; // skick
-    };
-    return rank(a) - rank(b);
-  });
-
-  // Leave one track blank sometimes, at any density level — don't force every track to have notes
-  const SKIP_TRACK_CHANCE = 0.35;
-  const skipTrack = (Math.random() < SKIP_TRACK_CHANCE) ? 1 + Math.floor(Math.random() * (NUM_TRACKS - 1)) : -1; // never Track 1 (ECHO)
-
   // Sort pool into fixed visual order: top=hihat, perc, tonal, bass, kick=bottom
   const kickKeys = new Set(['skick']);
   const bassKeys2 = new Set(['sbass','sbass3','sbass4','dbass','pbass']);
@@ -7034,35 +7018,18 @@ function randAll(mode, opts) {
   }
   pool = [...pool].sort((a, b) => trackRank(a) - trackRank(b));
 
+  // Every RAND track now gets an instrument — Track 1 is permanently
+  // reserved for TEXTURE, so the old "leave one track blank" feature (which
+  // picked a random track to empty out) no longer applies here.
+
   // Assign sorted pool sequentially to unlocked tracks
   // Note budget: total notes spread across all tracks — busy tracks leave less for others
-  const _noteBudget = { remaining: Math.round([7, 10, 13][Math.min(level, 2)] * tempoNoteFactor()), tracks: NUM_TRACKS - (skipTrack >= 0 ? 1 : 0) };
+  const _noteBudget = { remaining: Math.round([7, 10, 13][Math.min(level, 2)] * tempoNoteFactor()), tracks: NUM_TRACKS };
 
   let poolIdx = 0;
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (tr === 0) { poolIdx++; continue; } // Track 1 (ECHO) — RAND never touches it; advance poolIdx so a real track doesn't lose its slot to this skip (bass/kick sort near the end of pool and were silently getting dropped otherwise)
+    if (tr === 0) { poolIdx++; continue; } // Track 1 (TEXTURE) — RAND never touches it; advance poolIdx so a real track doesn't lose its slot to this skip (bass/kick sort near the end of pool and were silently getting dropped otherwise)
     if (trackSweep[tr]) continue; // L button locked — skip, without consuming a pool slot
-    if (tr === skipTrack) {
-      grid[tr].fill(0);
-      delete trackBassScale[tr];
-      redrawTrackCells(tr);
-      const tb = document.getElementById(`tbtn-${tr}`);
-      if (tb) { tb.textContent = ''; tb.classList.remove('inst-kit', 'inst-perc', 'inst-tonal'); }
-      // Reset every other control on this row to its default/off state too
-      trackDelay[tr] = false;
-      const db = document.getElementById(`delaybtn-${tr}`); if (db) db.classList.toggle('on', false);
-      trackFx[tr] = { x: 0, y: 0 };
-      if (ctx) setFxActive(tr, { x: 0, y: 0 });
-      const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
-      trackPump[tr] = false;
-      if (fb) fb.classList.remove('blast-on');
-      trackRLevel[tr] = 0;
-      if (autoShiftStops[tr]) { autoShiftStops[tr](); delete autoShiftStops[tr]; }
-      const rb = document.getElementById(`randbtn-${tr}`);
-      if (rb) rb.classList.remove('pulsing', 'rand-auto', 'rand-pending');
-      poolIdx++;
-      continue;
-    }
     const k = pool[poolIdx++] || pool[pool.length - 1];
     if (trackInstruments[tr] === 'ngate' && k !== 'ngate' && typeof _noiseGateNodes !== 'undefined' && _noiseGateNodes[tr]) {
       try { _noiseGateNodes[tr].src.stop(); } catch(e) {} delete _noiseGateNodes[tr];
@@ -7165,7 +7132,7 @@ function randAll(mode, opts) {
   if (level >= 3) {
     const autoCount = level === 3 ? 1 : 2; // hard cap to limit node load
     // Use actual track indices, not pool indices
-    const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== skipTrack && i !== 0);
+    const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== 0);
     // Lead instruments are most likely to be picked, other tonal tracks a
     // bit more likely than percussion — weighted random sampling
     // (Efraimidis-Spirakis: rank by Math.random()^(1/weight), higher weight floats to the top)
@@ -7187,17 +7154,17 @@ function randAll(mode, opts) {
   // Randomize FX for tonal instruments (35% chance, higher for synth/punk bass)
   // setFxActive handles both gain node and vol bar correctly
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (ECHO)
-    if (tr === skipTrack) continue; // empty track — no FX
+    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (TEXTURE)
     if (TONAL_KEYS.has(pool[tr])) {
       const isBass = (pool[tr] === 'sbass' || pool[tr] === 'sbass4');
       const isClap = pool[tr] === 'clap';
       const isSlay = pool[tr] === 'fflute';
       const isDamask = pool[tr] === 'damask';
+      const isOpening = pool[tr] === 'opening';
       const isHopkins = pool[tr] === 'sparkle';
       const isRytmGtr = pool[tr] === 'stab' || pool[tr] === 'bashp';
       const fxBoost = level >= 4 ? 0.845 : (level === 3 ? 0.585 : 0); // +30% over previous 0.65/0.45
-      const fxOn = isSlay ? false : isClap ? true : isDamask ? Math.random() < 0.75 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(0.9, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send
+      const fxOn = isSlay ? false : isClap ? true : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(0.9, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does
       const newFxVal = fxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
       trackFx[tr] = newFxVal;
       if (ctx) setFxActive(tr, newFxVal);
@@ -7261,8 +7228,7 @@ function randAll(mode, opts) {
   // Randomise delay for all tracks
   const _noDelayKeys = new Set(['tamb', 'skick', 'shak', 'sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'guiro', 'clap']);
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (ECHO)
-    if (tr === skipTrack) continue; // empty track — no Delay
+    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (TEXTURE)
     if (_noDelayKeys.has(trackInstruments[tr])) {
       trackDelay[tr] = false;
       const db0 = document.getElementById(`delaybtn-${tr}`);
@@ -7283,7 +7249,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask') ? 0.8 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25)); // base +15%, then +25% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK fixed at 80% — plaintive lead wants the echo trail
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask') ? 0.8 : (trackInstruments[tr] === 'opening') ? 0.1 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25)); // base +15%, then +25% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK fixed at 80% — plaintive lead wants the echo trail; OPENING fixed at 10% — rarely wants it
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -7747,7 +7713,7 @@ function randomizeTrack(tr) {
     return;
   }
 
-  // ECHO has no pitch/scale of its own — it echoes whatever chord the other
+  // TEXTURE has no pitch/scale of its own — it echoes whatever chord the other
   // tracks capture — so it can't be routed through randomizeBassTrack (that
   // would risk it picking a fresh root and setting it as the whole song's
   // scale root before any real tonal track has). But its trigger pattern
@@ -7771,17 +7737,24 @@ function randomizeTrack(tr) {
       if (grid[tr][idx] > 0) { run++; if (run > 3) { grid[tr][idx] = 0; run = 0; } }
       else run = 0;
     }
-    // ECHO notes are always separated by at least one empty 16th note — no
-    // two hits directly back-to-back.
+    // TEXTURE notes are always separated by at least a quarter note — no
+    // two hits closer than 4 steps apart.
     const _echoOnsets = [];
     for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) _echoOnsets.push(s);
     for (let i = 1; i < _echoOnsets.length; i++) {
-      if (_echoOnsets[i] - _echoOnsets[i - 1] < 2) { grid[tr][_echoOnsets[i]] = 0; _echoOnsets.splice(i, 1); i--; }
+      if (_echoOnsets[i] - _echoOnsets[i - 1] < 4) { grid[tr][_echoOnsets[i]] = 0; _echoOnsets.splice(i, 1); i--; }
     }
-    if (_echoOnsets.length > 1 && (_echoOnsets[0] + NUM_STEPS - _echoOnsets[_echoOnsets.length - 1]) < 2) {
+    if (_echoOnsets.length > 1 && (_echoOnsets[0] + NUM_STEPS - _echoOnsets[_echoOnsets.length - 1]) < 4) {
       grid[tr][_echoOnsets[_echoOnsets.length - 1]] = 0; _echoOnsets.pop();
     }
-    // FX now toggles randomly each time ECHO's pattern regenerates — 50%
+    // And each note actually sustains for that full quarter note, rather
+    // than just being spaced apart while still playing as a quick blip.
+    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    _echoOnsets.forEach(s => {
+      const maxLen = _legatoMaxLen(tr, s);
+      trackLegatoLen[tr][s] = Math.min(4, maxLen);
+    });
+    // FX now toggles randomly each time TEXTURE's pattern regenerates — 50%
     // chance on, rather than staying permanently engaged.
     const echoFxOn = Math.random() < 0.5;
     trackFx[tr] = echoFxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
@@ -8164,7 +8137,7 @@ function wireRandomizeButton(btn, tr) {
 
 buildUI();
 updateMasterVolCells();
-// Track 1 is always ECHO, and always starts with Auto-Random engaged.
+// Track 1 is always TEXTURE, and always starts with Auto-Random engaged.
 (function() {
   const rb0 = document.getElementById('randbtn-0');
   if (rb0 && rb0._restartAuto) rb0._restartAuto();
@@ -8555,7 +8528,7 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
 
   // The sustained body doesn't share the main blip's `dest` when Delay is
   // on — sending both layers into Delay's own feedback loop at full
-  // strength was what made ECHO snowball out of control once Delay was
+  // strength was what made TEXTURE snowball out of control once Delay was
   // engaged; only the main blip below sends to Delay now, same as every
   // other instrument only ever sends one voice into it per note.
   let destNoDelay = dest;
@@ -8568,7 +8541,7 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
 
   // Body — a soft, sustained sine+triangle pair underneath the transient
   // blip, holding through the note's actual assigned length (durSec), with
-  // only a short tail after that. Previously ECHO had no concept of note
+  // only a short tail after that. Previously TEXTURE had no concept of note
   // duration at all — every hit was the same fixed ~0.35s blip regardless
   // of legato length, which is why it read as tiny and clipped with nothing
   // to work with. This gives it real sustain to match. Toned down from the
@@ -8631,7 +8604,7 @@ function _regenerateAmalgamChord() {
     // Some non-bass instruments (RYTM GTR, MARIO PIANO, HASSELL) still sit in
     // a genuinely low register (MID_ROOTS, ~110-165Hz) — excluding actual
     // bass instruments alone let this low content through anyway. Push
-    // anything below 200Hz up an octave so ECHO never echoes low pitches,
+    // anything below 200Hz up an octave so TEXTURE never echoes low pitches,
     // regardless of which instrument they came from.
     while (freq < 200) freq *= 2;
     notes.push({ tr, key, freq });
@@ -8680,7 +8653,7 @@ function _scheduleAmalgamNotes() {
     }, s * step32Ms);
   }
 }
-// AMALGAM/ECHO as a placeable instrument — the same phantom-chord echo the
+// AMALGAM/TEXTURE as a placeable instrument — the same phantom-chord echo the
 // right tape spool fires, but sequenced: every active step re-fires the
 // current pattern's captured chord as a single one-shot hit — no repeated
 // decaying echo trail. One note (or chord of notes) per grid marker, same
@@ -8692,7 +8665,7 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   let notes = _amalgamChord;
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
   const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
-  const vol = 0.3972 * chordNormFactor * (isAccent ? 1.3 : 1); // -2dB
+  const vol = 0.3155 * chordNormFactor * (isAccent ? 1.3 : 1); // -4dB total (was -2dB)
   _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
   const dest = getSynthConnectNode(tr); // one resolution — Delay/FX/BLAST all behave like any other instrument now
   notes.forEach(n => {
@@ -8873,7 +8846,7 @@ function fullReset() {
     trackChop[tr] = false;
     trackVolume[tr] = defaultVolumes[tr];
     trackInstruments[tr] = defaultInstruments[tr];
-    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (ECHO) always keeps FX engaged
+    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (TEXTURE) always keeps FX engaged
     trackDelay[tr] = false;
     trackPump[tr] = false;
     trackFxMode[tr] = 0;
@@ -8915,7 +8888,7 @@ function fullReset() {
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
-  // Track 1 is always ECHO — re-apply its always-on FX and Auto-Random now
+  // Track 1 is always TEXTURE — re-apply its always-on FX and Auto-Random now
   // that buildUI() just recreated the button elements fresh.
   if (ctx && trackFxNodes[0]) setFxActive(0, trackFx[0]);
   const rb0 = document.getElementById('randbtn-0');
