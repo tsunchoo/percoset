@@ -559,7 +559,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 02:21</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 02:43</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -897,7 +897,7 @@ const INSTRUMENTS = {
   sflute: { name: 'XYLOPHONE',   soft: null, accent: null, group: 'tonal' },
   damask: { name: 'DAMASK',      soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
-  amlgm:  { name: 'AMALGAM',     soft: null, accent: null, group: 'tonal' },
+  amlgm:  { name: 'ECHO',        soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
@@ -1639,7 +1639,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
 const NUM_TRACKS = 6, NUM_STEPS = 16, VOL_NODES_COUNT = 10;
 
-const trackInstruments = ['shak','sleg','sparkle','sbass3','congHi','congLo'];
+const trackInstruments = ['amlgm','sleg','sparkle','sbass3','congHi','congLo'];
 const grid        = Array.from({length: NUM_TRACKS}, () => new Array(NUM_STEPS).fill(0));
 const trackOffset = new Array(NUM_TRACKS).fill(0);
 const trackMuted  = new Array(NUM_TRACKS).fill(false);
@@ -6333,7 +6333,7 @@ function fullClear() {
     delete _noiseGateNodes[+tr];
   });
   randAllLevel = 0;
-  const defaultInstruments = ['shak','sleg','sparkle','sbass3','congHi','congLo'];
+  const defaultInstruments = ['amlgm','sleg','sparkle','sbass3','congHi','congLo'];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0); trackOffset[tr] = 0; trackPatternState[tr] = 0;
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
@@ -6453,7 +6453,7 @@ function randAll(mode, opts) {
   // auto-rand loop (like everything else about them) should be completely
   // untouched by RAND.
   Object.keys(autoShiftStops).forEach(tr => {
-    if (trackSweep[+tr]) return;
+    if (trackSweep[+tr] || +tr === 0) return;
     autoShiftStops[tr]();
   });
   randAllLevel = (randAllLevel + 1) % 5;
@@ -6585,7 +6585,7 @@ function randAll(mode, opts) {
 
   // Leave one track blank sometimes, at any density level — don't force every track to have notes
   const SKIP_TRACK_CHANCE = 0.35;
-  const skipTrack = (Math.random() < SKIP_TRACK_CHANCE) ? Math.floor(Math.random() * NUM_TRACKS) : -1;
+  const skipTrack = (Math.random() < SKIP_TRACK_CHANCE) ? 1 + Math.floor(Math.random() * (NUM_TRACKS - 1)) : -1; // never Track 1 (ECHO)
 
   // Sort pool into fixed visual order: top=hihat, perc, tonal, bass, kick=bottom
   const kickKeys = new Set(['skick']);
@@ -6610,7 +6610,7 @@ function randAll(mode, opts) {
 
   let poolIdx = 0;
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackSweep[tr]) continue; // L button locked — skip
+    if (trackSweep[tr] || tr === 0) continue; // L button locked, or Track 1 (ECHO) — RAND never touches Track 1
     if (tr === skipTrack) {
       grid[tr].fill(0);
       delete trackBassScale[tr];
@@ -6734,7 +6734,7 @@ function randAll(mode, opts) {
   if (level >= 3) {
     const autoCount = level === 3 ? 1 : 2; // hard cap to limit node load
     // Use actual track indices, not pool indices
-    const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== skipTrack);
+    const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== skipTrack && i !== 0);
     // Tonal tracks are 20% more likely to be picked — weighted random sampling
     // (Efraimidis-Spirakis: rank by Math.random()^(1/weight), higher weight floats to the top)
     const selected = eligible
@@ -6755,7 +6755,7 @@ function randAll(mode, opts) {
   // Randomize FX for tonal instruments (35% chance, higher for synth/punk bass)
   // setFxActive handles both gain node and vol bar correctly
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackSweep[tr]) continue; // locked
+    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (ECHO)
     if (tr === skipTrack) continue; // empty track — no FX
     if (TONAL_KEYS.has(pool[tr])) {
       const isBass = (pool[tr] === 'sbass' || pool[tr] === 'sbass4');
@@ -6799,7 +6799,7 @@ function randAll(mode, opts) {
   // Voice harmony: if >1 melody tonal track, shift 2nd+ up an octave + minor third
   const melodyKeys = new Set(['sstring','sleg','sparkle','rhodes','rhodes2','stab','bashp','damask']);
   const melodyTracks = [];
-  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+  for (let tr = 1; tr < NUM_TRACKS; tr++) {
     if (melodyKeys.has(pool[tr])) melodyTracks.push(tr);
   }
   if (melodyTracks.length > 1) {
@@ -6829,7 +6829,7 @@ function randAll(mode, opts) {
   // Randomise delay for all tracks
   const _noDelayKeys = new Set(['tamb', 'skick', 'shak', 'sbass', 'sbass3', 'sbass4', 'dbass', 'guiro', 'clap']);
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackSweep[tr]) continue;
+    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (ECHO)
     if (tr === skipTrack) continue; // empty track — no Delay
     if (_noDelayKeys.has(trackInstruments[tr])) {
       trackDelay[tr] = false;
@@ -6960,6 +6960,12 @@ function playRandReleaseSweep(time) {
 
 const NUM_SLOTS = 6, slots = new Array(NUM_SLOTS).fill(null);
 let activeSlot = -1;
+// Tracks which slot indices currently hold an auto-saved (RAND) pattern, in
+// the order they were auto-saved — oldest first. Manually-saved slots (via
+// slotPress on an empty slot) are never added here, so autoSaveRandToSlot
+// can only ever evict its own auto-saved content, never something the
+// person explicitly saved.
+let _autoSlotQueue = [];
 function snapshotState() {
   return {
     grid: grid.map(r=>[...r]),
@@ -7152,19 +7158,21 @@ function updateSlotButtons() {
   }
 }
 // Every freshly-generated RAND pattern gets auto-saved into the slot bar so
-// nothing good is ever lost to the next RAND press. Fills empty slots left
-// to right; once all NUM_SLOTS are full, the oldest (leftmost, slot 0) is
-// dropped and everything shifts left to make room at the end.
+// nothing good is ever lost to the next RAND press. Fills the first empty
+// slot; once there are no empty slots left, it evicts the oldest slot IT
+// auto-saved (not necessarily slot 0) so a manually-saved slot is never
+// touched. If every slot is currently a manual save, there's nowhere safe
+// to put the new pattern, so it's simply not auto-saved that time.
 function autoSaveRandToSlot() {
   const snap = snapshotState();
   let idx = slots.findIndex(s => s === null);
   if (idx === -1) {
-    slots.shift();
-    slots.push(null);
-    idx = NUM_SLOTS - 1;
+    if (_autoSlotQueue.length === 0) return; // every slot is a manual save — leave them alone
+    idx = _autoSlotQueue.shift();
   }
   slots[idx] = snap;
   activeSlot = idx;
+  _autoSlotQueue.push(idx);
   updateSlotButtons();
 }
 function buildSlotBar() {
@@ -7182,6 +7190,7 @@ function buildSlotBar() {
         // neutral state under the finger, not just after letting go.
         if (slots[i] !== null) {
           slots[i] = null; if (activeSlot===i) activeSlot=-1;
+          _autoSlotQueue = _autoSlotQueue.filter(x => x !== i);
           updateSlotButtons();
         }
       }, 600);
@@ -8122,7 +8131,22 @@ function playAmalgamStep(isAccent, time, tr) {
     // why AMALGAM went silent under BLAST. One resolve, shared by all notes
     // in this repeat, fixes that.
     _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
-    const dest = getSynthConnectNode(tr);
+    let dest;
+    if (i === 0) {
+      dest = getSynthConnectNode(tr);
+    } else {
+      // ECHO's own repeats (i > 0) are already a self-contained decaying
+      // cascade — that IS its delay. Feeding every one of those repeats into
+      // the external Delay effect too meant Delay's own feedback loop was
+      // re-echoing an already-multiplying signal, which is what made ECHO
+      // blow up in volume/density whenever Delay was switched on for its
+      // track. Only the step's first hit sends to Delay, same as any other
+      // instrument; later repeats still respect FX/BLAST, just not Delay.
+      const _savedDelay = trackDelay[tr];
+      trackDelay[tr] = false;
+      dest = getSynthConnectNode(tr);
+      trackDelay[tr] = _savedDelay;
+    }
     _amalgamVolOverride = null;
     notes.forEach(n => {
       _playPhantomNote(tr, n.key, n.freq, false, t, dest);
@@ -8292,7 +8316,7 @@ function fullReset() {
   });
 
   // Per-track state back to first-load defaults
-  const defaultInstruments = ['shak', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo'];
+  const defaultInstruments = ['amlgm', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo'];
   const defaultVolumes = [0.8, 0.505, 0.8, 0.8, 0.8, 0.8];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0);
@@ -8320,7 +8344,7 @@ function fullReset() {
   currentStep = -1; nextStepTime = 0;
   currentScaleName = 'penta-min'; PENTA_MINOR = SCALES['penta-min']; globalScaleRoot = null;
   activeSlot = -1;
-  slots.fill(null); _pendingSlot = -1;
+  slots.fill(null); _pendingSlot = -1; _autoSlotQueue = [];
   window._globalDelaySubdivisions = 2;
   window._globalDelayMix = 0.2;
 
