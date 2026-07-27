@@ -415,7 +415,7 @@ body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pul
 .step-lane {
   flex: 1; display: flex; flex-direction: column;
   border: none;
-  border-bottom: 3px solid var(--track-line-color, #969594);
+  border-bottom: 3px solid var(--track-line-color, #978973);
   overflow: visible;
 }
 .step-lane-cells {
@@ -433,7 +433,7 @@ body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pul
 /* teeth — positioned so bottom edge sits exactly on the lane border */
 .step-cell::before {
   content: ''; position: absolute; bottom: -3px; left: -1px;
-  width: 3px; background: var(--track-line-color, #969594); height: calc(30% + 3px); pointer-events: none;
+  width: 3px; background: var(--track-line-color, #978973); height: calc(30% + 3px); pointer-events: none;
   z-index: 1;
 }
 /* beat markers taller */
@@ -447,7 +447,7 @@ body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pul
 .step-cell::after {
   content: '';
   position: absolute;
-  background: var(--empty-cell-color, #DBDAD9);
+  background: var(--empty-cell-color, #DCD7D0);
   pointer-events: none;
   transition: background 0.05s, opacity 0.05s;
   top: 0; bottom: 0; left: 1px; right: 1px;
@@ -559,7 +559,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 00:25</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 00:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -975,10 +975,6 @@ function updateBgPulseSpeedReadout() {
   function rgbToHex(r, g, b) {
     return '#' + [r, g, b].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
   }
-  function mixHex(hexA, hexB, t) {
-    const a = hexToRgb(hexA), b = hexToRgb(hexB);
-    return rgbToHex(a[0] * (1 - t) + b[0] * t, a[1] * (1 - t) + b[1] * t, a[2] * (1 - t) + b[2] * t);
-  }
   // Flips a grey to its dark counterpart (mirrored around mid-grey) so it
   // stays legible against a dark background instead of staying light no
   // matter what — e.g. D6D6D6 (light) <-> 292929 (dark).
@@ -991,8 +987,46 @@ function updateBgPulseSpeedReadout() {
     const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
     return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
   }
+  function hexToHsl(hex) {
+    const [r, g, b] = hexToRgb(hex).map(v => v / 255);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) { h = 0; s = 0; }
+    else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        default: h = (r - g) / d + 4;
+      }
+      h /= 6;
+    }
+    return [h * 360, s, l];
+  }
+  function hslToHex(h, s, l) {
+    h = h / 360;
+    let r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return rgbToHex(r * 255, g * 255, b * 255);
+  }
   const DEFAULT_APP_BG = '#f5f0e8'; // matches --bg in CSS
-  const TINT_RATIO = 0.15; // how much of the current background hue bleeds into these greys
+  const HUE_SATURATION = 0.16; // how strongly the background's hue reads through the grey
 
   const trackLineColorPicker = document.getElementById('trackLineColorPicker');
   const emptyCellColorPicker = document.getElementById('emptyCellColorPicker');
@@ -1011,15 +1045,21 @@ function updateBgPulseSpeedReadout() {
     return DEFAULT_APP_BG;
   }
   // Picks the light or dark variant of a base grey depending on whether the
-  // current background is dark or light, then tints that variant toward the
-  // background's hue — keeps the marker legible against either extreme
-  // instead of always staying light no matter how dark the bg gets.
+  // current background is dark or light (keeping the marker legible against
+  // either extreme), then recolors it to the background's hue at a fixed,
+  // clearly-visible saturation while preserving that variant's own lightness
+  // — so it reads as a warm/cool-tinted grey rather than the background
+  // itself, and rather than a linear RGB blend that's invisible at these
+  // near-white lightness levels.
   function tintedFor(baseHex) {
     const bg = getEffectiveBgHex();
     const variant = relLuminance(bg) < 0.5 ? invertHex(baseHex) : baseHex;
-    return mixHex(variant, bg, TINT_RATIO);
+    const [, , variantL] = hexToHsl(variant);
+    const [bgH] = hexToHsl(bg);
+    return hslToHex(bgH, HUE_SATURATION, variantL);
   }
   function applyTrackLineColor() {
+
     document.documentElement.style.setProperty('--track-line-color',
       _trackLineTransparent ? 'transparent' : tintedFor(_trackLineBaseColor));
   }
@@ -8174,10 +8214,16 @@ function fullReset() {
   document.body.style.removeProperty('--track-line-color');
   document.body.style.removeProperty('--header-text-color');
   document.body.style.removeProperty('--header-text-dim');
+  document.body.style.removeProperty('--reel-filter');
   const pulseCb = document.getElementById('bgPulseEnable'); if (pulseCb) pulseCb.checked = false;
   const staticCb = document.getElementById('bgStaticEnable'); if (staticCb) staticCb.checked = false;
   const grayCb = document.getElementById('notesGrayscaleEnable'); if (grayCb) grayCb.checked = false;
   const speedWrap = document.getElementById('bgPulseSpeedWrap'); if (speedWrap) speedWrap.style.display = 'none';
+  // Track line / note marker colors are tinted against whatever background
+  // is currently in effect — re-sync them now that CUSTOM bg is back off,
+  // otherwise they'd stay tinted to the old custom color after a reset.
+  if (window._applyTrackLineColor) window._applyTrackLineColor();
+  if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
   updateSlotButtons();
