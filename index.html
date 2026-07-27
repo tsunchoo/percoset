@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 17:20</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 18:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2308,9 +2308,10 @@ function togglePlay() {
       clearInterval(btn?._autoRandInterval);
     });
     if (window._duckGain) { window._duckGain.gain.cancelScheduledValues(ctx.currentTime); window._duckGain.gain.setValueAtTime(1, ctx.currentTime); }
-    // Auto-stop recording after half-bar delay (to capture reverb tail)
+    // Auto-stop recording after half-bar delay (to capture reverb tail),
+    // plus an extra fixed 2s on top before actually finishing the file.
     if (_recArmed && _mediaRecorder && _mediaRecorder.state === 'recording') {
-      const tailMs = (stepDuration() * 8) * 1000; // half bar
+      const tailMs = (stepDuration() * 8) * 1000 + 2000; // half bar + 2s
       setTimeout(() => {
         if (_mediaRecorder && _mediaRecorder.state === 'recording') _mediaRecorder.stop();
         _recArmed = false;
@@ -2897,7 +2898,10 @@ const _slegGlide = {};
 function playSynthLeg(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vol = isAccent ? 0.330 : 0.216;
+  const fxOn = tr !== undefined && trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0);
+  const blastOn = tr !== undefined && trackPump[tr];
+  const levelMul = (fxOn || blastOn) ? 0.7079 : 1; // -3dB when FX or BLAST is engaged — gets noticeably louder under either otherwise
+  const vol = (isAccent ? 0.330 : 0.216) * levelMul;
   const tail = 2.4;
 
   // 5 detuned sine voices — thick, warm, chorus-like spread (trimmed from 7,
@@ -6586,7 +6590,11 @@ function toggleRecord() {
   if (_recArmed) {
     _recArmed = false;
     if (_mediaRecorder && _mediaRecorder.state === 'recording') {
-      _mediaRecorder.stop();
+      // Extra 2s gap before actually finishing the file, so any tail/reverb
+      // still ringing out gets captured instead of being cut off abruptly.
+      setTimeout(() => {
+        if (_mediaRecorder && _mediaRecorder.state === 'recording') _mediaRecorder.stop();
+      }, 2000);
     }
     updateRecBtn();
     return;
@@ -7748,6 +7756,16 @@ function randomizeTrack(tr) {
       const idx = s % NUM_STEPS;
       if (grid[tr][idx] > 0) { run++; if (run > 3) { grid[tr][idx] = 0; run = 0; } }
       else run = 0;
+    }
+    // ECHO notes are always separated by at least one empty 16th note — no
+    // two hits directly back-to-back.
+    const _echoOnsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) _echoOnsets.push(s);
+    for (let i = 1; i < _echoOnsets.length; i++) {
+      if (_echoOnsets[i] - _echoOnsets[i - 1] < 2) { grid[tr][_echoOnsets[i]] = 0; _echoOnsets.splice(i, 1); i--; }
+    }
+    if (_echoOnsets.length > 1 && (_echoOnsets[0] + NUM_STEPS - _echoOnsets[_echoOnsets.length - 1]) < 2) {
+      grid[tr][_echoOnsets[_echoOnsets.length - 1]] = 0; _echoOnsets.pop();
     }
     // FX now toggles randomly each time ECHO's pattern regenerates — 50%
     // chance on, rather than staying permanently engaged.
