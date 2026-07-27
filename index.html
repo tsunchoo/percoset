@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 04:30</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 04:44</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2165,9 +2165,11 @@ function updatePlayhead(step) {
       const bb = document.getElementById('beatBtn');
       if (bb) { bb.classList.remove('btn-beat-pulse'); void bb.offsetWidth; bb.classList.add('btn-beat-pulse'); }
     }
-    // Flash R buttons in auto mode on every beat
-    document.querySelectorAll('.rand-btn.rand-auto').forEach(rb => {
-      rb.classList.remove('rand-auto'); void rb.offsetWidth; rb.classList.add('rand-auto');
+    // Flash R buttons in auto mode on every beat (quarter note) — each
+    // button's own _randBeatPulse (set up in wireRandomizeButton) already
+    // no-ops unless that specific track is in auto mode.
+    document.querySelectorAll('.rand-btn').forEach(rb => {
+      if (rb._randBeatPulse) rb._randBeatPulse();
     });
     if (_recArmed) {
       const rb = document.getElementById('saveBtn');
@@ -8110,14 +8112,14 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride) {
   src.buffer = _getAmalgamBaseBuffer();
   src.playbackRate.value = freq / _amalgamBaseFreq;
   const g = ctx.createGain(); g.gain.value = vel;
-  // Safety-net highpass — bass instruments are already excluded from the
-  // chord ECHO captures (see _regenerateAmalgamChord), but this also
-  // guarantees no low-end rumble ever comes through ECHO's own sound
-  // regardless of what pitch a phantom note happens to land on.
-  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 178; hp.Q.value = 0.7;
-  src.connect(g); g.connect(hp); hp.connect(dest);
+  // Safety-net highpass — two stages in series for a real 24dB/octave slope.
+  // A single biquad (12dB/oct) at this cutoff wasn't actually removing much
+  // of a fundamental sitting right around/below it — this cuts decisively.
+  const hp1 = ctx.createBiquadFilter(); hp1.type = 'highpass'; hp1.frequency.value = 178; hp1.Q.value = 0.7;
+  const hp2 = ctx.createBiquadFilter(); hp2.type = 'highpass'; hp2.frequency.value = 178; hp2.Q.value = 0.7;
+  src.connect(g); g.connect(hp1); hp1.connect(hp2); hp2.connect(dest);
   src.start(t);
-  src.onended = () => { try { g.disconnect(); hp.disconnect(); } catch(e) {} };
+  src.onended = () => { try { g.disconnect(); hp1.disconnect(); hp2.disconnect(); } catch(e) {} };
 }
 let _amalgamChord = null;
 function _regenerateAmalgamChord() {
@@ -8139,6 +8141,12 @@ function _regenerateAmalgamChord() {
         break;
       }
     }
+    // Some non-bass instruments (RYTM GTR, MARIO PIANO, HASSELL) still sit in
+    // a genuinely low register (MID_ROOTS, ~110-165Hz) — excluding actual
+    // bass instruments alone let this low content through anyway. Push
+    // anything below 200Hz up an octave so ECHO never echoes low pitches,
+    // regardless of which instrument they came from.
+    while (freq < 200) freq *= 2;
     notes.push({ tr, key, freq });
   }
   _amalgamChord = notes;
