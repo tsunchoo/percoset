@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 06:20</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 06:25</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2668,6 +2668,29 @@ function randomizeBassTrack(tr, level) {
         trackLegatoLen[tr][s] = Math.min(wantLen, maxLen);
       }
     }
+  }
+
+  // PULSE BASS: every note is at least an 8th note (2 steps) long, no
+  // exceptions — its own envelope decay stays short and punchy regardless,
+  // but the rhythmic note length shouldn't read as a stray 16th blip. Any
+  // note landing right next to the one before it gets removed instead of
+  // shortening its neighbor below 2 steps.
+  if (key === 'pbass' && trackBassScale[tr]) {
+    const _onsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) _onsets.push(s);
+    for (let i = 1; i < _onsets.length; i++) {
+      if (_onsets[i] - _onsets[i - 1] < 2) { grid[tr][_onsets[i]] = 0; _onsets.splice(i, 1); i--; }
+    }
+    // Wrap-around: last note of the bar can't be within 2 of the first
+    if (_onsets.length > 1 && (_onsets[0] + NUM_STEPS - _onsets[_onsets.length - 1]) < 2) {
+      grid[tr][_onsets[_onsets.length - 1]] = 0; _onsets.pop();
+    }
+    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    _onsets.forEach(s => {
+      const maxLen = _legatoMaxLen(tr, s);
+      trackLegatoLen[tr][s] = Math.max(2, Math.min(3, maxLen));
+    });
+    redrawTrackCells(tr);
   }
 
   // JINX: chooses legato phrases anywhere from 2 to 6 steps long — always
