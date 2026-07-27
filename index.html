@@ -559,7 +559,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Jul26 23:59</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 00:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -719,16 +719,22 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK LINE COLOR</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="trackLineColorPicker" value="#969594" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <input type="color" id="trackLineColorPicker" value="#858585" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           <style>#trackLineColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackLineColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackLineColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="checkbox" id="trackLineTransparentEnable" style="width:15px;height:15px;cursor:pointer;">TRANSPARENT
+          </label>
         </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">NOTE BG COLOR</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="emptyCellColorPicker" value="#dbdad9" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <input type="color" id="emptyCellColorPicker" value="#d6d6d6" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           <style>#emptyCellColorPicker::-webkit-color-swatch-wrapper{padding:0;}#emptyCellColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#emptyCellColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="checkbox" id="emptyCellTransparentEnable" style="width:15px;height:15px;cursor:pointer;">TRANSPARENT
+          </label>
         </div>
       </div>
 
@@ -962,18 +968,77 @@ function updateBgPulseSpeedReadout() {
   });
 })();
 (function() {
+  function hexToRgb(hex) {
+    hex = hex.replace('#', '');
+    return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+  }
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  }
+  function mixHex(hexA, hexB, t) {
+    const a = hexToRgb(hexA), b = hexToRgb(hexB);
+    return rgbToHex(a[0] * (1 - t) + b[0] * t, a[1] * (1 - t) + b[1] * t, a[2] * (1 - t) + b[2] * t);
+  }
+  const DEFAULT_APP_BG = '#f5f0e8'; // matches --bg in CSS
+  const TINT_RATIO = 0.15; // how much of the current background hue bleeds into these greys
+
   const trackLineColorPicker = document.getElementById('trackLineColorPicker');
-  if (!trackLineColorPicker) return;
-  trackLineColorPicker.addEventListener('input', () => {
-    document.documentElement.style.setProperty('--track-line-color', trackLineColorPicker.value);
-  });
-})();
-(function() {
   const emptyCellColorPicker = document.getElementById('emptyCellColorPicker');
-  if (!emptyCellColorPicker) return;
-  emptyCellColorPicker.addEventListener('input', () => {
-    document.documentElement.style.setProperty('--empty-cell-color', emptyCellColorPicker.value);
-  });
+  const trackLineTransparentCb = document.getElementById('trackLineTransparentEnable');
+  const emptyCellTransparentCb = document.getElementById('emptyCellTransparentEnable');
+  const bgColorPicker = document.getElementById('bgColorPicker');
+  const bgStaticCb = document.getElementById('bgStaticEnable');
+
+  let _trackLineBaseColor = trackLineColorPicker ? trackLineColorPicker.value : '#858585';
+  let _emptyCellBaseColor = emptyCellColorPicker ? emptyCellColorPicker.value : '#d6d6d6';
+  let _trackLineTransparent = false;
+  let _emptyCellTransparent = false;
+
+  function getEffectiveBgHex() {
+    if (bgStaticCb && bgStaticCb.checked && bgColorPicker) return bgColorPicker.value;
+    return DEFAULT_APP_BG;
+  }
+  function applyTrackLineColor() {
+    document.documentElement.style.setProperty('--track-line-color',
+      _trackLineTransparent ? 'transparent' : mixHex(_trackLineBaseColor, getEffectiveBgHex(), TINT_RATIO));
+  }
+  function applyEmptyCellColor() {
+    document.documentElement.style.setProperty('--empty-cell-color',
+      _emptyCellTransparent ? 'transparent' : mixHex(_emptyCellBaseColor, getEffectiveBgHex(), TINT_RATIO));
+  }
+  // Exposed so the DISPLAY background controls can trigger a re-tint when the bg changes.
+  window._applyTrackLineColor = applyTrackLineColor;
+  window._applyEmptyCellColor = applyEmptyCellColor;
+
+  if (trackLineColorPicker) {
+    trackLineColorPicker.addEventListener('input', () => {
+      _trackLineBaseColor = trackLineColorPicker.value;
+      applyTrackLineColor();
+    });
+  }
+  if (emptyCellColorPicker) {
+    emptyCellColorPicker.addEventListener('input', () => {
+      _emptyCellBaseColor = emptyCellColorPicker.value;
+      applyEmptyCellColor();
+    });
+  }
+  if (trackLineTransparentCb) {
+    trackLineTransparentCb.addEventListener('change', () => {
+      _trackLineTransparent = trackLineTransparentCb.checked;
+      if (trackLineColorPicker) trackLineColorPicker.disabled = _trackLineTransparent;
+      applyTrackLineColor();
+    });
+  }
+  if (emptyCellTransparentCb) {
+    emptyCellTransparentCb.addEventListener('change', () => {
+      _emptyCellTransparent = emptyCellTransparentCb.checked;
+      if (emptyCellColorPicker) emptyCellColorPicker.disabled = _emptyCellTransparent;
+      applyEmptyCellColor();
+    });
+  }
+
+  applyTrackLineColor();
+  applyEmptyCellColor();
 })();
 (function() {
   const colorPicker = document.getElementById('bgColorPicker');
@@ -993,23 +1058,26 @@ function updateBgPulseSpeedReadout() {
   function applyStaticColor() {
     document.body.style.background = _bgStaticEnabled ? colorPicker.value : '';
     if (_bgStaticEnabled) {
-      // Track lines, the title, and the tempo/bpm text all stay sympathetic
-      // to the chosen background's brightness — light on a dark background,
-      // dark on a light one — instead of just defaulting to the normal
-      // (dark) colors regardless of what's behind them.
+      // The title and tempo/bpm text stay sympathetic to the chosen
+      // background's brightness — light on a dark background, dark on a
+      // light one — instead of just defaulting to the normal (dark) colors
+      // regardless of what's behind them. Track lines and note markers are
+      // handled separately by the reactive tint system below.
       const lum = relLuminance(colorPicker.value);
       const bright = lum < 0.5 ? '#e8e4dc' : '#1e1e1e';
       const dim = lum < 0.5 ? '#b0aaa0' : '#555';
-      document.body.style.setProperty('--track-line-color', bright);
       document.body.style.setProperty('--header-text-color', bright);
       document.body.style.setProperty('--header-text-dim', dim);
       document.body.style.setProperty('--reel-filter', lum < 0.5 ? 'brightness(0) invert(1)' : 'brightness(0)');
     } else {
-      document.body.style.removeProperty('--track-line-color');
       document.body.style.removeProperty('--header-text-color');
       document.body.style.removeProperty('--header-text-dim');
       document.body.style.removeProperty('--reel-filter');
     }
+    // Track lines and note markers re-tint against whatever the effective
+    // background now is (custom color, or back to the default app bg).
+    if (window._applyTrackLineColor) window._applyTrackLineColor();
+    if (window._applyEmptyCellColor) window._applyEmptyCellColor();
     // Keep the tempo lock's red override intact if it's currently locked —
     // only refresh the unlocked color so it doesn't get stuck on a stale one.
     if (!_tempoLocked) {
