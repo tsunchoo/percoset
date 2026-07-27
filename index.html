@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 04:44</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 05:28</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2165,12 +2165,8 @@ function updatePlayhead(step) {
       const bb = document.getElementById('beatBtn');
       if (bb) { bb.classList.remove('btn-beat-pulse'); void bb.offsetWidth; bb.classList.add('btn-beat-pulse'); }
     }
-    // Flash R buttons in auto mode on every beat (quarter note) — each
-    // button's own _randBeatPulse (set up in wireRandomizeButton) already
-    // no-ops unless that specific track is in auto mode.
-    document.querySelectorAll('.rand-btn').forEach(rb => {
-      if (rb._randBeatPulse) rb._randBeatPulse();
-    });
+    // R buttons in auto mode now breathe continuously across the whole
+    // measure (see _randAutoBreatheTick), not a per-quarter-note flash.
     if (_recArmed) {
       const rb = document.getElementById('saveBtn');
       if (rb) { rb.classList.remove('rec-beat-pulse'); void rb.offsetWidth; rb.classList.add('rec-beat-pulse'); }
@@ -3368,7 +3364,9 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
   const vel = isAccent ? 0.62 : 0.38; // unchanged — this drives how hard the waveshaper gets pushed; reducing this would tame the chaos, not just the volume
 
   const legato = durSec > stepDuration() * 1.6;
-  const decayTime = legato ? Math.min(durSec, 1.4) : Math.min(durSec, 0.5);
+  const decayTime = legato ? Math.min(durSec, 2.0) : Math.min(durSec, 0.9); // more sustained overall — was 1.4/0.5
+  const sustainHold = decayTime * 0.35; // holds near peak instead of starting to decay immediately
+  const tailTime = 0.35; // a little extra low-level tail past the main decay, instead of stopping dead
 
   // Two sawtooths in parallel — unison plus a slightly-off fifth, texture
   // that gets uglier the harder the envelope drives into the waveshaper
@@ -3377,9 +3375,12 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
 
   const env = ctx.createGain(); // feeds the waveshaper directly — its own level IS the distortion control
   env.gain.setValueAtTime(0, time);
-  env.gain.linearRampToValueAtTime(vel, time + 0.01);
-  env.gain.exponentialRampToValueAtTime(vel * 0.5, time + decayTime * 0.6);
-  env.gain.exponentialRampToValueAtTime(0.0008, time + decayTime);
+  env.gain.linearRampToValueAtTime(vel * 1.15, time + 0.006); // punchy overshoot on the attack
+  env.gain.linearRampToValueAtTime(vel, time + 0.02); // settles just as fast
+  env.gain.setValueAtTime(vel, time + sustainHold); // actual sustain plateau, not an immediate decay
+  env.gain.exponentialRampToValueAtTime(vel * 0.5, time + sustainHold + (decayTime - sustainHold) * 0.6);
+  env.gain.exponentialRampToValueAtTime(0.02, time + decayTime); // leaves a touch of body instead of dropping to near-silence
+  env.gain.exponentialRampToValueAtTime(0.0008, time + decayTime + tailTime); // the little trailing tail
 
   // Fixed aggressive curve — the actual distortion character comes from how
   // hard the envelope drives into it, not from the curve itself changing
@@ -3395,7 +3396,7 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
   osc1.connect(env); osc2.connect(env);
   env.connect(ws); ws.connect(outGain); outGain.connect(dest);
 
-  const stopAt = time + decayTime + 0.1;
+  const stopAt = time + decayTime + tailTime + 0.1;
   osc1.start(time); osc1.stop(stopAt);
   osc2.start(time); osc2.stop(stopAt);
   osc1.onended = () => { try { env.disconnect(); ws.disconnect(); outGain.disconnect(); } catch(e) {} };
@@ -6534,14 +6535,23 @@ function randAll(mode, opts) {
   function buildPool(keys) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5);
     const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false;
+    // Bass gets a controlled 75% chance of being included at all, rather
+    // than leaving it purely to shuffle luck — with ~20 tonal options and
+    // only 4 basses, a plain shuffle rarely happened to draw one.
+    const availableBass = keys.filter(k => bassKeys.has(k));
+    if (availableBass.length > 0 && Math.random() < 0.75) {
+      result.push(availableBass[Math.floor(Math.random() * availableBass.length)]);
+      bassUsed = true;
+    }
     for (const k of shuffled) {
+      if (result.length === NUM_TRACKS) break;
+      if (result.includes(k)) continue; // don't double-add the forced bass if the shuffle also lands on it
       if (bassKeys.has(k)) { if (bassUsed) continue; bassUsed = true; }
       if (soloPercKeys.has(k)) { if (soloPercUsed) continue; soloPercUsed = true; }
       if (soloLeadKeys.has(k)) { if (soloLeadUsed) continue; soloLeadUsed = true; }
       if (soloUniqueKeys.has(k)) { if (soloUniqueUsed) continue; soloUniqueUsed = true; }
       if (soloHatKeys.has(k)) { if (soloHatUsed) continue; soloHatUsed = true; }
       result.push(k);
-      if (result.length === NUM_TRACKS) break;
     }
     // Fill remaining from keys excluding solo perc/unique/hat if already used
     while (result.length < NUM_TRACKS) {
@@ -6576,7 +6586,7 @@ function randAll(mode, opts) {
     // Bass: max one across all tracks — skip if a locked track already has bass
     const bassAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && bassKeys.has(trackInstruments[tr]));
     let bassChoice = null;
-    if (!bassAlreadyLocked && tonalSlots > 0) {
+    if (!bassAlreadyLocked && tonalSlots > 0 && Math.random() < 0.75) {
       const bassAvail = tonalKeys.filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const allBassAvail = Object.keys(INSTRUMENTS).filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const pool2 = bassAvail.length > 0 ? bassAvail : allBassAvail;
@@ -7642,6 +7652,34 @@ function wireShiftButton(btn, tr, dir) {
 // Global registry so clearAll can stop all active auto-shifts
 const autoShiftStops = {};
 
+// Continuous whole-measure breathing pulse for auto-rand buttons — always
+// either fading in or fading out, one full cycle per measure. Recomputed
+// from the live tempo every frame rather than a fixed-duration CSS
+// animation, so it stays in sync even if BPM changes mid-stream.
+const _randAutoBreathingTracks = new Set();
+let _randAutoBreatheRAF = null;
+function _randAutoBreatheTick() {
+  if (_randAutoBreathingTracks.size === 0) { _randAutoBreatheRAF = null; return; }
+  const measureDur = Math.max(0.05, stepDuration() * NUM_STEPS);
+  const now = (ctx && ctx.currentTime) ? ctx.currentTime : performance.now() / 1000;
+  const phase = (now % measureDur) / measureDur; // 0..1 across the measure
+  const tri = 1 - Math.abs(phase * 2 - 1); // 0 at the start/end of the measure, 1 at the midpoint — always ramping one way or the other, never flat
+  const opacity = 0.4 + 0.6 * tri;
+  _randAutoBreathingTracks.forEach(tr => {
+    const btn = document.getElementById(`randbtn-${tr}`);
+    if (btn) btn.style.opacity = opacity.toFixed(3);
+  });
+  _randAutoBreatheRAF = requestAnimationFrame(_randAutoBreatheTick);
+}
+function _startRandAutoBreathe(tr) {
+  _randAutoBreathingTracks.add(tr);
+  if (!_randAutoBreatheRAF) _randAutoBreatheTick();
+}
+function _stopRandAutoBreathe(tr) {
+  _randAutoBreathingTracks.delete(tr);
+  const btn = document.getElementById(`randbtn-${tr}`);
+  if (btn) btn.style.opacity = '';
+}
 function wireRandomizeButton(btn, tr) {
   let autoInterval = null, pendingTimeout = null;
 
@@ -7657,16 +7695,10 @@ function wireRandomizeButton(btn, tr) {
     btn.classList.remove('rand-auto');
     btn.textContent = 'R';
     delete autoShiftStops[tr];
+    _stopRandAutoBreathe(tr);
     const _lane2 = document.getElementById(`lane-${tr}`);
     if (_lane2) { _lane2.classList.remove('track-auto-rand'); _lane2.style.removeProperty('--track-color'); }
     setTrackNameColor(tr, trackInstruments[tr]);
-  };
-
-  // Called from scheduler on quarter note when in auto mode — pulse A
-  btn._randBeatPulse = () => {
-    if (!autoInterval) return;
-    btn.style.opacity = '0.4';
-    setTimeout(() => { btn.style.opacity = '1'; }, 80);
   };
 
   // Single tap: pulse red, randomize this track on next downbeat (or immediately if stopped)
@@ -7685,6 +7717,7 @@ function wireRandomizeButton(btn, tr) {
     if (autoInterval) { stopAuto(); return; }
     btn.classList.add('rand-auto');
     btn.textContent = 'A';
+    _startRandAutoBreathe(tr);
     const _lane = document.getElementById(`lane-${tr}`);
     if (_lane) _lane.style.setProperty('--track-color', '#f71aff');
     window._isAutoBarRand = true;
