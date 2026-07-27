@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 07:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 16:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1748,7 +1748,7 @@ function scheduler() {
     // Swing: offbeat (odd) steps get delayed by up to 60ms based on master slider
     const swingMs = (step % 2 === 1) ? getSwingOffsetMs() : 0;
     let t = nextStepTime + (swingMs / 1000);
-    if (beatPlaying && _beatType === 'boogie') {
+    if (_beatType === 'boogie') {
       // BOOGIE — snap every track's actual playback timing (not the visual
       // grid, which stays a normal 16-step display) onto the same true
       // triplet-shuffle feel the beat engine itself uses. Each beat's 4
@@ -1757,6 +1757,9 @@ function scheduler() {
       // triplet-2, and "and"/"a" both collapse onto triplet-3 (pushed later
       // / pulled earlier respectively). Replaces swing entirely for this
       // beat type — combining both would fight the beat's own triplet math.
+      // Keyed only on the selected type, not whether BEAT is toggled on —
+      // switching BEAT off shouldn't snap the pattern back to straight time;
+      // only picking a different beat type should.
       const beatPos = step % 4;
       const sd = stepDuration();
       const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
@@ -1899,6 +1902,7 @@ function scheduler() {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
+        if (tr !== 0) duckEchoTrack(t); // ECHO gets pumped by everything else going on
         const key = trackInstruments[tr];
         if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'dulc' || key === 'opening') {
           const scale = trackBassScale[tr] || [110];
@@ -2173,9 +2177,8 @@ function scheduler() {
         if (step === 2 || step === 6 || step === 10 || step === 14) playSynthHihat(false, t, -1);
         if (step === 3 || step === 6 || step === 9 || step === 11 || step === 14) playSnare(t);
       } else if (_beatType === 'swagger') {
-        if (step === 15 || step === 7) fireBeatKick(t); // main kick, was on 1 & 3 (0,8) — now pushed a 16th ahead, same as the rest of the pattern
-        if (step === 2 || step === 9) fireBeatKick(t);   // the anticipating kick, shifted along with everything else
-        if (step === 4 || step === 12) playSnare(t);     // snare now lands exactly on 2 & 4
+        if (step === 15 || step === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
+        if (step === 4 || step === 12) playSnare(t);     // snare lands exactly on 2 & 4
       } else if (_beatType === 'cumbia') {
         if (step === 2 || step === 3 || step === 6 || step === 7 || step === 10 || step === 11 || step === 14 || step === 15) playSynthHihat(false, t, -1);
       } else if (_beatType === 'afrobeat') {
@@ -3164,17 +3167,22 @@ function playMotownBass(freq, durSec, isAccent, time, tr) {
   filt.frequency.setValueAtTime(f * 3, time);
   filt.frequency.exponentialRampToValueAtTime(f * 1.1, time + 0.03);
 
-  // Sharp attack, fast decay to dry sustain, hard cut
+  // Sharp attack, fast decay to dry sustain, hold through the note's real
+  // length, then a short tail — not a decrescendo across the whole duration
   const ampEnv = ctx.createGain();
-  const decay = Math.min(durSec * 0.55, 0.18);
+  const decay = Math.min(durSec * 0.55, 0.18); // quick attack settle
+  const tail = 0.12; // short tail after the hold
+  const sustainEnd = Math.max(durSec, decay + 0.05);
   ampEnv.gain.setValueAtTime(0, time);
   ampEnv.gain.linearRampToValueAtTime(vel, time + 0.004);
   ampEnv.gain.exponentialRampToValueAtTime(vel * 0.35, time + decay);
-  ampEnv.gain.exponentialRampToValueAtTime(0.001, time + durSec * 0.85);
+  ampEnv.gain.setValueAtTime(vel * 0.35, time + sustainEnd); // hold at body level through the note's actual assigned length
+  ampEnv.gain.exponentialRampToValueAtTime(0.001, time + sustainEnd + tail);
 
   saw1.connect(mix); saw2.connect(mix); sub.connect(mix);
   mix.connect(filt); filt.connect(ampEnv); ampEnv.connect(dest);
-  [saw1, saw2, sub].forEach(o => { o.start(time); o.stop(time + durSec + 0.02); });
+  const stopAtMotown = time + sustainEnd + tail + 0.05;
+  [saw1, saw2, sub].forEach(o => { o.start(time); o.stop(stopAtMotown); });
   saw1.onended = () => { try { mix.disconnect(); filt.disconnect(); ampEnv.disconnect(); } catch(e) {} };
 }
 
@@ -4429,7 +4437,7 @@ function playDulcimer(freq, durSec, isAccent, time, tr) {
 function playOpening(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.052 : 0.036;
+  const vel = isAccent ? 0.0413 : 0.0286; // -2dB
   const sustain = Math.max(durSec, 1.2); // always has room to unfold and hold, even off a short grid note
   const release = Math.min(sustain * 0.4, 1.4);
 
@@ -4897,6 +4905,19 @@ function duckSidechainTracks(t) {
       g.setTargetAtTime(1, t + 0.03, 0.16); // recovers over the following stretch
     }
   }
+}
+// ECHO (Track 1) gets its own extra pump on top of the shared sidechain —
+// reacting to literally everything else in the pattern, not just kick and
+// bass. Since this fires far more often (every other track's every hit),
+// the depth is more moderate than the general duck — a rhythmic breathing
+// pump driven by how busy the mix is, not a near-silence stab each time.
+function duckEchoTrack(t) {
+  if (!_sidechainDuckGains[0]) return; // ECHO hasn't played a note yet this session — nothing to duck
+  const g = _sidechainDuckGains[0].gain.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(1, t);
+  g.linearRampToValueAtTime(0.35, t + 0.01); // -9dB — noticeable pump without wiping it out
+  g.setTargetAtTime(1, t + 0.04, 0.12);
 }
 function fireBeatKick(t) {
   playKick(t);
@@ -7094,10 +7115,11 @@ function randAll(mode, opts) {
     const autoCount = level === 3 ? 1 : 2; // hard cap to limit node load
     // Use actual track indices, not pool indices
     const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== skipTrack && i !== 0);
-    // Tonal tracks are 20% more likely to be picked — weighted random sampling
+    // Lead instruments are most likely to be picked, other tonal tracks a
+    // bit more likely than percussion — weighted random sampling
     // (Efraimidis-Spirakis: rank by Math.random()^(1/weight), higher weight floats to the top)
     const selected = eligible
-      .map(i => ({ i, key: Math.random() ** (1 / (TONAL_KEYS.has(trackInstruments[i]) ? 1.2 : 1.0)) }))
+      .map(i => ({ i, key: Math.random() ** (1 / (LEAD_INSTRUMENT_KEYS.has(trackInstruments[i]) ? 1.4 : (TONAL_KEYS.has(trackInstruments[i]) ? 1.2 : 1.0))) }))
       .sort((a, b) => b.key - a.key)
       .slice(0, autoCount)
       .map(o => o.i);
@@ -7139,7 +7161,7 @@ function randAll(mode, opts) {
       // around FX's own normal (non-bass) rate rather than a flat chance.
       // Never on a track with no actual notes in it.
       const hasNotes = grid[tr].some(v => v > 0);
-      const blastChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25); // +25% more, on top of the earlier halving
+      const blastChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
       const blastOn = hasNotes && Math.random() < blastChance;
       trackPump[tr] = blastOn;
       if (fb) fb.classList.toggle('blast-on', blastOn);
@@ -7777,7 +7799,12 @@ function randomizeTrack(tr) {
   const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor()));
   const _cap = window._randNoteMax || maxN;
   window._lastNoteMaxUsed = _cap;
-  const noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
+  let noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
+  // CONGA/BONGO/SHAKER/HIHAT: never fewer than 4 notes a measure, even if
+  // the global note-budget cap for this track would otherwise allow fewer —
+  // these instruments read as too sparse/broken-up below that.
+  const _noteFloorKeys = new Set(['congHi', 'congLo', 'bongHi', 'bongLo', 'shak', 'shihat']);
+  if (_noteFloorKeys.has(key)) noteCount = Math.max(4, noteCount);
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
   // Rhythm guitar: all downbeats, all upbeats, or random pattern
@@ -8458,14 +8485,47 @@ function _getAmalgamBaseBuffer() {
   _amalgamBaseBuffer = buf;
   return _amalgamBaseBuffer;
 }
+// Same waveform, sample-reversed — the fast attack + decay play as a swell
+// building up into a peak right at the end, when reversed. Cached once,
+// same way as the forward buffer.
+let _amalgamReversedBuffer = null;
+function _getAmalgamReversedBuffer() {
+  if (_amalgamReversedBuffer) return _amalgamReversedBuffer;
+  const base = _getAmalgamBaseBuffer();
+  const rev = ctx.createBuffer(1, base.length, base.sampleRate);
+  const src = base.getChannelData(0);
+  const dst = rev.getChannelData(0);
+  for (let i = 0; i < src.length; i++) dst[i] = src[src.length - 1 - i];
+  _amalgamReversedBuffer = rev;
+  return _amalgamReversedBuffer;
+}
 function _playPhantomNote(tr, key, freq, isAccent, when, destOverride) {
   if (!ctx) return;
   const t = when !== undefined ? when : ctx.currentTime;
   const dest = destOverride !== undefined ? destOverride : getSynthConnectNode(tr);
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
+
+  // Reverse pre-swell — the note's own sound played backwards, timed to
+  // finish exactly as the real note begins, like a reverse-cymbal lead-in.
+  const revBuf = _getAmalgamReversedBuffer();
+  const playbackRate = freq / _amalgamBaseFreq;
+  const revDurAtPitch = revBuf.duration / playbackRate;
+  const revStart = t - revDurAtPitch;
+  if (revStart >= 0) {
+    const revSrc = ctx.createBufferSource();
+    revSrc.buffer = revBuf;
+    revSrc.playbackRate.value = playbackRate;
+    const revG = ctx.createGain(); revG.gain.value = vel * 0.6; // a touch quieter than the main hit
+    const revHp1 = ctx.createBiquadFilter(); revHp1.type = 'highpass'; revHp1.frequency.value = 178; revHp1.Q.value = 0.7;
+    const revHp2 = ctx.createBiquadFilter(); revHp2.type = 'highpass'; revHp2.frequency.value = 178; revHp2.Q.value = 0.7;
+    revSrc.connect(revG); revG.connect(revHp1); revHp1.connect(revHp2); revHp2.connect(dest);
+    revSrc.start(revStart);
+    revSrc.onended = () => { try { revG.disconnect(); revHp1.disconnect(); revHp2.disconnect(); } catch(e) {} };
+  }
+
   const src = ctx.createBufferSource();
   src.buffer = _getAmalgamBaseBuffer();
-  src.playbackRate.value = freq / _amalgamBaseFreq;
+  src.playbackRate.value = playbackRate;
   const g = ctx.createGain(); g.gain.value = vel;
   // Safety-net highpass — two stages in series for a real 24dB/octave slope.
   // A single biquad (12dB/oct) at this cutoff wasn't actually removing much
