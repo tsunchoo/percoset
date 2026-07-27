@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 06:42</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 06:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1738,7 +1738,21 @@ function scheduler() {
     const step = (currentStep + 1) % NUM_STEPS; currentStep = step;
     // Swing: offbeat (odd) steps get delayed by up to 60ms based on master slider
     const swingMs = (step % 2 === 1) ? getSwingOffsetMs() : 0;
-    const t = nextStepTime + (swingMs / 1000);
+    let t = nextStepTime + (swingMs / 1000);
+    if (beatPlaying && _beatType === 'boogie') {
+      // BOOGIE — snap every track's actual playback timing (not the visual
+      // grid, which stays a normal 16-step display) onto the same true
+      // triplet-shuffle feel the beat engine itself uses. Each beat's 4
+      // straight 16th positions collapse onto the nearest of the 3 real
+      // triplet subdivisions: on-beat stays put, the "e" pushes toward
+      // triplet-2, and "and"/"a" both collapse onto triplet-3 (pushed later
+      // / pulled earlier respectively). Replaces swing entirely for this
+      // beat type — combining both would fight the beat's own triplet math.
+      const beatPos = step % 4;
+      const sd = stepDuration();
+      const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
+      t = nextStepTime + _boogieOffsets[beatPos];
+    }
     // Fire pending auto-rand on downbeat
     if (step === 0) {
       _committedSwing = swingVal; // commit swing amount only at bar start
@@ -3273,15 +3287,19 @@ function playPlunkBass(freq, durSec, isAccent, time, tr) {
   ws.curve = curve; ws.oversample = '2x';
 
   const ampEnv = ctx.createGain();
-  const decay = Math.min(durSec * 0.7, 0.22);
+  const decay = Math.min(durSec * 0.7, 0.22); // quick attack-grit settle
+  const tail = 0.15; // short release after the note's actual length
+  const sustainEnd = Math.max(durSec, decay + 0.05); // never shorter than the settle itself
   ampEnv.gain.setValueAtTime(0, time);
   ampEnv.gain.linearRampToValueAtTime(vel, time + 0.003);
   ampEnv.gain.exponentialRampToValueAtTime(vel * 0.25, time + decay);
-  ampEnv.gain.exponentialRampToValueAtTime(0.001, time + Math.min(durSec, 0.45));
+  ampEnv.gain.setValueAtTime(vel * 0.25, time + sustainEnd); // hold at the settled body level through the note's real length
+  ampEnv.gain.exponentialRampToValueAtTime(0.001, time + sustainEnd + tail);
 
   osc1.connect(mix); osc2.connect(mix);
   mix.connect(bp); bp.connect(ws); ws.connect(ampEnv); ampEnv.connect(dest);
-  [osc1, osc2].forEach(o => { o.start(time); o.stop(time + Math.min(durSec, 0.5)); });
+  const stopAtPlunk = time + sustainEnd + tail + 0.05;
+  [osc1, osc2].forEach(o => { o.start(time); o.stop(stopAtPlunk); });
   osc1.onended = () => { try { mix.disconnect(); bp.disconnect(); ws.disconnect(); ampEnv.disconnect(); } catch(e) {} };
 }
 
@@ -3314,12 +3332,15 @@ function playDoubleBass(freq, durSec, isAccent, time, tr) {
   lp.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.6, 60), time + slideTime + 0.05);
 
   // Natural, fairly quick acoustic decay — not a synth hard-cutoff
-  const decay = Math.min(durSec * 0.75, 0.5);
+  const decay = Math.min(durSec * 0.75, 0.5); // quick initial pluck-decay
+  const tail = 0.3; // natural acoustic release tail, after the note's real length
+  const sustainEnd = Math.max(durSec, decay * 0.5 + 0.05);
   const ampEnv = ctx.createGain();
   ampEnv.gain.setValueAtTime(0, time);
   ampEnv.gain.linearRampToValueAtTime(vel, time + 0.012); // soft-ish attack, finger not pick
   ampEnv.gain.exponentialRampToValueAtTime(vel * 0.4, time + decay * 0.5);
-  ampEnv.gain.exponentialRampToValueAtTime(0.0008, time + Math.min(durSec + 0.15, decay + 0.3));
+  ampEnv.gain.setValueAtTime(vel * 0.4, time + sustainEnd); // hold through the note's actual length
+  ampEnv.gain.exponentialRampToValueAtTime(0.0008, time + sustainEnd + tail);
 
   tri.connect(triG); sub.connect(subG);
   triG.connect(lp); subG.connect(lp);
@@ -3350,7 +3371,7 @@ function playDoubleBass(freq, durSec, isAccent, time, tr) {
   bodyEnv.gain.exponentialRampToValueAtTime(0.0006, time + 0.22);
   pluckLP.connect(bodyBP); bodyBP.connect(bodyEnv); bodyEnv.connect(dest);
 
-  const stopAt = time + Math.max(decay, slideTime) + 0.3;
+  const stopAt = time + Math.max(sustainEnd + tail, slideTime + tail) + 0.05;
   tri.start(time); tri.stop(stopAt);
   sub.start(time); sub.stop(stopAt);
   tri.onended = () => { try { triG.disconnect(); subG.disconnect(); lp.disconnect(); ampEnv.disconnect(); bodyBP.disconnect(); bodyEnv.disconnect(); } catch(e) {} };
@@ -3361,7 +3382,7 @@ function playPulseBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const fxOn = tr !== undefined && trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0);
-  const vel = isAccent ? (fxOn ? 0.4049 : 0.5097) : (fxOn ? 0.2812 : 0.354); // -2dB when FX is on
+  const vel = isAccent ? (fxOn ? 0.2866 : 0.3608) : (fxOn ? 0.1991 : 0.2506); // -3dB overall on top of the -2dB FX adjustment
   // Sustain now tracks the note's actual assigned length — so an 8th note
   // genuinely sounds fuller/longer than a 16th — with only a short tail
   // added on top. The old version capped the WHOLE envelope at ~0.2s
