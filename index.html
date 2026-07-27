@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 16:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 16:39</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -622,7 +622,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div class="beat-type-item" data-beat="bounce">BOUNCE</div>
       <div class="beat-type-item" data-beat="breaks">BREAKS</div>
       <div class="beat-type-item" data-beat="drive">SWING</div>
-      <div class="beat-type-item" data-beat="holdup">HOLDUP</div>
       <div class="beat-type-item" data-beat="halftime">HALFTIME</div>
       <div class="beat-type-item" data-beat="reggae">ROCKERS</div>
       <div class="beat-type-item" data-beat="reggae2">ONE DROP</div>
@@ -1602,7 +1601,15 @@ function _rawSynthConnectNode(tr) {
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
-  if (key === 'amlgm')  { triggerFxEnvelope(tr, time); playAmalgamStep(isAccent, time, tr); return; }
+  if (key === 'amlgm')  {
+    triggerFxEnvelope(tr, time);
+    let dur = stepDuration();
+    if (!trackChop[tr] && trackLegatoLen[tr] && trackLegatoLen[tr][stepIdx]) {
+      dur = stepDuration() * Math.min(trackLegatoLen[tr][stepIdx], LEGATO_CAP_STEPS);
+    }
+    playAmalgamStep(isAccent, time, tr, dur);
+    return;
+  }
   if (key === 'sbass')   { return; } // handled in scheduler with legato duration
   if (key === 'ngate')   { return; } // handled in scheduler
   if (key === 'sbass3')  { return; }
@@ -1995,7 +2002,7 @@ function scheduler() {
           if (!_noiseGateNodes[tr]) initNoiseGate(tr);
           triggerNoiseGate(tr, val === 2, t);
         } else {
-          playBuffer(key, val === 2, t, tr, step);
+          playBuffer(key, val === 2, t, tr, gs);
           // If any other track has ngate, trigger it from this hit
           for (let ng = 0; ng < NUM_TRACKS; ng++) {
             if (ng !== tr && !trackMuted[ng] && trackInstruments[ng] === 'ngate') {
@@ -2100,10 +2107,6 @@ function scheduler() {
         } else if (_beatType === 'fourfloor') {
           // 4X4 — four kick drums, one on every beat
           doKick = (step === 0 || step === 4 || step === 8 || step === 12);
-        } else if (_beatType === 'holdup') {
-          // HOLDUP — syncopated stutter groove; kick on the 1, everything
-          // else (the off-beat kicks and all four snares) handled below
-          doKick = (step === 0);
         } else if (_beatType === 'rollin') {
           // ROLLIN — straight backbeat snare, rolling syncopated kick underneath
           doKick  = (step === 0);
@@ -2165,9 +2168,6 @@ function scheduler() {
         if (step === 7) playSnare(t);                    // a-of-2
       } else if (_beatType === 'rock') {
         if (step === 2 || step === 6 || step === 10 || step === 14) fireBeatKick(t); // 1&, 2&, 3&, 4&
-      } else if (_beatType === 'holdup') {
-        if (step === 5 || step === 11 || step === 15) fireBeatKick(t);            // e-of-2, a-of-3, a-of-4
-        if (step === 3 || step === 7 || step === 9 || step === 13) playSnare(t);  // a-of-1, a-of-2, e-of-3, e-of-4
       } else if (_beatType === 'rollin') {
         if (step === 3 || step === 7 || step === 10 || step === 15) fireBeatKick(t); // a-of-1, a-of-2, &-of-3, a-of-4
       } else if (_beatType === 'doubledown') {
@@ -2436,7 +2436,7 @@ function playSynthHihat(isAccent, time, tr) {
 const _bassGlideState = {}; // tr -> lastFreq
 function playSynthBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq || freq < 10) return;
-  const vel = isAccent ? 0.425 : 0.3;
+  const vel = isAccent ? 0.6003 : 0.4238; // +3dB
   const startFreq = _bassGlideState[tr] || freq;
   _bassGlideState[tr] = freq;
   let dest = (tr !== undefined && trackFxNodes[tr])
@@ -3151,7 +3151,7 @@ function triggerNoiseGate(tr, isAccent, time) {
 const _motownGlide = {};
 function playMotownBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
-  const vel = isAccent ? 0.8 : 0.58;
+  const vel = isAccent ? 1.2679 : 0.9192; // +4dB
   const dest = getSynthConnectNode(tr);
   const f = freq;
   _motownGlide[tr] = f;
@@ -3231,7 +3231,7 @@ function playHopkins(freq, durSec, isAccent, time, tr) {
   let f = freq;
   while (f < 130) f *= 2;  // mid comping register, roughly C3–C5
   while (f >= 520) f /= 2;
-  const vel = isAccent ? 0.058 : 0.04;
+  const vel = isAccent ? 0.0461 : 0.0318; // -2dB
   const decay = Math.max(1.2, Math.min(durSec + 1.0, 3.2)); // more sustain
 
   const chordTones = [
@@ -3558,7 +3558,7 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
     curve[i] = Math.tanh(x * 6) + Math.sin(x * 9) * 0.15; // hard clip plus a folded wobble for the "broken" character
   }
   ws.curve = curve; ws.oversample = '4x';
-  const outGain = ctx.createGain(); outGain.gain.value = 0.0501; // -26dB total (was -23dB) — output level only, doesn't touch the distortion drive
+  const outGain = ctx.createGain(); outGain.gain.value = 0.0398; // -28dB total (was -26dB) — output level only, doesn't touch the distortion drive
 
   osc1.connect(env); osc2.connect(env);
   env.connect(ws); ws.connect(outGain); outGain.connect(dest);
@@ -4451,8 +4451,8 @@ function playOpening(freq, durSec, isAccent, time, tr) {
 
   const notes = [
     { ratio: 1.0,        delay: 0.00, amp: 1.0  }, // root
-    { ratio: thirdRatio, delay: 0.16, amp: 0.85 }, // 3rd unfolds in
-    { ratio: sixthRatio, delay: 0.34, amp: 0.7  }, // 6th unfolds in last
+    { ratio: thirdRatio, delay: 0.08, amp: 0.85 }, // 3rd unfolds in — quicker now
+    { ratio: sixthRatio, delay: 0.17, amp: 0.7  }, // 6th unfolds in last — quicker now
   ];
 
   notes.forEach(n => {
@@ -4624,7 +4624,10 @@ function playSynthAttack(freq, durSec, isAccent, time, tr) {
 function playGlassBell(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.0564 : 0.0367; // +5dB louder again
+  const blastOn = tr !== undefined && trackPump[tr];
+  const fxOn = tr !== undefined && trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0);
+  const levelMul = blastOn ? 0.631 : (fxOn ? 0.8414 : 1); // -4dB under BLAST, -1.5dB with just FX — it gets noticeably louder under both otherwise
+  const vel = (isAccent ? 0.0564 : 0.0367) * levelMul; // +5dB louder again
   const sustain = isAccent ? 1.4 : 0.9;
 
   // Two detuned sawtooth oscillators for harmonically rich source material —
@@ -6022,7 +6025,7 @@ async function renderSlotToWav(snap) {
 
         if (key === 'sbass') {
           // Match playSynthBass exactly
-          const vel = isAccent ? 0.425 : 0.3;
+          const vel = isAccent ? 0.6003 : 0.4238; // +3dB
           const saw = o.createOscillator(); saw.type = 'sawtooth';
           const sub = o.createOscillator(); sub.type = 'sine';
           const sawG = o.createGain(); sawG.gain.value = 0.25;
@@ -6037,7 +6040,7 @@ async function renderSlotToWav(snap) {
 
         } else if (key === 'sbass3') {
           // Match playMotownBass exactly
-          const vel = isAccent ? 0.8 : 0.58;
+          const vel = isAccent ? 1.2679 : 0.9192; // +4dB
           const saw1 = o.createOscillator(); saw1.type='sawtooth'; saw1.frequency.value=freq; saw1.detune.value=-3;
           const saw2 = o.createOscillator(); saw2.type='sawtooth'; saw2.frequency.value=freq; saw2.detune.value=3;
           const sub  = o.createOscillator(); sub.type='sine'; sub.frequency.value=freq*0.5;
@@ -6149,7 +6152,7 @@ async function renderSlotToWav(snap) {
           const curve = new Float32Array(1024);
           for (let i=0;i<1024;i++){const x=(i*2)/1024-1; curve[i]=Math.tanh(x*6)+Math.sin(x*9)*0.15;}
           ws.curve = curve; ws.oversample = '4x';
-          const outGain = o.createGain(); outGain.gain.value = 0.0501; // -26dB total (was -23dB)
+          const outGain = o.createGain(); outGain.gain.value = 0.0398; // -28dB total (was -26dB)
           osc1.connect(env); osc2.connect(env); env.connect(ws); ws.connect(outGain); outGain.connect(offDest);
           const stopAt = t + decayTime + 0.1;
           osc1.start(t); osc1.stop(stopAt); osc2.start(t); osc2.stop(stopAt);
@@ -6812,7 +6815,7 @@ function randAll(mode, opts) {
   if (!_beatTypeLocked) {
     const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown');
     if (!onHalfFeel) {
-      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'fourfloor', 'holdup', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie'];
+      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'fourfloor', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie'];
       if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown');
       setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
     }
@@ -8008,7 +8011,7 @@ const _randAutoBreathingTracks = new Set();
 let _randAutoBreatheRAF = null;
 function _randAutoBreatheTick() {
   if (_randAutoBreathingTracks.size === 0) { _randAutoBreatheRAF = null; return; }
-  const measureDur = Math.max(0.05, stepDuration() * NUM_STEPS);
+  const measureDur = Math.max(0.05, stepDuration() * NUM_STEPS / 2); // half a measure per cycle — pulses twice a measure
   const now = (ctx && ctx.currentTime) ? ctx.currentTime : performance.now() / 1000;
   const phase = (now % measureDur) / measureDur; // 0..1 across the measure
   const tri = 1 - Math.abs(phase * 2 - 1); // 0 at the start/end of the measure, 1 at the midpoint — always ramping one way or the other, never flat
@@ -8499,16 +8502,16 @@ function _getAmalgamReversedBuffer() {
   _amalgamReversedBuffer = rev;
   return _amalgamReversedBuffer;
 }
-function _playPhantomNote(tr, key, freq, isAccent, when, destOverride) {
+function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   if (!ctx) return;
   const t = when !== undefined ? when : ctx.currentTime;
   const dest = destOverride !== undefined ? destOverride : getSynthConnectNode(tr);
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
+  const playbackRate = freq / _amalgamBaseFreq;
 
   // Reverse pre-swell — the note's own sound played backwards, timed to
   // finish exactly as the real note begins, like a reverse-cymbal lead-in.
   const revBuf = _getAmalgamReversedBuffer();
-  const playbackRate = freq / _amalgamBaseFreq;
   const revDurAtPitch = revBuf.duration / playbackRate;
   const revStart = t - revDurAtPitch;
   if (revStart >= 0) {
@@ -8523,6 +8526,32 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride) {
     revSrc.onended = () => { try { revG.disconnect(); revHp1.disconnect(); revHp2.disconnect(); } catch(e) {} };
   }
 
+  // Body — a soft, sustained sine+triangle pair underneath the transient
+  // blip, holding through the note's actual assigned length (durSec), with
+  // only a short tail after that. Previously ECHO had no concept of note
+  // duration at all — every hit was the same fixed ~0.35s blip regardless
+  // of legato length, which is why it read as tiny and clipped with nothing
+  // to work with. This gives it real sustain to match.
+  const sustain = Math.max(durSec || 0.35, 0.35);
+  const bodyTail = 0.25;
+  const bodyOsc1 = ctx.createOscillator(); bodyOsc1.type = 'sine'; bodyOsc1.frequency.value = freq;
+  const bodyOsc2 = ctx.createOscillator(); bodyOsc2.type = 'triangle'; bodyOsc2.frequency.value = freq; bodyOsc2.detune.value = 5;
+  const bodyMix = ctx.createGain(); bodyMix.gain.value = 0.5;
+  bodyOsc1.connect(bodyMix); bodyOsc2.connect(bodyMix);
+  const bodyEnv = ctx.createGain();
+  bodyEnv.gain.setValueAtTime(0, t);
+  bodyEnv.gain.linearRampToValueAtTime(vel * 0.8, t + 0.015);
+  bodyEnv.gain.setValueAtTime(vel * 0.8, t + sustain);
+  bodyEnv.gain.exponentialRampToValueAtTime(0.0005, t + sustain + bodyTail);
+  const bodyHp1 = ctx.createBiquadFilter(); bodyHp1.type = 'highpass'; bodyHp1.frequency.value = 178; bodyHp1.Q.value = 0.7;
+  const bodyHp2 = ctx.createBiquadFilter(); bodyHp2.type = 'highpass'; bodyHp2.frequency.value = 178; bodyHp2.Q.value = 0.7;
+  bodyMix.connect(bodyEnv); bodyEnv.connect(bodyHp1); bodyHp1.connect(bodyHp2); bodyHp2.connect(dest);
+  const bodyStop = t + sustain + bodyTail + 0.05;
+  bodyOsc1.start(t); bodyOsc1.stop(bodyStop);
+  bodyOsc2.start(t); bodyOsc2.stop(bodyStop);
+  bodyOsc1.onended = () => { try { bodyMix.disconnect(); bodyEnv.disconnect(); bodyHp1.disconnect(); bodyHp2.disconnect(); } catch(e) {} };
+
+  // The original transient blip — kept as the attack "ping" character
   const src = ctx.createBufferSource();
   src.buffer = _getAmalgamBaseBuffer();
   src.playbackRate.value = playbackRate;
@@ -8614,7 +8643,7 @@ function _scheduleAmalgamNotes() {
 // decaying echo trail. One note (or chord of notes) per grid marker, same
 // as any other instrument. This also means Delay/FX/BLAST all apply
 // completely normally, since there's only ever one event per hit.
-function playAmalgamStep(isAccent, time, tr) {
+function playAmalgamStep(isAccent, time, tr, durSec) {
   if (!ctx) return;
   _regenerateAmalgamChord(); // capture the pattern's tonal content as it is right now
   let notes = _amalgamChord;
@@ -8623,10 +8652,10 @@ function playAmalgamStep(isAccent, time, tr) {
   const vol = 0.5 * chordNormFactor * (isAccent ? 1.3 : 1);
   _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
   const dest = getSynthConnectNode(tr); // one resolution — Delay/FX/BLAST all behave like any other instrument now
-  _amalgamVolOverride = null;
   notes.forEach(n => {
-    _playPhantomNote(tr, n.key, n.freq, false, time, dest);
+    _playPhantomNote(tr, n.key, n.freq, false, time, dest, durSec);
   });
+  _amalgamVolOverride = null; // reset AFTER the notes read it — it was being cleared too early before, so every note fell back to the flat default instead of the computed volume
 }
 (function() {
   const spool = document.getElementById('reel2');
