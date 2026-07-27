@@ -559,7 +559,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 02:43</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 03:06</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1689,6 +1689,7 @@ function updateVolFillDisplay(tr) {
   if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr]) * 100) + '%';
 }
 const trackFx = Array.from({length: NUM_TRACKS}, () => ({ x: 0, y: 0 }));
+trackFx[0] = { x: 0.5, y: 0.5 }; // Track 1 is always ECHO — FX stays engaged on it by default
 const trackDelay = new Array(NUM_TRACKS).fill(false);
 // Pump/sustain/crunch — repurposed offset ("<") button. Chain order per
 // track: sidechain pump (ducks with BEAT's kick+snare) -> sustain boost
@@ -2203,7 +2204,7 @@ function togglePlay() {
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
       if (TONAL_KEYS.has(trackInstruments[tr]) && grid[tr].some(v => v > 0) && !trackBassScale[tr]) {
         const root = transposeRootToRange(globalScaleRoot || BASS_ROOTS[0], getRangeRoots(trackInstruments[tr]));
-        if (trackInstruments[tr] === 'damask' && !trackScaleMode[tr]) trackScaleMode[tr] = MIDEAST_SCALES[Math.floor(Math.random() * MIDEAST_SCALES.length)];
+        if (MIDEAST_KEYS.has(trackInstruments[tr]) && !trackScaleMode[tr]) trackScaleMode[tr] = pickOrShareMideastScale(tr);
         trackBassScale[tr] = buildScaleFromRoot(root, scaleModeFor(tr)); delete trackPitchOverride[tr]; // new scale — any pinned pitches from an old melody no longer apply
         if (trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'sparkle') trackBassScale[tr] = trackBassScale[tr].slice(0, 4); // limited palette — max 4 notes in the scale
       }
@@ -2423,17 +2424,27 @@ const SCALES = {
 };
 let currentScaleName = 'penta-min';
 let PENTA_MINOR = SCALES['penta-min']; // alias used by buildScaleFromRoot
-// Middle Eastern modes — DAMASK draws from these instead of the song's
-// shared scale, since its whole character is that plaintive, foreign-sounding
-// augmented-2nd interval. Two closely related maqam-style modes, chosen
-// fresh each time DAMASK is randomized.
+// Middle Eastern modes — DAMASK and JINX draw from these instead of the
+// song's shared scale. DAMASK's whole character is that plaintive,
+// foreign-sounding augmented-2nd interval, and JINX shares the exact same
+// mode whenever both are present, so they play in the same maqam together.
 const MIDEAST_SCALES = [
   [0,1,4,5,7,8,11], // Hijaz Kar / Double Harmonic — augmented 2nd + raised 7th
   [0,1,4,5,7,8,10], // Hijaz / Phrygian dominant — augmented 2nd, flat 7th
 ];
-const trackScaleMode = {}; // tr -> a MIDEAST_SCALES entry, only meaningful while that track is DAMASK
+const MIDEAST_KEYS = new Set(['damask', 'jcmgtr']); // DAMASK, JINX
+const trackScaleMode = {}; // tr -> a MIDEAST_SCALES entry, only meaningful while that track is DAMASK or JINX
 function scaleModeFor(tr) {
-  return trackInstruments[tr] === 'damask' ? trackScaleMode[tr] : undefined;
+  return MIDEAST_KEYS.has(trackInstruments[tr]) ? trackScaleMode[tr] : undefined;
+}
+// If another DAMASK/JINX track already has a mode set, match it — they're
+// meant to share the exact same maqam, not just similarly-styled ones.
+// Otherwise pick a fresh mode.
+function pickOrShareMideastScale(tr) {
+  for (let t = 0; t < NUM_TRACKS; t++) {
+    if (t !== tr && MIDEAST_KEYS.has(trackInstruments[t]) && trackScaleMode[t]) return trackScaleMode[t];
+  }
+  return MIDEAST_SCALES[Math.floor(Math.random() * MIDEAST_SCALES.length)];
 }
 // Bass roots: A1–A2 range
 const BASS_ROOTS    = [55, 58, 62, 65, 69, 73];   // A1 B1 D2 F2 A2 C#2
@@ -2467,9 +2478,8 @@ function getRangeRoots(key) {
   if (key === 'sparkle') return SPARKLE_ROOTS;
   if (key === 'sflute' || key === 'boog' || key === 'fflute') return HIGH_ROOTS;
   if (key === 'blunt') return MID_ROOTS;
-  if (key === 'damask') return MID_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
-  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial') return MELODY_ROOTS;
+  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask') return MELODY_ROOTS;
   return BASS_ROOTS;
 }
 
@@ -2515,8 +2525,8 @@ function randomizeBassTrack(tr, level) {
     if (myRank > 0) root *= Math.pow(2, myRank); // shift up an octave per colliding track
   }
 
-  if (key === 'damask') {
-    trackScaleMode[tr] = MIDEAST_SCALES[Math.floor(Math.random() * MIDEAST_SCALES.length)];
+  if (MIDEAST_KEYS.has(key)) {
+    trackScaleMode[tr] = pickOrShareMideastScale(tr);
   } else {
     delete trackScaleMode[tr];
   }
@@ -6339,15 +6349,16 @@ function fullClear() {
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
     trackRLevel[tr] = 0;
     trackVolume[tr] = tr === 1 ? 0.505 : 0.8;
-    trackFx[tr] = { x: 0, y: 0 }; trackFxMode[tr] = 0;
+    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (ECHO) always keeps FX engaged
+    trackFxMode[tr] = 0;
     trackInstruments[tr] = defaultInstruments[tr] || 'tamb';
     if (ctx) {
-      setFxActive(tr, { x: 0, y: 0 });
+      setFxActive(tr, trackFx[tr]);
       if (trackGainNodes[tr]) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr], ctx.currentTime, 0.01);
     }
     const tb = document.getElementById(`tbtn-${tr}`);
     if (tb) { tb.textContent = INSTRUMENTS[trackInstruments[tr]]?.name||(tr+1); tb.classList.remove('muted','has-notes','shifting'); setTrackNameColor(tr, trackInstruments[tr]); }
-    const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
+    const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.toggle('on', tr === 0);
     const sb = document.getElementById(`swpbtn-${tr}`);
     if (sb) { sb.textContent = 'L'; sb.classList.remove('sweep-on'); }
     const rb = document.getElementById(`randbtn-${tr}`); if (rb) rb.classList.remove('pulsing');
@@ -6356,6 +6367,10 @@ function fullClear() {
     if (vb) { vb.classList.remove('muted'); const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
     redrawTrackCells(tr);
   }
+  // Track 1 is always ECHO — its Auto-Random loop was just stopped along
+  // with everything else above; re-engage it since Track 1 always keeps it running.
+  const rb0 = document.getElementById('randbtn-0');
+  if (rb0 && rb0._restartAuto) rb0._restartAuto();
   markModified();
 }
 const PATTERNS = [
@@ -7648,6 +7663,11 @@ function wireRandomizeButton(btn, tr) {
 
 buildUI();
 updateMasterVolCells();
+// Track 1 is always ECHO, and always starts with Auto-Random engaged.
+(function() {
+  const rb0 = document.getElementById('randbtn-0');
+  if (rb0 && rb0._restartAuto) rb0._restartAuto();
+})();
 
 
 // ── Settings panel ──
@@ -8033,9 +8053,14 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride) {
   src.buffer = _getAmalgamBaseBuffer();
   src.playbackRate.value = freq / _amalgamBaseFreq;
   const g = ctx.createGain(); g.gain.value = vel;
-  src.connect(g); g.connect(dest);
+  // Safety-net highpass — bass instruments are already excluded from the
+  // chord ECHO captures (see _regenerateAmalgamChord), but this also
+  // guarantees no low-end rumble ever comes through ECHO's own sound
+  // regardless of what pitch a phantom note happens to land on.
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 178; hp.Q.value = 0.7;
+  src.connect(g); g.connect(hp); hp.connect(dest);
   src.start(t);
-  src.onended = () => { try { g.disconnect(); } catch(e) {} };
+  src.onended = () => { try { g.disconnect(); hp.disconnect(); } catch(e) {} };
 }
 let _amalgamChord = null;
 function _regenerateAmalgamChord() {
@@ -8103,19 +8128,117 @@ function _scheduleAmalgamNotes() {
     }, s * step32Ms);
   }
 }
-// AMALGAM as a placeable instrument — the same phantom-chord echo the right
-// tape spool fires, but sequenced: every active step re-fires the current
-// pattern's captured chord with its decaying 16th-note repeats (the delay is
-// part of the sound, always on). Unlike the spool version, all notes are
-// routed through this track's own chain, so track volume, mute, FX, BLAST
-// and the per-track delay toggle behave like any other instrument. Repeats
-// are scheduled in audio time (not setTimeout) since the scheduler hands us
-// a future start time.
+// AMALGAM/ECHO as a placeable instrument — the same phantom-chord echo the
+// right tape spool fires, but sequenced: every active step re-fires the
+// current pattern's captured chord with its decaying 16th-note repeats.
+// Instead of live-scheduling ~8 separate node pairs per hit (the old
+// approach), the whole chord+cascade is bounced to a single buffer via
+// OfflineAudioContext once per chord/tempo, then every step trigger just
+// plays that one buffer back — one node, one FX/Delay/BLAST routing
+// resolution per hit, exactly like any other sample-based instrument. This
+// also structurally fixes the Delay-feedback compounding: there's only ever
+// one send into Delay per hit now, not one per internal repeat.
+let _amalgamBounce = { buffer: null, key: null, bpm: null };
+let _amalgamBouncing = false;
+
+function _amalgamChordKey(notes) {
+  return notes.map(n => `${n.tr}|${n.key}|${n.freq.toFixed(3)}`).join(',');
+}
+
+// Renders the chord's full decaying cascade offline. Mirrors the exact
+// volume math the old live version used, at a canonical (unaccented,
+// non-BLAST-reduced) level — isAccent and BLAST scale the whole rendered
+// buffer uniformly at playback time, which is mathematically the same
+// result since both were always flat multipliers applied across every
+// repeat and every note in the chord.
+async function _bounceAmalgamCascade(notes) {
+  const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
+  const step16 = stepDuration();
+  const decayRatio = 0.55;
+  const noteTail = 0.35; // matches the phantom note's own buffer length
+  let repeats = 0, lastT = 0;
+  for (let i = 0; ; i++) {
+    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor;
+    if (vol < 0.01) break;
+    repeats = i + 1;
+    lastT = i * step16;
+  }
+  const totalDur = Math.max(lastT + noteTail + 0.05, noteTail + 0.05);
+  const sr = ctx.sampleRate;
+  const offline = new OfflineAudioContext(1, Math.ceil(sr * totalDur), sr);
+  // Rebuild the same tiny sine-blip base waveform inside the offline
+  // context — AudioBuffers can't cross contexts, but the shape is
+  // deterministic (no randomness), so this is identical to _getAmalgamBaseBuffer().
+  const baseFreq = _amalgamBaseFreq;
+  const baseBuf = offline.createBuffer(1, Math.ceil(sr * noteTail), sr);
+  const bd = baseBuf.getChannelData(0);
+  for (let i = 0; i < bd.length; i++) {
+    const tt = i / sr;
+    const env = tt < 0.005 ? (tt / 0.005) : Math.exp(-(tt - 0.005) * 12);
+    bd[i] = Math.sin(2 * Math.PI * baseFreq * tt) * env;
+  }
+  for (let i = 0; i < repeats; i++) {
+    const vol = 0.5 * Math.pow(decayRatio, i) * chordNormFactor;
+    const t = i * step16;
+    notes.forEach(n => {
+      const src = offline.createBufferSource();
+      src.buffer = baseBuf;
+      src.playbackRate.value = n.freq / baseFreq;
+      const g = offline.createGain(); g.gain.value = vol;
+      src.connect(g); g.connect(offline.destination);
+      src.start(t);
+    });
+  }
+  return offline.startRendering();
+}
+
+// Kicks off an async re-bounce only when the chord content or tempo has
+// actually changed since the last one — otherwise every step trigger reuses
+// the cached buffer. If a render is already in flight, this is a no-op;
+// the next trigger will pick up whichever result lands.
+function _ensureAmalgamBounce(notes, key) {
+  if (_amalgamBounce.buffer && _amalgamBounce.key === key && _amalgamBounce.bpm === bpm) return;
+  if (_amalgamBouncing) return;
+  _amalgamBouncing = true;
+  _bounceAmalgamCascade(notes).then(buf => {
+    _amalgamBounce = { buffer: buf, key, bpm };
+    _amalgamBouncing = false;
+  }).catch(() => { _amalgamBouncing = false; });
+}
+
 function playAmalgamStep(isAccent, time, tr) {
   if (!ctx) return;
   _regenerateAmalgamChord(); // capture the pattern's tonal content as it is right now
   let notes = _amalgamChord;
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
+  const key = _amalgamChordKey(notes);
+  _ensureAmalgamBounce(notes, key);
+
+  if (_amalgamBounce.buffer && _amalgamBounce.key === key && _amalgamBounce.bpm === bpm) {
+    // Fast path — cached buffer, one node, one routing resolution.
+    const src = ctx.createBufferSource();
+    src.buffer = _amalgamBounce.buffer;
+    const g = ctx.createGain();
+    g.gain.value = (isAccent ? 1.3 : 1) * (trackPump[tr] ? 0.5623 : 1);
+    // Same safety-net highpass as the live path — see _playPhantomNote.
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 178; hp.Q.value = 0.7;
+    _amalgamVolOverride = true; // flag only — routes through the amalgam limiter, see getSynthConnectNode
+    const dest = getSynthConnectNode(tr);
+    _amalgamVolOverride = null;
+    src.connect(g); g.connect(hp); hp.connect(dest);
+    src.start(time);
+    src.onended = () => { try { src.disconnect(); g.disconnect(); hp.disconnect(); } catch(e) {} };
+    return;
+  }
+
+  // Fallback — the bounce isn't ready yet (still rendering, or this is the
+  // very first trigger of a brand new chord). Live-schedule the cascade the
+  // old way so playback is never silent while the bounce catches up in the
+  // background; the next trigger of this same chord reuses the cached buffer.
+  _playAmalgamStepLive(isAccent, time, tr, notes);
+}
+
+function _playAmalgamStepLive(isAccent, time, tr, notes) {
   const chordNormFactor = 1 / Math.sqrt(notes.length);
   const step16 = stepDuration(); // tempo-relative 16th-note gap between repeats
   const decayRatio = 0.55;
@@ -8326,7 +8449,7 @@ function fullReset() {
     trackChop[tr] = false;
     trackVolume[tr] = defaultVolumes[tr];
     trackInstruments[tr] = defaultInstruments[tr];
-    trackFx[tr] = { x: 0, y: 0 };
+    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (ECHO) always keeps FX engaged
     trackDelay[tr] = false;
     trackPump[tr] = false;
     trackFxMode[tr] = 0;
@@ -8368,6 +8491,11 @@ function fullReset() {
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
+  // Track 1 is always ECHO — re-apply its always-on FX and Auto-Random now
+  // that buildUI() just recreated the button elements fresh.
+  if (ctx && trackFxNodes[0]) setFxActive(0, trackFx[0]);
+  const rb0 = document.getElementById('randbtn-0');
+  if (rb0 && rb0._restartAuto) rb0._restartAuto();
   updateSlotButtons();
   updateMasterVolCells();
   updateSwingReadout();
@@ -8720,6 +8848,11 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
       g.connect(ef); ef.connect(masterGain); trackEnvFilters[i] = ef;
       trackFxNodes[i] = buildFxChain(g);
       if (trackInstruments[i] === 'ngate') initNoiseGate(i);
+      // Reflect any FX state already set in the data model (e.g. Track 1's
+      // default-on FX) now that the routing nodes actually exist — this can
+      // be set before the audio context is even created, since that only
+      // happens on the person's first tap.
+      if (trackFx[i] && (trackFx[i].x > 0 || trackFx[i].y > 0)) setFxActive(i, trackFx[i]);
     }
     const unlock = ctx.createBuffer(1,1,ctx.sampleRate);
     unlock.getChannelData(0)[0]=0.001;
@@ -8843,7 +8976,7 @@ async function hardResetAudioEngine() {
     // baseGain holds the "intended" envelope level; duckGain applies sidechain ducking on top
     const baseGain = ctx.createGain();
     baseGain.gain.setValueAtTime(0, t);
-    baseGain.gain.linearRampToValueAtTime(0.34, t + 0.008); // -2dB
+    baseGain.gain.linearRampToValueAtTime(0.2145, t + 0.008); // -6dB total (was -2dB, now another -4dB on top)
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
@@ -8927,7 +9060,7 @@ async function hardResetAudioEngine() {
     const measure = stepDuration() * 20; // one full bar plus one more quarter note, so it never ends early
     gain.gain.cancelScheduledValues(t);
     gain.gain.setValueAtTime(gain.gain.value, t);
-    gain.gain.linearRampToValueAtTime(2.4, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks
+    gain.gain.linearRampToValueAtTime(1.5144, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; -4dB overall from the previous 2.4 peak
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
       stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
