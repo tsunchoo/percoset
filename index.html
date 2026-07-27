@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 06:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 07:13</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1549,6 +1549,13 @@ function getAmalgamLimiter(dest) {
   return comp;
 }
 function getSynthConnectNode(tr) {
+  const raw = _rawSynthConnectNode(tr);
+  if (ctx && _duckEligible(tr)) {
+    return getSidechainDuckGain(tr, raw);
+  }
+  return raw;
+}
+function _rawSynthConnectNode(tr) {
   const fxVal = tr !== undefined ? trackFx[tr] : null;
   const fxOn = fxVal && (fxVal.x > 0 || fxVal.y > 0);
   const baseNode = (tr !== undefined && trackFxNodes[tr])
@@ -1590,6 +1597,7 @@ function getSynthConnectNode(tr) {
   }
   return baseNode;
 }
+
 
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
@@ -1640,6 +1648,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
     pDest = (tr !== undefined && trackGainNodes[tr]) ? trackGainNodes[tr] : masterGain;
   }
   if (tr !== undefined && trackPump[tr] && ctx) pDest = getPumpChain(tr, pDest);
+  if (ctx && _duckEligible(tr)) pDest = getSidechainDuckGain(tr, pDest);
   src.connect(instrumentGain); instrumentGain.connect(pDest);
   if (key === 'ssnare') _addSnareClick(time, pDest, isAccent ? 0.1 : 0.07); // a little sidestick-style click
   // Connect to delay if enabled
@@ -1919,7 +1928,7 @@ function scheduler() {
             dur = Math.max(0.01, dur * (1 - trackFx[tr].x) + 0.01 * trackFx[tr].x);
           }
           if (sfxOn) triggerFxEnvelope(tr, t);
-          if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass') duckPadTracks(t);
+          if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass') duckSidechainTracks(t);
           if (key === 'sbass')   playSynthBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass3')  playMotownBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass4')  playPlunkBass(freq, dur, val === 2, t, tr);
@@ -2002,7 +2011,7 @@ function scheduler() {
             const freq2 = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale2[noteIdx2];
             const dur2 = stepDuration() * 0.5;
             if (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0)) triggerFxEnvelope(tr, t2);
-            if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass') duckPadTracks(t2);
+            if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass') duckSidechainTracks(t2);
             if (key === 'sbass')   playSynthBass(freq2, dur2, false, t2, tr);
             if (key === 'sbass3')  playMotownBass(freq2, dur2, false, t2, tr);
             if (key === 'sbass4')  playPlunkBass(freq2, dur2, false, t2, tr);
@@ -2328,7 +2337,7 @@ function reverseBuffer(buf, revLen) {
 function playSynthKick(isAccent, time, tr) {
   if (!ctx) return;
   const dest = getSynthConnectNode(tr);
-  duckPadTracks(time);
+  duckSidechainTracks(time);
   const osc = ctx.createOscillator(), g = ctx.createGain();
   osc.connect(g); g.connect(dest);
   osc.frequency.setValueAtTime(isAccent ? 180 : 140, time);
@@ -2427,9 +2436,10 @@ function playSynthBass(freq, durSec, isAccent, time, tr) {
   const vel = isAccent ? 0.425 : 0.3;
   const startFreq = _bassGlideState[tr] || freq;
   _bassGlideState[tr] = freq;
-  const dest = (tr !== undefined && trackFxNodes[tr])
+  let dest = (tr !== undefined && trackFxNodes[tr])
     ? (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0) ? trackFxNodes[tr].fxSend : trackFxNodes[tr].dryGain)
     : (trackGainNodes[tr] || masterGain);
+  if (ctx && _duckEligible(tr)) dest = getSidechainDuckGain(tr, dest);
 
   const saw = ctx.createOscillator(); saw.type = 'sawtooth';
   const sub = ctx.createOscillator(); sub.type = 'sine';
@@ -2839,10 +2849,9 @@ function playStringSynth(freq, durSec, isAccent, time, tr) {
   const revG = ctx.createGain(); revG.gain.value = 0.5;
   const dryG = ctx.createGain(); dryG.gain.value = 0.55;
 
-  const padDuck = getPadSidechainGain(tr, dest);
   masterEnv.connect(lp);
-  lp.connect(dryG); dryG.connect(padDuck);
-  lp.connect(rev); rev.connect(revG); revG.connect(padDuck);
+  lp.connect(dryG); dryG.connect(dest);
+  lp.connect(rev); rev.connect(revG); revG.connect(dest);
 
   detunes.forEach((det, i) => {
     const osc = ctx.createOscillator(); osc.type = 'sine';
@@ -2869,7 +2878,7 @@ function playStringSynth(freq, durSec, isAccent, time, tr) {
   shimEnv.gain.setValueAtTime(0, time);
   shimEnv.gain.linearRampToValueAtTime(vol * 0.18, time + 1.0);
   shimEnv.gain.exponentialRampToValueAtTime(0.0005, time + durSec + tail);
-  shimmer.connect(shimEnv); shimEnv.connect(padDuck);
+  shimmer.connect(shimEnv); shimEnv.connect(dest);
   shimmer.start(time); shimmer.stop(time + durSec + tail);
   shimmer.onended = () => { try { shimEnv.disconnect(); masterEnv.disconnect(); lp.disconnect(); rev.disconnect(); revG.disconnect(); dryG.disconnect(); } catch(e) {} };
 }
@@ -2949,9 +2958,8 @@ function playSynthLeg(freq, durSec, isAccent, time, tr) {
     window._synthLegReverbBuf = irBuf;
   }
   const rev = ctx.createConvolver(); rev.buffer = window._synthLegReverbBuf;
-  const padDuck = getPadSidechainGain(tr, dest);
-  const dryG = ctx.createGain(); dryG.gain.value = 0.5; dryG.connect(padDuck);
-  const revG = ctx.createGain(); revG.gain.value = 0.6; revG.connect(padDuck);
+  const dryG = ctx.createGain(); dryG.gain.value = 0.5; dryG.connect(dest);
+  const revG = ctx.createGain(); revG.gain.value = 0.6; revG.connect(dest);
 
   masterEnv.connect(lp); lp.connect(hp);
   hp.connect(dryG); hp.connect(rev); rev.connect(revG);
@@ -4139,7 +4147,6 @@ function playBlunt(freq, durSec, isAccent, time, tr) {
     { ratio: Math.pow(2, 8 / 12), delay: 0.045, ampMul: 0.7  }, // minor 6th, quieter so it doesn't stack into a wash
   ];
 
-  const padDuck = getPadSidechainGain(tr, dest);
   chordTones.forEach(({ ratio, delay, ampMul }) => {
     const noteFreq = freq * ratio;
     const t = time + delay;
@@ -4156,7 +4163,7 @@ function playBlunt(freq, durSec, isAccent, time, tr) {
     env.gain.linearRampToValueAtTime(vel * 0.8, t + 0.35);   // slow bloom
     env.gain.setValueAtTime(vel * 0.65, t + sustain * 0.6);
     env.gain.linearRampToValueAtTime(0, t + sustain);
-    tame.connect(env); env.connect(padDuck);
+    tame.connect(env); env.connect(dest);
 
     // Genuine amplitude tremolo riding on top of the envelope above — an
     // audible pulsing/wobbling loudness, not just a filter sweep, so it
@@ -4432,8 +4439,7 @@ function playOpening(freq, durSec, isAccent, time, tr) {
 
   const chordGain = ctx.createGain();
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = freq * 6; lp.Q.value = 0.5;
-  const padDuck = getPadSidechainGain(tr, dest);
-  chordGain.connect(lp); lp.connect(padDuck);
+  chordGain.connect(lp); lp.connect(dest);
 
   const notes = [
     { ratio: 1.0,        delay: 0.00, amp: 1.0  }, // root
@@ -4659,8 +4665,7 @@ function playGlassBell(freq, durSec, isAccent, time, tr) {
   ampEnv.gain.linearRampToValueAtTime(0, time + sustain);
 
   dryGain.connect(ampEnv); wetGain.connect(ampEnv);
-  const slayDuck = getPadSidechainGain(tr, dest);
-  ampEnv.connect(slayDuck);
+  ampEnv.connect(dest);
 
   saw1.start(time); saw1.stop(time + sustain + 0.1);
   saw2.start(time); saw2.stop(time + sustain + 0.1);
@@ -4852,19 +4857,26 @@ function hideCelestialMap() {
 }
 // Fire the beat's kick with the master-duck sidechain pump — shared by every
 // beat-type branch (including off-beat 8th-note kicks like BREAKS/BOUNCE 2&/3&)
-// ── PAD sidechain — a dedicated, always-on duck applied to every PAD
-// instrument (SLAY, HASSELL, CYBER PAD, SOLAR PAD, OPENING), triggered by
-// every kick and every bass note. Deeper and punchier than the general
-// master duck, since this is meant to be a real characteristic of these
-// instruments, not a subtle mix glue effect.
-const _PAD_DUCK_KEYS = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening']);
-const _padSidechainGains = {};
-function getPadSidechainGain(tr, dest) {
-  if (!_padSidechainGains[tr]) {
+// ── Sidechain duck — a dedicated, always-on duck applied to every
+// instrument EXCEPT the lead-tonal group (JINX, JENNY, DREAM PIANO, DENIECE,
+// SPACE KOTO, DX PIANO, DENIALISM), triggered by every kick and every bass
+// note. Deeper and punchier than the general master duck, since this is
+// meant to be a real characteristic of the mix, not a subtle glue effect.
+// Applied centrally inside getSynthConnectNode (see below) so every
+// synth-based instrument picks it up automatically without each one having
+// to wrap its own output — only the sample-based (WAV) percussion voices in
+// playBuffer need their own explicit call, since they route separately.
+const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhodes', 'rhodes2', 'denial', 'damask', 'dulc']); // JINX, JENNY, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, DENIALISM, DAMASK, DULCIMER
+function _duckEligible(tr) {
+  return tr !== undefined && trackInstruments[tr] !== undefined && !LEAD_INSTRUMENT_KEYS.has(trackInstruments[tr]);
+}
+const _sidechainDuckGains = {};
+function getSidechainDuckGain(tr, dest) {
+  if (!_sidechainDuckGains[tr]) {
     const g = ctx.createGain(); g.gain.value = 1;
-    _padSidechainGains[tr] = { gain: g, dest: null };
+    _sidechainDuckGains[tr] = { gain: g, dest: null };
   }
-  const nodes = _padSidechainGains[tr];
+  const nodes = _sidechainDuckGains[tr];
   // Only reconnect the output when dest actually changed (FX/Delay/BLAST
   // toggled between notes) — reconnecting on every note would sever a
   // still-ringing previous note sharing this same persistent gain node.
@@ -4875,10 +4887,10 @@ function getPadSidechainGain(tr, dest) {
   }
   return nodes.gain;
 }
-function duckPadTracks(t) {
+function duckSidechainTracks(t) {
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (_PAD_DUCK_KEYS.has(trackInstruments[tr]) && _padSidechainGains[tr]) {
-      const g = _padSidechainGains[tr].gain.gain;
+    if (_duckEligible(tr) && _sidechainDuckGains[tr]) {
+      const g = _sidechainDuckGains[tr].gain.gain;
       g.cancelScheduledValues(t);
       g.setValueAtTime(1, t);
       g.linearRampToValueAtTime(0.1, t + 0.008); // heavy duck — most of the signal drops out
@@ -4895,7 +4907,7 @@ function fireBeatKick(t) {
     dg.setTargetAtTime(1, t + 0.020, 0.08);
   }
   duckPumpTracks(t);
-  duckPadTracks(t);
+  duckSidechainTracks(t);
 }
 function playKick(t) {
   // Matches playSynthKick — same character, slightly louder for the beat,
