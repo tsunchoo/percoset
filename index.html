@@ -319,7 +319,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #soundPicker.visible { display: flex; }
 .sound-picker-inner {
   background: var(--bg); border: none;
-  min-width: 320px; padding: 16px;
+  min-width: 320px; padding: 16px 16px 26px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   position: relative; max-height: 80vh; overflow-y: auto;
 }
@@ -561,7 +561,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 18:27</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 18:50</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -639,7 +639,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <!-- Settings window — appears on reel hold -->
 <div id="instructionsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:28px 24px 44px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;font-family:'DM Sans',sans-serif;">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:28px 24px 54px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;font-family:'DM Sans',sans-serif;">
     <div id="instructionsLockBtn" style="display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;letter-spacing:1px;color:var(--dim);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 14px;text-transform:uppercase;pointer-events:none;transition:background 0.12s, color 0.12s, transform 0.12s;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAADwCAYAAACg7+4yAAAD3ElEQVR4nO3bUW7bSBBAQTnI/a/s/QgS7GZtQBQpsh+n6gAKp+epTRvI4wEAAAAAAAAc7+PqBxjq8+oH+Ib7+suqA5ka6F7L3edKB75rtN9Z4m7vfsjVov3Obe/5rgcT7tdud993O5Bwn3Obe7/LQYT7mvz91w8g3GNkO/hx9QPsIN7jZGdZ/OZlhx2Q66H2wOI9R6aL0iuEeM+TmXUl4MxAbyQx80LAiUHe1PjZTw94/AAXMPoOJgc8enCLGXsXUwMeO7CFjbyTiQGPHBSPx2Pg3UwLeNyA+J9RdzQp4FGDoWFSwHSMWTZTAh4zEJ424s4mBDxiELzk8rubEDC87OqAL/8Gs9uld3hlwOJlt6s3MPdw2TK6KmDbl0PYwBzlkqUkYNKuCNjrA4exgTnS6cvp59n/YMi0/5nrJ9cXzr6k6ZcwLdrvTJ7jqTMU8C+VcP+2/DxXf4Wohvvb7+efGvLbnflL3LQh1+P9tzudZZNV/wpxxwufdKbTltWKAU+66KPd+WxfWi3gFS54hTP+sVrA3MxZAU/4BW6lzbTMWW1g3uWUpSVg0gRM2ioBL/NOuJpVAl7REl9aAZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkfRz8eZ8Hfx73dUh7R3yIaNljV4N7XyHEy167Gnq1fuHyDpt7fGUDi5d32dzW1oDFyyj+jMY0m5bkloBtX8axgZno6WUpYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImbUvAH297Cvivp1uzgUnbGrAtzLttaswGZpLNC/KVgG1hxnh1A4uYo73U1BEhfh7wGaxrV4NHb1Ix8ww/wQEAAAAAAGC0fwDhV0KVLoch3gAAAABJRU5ErkJggg==" style="width:12px;height:auto;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" alt="">Screen Lock</div>
     <div style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;text-align:center;border-bottom:1px solid #ddd;padding-bottom:12px;width:100%;">How To Use</div>
     <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;align-items:stretch;gap:8px;font-size:0.8rem;color:var(--text);line-height:1.4;text-align:left;width:100%;">
@@ -2656,10 +2656,10 @@ function randomizeBassTrack(tr, level) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','sparkle','congHi','bongHi','rhodes','rhodes2','dulc']);
+  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
-    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc') ? 3 : 99;
+    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute') ? 3 : 99;
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < 0.18) {
         grid[tr][s] = 3;
@@ -7389,7 +7389,8 @@ function snapshotState() {
     beatType: _beatType,
     trackDelay: [...trackDelay],
     trackPump: [...trackPump],
-    trackAutoRand: [...Array(NUM_TRACKS)].map((_, tr) => !!autoShiftStops[tr])
+    trackAutoRand: [...Array(NUM_TRACKS)].map((_, tr) => !!autoShiftStops[tr]),
+    activeSlot: activeSlot
   };
 }
 function restoreState(snap) {
@@ -7464,6 +7465,14 @@ function restoreState(snap) {
       }
     });
   }
+  // Whichever slot (if any) was active at the moment this snapshot was
+  // taken — restoring this is what RECALL needs to correctly move the
+  // per-beat pulse indicator to the slot that now actually matches what's
+  // playing, instead of leaving it stuck on whatever was active before the
+  // recall. slotPress() explicitly sets activeSlot right after calling this
+  // function for its own case, so this doesn't interfere with that.
+  activeSlot = snap.activeSlot !== undefined ? snap.activeSlot : -1;
+  updateSlotButtons();
 }
 // For tonal, non-chopped tracks, mark every empty cell that's actually being
 // sustained by a prior note (per the existing "hold until the next note"
@@ -7870,10 +7879,10 @@ function randomizeTrack(tr) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','sparkle','congHi','bongHi','rhodes','rhodes2','dulc']);
+  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
-    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc') ? 3 : 99;
+    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute') ? 3 : 99;
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < 0.18) {
         grid[tr][s] = 3;
@@ -9214,9 +9223,13 @@ async function initAudio() {
     attachCtxStateWatch();
     masterGain = ctx.createGain(); masterGain.gain.value = masterVol;
     try { _getAmalgamBaseBuffer(); } catch(e) {} // pre-warm the amalgam echo's cached buffer up front
-    const makeupGain = ctx.createGain(); makeupGain.gain.value = 3.1625; // +10dB fixed output boost (was +7dB) — extends headroom at the top of the range and scales the current default position by the same amount, since this applies uniformly regardless of where the master volume slider sits
+    // Single source of truth for the base output boost — the turbo toggle
+    // below derives its own value from this instead of a hardcoded number,
+    // so future changes here don't get silently undone by toggling turbo.
+    window._BASE_MAKEUP_GAIN = 5.0122; // +14dB fixed output boost (was +10dB)
+    const makeupGain = ctx.createGain(); makeupGain.gain.value = window._BASE_MAKEUP_GAIN;
     window._makeupGain = makeupGain;
-    window._beatGain = ctx.createGain(); window._beatGain.gain.value = 0.402; window._beatGain.connect(masterGain);
+    window._beatGain = ctx.createGain(); window._beatGain.gain.value = 0.506; window._beatGain.connect(masterGain); // +2dB default (was 0.402)
     // UI Sounds
     const _uiSoundBufs = {};
     window._uiSoundBufs = _uiSoundBufs;
@@ -9815,8 +9828,8 @@ function toggleTurbo() {
       window.masterLimiter.release.value = 0.1;
     }
   }
-  if (window._makeupGain) {
-    window._makeupGain.gain.value = _turboOn ? 1.585 * 1.26 : 1.585; // +2dB hotter output while engaged
+  if (window._makeupGain && window._BASE_MAKEUP_GAIN) {
+    window._makeupGain.gain.value = _turboOn ? window._BASE_MAKEUP_GAIN * 1.26 : window._BASE_MAKEUP_GAIN; // +2dB hotter output while engaged
   }
   if (btn) {
     btn.classList.toggle('boost-on', _turboOn);
