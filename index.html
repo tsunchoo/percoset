@@ -566,7 +566,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Jul26 21:59</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 16:56</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6587,7 +6587,8 @@ const SCIFI_SURNAMES = ['Deckard','Kowalski','Sebastian','Tyrell','Ripley','Hick
 function getSpeciesName() {
   const celestial = SPECIES_NAMES[Math.floor(Math.random() * SPECIES_NAMES.length)];
   const surname = SCIFI_SURNAMES[Math.floor(Math.random() * SCIFI_SURNAMES.length)];
-  return `${celestial} ${surname}`;
+  const celestialCap = celestial.charAt(0).toUpperCase() + celestial.slice(1);
+  return `${celestialCap} ${surname}`;
 }
 let _currentSpecies = getSpeciesName();
 function getKeyName() {
@@ -9466,8 +9467,10 @@ async function hardResetAudioEngine() {
     const { gain } = sweepNodes;
     const t = ctx.currentTime;
     const measure = stepDuration() * 20; // one full bar plus one more quarter note, so it never ends early
-    gain.gain.cancelScheduledValues(t);
-    gain.gain.setValueAtTime(gain.gain.value, t);
+    const attackDur = stepDuration() * 4; // matches startSweep's own fade-in — let it actually finish before taking over, instead of cancelling it out from under itself
+    // Don't touch anything before the fade-in completes — cancelling here
+    // used to wipe out the quarter-note attack before it ever had a chance
+    // to run, since both functions fire in the same instant on press.
     gain.gain.linearRampToValueAtTime(1.5144, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; -4dB overall from the previous 2.4 peak
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
