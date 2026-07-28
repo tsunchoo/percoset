@@ -58,7 +58,7 @@ header {
   width: 100%; max-width: 960px; position: sticky; top: 0; z-index: 100;
   background: transparent;
   margin-top: 6px;
-  margin-bottom: 5px; padding-bottom: 5px;
+  margin-bottom: 2px; padding-bottom: 2px;
   min-height: calc(40px + 40px);
   display: flex; align-items: stretch;
 }
@@ -100,7 +100,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   display: block;
   overflow: hidden;
 }
-.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-end; margin-bottom: 10px; }
+.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-end; margin-bottom: 2px; }
 .tape-window { width: 64px; height: 39px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
@@ -293,6 +293,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   background: #555; border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+  border-top: 5px solid var(--bg); border-bottom: 5px solid var(--bg);
 }
 .track-vol-bar::after {
   content: '';
@@ -574,7 +576,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 17:51</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 17:59</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -607,7 +609,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <img class="reel" id="reel2" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;-webkit-user-drag:none;">
     </div>
   </div>
-  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-end;margin-bottom:10px;font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
+  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-end;margin-bottom:2px;font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
@@ -5562,7 +5564,13 @@ function updateTrackMute(tr) {
 }
 
 function attachVolBarEvents(bar, tr) {
-  let dragging = false, startX = 0, startVol = 0;
+  let dragging = false;
+  const BORDER = 5; // px — matches the CSS top/bottom border; decorative only, doesn't respond to touch
+  function inBorderZone(clientY) {
+    const r = bar.getBoundingClientRect();
+    const relY = clientY - r.top;
+    return relY < BORDER || relY > r.height - BORDER;
+  }
   function getVol(clientX) {
     const r = bar.getBoundingClientRect();
     const pos = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
@@ -5575,10 +5583,10 @@ function attachVolBarEvents(bar, tr) {
     updateVolFillDisplay(tr);
     markModified();
   }
-  bar.addEventListener('mousedown', e => { dragging = true; setVol(e.clientX); e.preventDefault(); });
+  bar.addEventListener('mousedown', e => { if (inBorderZone(e.clientY)) return; dragging = true; setVol(e.clientX); e.preventDefault(); });
   window.addEventListener('mousemove', e => { if (dragging) setVol(e.clientX); });
   window.addEventListener('mouseup', () => { dragging = false; });
-  bar.addEventListener('touchstart', e => { dragging = true; setVol(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+  bar.addEventListener('touchstart', e => { if (inBorderZone(e.touches[0].clientY)) return; dragging = true; setVol(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
   bar.addEventListener('touchmove', e => { if (dragging) { setVol(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
   bar.addEventListener('touchend', () => { dragging = false; });
 }
@@ -8674,7 +8682,7 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   let notes = _amalgamChord;
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
   const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
-  const vol = 0.3155 * chordNormFactor * (isAccent ? 1.3 : 1); // -4dB total (was -2dB)
+  const vol = 0.1991 * chordNormFactor * (isAccent ? 1.3 : 1); // -8dB total (was -4dB) — fills in quieter bits, shouldn't be heard over everything
   _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
   const dest = getSynthConnectNode(tr); // one resolution — Delay/FX/BLAST all behave like any other instrument now
   notes.forEach(n => {
