@@ -58,8 +58,8 @@ header {
   width: 100%; max-width: 960px; position: sticky; top: 0; z-index: 100;
   background: transparent;
   margin-top: 6px;
-  margin-bottom: 5px; padding-bottom: 0;
-  min-height: 44px;
+  margin-bottom: 5px; padding-bottom: 5px;
+  min-height: calc(40px + 40px);
   display: flex; align-items: stretch;
 }
 header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.89rem; letter-spacing: 2.2px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
@@ -100,7 +100,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   display: block;
   overflow: hidden;
 }
-.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-end; margin-bottom: 0; }
+.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-end; margin-bottom: 10px; }
 .tape-window { width: 64px; height: 39px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
@@ -243,10 +243,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   height: clamp(28px, 8vw, 32px);
 }
 .track-name-btn {
-  font-size: clamp(0.58rem, 2.2vw, 0.8rem); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
+  font-size: clamp(0.64rem, 2.3vw, 0.86rem); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   cursor: pointer; background: #b0b0b0; color: var(--text);
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
-  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: clamp(68px, 22vw, 96px);
+  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: clamp(78px, 22vw, 106px);
   display: flex; align-items: center;
   touch-action: none; -webkit-tap-highlight-color: transparent;
   transition: background 0.06s, color 0.06s;
@@ -295,21 +295,6 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
   border-bottom: 10px solid var(--bg);
-}
-.track-vol-bar::after {
-  content: '';
-  position: absolute; top: 0; bottom: 0; left: 0; right: 0;
-  pointer-events: none;
-  /* 10 equal segments — a thin gap (matching the page background) every
-     10%, cutting through both the fill and the empty track underneath so
-     the bar always reads as 10 discrete blocks regardless of fill width */
-  background: repeating-linear-gradient(
-    to right,
-    transparent 0,
-    transparent calc(10% - 2px),
-    var(--bg) calc(10% - 2px),
-    var(--bg) 10%
-  );
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
@@ -576,7 +561,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 18:17</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 18:27</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -609,7 +594,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <img class="reel" id="reel2" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;-webkit-user-drag:none;">
     </div>
   </div>
-  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-end;margin-bottom:0;font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
+  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-end;margin-bottom:10px;font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
@@ -7773,13 +7758,6 @@ function randomizeTrack(tr) {
       const maxLen = _legatoMaxLen(tr, s);
       trackLegatoLen[tr][s] = Math.min(4, maxLen);
     });
-    // FX now toggles randomly each time TEXTURE's pattern regenerates — 50%
-    // chance on, rather than staying permanently engaged.
-    const echoFxOn = Math.random() < 0.5;
-    trackFx[tr] = echoFxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
-    if (ctx) setFxActive(tr, trackFx[tr]);
-    const echoFxBtn = document.getElementById(`fxbtn-${tr}`);
-    if (echoFxBtn) echoFxBtn.classList.toggle('on', echoFxOn);
     redrawTrackCells(tr); markModified(); return;
   }
 
@@ -8545,19 +8523,6 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
   const playbackRate = freq / _amalgamBaseFreq;
 
-  // The sustained body doesn't share the main blip's `dest` when Delay is
-  // on — sending both layers into Delay's own feedback loop at full
-  // strength was what made TEXTURE snowball out of control once Delay was
-  // engaged; only the main blip below sends to Delay now, same as every
-  // other instrument only ever sends one voice into it per note.
-  let destNoDelay = dest;
-  if (tr !== undefined && trackDelay[tr]) {
-    const _savedDelay = trackDelay[tr];
-    trackDelay[tr] = false;
-    destNoDelay = getSynthConnectNode(tr);
-    trackDelay[tr] = _savedDelay;
-  }
-
   // Body — a soft, sustained sine+triangle pair underneath the transient
   // blip, holding through the note's actual assigned length (durSec), with
   // only a short tail after that. Previously TEXTURE had no concept of note
@@ -8565,7 +8530,12 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   // of legato length, which is why it read as tiny and clipped with nothing
   // to work with. This gives it real sustain to match. Toned down from the
   // first pass — its own attack was piling on top of the blip and reverse
-  // swell right at the onset.
+  // swell right at the onset. Now shares `dest` with the blip (including
+  // Delay when engaged) — the old reverse-swell layer is what caused
+  // 3-layer snowballing through Delay's feedback loop; with that gone,
+  // just these two modest-level layers together should be fine, and
+  // Delay was otherwise barely audible since it only ever touched the
+  // quiet transient blip, not the sustained body that's actually heard.
   const sustain = Math.max(durSec || 0.35, 0.35);
   const bodyTail = 0.25;
   const bodyOsc1 = ctx.createOscillator(); bodyOsc1.type = 'sine'; bodyOsc1.frequency.value = freq;
@@ -8579,14 +8549,13 @@ function _playPhantomNote(tr, key, freq, isAccent, when, destOverride, durSec) {
   bodyEnv.gain.exponentialRampToValueAtTime(0.0005, t + sustain + bodyTail);
   const bodyHp1 = ctx.createBiquadFilter(); bodyHp1.type = 'highpass'; bodyHp1.frequency.value = 178; bodyHp1.Q.value = 0.7;
   const bodyHp2 = ctx.createBiquadFilter(); bodyHp2.type = 'highpass'; bodyHp2.frequency.value = 178; bodyHp2.Q.value = 0.7;
-  bodyMix.connect(bodyEnv); bodyEnv.connect(bodyHp1); bodyHp1.connect(bodyHp2); bodyHp2.connect(destNoDelay);
+  bodyMix.connect(bodyEnv); bodyEnv.connect(bodyHp1); bodyHp1.connect(bodyHp2); bodyHp2.connect(dest);
   const bodyStop = t + sustain + bodyTail + 0.05;
   bodyOsc1.start(t); bodyOsc1.stop(bodyStop);
   bodyOsc2.start(t); bodyOsc2.stop(bodyStop);
   bodyOsc1.onended = () => { try { bodyMix.disconnect(); bodyEnv.disconnect(); bodyHp1.disconnect(); bodyHp2.disconnect(); } catch(e) {} };
 
-  // The original transient blip — kept as the attack "ping" character, and
-  // the only layer that feeds Delay
+  // The original transient blip — kept as the attack "ping" character
   const src = ctx.createBufferSource();
   src.buffer = _getAmalgamBaseBuffer();
   src.playbackRate.value = playbackRate;
