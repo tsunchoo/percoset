@@ -58,8 +58,8 @@ header {
   width: 100%; max-width: 960px; position: sticky; top: 0; z-index: 100;
   background: transparent;
   margin-top: 6px;
-  margin-bottom: 2px; padding-bottom: 2px;
-  min-height: calc(40px + 40px);
+  margin-bottom: 5px; padding-bottom: 0;
+  min-height: 44px;
   display: flex; align-items: stretch;
 }
 header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.89rem; letter-spacing: 2.2px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
@@ -100,7 +100,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   display: block;
   overflow: hidden;
 }
-.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-end; margin-bottom: 2px; }
+.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-end; margin-bottom: 0; }
 .tape-window { width: 64px; height: 39px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
@@ -243,7 +243,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   height: clamp(28px, 8vw, 32px);
 }
 .track-name-btn {
-  font-size: clamp(0.52rem, 2.2vw, 0.72rem); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
+  font-size: clamp(0.58rem, 2.2vw, 0.8rem); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   cursor: pointer; background: #b0b0b0; color: var(--text);
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
   font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: clamp(68px, 22vw, 96px);
@@ -294,7 +294,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
-  border-top: 5px solid var(--bg); border-bottom: 5px solid var(--bg);
+  border-bottom: 10px solid var(--bg);
 }
 .track-vol-bar::after {
   content: '';
@@ -576,7 +576,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 17:59</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 18:17</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -609,7 +609,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <img class="reel" id="reel2" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;-webkit-user-drag:none;">
     </div>
   </div>
-  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-end;margin-bottom:2px;font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
+  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-end;margin-bottom:0;font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
@@ -654,9 +654,9 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <!-- Settings window — appears on reel hold -->
 <div id="instructionsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:28px 24px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;font-family:'DM Sans',sans-serif;">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:28px 24px 44px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;font-family:'DM Sans',sans-serif;">
     <div id="instructionsLockBtn" style="display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;letter-spacing:1px;color:var(--dim);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 14px;text-transform:uppercase;pointer-events:none;transition:background 0.12s, color 0.12s, transform 0.12s;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAADwCAYAAACg7+4yAAAD3ElEQVR4nO3bUW7bSBBAQTnI/a/s/QgS7GZtQBQpsh+n6gAKp+epTRvI4wEAAAAAAAAc7+PqBxjq8+oH+Ib7+suqA5ka6F7L3edKB75rtN9Z4m7vfsjVov3Obe/5rgcT7tdud993O5Bwn3Obe7/LQYT7mvz91w8g3GNkO/hx9QPsIN7jZGdZ/OZlhx2Q66H2wOI9R6aL0iuEeM+TmXUl4MxAbyQx80LAiUHe1PjZTw94/AAXMPoOJgc8enCLGXsXUwMeO7CFjbyTiQGPHBSPx2Pg3UwLeNyA+J9RdzQp4FGDoWFSwHSMWTZTAh4zEJ424s4mBDxiELzk8rubEDC87OqAL/8Gs9uld3hlwOJlt6s3MPdw2TK6KmDbl0PYwBzlkqUkYNKuCNjrA4exgTnS6cvp59n/YMi0/5nrJ9cXzr6k6ZcwLdrvTJ7jqTMU8C+VcP+2/DxXf4Wohvvb7+efGvLbnflL3LQh1+P9tzudZZNV/wpxxwufdKbTltWKAU+66KPd+WxfWi3gFS54hTP+sVrA3MxZAU/4BW6lzbTMWW1g3uWUpSVg0gRM2ioBL/NOuJpVAl7REl9aAZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkfRz8eZ8Hfx73dUh7R3yIaNljV4N7XyHEy167Gnq1fuHyDpt7fGUDi5d32dzW1oDFyyj+jMY0m5bkloBtX8axgZno6WUpYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImbUvAH297Cvivp1uzgUnbGrAtzLttaswGZpLNC/KVgG1hxnh1A4uYo73U1BEhfh7wGaxrV4NHb1Ix8ww/wQEAAAAAAGC0fwDhV0KVLoch3gAAAABJRU5ErkJggg==" style="width:12px;height:auto;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" alt="">Screen Lock</div>
-    <div style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;text-align:center;border-bottom:1px solid #ddd;padding-bottom:12px;width:100%;">How To</div>
+    <div style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;text-align:center;border-bottom:1px solid #ddd;padding-bottom:12px;width:100%;">How To Use</div>
     <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;align-items:stretch;gap:8px;font-size:0.8rem;color:var(--text);line-height:1.4;text-align:left;width:100%;">
       <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">RECORD</span><span>Record in realtime then Save or Share</span></li>
       <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">PLAY/STOP</span><span>Double-click Resets the Pattern</span></li>
@@ -1830,6 +1830,7 @@ function scheduler() {
     if ((step === 0 || step === 4 || step === 8 || step === 12) && _pendingSlot >= 0) {
       const pi = _pendingSlot; _pendingSlot = -1;
       const snap = slots[pi];
+      _recallSnapB = snapshotState(); // capture what's about to be replaced, so RECALL can revert to it
       const now = ctx.currentTime;
       // Brief master gain dip to mask FX node reconnection clicks
       if (masterGain) {
@@ -5565,11 +5566,11 @@ function updateTrackMute(tr) {
 
 function attachVolBarEvents(bar, tr) {
   let dragging = false;
-  const BORDER = 5; // px — matches the CSS top/bottom border; decorative only, doesn't respond to touch
+  const BOTTOM_BORDER = 10; // px — matches the CSS bottom border; decorative only, doesn't respond to touch
   function inBorderZone(clientY) {
     const r = bar.getBoundingClientRect();
     const relY = clientY - r.top;
-    return relY < BORDER || relY > r.height - BORDER;
+    return relY > r.height - BOTTOM_BORDER;
   }
   function getVol(clientX) {
     const r = bar.getBoundingClientRect();
@@ -6588,7 +6589,7 @@ function applyBarColor(color) {
 
 document.documentElement.style.setProperty('--bar-color', _currentBarColor);
 // 80s sci-fi movie character names (not actors) — a database roughly matching the scale of the celestial objects list above (~240 entries), drawn from Star Wars, Blade Runner, Aliens, The Terminator, Back to the Future, RoboCop, Predator, The Thing, Tron, Flash Gordon, Dune, Star Trek II-IV, and many more.
-const SPECIES_NAMES = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'phobos', 'deimos', 'io', 'europa', 'ganymede', 'callisto', 'amalthea', 'himalia', 'titan', 'enceladus', 'mimas', 'dione', 'rhea', 'tethys', 'hyperion', 'iapetus', 'phoebe', 'titania', 'oberon', 'umbriel', 'ariel', 'miranda', 'puck', 'caliban', 'sycorax', 'triton', 'nereid', 'proteus', 'larissa', 'galatea', 'despina', 'thalassa', 'charon', 'nix', 'hydra', 'kerberos', 'styx', 'ceres', 'pluto', 'eris', 'makemake', 'haumea', 'sedna', 'orcus', 'quaoar', 'ixion', 'pallas', 'vesta', 'hygiea', 'juno', 'psyche', 'davida', 'sylvia', 'interamnia', 'bamberga', 'herculina', 'euphrosyne', 'doris', 'themis', 'cybele', 'camilla', 'halley', 'encke', 'tempel', 'hartley', 'churyumov', 'biela', 'arend', 'bennett', 'bradfield', 'hale', 'bopp', 'hyakutake', 'ikeya', 'seki', 'lovejoy', 'neowise', 'sirius', 'canopus', 'rigel', 'vega', 'capella', 'arcturus', 'aldebaran', 'spica', 'antares', 'fomalhaut', 'deneb', 'regulus', 'altair', 'betelgeuse', 'pollux', 'castor', 'procyon', 'achernar', 'acrux', 'mimosa', 'hadar', 'mizar', 'alioth', 'alcor', 'dubhe', 'merak', 'phecda', 'megrez', 'alnitak', 'alnilam', 'mintaka', 'saiph', 'bellatrix', 'alderamin', 'alpheratz', 'schedar', 'caph', 'ruchbah', 'segin', 'enif', 'sadalsuud', 'sadalmelik', 'sadachbia', 'sadalbari', 'ancha', 'shaula', 'lesath', 'alniyat', 'graffias', 'dschubba', 'fang', 'pi', 'rho', 'zubenelgenubi', 'zubeneschamali', 'zubenelhakrabi', 'andromeda', 'triangulum', 'centaurus', 'sculptor', 'fornax', 'tucana', 'carina', 'orion', 'helix', 'crab', 'ring', 'eagle', 'lagoon', 'trifid', 'rosette', 'omega', 'dumbell', 'blinking', 'eskimo', 'cat', 'owl', 'boomerang', 'hourglass', 'red', 'spider', 'butterfly', 'stingray', 'cassiopeia', 'cygnus', 'lyra', 'aquila', 'serpens', 'ophiuchus', 'hercules', 'bootes', 'corona', 'virgo', 'libra', 'scorpius', 'sagittarius', 'capricornus', 'aquarius', 'pisces', 'aries', 'taurus', 'gemini', 'cancer', 'leo', 'draco', 'ursa', 'lupus', 'ara', 'pavo', 'grus', 'phoenix', 'hydrus', 'reticulum', 'pictor', 'columba', 'lepus', 'eridanus', 'milkyway', 'lmc', 'smc', 'bodes', 'cigar', 'whirlpool', 'sombrero', 'pinwheel', 'southernpinwheel', 'blackeye', 'sunflower', 'centaurusa', 'sculptorgalaxy', 'barnards', 'ic10', 'ic1613', 'leoi', 'leoii', 'wlm', 'pegasusdwarf', 'aquariusdwarf', 'sextansa', 'sextansb', 'dracodwarf', 'ursaminordwarf', 'sculptordwarf', 'fornaxdwarf', 'carinadwarf', 'ngc185', 'ngc147', 'm32', 'm110', 'piscesdwarf', 'cetusdwarf', 'antliadwarf', 'tucanadwarf', 'phoenixdwarf', 'cartwheel', 'antennae']
+const SPECIES_NAMES = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'phobos', 'deimos', 'io', 'europa', 'ganymede', 'callisto', 'amalthea', 'himalia', 'titan', 'enceladus', 'mimas', 'dione', 'rhea', 'tethys', 'hyperion', 'iapetus', 'phoebe', 'titania', 'oberon', 'umbriel', 'ariel', 'miranda', 'puck', 'caliban', 'sycorax', 'triton', 'nereid', 'proteus', 'larissa', 'galatea', 'despina', 'thalassa', 'charon', 'nix', 'hydra', 'kerberos', 'styx', 'ceres', 'pluto', 'eris', 'makemake', 'haumea', 'sedna', 'orcus', 'quaoar', 'ixion', 'pallas', 'vesta', 'hygiea', 'juno', 'psyche', 'davida', 'sylvia', 'interamnia', 'bamberga', 'herculina', 'euphrosyne', 'doris', 'themis', 'cybele', 'camilla', 'halley', 'encke', 'tempel', 'hartley', 'churyumov', 'biela', 'arend', 'bennett', 'bradfield', 'hale', 'bopp', 'hyakutake', 'ikeya', 'seki', 'lovejoy', 'neowise', 'sirius', 'canopus', 'rigel', 'vega', 'capella', 'arcturus', 'aldebaran', 'spica', 'antares', 'fomalhaut', 'deneb', 'regulus', 'altair', 'betelgeuse', 'pollux', 'castor', 'procyon', 'achernar', 'acrux', 'mimosa', 'hadar', 'mizar', 'alioth', 'alcor', 'dubhe', 'merak', 'phecda', 'megrez', 'alnitak', 'alnilam', 'mintaka', 'saiph', 'bellatrix', 'alderamin', 'alpheratz', 'schedar', 'caph', 'ruchbah', 'segin', 'enif', 'sadalsuud', 'sadalmelik', 'sadachbia', 'sadalbari', 'ancha', 'shaula', 'lesath', 'alniyat', 'graffias', 'dschubba', 'fang', 'pi', 'rho', 'zubenelgenubi', 'zubeneschamali', 'zubenelhakrabi', 'andromeda', 'triangulum', 'centaurus', 'sculptor', 'fornax', 'tucana', 'carina', 'orion', 'helix', 'crab', 'ring', 'eagle', 'lagoon', 'trifid', 'rosette', 'omega', 'dumbell', 'blinking', 'eskimo', 'cat', 'owl', 'boomerang', 'hourglass', 'red', 'spider', 'butterfly', 'stingray', 'cassiopeia', 'cygnus', 'lyra', 'aquila', 'serpens', 'ophiuchus', 'hercules', 'bootes', 'corona', 'virgo', 'libra', 'scorpius', 'sagittarius', 'capricornus', 'aquarius', 'pisces', 'aries', 'taurus', 'gemini', 'leo', 'draco', 'ursa', 'lupus', 'ara', 'pavo', 'grus', 'phoenix', 'hydrus', 'reticulum', 'pictor', 'columba', 'lepus', 'eridanus', 'milkyway', 'lmc', 'smc', 'bodes', 'cigar', 'whirlpool', 'sombrero', 'pinwheel', 'southernpinwheel', 'blackeye', 'sunflower', 'centaurusa', 'sculptorgalaxy', 'barnards', 'ic10', 'ic1613', 'leoi', 'leoii', 'wlm', 'pegasusdwarf', 'aquariusdwarf', 'sextansa', 'sextansb', 'dracodwarf', 'ursaminordwarf', 'sculptordwarf', 'fornaxdwarf', 'carinadwarf', 'ngc185', 'ngc147', 'm32', 'm110', 'piscesdwarf', 'cetusdwarf', 'antliadwarf', 'tucanadwarf', 'phoenixdwarf', 'cartwheel', 'antennae']
 const SCIFI_SURNAMES = ['Deckard','Kowalski','Sebastian','Tyrell','Ripley','Hicks','Vasquez','Hudson','Gorman','Apone','Drake','Ferro','Frost','Spunkmeyer','Connor','Reese','Traxler','Vukovich','Silberman','Buchanan','Ventura','Brown','Tannen','Garrett','Baines','Parker','Wilson','Murphy','Lewis','Boddicker','Jones','Morton','Antonowsky','Schaefer','Flynn','Bradley','Gibbs','Arden','Zarkov','Halleck','Idaho','Vries','Yueh','Crandall','Muller','Woods','Davidge','McCoy','Marcus','Scott','Taylor','Luckett','Selwyn','Finley','Lefkowitz','Speck','Crosby','Jabituya','Marner','Riley','Pendleton','Putter','Maxwell','Scrimshaw','Brundle','Quaife','Borans','Rogan','Gordon','Priddy','Gomez','OConnor','Carruthers','Wallace','Donnelly','Freeman','McAdams','Richardson','Webster','Treadwell','Johnson','Owens','Lightman','Mack','Falken','Beringer','Brace','Reynolds','Floyd','Chandra','Curnow','Kirbuk','Bowman','Hayden','Shermin','Fox','Donovan','Parrish','Carter','Carlsen','Fallada','Caine','McFadden','Brigman','Coffey','Sykes','Harcourt','Benson','Cane','Lazarus','Nix','Laan','Schopmeyer']; // just surnames now — first names were dead weight, never actually used
 function getSpeciesName() {
   const celestial = SPECIES_NAMES[Math.floor(Math.random() * SPECIES_NAMES.length)];
@@ -7534,6 +7535,7 @@ function slotPress(i) {
   } else if (!playing) {
     // Not playing — switch immediately
     _pendingSlot = -1;
+    _recallSnapB = snapshotState(); // capture what's about to be replaced, so RECALL can revert to it
     restoreState(slots[i]);
     activeSlot = i;
     updateSlotButtons();
@@ -8682,7 +8684,7 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   let notes = _amalgamChord;
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
   const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
-  const vol = 0.1991 * chordNormFactor * (isAccent ? 1.3 : 1); // -8dB total (was -4dB) — fills in quieter bits, shouldn't be heard over everything
+  const vol = 0.1256 * chordNormFactor * (isAccent ? 1.3 : 1); // -12dB total (was -8dB) — fills in quieter bits, shouldn't be heard over everything
   _amalgamVolOverride = trackPump[tr] ? vol * 0.5623 : vol; // -5dB when BLAST is on this track
   const dest = getSynthConnectNode(tr); // one resolution — Delay/FX/BLAST all behave like any other instrument now
   notes.forEach(n => {
