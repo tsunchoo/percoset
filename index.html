@@ -294,6 +294,21 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
+.track-vol-bar::after {
+  content: '';
+  position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+  pointer-events: none;
+  /* 10 equal segments — a thin gap (matching the page background) every
+     10%, cutting through both the fill and the empty track underneath so
+     the bar always reads as 10 discrete blocks regardless of fill width */
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(10% - 2px),
+    var(--bg) calc(10% - 2px),
+    var(--bg) 10%
+  );
+}
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
   background: var(--vol-fill); pointer-events: none; transition: width 0.05s;
@@ -337,13 +352,6 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   color: #2a2a2a; margin-bottom: 12px;
 }
 #soundPickerList {
-  display: flex; flex-direction: column; gap: 14px;
-}
-.sound-group-label {
-  font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--dim); margin-bottom: 6px; font-family: 'DM Sans', sans-serif;
-}
-.sound-group-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
 }
 .sound-option {
@@ -566,7 +574,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 17:37</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 17:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -5281,38 +5289,28 @@ function openSoundPicker(tr) {
   const list = document.getElementById('soundPickerList'); list.innerHTML = '';
   const _isBass = k => ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(k);
   const _isPad = k => ['fflute', 'blunt', 'sstring', 'sleg', 'opening'].includes(k);
+  // Same category order as before (KIT, PERC, LEAD, PAD, BASS), just no
+  // section headers/sub-grids — one flat grid to fit on one page.
   const GROUPS = [
-    { label: 'KIT',  match: k => INSTRUMENTS[k].group === 'kit' },
-    { label: 'PERC', match: k => INSTRUMENTS[k].group === 'perc' },
-    { label: 'LEAD', match: k => INSTRUMENTS[k].group === 'tonal' && !_isBass(k) && !_isPad(k) },
-    { label: 'PAD',  match: k => _isPad(k) },
-    { label: 'BASS', match: k => _isBass(k) },
+    k => INSTRUMENTS[k].group === 'kit',
+    k => INSTRUMENTS[k].group === 'perc',
+    k => INSTRUMENTS[k].group === 'tonal' && !_isBass(k) && !_isPad(k),
+    k => _isPad(k),
+    k => _isBass(k),
   ];
-  GROUPS.forEach(({ label, match }) => {
-    const keys = INSTRUMENT_KEYS.filter(match);
-    if (keys.length === 0) return;
-    const section = document.createElement('div');
-    section.className = 'sound-group';
-    const heading = document.createElement('div');
-    heading.className = 'sound-group-label';
-    heading.textContent = label;
-    section.appendChild(heading);
-    const grid = document.createElement('div');
-    grid.className = 'sound-group-grid';
-    keys.forEach(k => {
-      const opt = document.createElement('div');
-      opt.className = 'sound-option inst-' + (INSTRUMENTS[k].group||'perc') + (_isBass(k) ? ' inst-bass' : '') + (_isPad(k) ? ' inst-pad' : '') + (trackInstruments[tr] === k ? ' active' : '');
-      opt.dataset.key = k;
-      opt.textContent = INSTRUMENTS[k].name;
-      opt.addEventListener('mouseenter', () => {
-        list.querySelectorAll('.sound-option').forEach(o => o.classList.toggle('active', o.dataset.key === k));
-      });
-      opt.addEventListener('mouseup', e => { e.stopPropagation(); selectSound(tr, k); });
-      opt.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); selectSound(tr, k); }, { passive: false });
-      grid.appendChild(opt);
+  const ordered = [];
+  GROUPS.forEach(match => { INSTRUMENT_KEYS.filter(match).forEach(k => ordered.push(k)); });
+  ordered.forEach(k => {
+    const opt = document.createElement('div');
+    opt.className = 'sound-option inst-' + (INSTRUMENTS[k].group||'perc') + (_isBass(k) ? ' inst-bass' : '') + (_isPad(k) ? ' inst-pad' : '') + (trackInstruments[tr] === k ? ' active' : '');
+    opt.dataset.key = k;
+    opt.textContent = INSTRUMENTS[k].name;
+    opt.addEventListener('mouseenter', () => {
+      list.querySelectorAll('.sound-option').forEach(o => o.classList.toggle('active', o.dataset.key === k));
     });
-    section.appendChild(grid);
-    list.appendChild(section);
+    opt.addEventListener('mouseup', e => { e.stopPropagation(); selectSound(tr, k); });
+    opt.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); selectSound(tr, k); }, { passive: false });
+    list.appendChild(opt);
   });
   document.getElementById('soundPicker').classList.add('visible');
 }
@@ -8861,6 +8859,7 @@ function fullReset() {
     trackDelay[tr] = false;
     trackPump[tr] = false;
     trackFxMode[tr] = 0;
+    trackRLevel[tr] = 0;
     delete trackLegatoLen[tr];
     delete trackPitchOverride[tr];
     if (TONAL_KEYS.has(defaultInstruments[tr])) {
@@ -8900,10 +8899,15 @@ function fullReset() {
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
   // Track 1 is always TEXTURE — re-apply its always-on FX and Auto-Random now
-  // that buildUI() just recreated the button elements fresh.
+  // that buildUI() just recreated the button elements fresh. Deferred a tick
+  // to rule out any DOM/closure timing race right after a full rebuild.
   if (ctx && trackFxNodes[0]) setFxActive(0, trackFx[0]);
-  const rb0 = document.getElementById('randbtn-0');
-  if (rb0 && rb0._restartAuto) rb0._restartAuto();
+  setTimeout(() => {
+    const rb0 = document.getElementById('randbtn-0');
+    if (rb0 && rb0._restartAuto && !autoShiftStops[0]) rb0._restartAuto();
+    const fb0 = document.getElementById('fxbtn-0');
+    if (fb0) fb0.classList.toggle('on', true);
+  }, 50);
   updateSlotButtons();
   updateMasterVolCells();
   updateSwingReadout();
