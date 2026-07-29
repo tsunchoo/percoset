@@ -561,7 +561,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Jul26 01:39</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Jul26 01:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -4767,28 +4767,28 @@ function playYamask(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const vel = isAccent ? 0.078 : 0.052;
-  const attack = 0.05; // quicker onset than DAMASK — a flute speaks faster than a reed
-  const decay = Math.min(durSec + 1.1, 2.6);
+  const attack = 0.08; // slower entrance — more world-weary, less quick-speaking
+  const decay = Math.min(durSec + 1.4, 3.0); // longer, more lingering tail — lonesome, not brisk
   const release = Math.min(decay * 0.4, 0.6);
 
-  // Vibrato — slower and eases in later than DAMASK's, a flute-ish wobble
-  // rather than a reed's quicker wavering.
-  const vibLfo = ctx.createOscillator(); vibLfo.type = 'sine'; vibLfo.frequency.value = 4.0 + Math.random() * 0.5;
+  // Vibrato — slower, narrower, and eases in even later than before — a
+  // resigned, restrained wobble rather than an expressive one.
+  const vibLfo = ctx.createOscillator(); vibLfo.type = 'sine'; vibLfo.frequency.value = 3.4 + Math.random() * 0.4;
   const vibGain = ctx.createGain(); vibGain.gain.setValueAtTime(0, time);
-  vibGain.gain.linearRampToValueAtTime(14, time + 0.7); // narrower, later-arriving wobble than DAMASK's 18-cent/0.45s
+  vibGain.gain.linearRampToValueAtTime(10, time + 0.9); // narrower and later than before
   vibLfo.connect(vibGain);
   vibLfo.start(time); vibLfo.stop(time + decay + 0.2);
 
-  // Pure tone: fundamental sine + a very quiet octave-up sine — no detuned
-  // unison beating (that's DAMASK's reedy signature), through a lowpass
-  // instead of a bandpass for a rounder, less buzzy body.
+  // Pure tone: fundamental sine + a very faint octave-up sine — starker
+  // and more isolated-sounding than before, with the octave pulled back
+  // further so the tone reads as more alone, less full.
   const bodyGain = ctx.createGain();
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = freq * 3.2; lp.Q.value = 0.6;
   bodyGain.connect(lp); lp.connect(dest);
 
   const partials = [
     { ratio: 1.0, amp: 1.0,  type: 'sine' },
-    { ratio: 2.0, amp: 0.12, type: 'sine' },
+    { ratio: 2.0, amp: 0.06, type: 'sine' },
   ];
   const oscs = [];
   partials.forEach(p => {
@@ -4815,7 +4815,7 @@ function playYamask(freq, durSec, isAccent, time, tr) {
   const chiff = ctx.createBufferSource(); chiff.buffer = chiffBuf;
   const chiffBP = ctx.createBiquadFilter(); chiffBP.type = 'bandpass'; chiffBP.frequency.value = freq * 3; chiffBP.Q.value = 0.8;
   const chiffEnv = ctx.createGain();
-  chiffEnv.gain.setValueAtTime(vel * 0.5, time);
+  chiffEnv.gain.setValueAtTime(vel * 0.3, time);
   chiffEnv.gain.exponentialRampToValueAtTime(0.0001, time + chiffLen);
   chiff.connect(chiffBP); chiffBP.connect(chiffEnv); chiffEnv.connect(dest);
   chiff.start(time); chiff.stop(time + chiffLen + 0.01);
@@ -4830,8 +4830,8 @@ function playYamask(freq, durSec, isAccent, time, tr) {
   const noiseBP = ctx.createBiquadFilter(); noiseBP.type = 'bandpass'; noiseBP.frequency.value = freq * 1.8; noiseBP.Q.value = 0.5;
   const noiseEnv = ctx.createGain();
   noiseEnv.gain.setValueAtTime(0, time);
-  noiseEnv.gain.linearRampToValueAtTime(vel * 0.19, time + attack * 1.2);
-  noiseEnv.gain.setValueAtTime(vel * 0.15, time + Math.max(attack, decay - release));
+  noiseEnv.gain.linearRampToValueAtTime(vel * 0.095, time + attack * 1.2);
+  noiseEnv.gain.setValueAtTime(vel * 0.075, time + Math.max(attack, decay - release));
   noiseEnv.gain.linearRampToValueAtTime(0.0001, time + decay);
   noise.connect(noiseBP); noiseBP.connect(noiseEnv); noiseEnv.connect(dest);
   noise.start(time); noise.stop(time + decay + 0.1);
@@ -7345,7 +7345,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.8 : (trackInstruments[tr] === 'opening') ? 0.1 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25)); // base +15%, then +25% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK fixed at 80% — plaintive lead wants the echo trail; OPENING fixed at 10% — rarely wants it
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'opening') ? 0.1 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25)); // base +15%, then +25% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; OPENING fixed at 10% — rarely wants it
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
