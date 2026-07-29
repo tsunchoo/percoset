@@ -319,7 +319,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #soundPicker.visible { display: flex; }
 .sound-picker-inner {
   background: var(--bg); border: none;
-  min-width: 320px; padding: 16px;
+  min-width: 320px; padding: 16px 16px 30px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   position: relative; max-height: 80vh; overflow-y: auto;
 }
@@ -561,7 +561,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Jul26 23:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Jul26 00:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -571,7 +571,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     <div class="sound-picker-title" id="soundPickerTitle">TRK 1 — SOUND</div>
     <div id="soundPickerList"></div>
     <div class="sound-picker-hint">tap outside to close</div>
-    <div style="height:20px;flex-shrink:0;"></div>
+    <div style="display:block;width:100%;height:30px;min-height:30px;"></div>
   </div>
 </div>
 
@@ -640,7 +640,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <!-- Settings window — appears on reel hold -->
 <div id="instructionsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:28px 24px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;font-family:'DM Sans',sans-serif;">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:28px 24px 30px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;font-family:'DM Sans',sans-serif;">
     <div id="instructionsLockBtn" style="display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;letter-spacing:1px;color:var(--dim);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 14px;text-transform:uppercase;pointer-events:none;transition:background 0.12s, color 0.12s, transform 0.12s;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAADwCAYAAACg7+4yAAAD3ElEQVR4nO3bUW7bSBBAQTnI/a/s/QgS7GZtQBQpsh+n6gAKp+epTRvI4wEAAAAAAAAc7+PqBxjq8+oH+Ib7+suqA5ka6F7L3edKB75rtN9Z4m7vfsjVov3Obe/5rgcT7tdud993O5Bwn3Obe7/LQYT7mvz91w8g3GNkO/hx9QPsIN7jZGdZ/OZlhx2Q66H2wOI9R6aL0iuEeM+TmXUl4MxAbyQx80LAiUHe1PjZTw94/AAXMPoOJgc8enCLGXsXUwMeO7CFjbyTiQGPHBSPx2Pg3UwLeNyA+J9RdzQp4FGDoWFSwHSMWTZTAh4zEJ424s4mBDxiELzk8rubEDC87OqAL/8Gs9uld3hlwOJlt6s3MPdw2TK6KmDbl0PYwBzlkqUkYNKuCNjrA4exgTnS6cvp59n/YMi0/5nrJ9cXzr6k6ZcwLdrvTJ7jqTMU8C+VcP+2/DxXf4Wohvvb7+efGvLbnflL3LQh1+P9tzudZZNV/wpxxwufdKbTltWKAU+66KPd+WxfWi3gFS54hTP+sVrA3MxZAU/4BW6lzbTMWW1g3uWUpSVg0gRM2ioBL/NOuJpVAl7REl9aAZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkfRz8eZ8Hfx73dUh7R3yIaNljV4N7XyHEy167Gnq1fuHyDpt7fGUDi5d32dzW1oDFyyj+jMY0m5bkloBtX8axgZno6WUpYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImbUvAH297Cvivp1uzgUnbGrAtzLttaswGZpLNC/KVgG1hxnh1A4uYo73U1BEhfh7wGaxrV4NHb1Ix8ww/wQEAAAAAAGC0fwDhV0KVLoch3gAAAABJRU5ErkJggg==" style="width:12px;height:auto;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" alt="">Screen Lock</div>
     <div style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;text-align:center;border-bottom:1px solid #ddd;padding-bottom:12px;width:100%;">How To Use</div>
     <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;align-items:stretch;gap:8px;font-size:0.8rem;color:var(--text);line-height:1.4;text-align:left;width:100%;">
@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">R</span><span>creates new notes in track, double-click for Automatic</span></li>
     </ul>
     <div style="font-size:0.65rem;letter-spacing:0.5px;color:var(--dim);text-align:center;padding-top:8px;border-top:1px solid #ddd;">Concept &amp; Design by Simon Garrett, built with Claude</div>
-    <div style="height:20px;flex-shrink:0;width:100%;"></div>
+    <div style="display:block;width:100%;height:30px;min-height:30px;flex-shrink:0;"></div>
   </div>
 </div>
 
@@ -693,13 +693,8 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DELAY MIX</div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="20" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100)">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DELAY TIME</div>
-        <input type="range" id="delayTimeBar" min="1" max="16" value="13" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayTime((17 - +this.value) / 2)">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">REVERB MIX</div>
+        <input type="range" id="delayMixBar" min="0" max="100" value="50" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100)">
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
@@ -942,10 +937,8 @@ function syncSettingsPanel() {
   if (bs) bs.value = bpm;
   const kd = document.getElementById('keyDisplay');
   if (kd) kd.textContent = (getKeyName() || '').replace(/-/g, ' ');
-  const dtb = document.getElementById('delayTimeBar');
-  if (dtb) dtb.value = 17 - (window._globalDelaySubdivisions || 2) * 2; // inverse of the halved (doubled-length) oninput transform
   const dmb = document.getElementById('delayMixBar');
-  if (dmb) dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.2) * 100);
+  if (dmb) dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.5) * 100);
   updateSwingReadout();
 }
 function updateSwingReadout() {
@@ -1330,73 +1323,49 @@ function _trackNote() {
 
 
 
-// ── Per-track delay effect ─────────────────────────────────────────────────
-function setGlobalDelayTime(subdivisions) {
-  window._globalDelaySubdivisions = subdivisions;
-  const delayTime = (60 / bpm) / subdivisions;
-  if (_sharedDelay) _sharedDelay.delay.delayTime.value = delayTime;
-}
+// ── Per-track reverb send ───────────────────────────────────────────────
 
 function setGlobalDelayMix(v) {
-  if (_sharedDelay) _sharedDelay.wetGain.gain.value = v;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = v;
   window._globalDelayMix = v;
 }
 
-// Single shared delay node for all tracks — minimises node count
-let _sharedDelay = null;
-
+// Per-track reverb send toggle — reuses the same trackDelay[]/delaybtn-
+// state and IDs that used to drive the old delay effect, now driving a
+// small send into the shared reverb bus instead. Kept the internal names
+// to avoid touching the many other places that reference them; only the
+// audio destination, button label, and settings panel text actually
+// changed.
 function getSharedDelay() {
-  if (_sharedDelay) {
-    // Reset wetGain in case it was ramped to 0 by a previous toggle-off
-    _sharedDelay.wetGain.gain.cancelScheduledValues(ctx.currentTime);
-    _sharedDelay.wetGain.gain.setValueAtTime(window._globalDelayMix !== undefined ? window._globalDelayMix : 0.2, ctx.currentTime);
-    return _sharedDelay;
-  }
-  const subs = window._globalDelaySubdivisions || 2; // matches delayTimeBar's default value of 13 -> subdivisions 2 (an 8th note, doubled from before)
-  const delayTime = (60 / bpm) / subs;
-  const delay = ctx.createDelay(2.0);
-  delay.delayTime.value = delayTime;
-  const feedback = ctx.createGain();
-  feedback.gain.value = 0.25;
-  const wetGain = ctx.createGain();
-  wetGain.gain.value = window._globalDelayMix !== undefined ? window._globalDelayMix : 0.2;
-  delay.connect(feedback);
-  feedback.connect(delay);
-  delay.connect(wetGain);
-  wetGain.connect(masterGain);
-  _sharedDelay = { delay, feedback, wetGain };
-  return _sharedDelay;
+  return null; // no longer used — kept as a no-op in case anything still calls it
 }
 
 function getOrCreateDelay(tr) {
-  // All tracks share one delay node
-  _delayNodes[tr] = getSharedDelay();
-  return _delayNodes[tr];
+  return null; // no longer used
 }
 
 function toggleTrackDelay(tr) {
   trackDelay[tr] = !trackDelay[tr];
   const btn = document.getElementById(`delaybtn-${tr}`);
   if (btn) btn.classList.toggle('on', trackDelay[tr]);
-  // Shared node — only disconnect if no tracks have delay enabled
-  if (!trackDelay[tr]) {
-    const anyDelayOn = trackDelay.some(d => d);
-    if (!anyDelayOn && _sharedDelay) {
-      try { _sharedDelay.wetGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1); } catch(e) {}
-      setTimeout(() => {
-        try { _sharedDelay.delay.disconnect(); _sharedDelay.wetGain.disconnect(); } catch(e) {}
-        _sharedDelay = null;
-        for (let i = 0; i < NUM_TRACKS; i++) delete _delayNodes[i];
-      }, 500);
-    }
+  if (!trackDelay[tr] && _reverbSendGains[tr]) {
+    try { _reverbSendGains[tr].disconnect(); } catch(e) {}
+    delete _reverbSendGains[tr];
   }
 }
 
-// Connect a source node to delay if enabled for that track
+// Connect a source node to the shared reverb bus if reverb is enabled for
+// that track — same call signature/shape as the old connectToDelay, so
+// every existing call site keeps working unchanged.
+const _reverbSendGains = {};
 function connectToDelay(tr, sourceNode) {
-  if (!trackDelay[tr] || !ctx) return;
-  const d = getOrCreateDelay(tr);
-  sourceNode.connect(d.delay);
+  if (!trackDelay[tr] || !ctx || !window._reverbSendBus) return;
+  if (!_reverbSendGains[tr]) {
+    _reverbSendGains[tr] = ctx.createGain();
+    _reverbSendGains[tr].gain.value = 0.35; // per-track send level into the shared reverb bus
+    _reverbSendGains[tr].connect(window._reverbSendBus);
+  }
+  sourceNode.connect(_reverbSendGains[tr]);
 }
 
 // ── FX: XY pad per track ─────────────────────────────────────────────────────
@@ -1563,12 +1532,17 @@ function _rawSynthConnectNode(tr) {
     ? (fxOn ? trackFxNodes[tr].fxSend : trackFxNodes[tr].dryGain)
     : ((tr !== undefined && trackGainNodes[tr]) ? trackGainNodes[tr] : masterGain);
 
-  // If delay is on, return a splitter: 50% dry to baseNode, 50% to delay
-  if (tr !== undefined && trackDelay[tr] && ctx) {
+  // If reverb (repurposed from the old delay toggle) is on, return a
+  // splitter: dry to baseNode, plus a send into the shared reverb bus.
+  if (tr !== undefined && trackDelay[tr] && ctx && window._reverbSendBus) {
     const split = ctx.createGain(); split.gain.value = 1.0;
     split.connect(baseNode);
-    const d = getOrCreateDelay(tr);
-    split.connect(d.delay);
+    if (!_reverbSendGains[tr]) {
+      _reverbSendGains[tr] = ctx.createGain();
+      _reverbSendGains[tr].gain.value = 0.35;
+      _reverbSendGains[tr].connect(window._reverbSendBus);
+    }
+    split.connect(_reverbSendGains[tr]);
     // This runs on every single note — clean it up generously later rather than never.
     setTimeout(() => { try { split.disconnect(); } catch(e) {} }, 6000);
     if (tr !== undefined && trackPump[tr] && ctx) {
@@ -1662,10 +1636,14 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (ctx && tr !== undefined) pDest = getSourceTrimGain(tr, pDest);
   src.connect(instrumentGain); instrumentGain.connect(pDest);
   if (key === 'ssnare') _addSnareClick(time, pDest, isAccent ? 0.1 : 0.07); // a little sidestick-style click
-  // Connect to delay if enabled
-  if (tr !== undefined && trackDelay[tr] && ctx) {
-    const d = getOrCreateDelay(tr);
-    instrumentGain.connect(d.delay);
+  // Connect to the shared reverb bus if enabled (repurposed from the old delay toggle)
+  if (tr !== undefined && trackDelay[tr] && ctx && window._reverbSendBus) {
+    if (!_reverbSendGains[tr]) {
+      _reverbSendGains[tr] = ctx.createGain();
+      _reverbSendGains[tr].gain.value = 0.35;
+      _reverbSendGains[tr].connect(window._reverbSendBus);
+    }
+    instrumentGain.connect(_reverbSendGains[tr]);
   }
   src.start(time);
   src.onended = () => { try { src.disconnect(); instrumentGain.disconnect(); } catch(e) {} };
@@ -4853,8 +4831,8 @@ function playYamask(freq, durSec, isAccent, time, tr) {
   const noiseBP = ctx.createBiquadFilter(); noiseBP.type = 'bandpass'; noiseBP.frequency.value = freq * 1.8; noiseBP.Q.value = 0.5;
   const noiseEnv = ctx.createGain();
   noiseEnv.gain.setValueAtTime(0, time);
-  noiseEnv.gain.linearRampToValueAtTime(vel * 0.38, time + attack * 1.2);
-  noiseEnv.gain.setValueAtTime(vel * 0.3, time + Math.max(attack, decay - release));
+  noiseEnv.gain.linearRampToValueAtTime(vel * 0.19, time + attack * 1.2);
+  noiseEnv.gain.setValueAtTime(vel * 0.15, time + Math.max(attack, decay - release));
   noiseEnv.gain.linearRampToValueAtTime(0.0001, time + decay);
   noise.connect(noiseBP); noiseBP.connect(noiseEnv); noiseEnv.connect(dest);
   noise.start(time); noise.stop(time + decay + 0.1);
@@ -4997,26 +4975,8 @@ function getSourceTrimGain(tr, dest) {
     try { nodes.gain.disconnect(); } catch(e) {}
     nodes.gain.connect(dest);
     nodes.dest = dest;
-    nodes._sendConnected = false; // the blanket disconnect above also wiped the reverb send, if any
   }
-  // Small send into the shared reverb bus — basses skip this, reverb tends
-  // to muddy the low end, so they stay dry. Tracked independently of the
-  // `dest` change above, so swapping a track's instrument between bass and
-  // non-bass connects/disconnects the send correctly even when dest itself
-  // doesn't happen to change at the same time.
-  const isBassNow = _BASS_KEYS_FOR_TRIM.has(trackInstruments[tr]);
-  if (window._reverbSendBus && !isBassNow && !nodes._sendConnected) {
-    if (!nodes.sendG) {
-      nodes.sendG = ctx.createGain(); nodes.sendG.gain.value = 0.12;
-      nodes.sendG.connect(window._reverbSendBus);
-    }
-    nodes.gain.connect(nodes.sendG);
-    nodes._sendConnected = true;
-  } else if (isBassNow && nodes._sendConnected && nodes.sendG) {
-    try { nodes.gain.disconnect(nodes.sendG); } catch(e) {}
-    nodes._sendConnected = false;
-  }
-  nodes.gain.gain.value = isBassNow ? 1 : 0.891; // -1dB for everything except basses
+  nodes.gain.gain.value = _BASS_KEYS_FOR_TRIM.has(trackInstruments[tr]) ? 1 : 0.891; // -1dB for everything except basses
   return nodes.gain;
 }
 function _duckEligible(tr) {
@@ -5574,7 +5534,7 @@ function buildUI() {
 
     // Delay toggle button
     const delayBtn = document.createElement('button');
-    delayBtn.className = 'shift-btn right'; delayBtn.textContent = 'D';
+    delayBtn.className = 'shift-btn right'; delayBtn.textContent = 'R';
     delayBtn.id = `delaybtn-${tr}`;
     delayBtn.classList.toggle('on', trackDelay[tr]);
     delayBtn.addEventListener('click', () => toggleTrackDelay(tr));
