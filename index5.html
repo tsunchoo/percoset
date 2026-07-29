@@ -561,7 +561,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Jul26 01:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Jul26 01:39</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -618,13 +618,13 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div class="beat-type-item" data-beat="bounce">BOUNCE</div>
       <div class="beat-type-item" data-beat="breaks">BREAKS</div>
       <div class="beat-type-item" data-beat="drive">SWING</div>
+      <div class="beat-type-item" data-beat="swagger">SWAGGER</div>
       <div class="beat-type-item" data-beat="halftime">HALFTIME</div>
       <div class="beat-type-item" data-beat="reggae">ROCKERS</div>
       <div class="beat-type-item" data-beat="reggae2">ONE DROP</div>
       <div class="beat-type-item" data-beat="fourfloor">4X4</div>
       <div class="beat-type-item" data-beat="doubledown">DOUBLEDOWN</div>
       <div class="beat-type-item" data-beat="samba">SAMBA</div>
-      <div class="beat-type-item" data-beat="swagger">SWAGGER</div>
       <div class="beat-type-item" data-beat="cumbia">CUMBIA</div>
       <div class="beat-type-item" data-beat="afrobeat">AFROBEAT</div>
       <div class="beat-type-item" data-beat="boogie">SHUFFLE</div>
@@ -6664,7 +6664,16 @@ const SCIFI_SURNAMES = ['Deckard','Kowalski','Sebastian','Tyrell','Ripley','Hick
 function getSpeciesName() {
   const celestial = SPECIES_NAMES[Math.floor(Math.random() * SPECIES_NAMES.length)];
   const surname = SCIFI_SURNAMES[Math.floor(Math.random() * SCIFI_SURNAMES.length)];
-  const celestialCap = celestial.charAt(0).toUpperCase() + celestial.slice(1);
+  // Some celestial names are stored as single concatenated words (e.g.
+  // "ursaminordwarf") — split them wherever "major", "minor", or "dwarf"
+  // appears as part of the word, since those are meant to read as separate
+  // words even though they're stored compound.
+  let split = celestial;
+  ['major', 'minor', 'dwarf'].forEach(word => {
+    const idx = split.indexOf(word);
+    if (idx > 0) split = split.slice(0, idx) + ' ' + split.slice(idx);
+  });
+  const celestialCap = split.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   return `${celestialCap} ${surname}`;
 }
 let _currentSpecies = getSpeciesName();
