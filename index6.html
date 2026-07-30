@@ -6945,7 +6945,36 @@ function _bounceBaseName() {
 // Record exactly one loop from a fresh MediaStreamDestination tap, decode
 // it back to PCM, and hand back the AudioBuffer. Shared by Bounce Loop and
 // Bounce Loop Stems so every stem/full-mix pass is captured identically.
-async function _captureOneLoop(tapNodes) {
+// Encoder priming + MediaRecorder startup latency mean the raw decoded
+// buffer never starts exactly on the downbeat — there's an unpredictable
+// silent gap up front. Detect the first real transient in a reference tap
+// (BEAT's kick, or the full mix if BEAT is silent) and trim every buffer by
+// that same sample count, so the "1" lands at sample 0 everywhere and every
+// stem stays in phase with the others. Extra length at the tail is left
+// alone — trim-to-length happens in Logic, not here.
+function _detectOnsetSample(buffer, maxScanSec, threshold) {
+  if (!buffer) return null;
+  maxScanSec = maxScanSec || 0.5; threshold = threshold || 0.02;
+  const data = buffer.getChannelData(0);
+  const maxSamples = Math.min(data.length, Math.floor(maxScanSec * buffer.sampleRate));
+  for (let i = 0; i < maxSamples; i++) {
+    if (Math.abs(data[i]) > threshold) return i;
+  }
+  return null;
+}
+function _trimBufferFront(buffer, offsetSamples, audioCtx) {
+  if (!buffer || offsetSamples <= 0) return buffer;
+  const newLen = buffer.length - offsetSamples;
+  if (newLen <= 0) return buffer;
+  const out = audioCtx.createBuffer(buffer.numberOfChannels, newLen, buffer.sampleRate);
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    out.copyToChannel(buffer.getChannelData(c).subarray(offsetSamples), c);
+  }
+  return out;
+}
+
+async function _captureOneLoop(tapNodes, refIndex) {
+  refIndex = refIndex || 0;
   const loopSec = NUM_STEPS * stepDuration();
   const recMime = _pickRecMimeType();
   const taps = tapNodes.map(node => {
@@ -6985,6 +7014,13 @@ async function _captureOneLoop(tapNodes) {
     const blob = new Blob(t.chunks, { type: t.rec.mimeType || 'audio/webm' });
     const arrayBuf = await blob.arrayBuffer();
     buffers.push(await ctx.decodeAudioData(arrayBuf.slice(0)));
+  }
+
+  // Align every stem to the reference tap's first transient.
+  let offset = _detectOnsetSample(buffers[refIndex]);
+  if (offset === null) offset = _detectOnsetSample(buffers[buffers.length - 1]); // fall back to full mix
+  if (offset) {
+    for (let i = 0; i < buffers.length; i++) buffers[i] = _trimBufferFront(buffers[i], offset, ctx);
   }
   return buffers;
 }
@@ -7038,7 +7074,7 @@ async function bounceLoopStems() {
 
     tapNodes.push(window._postLimiterGain); // full mix, same as Bounce Loop
 
-    const buffers = await _captureOneLoop(tapNodes);
+    const buffers = await _captureOneLoop(tapNodes, NUM_TRACKS); // align to BEAT's kick
 
     mirrors.forEach(m => { try { m.disconnect(); } catch(e) {} });
     window._stemDuckMirrors = null;
