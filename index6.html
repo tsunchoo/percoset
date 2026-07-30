@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:10</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7180,7 +7180,7 @@ async function bounceLoop() {
     await shareOrDownload([file]);
   } catch(e) {
     console.error('Bounce Loop failed', e);
-    alert('Bounce error: ' + e.message);
+    alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
   } finally {
     _applyPlaybackState(originalPlayback);
     for (let tr = 0; tr < NUM_TRACKS; tr++) redrawTrackCells(tr);
@@ -7228,7 +7228,7 @@ async function bounceLoopStems() {
     await shareOrDownload(files);
   } catch(e) {
     console.error('Bounce Loop Stems failed', e);
-    alert('Bounce error: ' + e.message);
+    alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
   } finally {
     _applyPlaybackState(originalPlayback);
     for (let tr = 0; tr < NUM_TRACKS; tr++) redrawTrackCells(tr);
