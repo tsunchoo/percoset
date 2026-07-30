@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:45</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 02:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6797,7 +6797,7 @@ function _showBounceToast() {
   if (!el) {
     el = document.createElement('div');
     el.id = '_bounceToast';
-    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;color:#fff;padding:14px 28px;border-radius:6px;font-family:"DM Sans",sans-serif;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);pointer-events:none;';
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;color:#fff;padding:14px 28px;border-radius:6px;font-family:"DM Sans",sans-serif;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);pointer-events:none;min-width:200px;';
     const line1 = document.createElement('div');
     line1.id = '_bounceToastLine1';
     line1.textContent = 'Bouncing';
@@ -6805,17 +6805,59 @@ function _showBounceToast() {
     const line2 = document.createElement('div');
     line2.id = '_bounceToastLine2';
     line2.style.cssText = 'font-weight:400;letter-spacing:0.3px;margin-top:5px;font-size:0.8rem;opacity:0.85;';
+    const barTrack = document.createElement('div');
+    barTrack.id = '_bounceToastBarTrack';
+    barTrack.style.cssText = 'display:none;margin-top:10px;width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,0.18);overflow:hidden;';
+    const barFill = document.createElement('div');
+    barFill.id = '_bounceToastBarFill';
+    barFill.style.cssText = 'height:100%;width:0%;background:#fff;border-radius:3px;transition:width 0.15s linear;';
+    barTrack.appendChild(barFill);
     el.appendChild(line1);
     el.appendChild(line2);
+    el.appendChild(barTrack);
     document.body.appendChild(el);
   }
   const line2 = document.getElementById('_bounceToastLine2');
   if (line2) line2.textContent = _currentSpecies || '';
+  const barTrack = document.getElementById('_bounceToastBarTrack');
+  if (barTrack) barTrack.style.display = 'none';
+  const barFill = document.getElementById('_bounceToastBarFill');
+  if (barFill) barFill.style.width = '0%';
   el.style.display = 'block';
 }
 function _hideBounceToast() {
+  _stopFakeBounceProgress();
   const el = document.getElementById('_bounceToast');
   if (el) el.style.display = 'none';
+}
+
+// Progress bar — only surfaced for multi-bar bounces (the loop-count dialog),
+// where a render can take long enough to actually want feedback. Single-bar
+// bounces stay as the plain toast, no bar.
+let _bounceProgressTimer = null;
+function _setBounceProgress(fraction, label) {
+  const barTrack = document.getElementById('_bounceToastBarTrack');
+  const barFill = document.getElementById('_bounceToastBarFill');
+  const line2 = document.getElementById('_bounceToastLine2');
+  if (barTrack) barTrack.style.display = 'block';
+  if (barFill) barFill.style.width = `${Math.round(Math.max(0, Math.min(1, fraction)) * 100)}%`;
+  if (label && line2) line2.textContent = label;
+}
+// OfflineAudioContext gives no real progress callback for a single render
+// pass, so for Bounce Loop (one continuous render spanning all N bars) we
+// estimate: animate up to 90% over a rough time budget, then snap to 100%
+// when the render actually resolves.
+function _startFakeBounceProgress(estimatedMs, label) {
+  _stopFakeBounceProgress();
+  const start = Date.now();
+  _setBounceProgress(0, label);
+  _bounceProgressTimer = setInterval(() => {
+    const elapsed = Date.now() - start;
+    _setBounceProgress(Math.min(0.9, elapsed / estimatedMs));
+  }, 120);
+}
+function _stopFakeBounceProgress() {
+  if (_bounceProgressTimer) { clearInterval(_bounceProgressTimer); _bounceProgressTimer = null; }
 }
 function updateRecBtn() {
   const btn = document.getElementById('saveBtn');
@@ -7193,7 +7235,9 @@ async function bounceLoop() {
 
   _showBounceToast();
   try {
+    if (numLoops > 1) _startFakeBounceProgress(numLoops * 700, `Rendering ${numLoops} bars…`);
     const mix = await _renderOfflineLoop(_connectFullMix, loopSequence);
+    if (numLoops > 1) _setBounceProgress(1, 'Encoding…');
     const wav = audioBufferToWav(mix, bpm);
     const suffix = numLoops > 1 ? ` (${numLoops} loops)` : '';
     const base = `${_bounceBaseName()}${suffix}`;
@@ -7203,6 +7247,7 @@ async function bounceLoop() {
     console.error('Bounce Loop failed', e);
     alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
   } finally {
+    _stopFakeBounceProgress();
     _applyPlaybackState(originalPlayback);
     for (let tr = 0; tr < NUM_TRACKS; tr++) redrawTrackCells(tr);
     _hideBounceToast();
@@ -7229,28 +7274,39 @@ async function bounceLoopStems() {
   try {
     const base = _bounceBaseName() + (numLoops > 1 ? ` (${numLoops} loops)` : '');
     const files = [];
+    const totalPasses = NUM_TRACKS + 2; // 6 tracks + BEAT + FULL MIX
+    let passesDone = 0;
+    const showProgress = numLoops > 1;
 
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
+      const label = (INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`;
+      if (showProgress) _setBounceProgress(passesDone / totalPasses, `Rendering ${label}…`);
       const buf = await _renderOfflineLoop(offlineCtx => {
         trackEnvFilters[tr].connect(masterGain); // this track only — full downstream chain still applies
       }, loopSequence);
-      const label = (INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`;
+      passesDone++;
       files.push(new File([audioBufferToWav(buf, bpm)], `${label}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
     }
 
+    if (showProgress) _setBounceProgress(passesDone / totalPasses, 'Rendering BEAT…');
     const beatBuf = await _renderOfflineLoop(offlineCtx => {
       window._beatGain.connect(masterGain); // BEAT only
     }, loopSequence);
+    passesDone++;
     files.push(new File([audioBufferToWav(beatBuf, bpm)], `BEAT.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
+    if (showProgress) _setBounceProgress(passesDone / totalPasses, 'Rendering full mix…');
     const mixBuf = await _renderOfflineLoop(_connectFullMix, loopSequence);
+    passesDone++;
     files.push(new File([audioBufferToWav(mixBuf, bpm)], `FULL MIX.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
+    if (showProgress) _setBounceProgress(1, 'Zipping…');
     await _zipDownload(files, base);
   } catch(e) {
     console.error('Bounce Loop Stems failed', e);
     alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
   } finally {
+    _stopFakeBounceProgress();
     _applyPlaybackState(originalPlayback);
     for (let tr = 0; tr < NUM_TRACKS; tr++) redrawTrackCells(tr);
     _hideBounceToast();
