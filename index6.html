@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 03:20</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 03:55</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6664,8 +6664,8 @@ function makeZip(files) {
 
     const local = new DataView(new ArrayBuffer(30));
     local.setUint32(0, 0x04034b50, true);
-    local.setUint16(4, 20, true);
-    local.setUint16(6, 0, true);
+    local.setUint16(4, 10, true); // version needed: 1.0 — matches store (no compression) actually used
+    local.setUint16(6, 0x0800, true); // UTF-8 filename flag (bit 11) — explicit rather than assumed
     local.setUint16(8, 0, true); // store, no compression
     local.setUint16(10, dosTime, true);
     local.setUint16(12, dosDate, true);
@@ -6678,9 +6678,9 @@ function makeZip(files) {
 
     const central = new DataView(new ArrayBuffer(46));
     central.setUint32(0, 0x02014b50, true);
-    central.setUint16(4, 20, true);
-    central.setUint16(6, 20, true);
-    central.setUint16(8, 0, true);
+    central.setUint16(4, 10, true);
+    central.setUint16(6, 10, true);
+    central.setUint16(8, 0x0800, true);
     central.setUint16(10, 0, true);
     central.setUint16(12, dosTime, true);
     central.setUint16(14, dosDate, true);
