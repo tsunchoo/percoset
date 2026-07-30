@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:30</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:45</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2613,6 +2613,7 @@ function randomizeBassTrack(tr, level) {
     yamask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // YAMASK — same sparse, spacious character as DAMASK
     dulc:    [[2,4,0.35],[3,6,0.45],[5,8,0.60]],   // DULCIMER — bright twinkling runs, similar to Sparkles
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
+    jcmgtr:  [[1,3,0.20],[2,4,0.35],[3,6,0.50]],   // JINX — calmer lead, was falling through to the busy generic default
   };
   const levelTable = noteTables[key] || [
     [2, 5,  0.20],
@@ -3660,18 +3661,22 @@ function playJcmGuitar(freq, durSec, isAccent, time, tr) {
   const osc1 = ctx.createOscillator(); osc1.type = 'square';
   const osc2 = ctx.createOscillator(); osc2.type = 'square';
   const slideInLen = 0.25; // matches the slide-off's active duration — 25% longer
-  const doSlideIn = Math.random() < 0.35; // sometimes, not every phrase
+  const doSlideIn = Math.random() < 0.18; // calmed down — was 0.35, sliding on nearly every note
+  const doPortamento = !doSlideIn && Math.random() < 0.35; // only sometimes glide from the previous note now — used to be unconditional
+  const doSlideOff = legato && Math.random() < 0.45; // release bend now only on some legato notes, not all of them
   [osc1, osc2].forEach(o => {
     if (doSlideIn) {
       // Slide in at the start — comes down from a higher pitch into the
       // note, mirroring the slide-off's length and shape but in reverse
       o.frequency.setValueAtTime(Math.max(f * 1.19, 1), time);
       o.frequency.exponentialRampToValueAtTime(Math.max(f, 1), time + slideInLen);
-    } else {
+    } else if (doPortamento) {
       o.frequency.setValueAtTime(Math.max(prev, 1), time);
       o.frequency.exponentialRampToValueAtTime(Math.max(f, 1), time + glide);
+    } else {
+      o.frequency.setValueAtTime(Math.max(f, 1), time); // clean attack, no slide
     }
-    if (legato) {
+    if (doSlideOff) {
       // Slide off at the end — a downward release bend, guitar-style
       const slideStart = time + Math.max(durSec - 0.18, (doSlideIn ? slideInLen : glide) + 0.05);
       o.frequency.setValueAtTime(Math.max(f, 1), slideStart);
@@ -7475,6 +7480,7 @@ function randAll(mode, opts) {
   const soloLeadKeys = new Set(['fflute', 'damask', 'yamask']); // max one of these
   const soloUniqueKeys = new Set(['jcmgtr','clar','boog']); // max one of these — JCX GUITAR / EWOK VILLAGE / BOOG
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
+  const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/DULCIMER
   // Exclude instruments already locked on other tracks
   const lockedInstruments = new Set();
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
@@ -7497,7 +7503,7 @@ function randAll(mode, opts) {
 
   function buildPool(keys) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5);
-    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false;
+    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false;
     // Bass is always included when available, rather than leaving it to
     // shuffle luck — with ~20 tonal options and only 5 basses, a plain
     // shuffle rarely happened to draw one.
@@ -7514,11 +7520,12 @@ function randAll(mode, opts) {
       if (soloLeadKeys.has(k)) { if (soloLeadUsed) continue; soloLeadUsed = true; }
       if (soloUniqueKeys.has(k)) { if (soloUniqueUsed) continue; soloUniqueUsed = true; }
       if (soloHatKeys.has(k)) { if (soloHatUsed) continue; soloHatUsed = true; }
+      if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed) continue; soloRareLeadUsed = true; }
       result.push(k);
     }
     // Fill remaining from keys excluding solo perc/unique/hat if already used
     while (result.length < REAL_TRACK_COUNT) {
-      const fill = keys.filter(k => !(soloPercUsed && soloPercKeys.has(k) && !result.includes(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k) && !result.includes(k)) && !(soloHatUsed && soloHatKeys.has(k) && !result.includes(k)));
+      const fill = keys.filter(k => !(soloPercUsed && soloPercKeys.has(k) && !result.includes(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k) && !result.includes(k)) && !(soloHatUsed && soloHatKeys.has(k) && !result.includes(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k) && !result.includes(k)));
       result.push(fill[Math.floor(Math.random() * fill.length)] || keys[0]);
     }
     return result;
@@ -7565,10 +7572,12 @@ function randAll(mode, opts) {
     // independently of buildPool() and so never checked these at all.
     let soloLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloLeadKeys.has(trackInstruments[tr]));
     let soloUniqueUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloUniqueKeys.has(trackInstruments[tr]));
+    let soloRareLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloRareLeadKeys.has(trackInstruments[tr]));
     const nonBassShuffle = [];
     for (const k of nonBassShuffled) {
       if (soloLeadKeys.has(k)) { if (soloLeadUsed2) continue; soloLeadUsed2 = true; }
       if (soloUniqueKeys.has(k)) { if (soloUniqueUsed2) continue; soloUniqueUsed2 = true; }
+      if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed2) continue; soloRareLeadUsed2 = true; }
       nonBassShuffle.push(k);
       if (nonBassShuffle.length === wantCount) break;
     }
