@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 02:45</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 03:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1922,9 +1922,20 @@ function scheduler() {
 // Pure audio note-firing for one step — no DOM/UI side effects, so this can
 // be reused verbatim to drive an offline (bounce) render as well as live
 // playback. Extracted unchanged from the scheduler's per-step body.
+// Render-scope gating for offline stem bounces. Every pass still needs
+// every track's note-scheduling logic to run (so cross-track ducking/pump
+// automation stays accurate), but there's no reason to actually synthesize
+// audio for a track that isn't connected to this pass's output — that's
+// pure waste that multiplies by 8 passes × however many bars, and was
+// almost certainly what caused the audio degradation on long stem bounces.
+// null/true = render everything (live playback, and full-mix passes).
+let _renderTapTracks = null;
+let _renderTapBeat = true;
+
 function fireStepAudio(step, t) {
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
       if (trackMuted[tr]) continue;
+      const _renderThisTrack = !_renderTapTracks || _renderTapTracks.has(tr);
       const gs = (step - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
       const rawVal = grid[tr][gs];
       const is32Split = rawVal === 3;
@@ -1961,6 +1972,7 @@ function fireStepAudio(step, t) {
           }
           if (sfxOn) triggerFxEnvelope(tr, t);
           if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass') duckSidechainTracks(t);
+          if (_renderThisTrack) {
           if (key === 'sbass')   playSynthBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass3')  playMotownBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass4')  playPlunkBass(freq, dur, val === 2, t, tr);
@@ -1987,6 +1999,7 @@ function fireStepAudio(step, t) {
           if (key === 'fflute')  {
             playGlassBell(freq, dur, val === 2, t, tr);
           }
+          }
           // Duck all pad tracks when busiest track fires
           const _padKeys = new Set(['fflute','sstring','sleg','sparkle','sprkls','rhodes','rhodes2','opening']);
           if (!_padKeys.has(key)) {
@@ -2007,9 +2020,9 @@ function fireStepAudio(step, t) {
               }
             }
           }
-          if (key === 'blunt')   playBlunt(freq, dur, val === 2, t, tr);
+          if (_renderThisTrack && key === 'blunt')   playBlunt(freq, dur, val === 2, t, tr);
           // E: filter envelope — bright open, sweep closed over note duration
-          if (trackChop[tr] && trackEnvFilters[tr]) {
+          if (_renderThisTrack && trackChop[tr] && trackEnvFilters[tr]) {
             const ef = trackEnvFilters[tr];
             const peakFreq = val === 2 ? 12000 : 7000;
             const closeFreq = Math.max(freq * 1.2, 120);
@@ -2021,9 +2034,11 @@ function fireStepAudio(step, t) {
           }
 
         } else if (key === 'ngate') {
-          if (!_noiseGateNodes[tr]) initNoiseGate(tr);
-          triggerNoiseGate(tr, val === 2, t);
-        } else {
+          if (_renderThisTrack) {
+            if (!_noiseGateNodes[tr]) initNoiseGate(tr);
+            triggerNoiseGate(tr, val === 2, t);
+          }
+        } else if (_renderThisTrack) {
           playBuffer(key, val === 2, t, tr, gs);
           // If any other track has ngate, trigger it from this hit
           for (let ng = 0; ng < NUM_TRACKS; ng++) {
@@ -2033,7 +2048,7 @@ function fireStepAudio(step, t) {
           }
         }
         // 32nd-note split: fire a second quick hit half a 16th later
-        if (is32Split) {
+        if (is32Split && _renderThisTrack) {
           const t2 = t + stepDuration() * 0.5;
           if (key === 'ngate') {
             if (!_noiseGateNodes[tr]) initNoiseGate(tr);
@@ -2441,6 +2456,7 @@ function playSynthSnare(isAccent, time, tr) {
 
 function playSynthHihat(isAccent, time, tr) {
   if (!ctx) return;
+  if (tr === -1 ? !_renderTapBeat : (_renderTapTracks && !_renderTapTracks.has(tr))) return;
   const dest = (tr === -1) ? (window._beatGain || masterGain) : getSynthConnectNode(tr);
   const dur = isAccent ? 0.12 : 0.06, vol = isAccent ? 0.1968 : 0.1238; // -3dB more (was -2dB)
   const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
@@ -5075,6 +5091,7 @@ function fireBeatKick(t) {
   duckSidechainTracks(t);
 }
 function playKick(t) {
+  if (!_renderTapBeat) return;
   // Matches playSynthKick — same character, slightly louder for the beat,
   // tightened up for a drier hit (shorter pitch ramp and decay, less boom)
   const beatDest = window._beatGain || masterGain;
@@ -5107,7 +5124,7 @@ function _addSnareClick(t, dest, vol) {
   crack.onended = () => { try { crackHP.disconnect(); crackG.disconnect(); } catch(e) {} };
 }
 function fireBeatSidestick(t) {
-  if (!ctx) return;
+  if (!ctx || !_renderTapBeat) return;
   const dest = window._beatGain || masterGain;
   const vol = 0.2; // dialed back — earlier boosts (chasing an "inaudible" complaint) overshot and became too strong
 
@@ -5149,6 +5166,7 @@ function fireBeatSidestick(t) {
 }
 function playSnare(t) {
   duckPumpTracks(t);
+  if (!_renderTapBeat) return;
   const dur = 0.22;
   const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
   const d = buf.getChannelData(0);
@@ -7030,6 +7048,9 @@ function _bounceBaseName() {
   const raw = `${_currentSpecies} ${Math.round(bpm)}bpm`;
   return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
+function _titleCase(str) {
+  return str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
 
 // ── Offline (sample-exact) bounce rendering ──────────────────────────────
 // MediaRecorder was never viable for this: codec priming pushes the start
@@ -7221,6 +7242,7 @@ async function _renderOfflineLoop(connectFn, loopSequence, tailSec) {
   } finally {
     _restoreLiveGraph(liveSnap);
     _applyPlaybackState(livePlayback);
+    _renderTapTracks = null; _renderTapBeat = true;
   }
 }
 
@@ -7320,8 +7342,9 @@ async function bounceLoopStems() {
     }
 
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
-      const label = (INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`;
+      const label = _titleCase((INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`);
       if (showProgress) _setBounceProgress(passesDone / totalPasses, `Rendering ${label}…`);
+      _renderTapTracks = new Set([tr]); _renderTapBeat = false;
       const buf = await _renderOfflineLoop(offlineCtx => {
         trackEnvFilters[tr].connect(masterGain); // this track only — full downstream chain still applies
       }, loopSequence);
@@ -7330,16 +7353,18 @@ async function bounceLoopStems() {
     }
 
     if (showProgress) _setBounceProgress(passesDone / totalPasses, 'Rendering BEAT…');
+    _renderTapTracks = new Set(); _renderTapBeat = true;
     const beatBuf = await _renderOfflineLoop(offlineCtx => {
       window._beatGain.connect(masterGain); // BEAT only
     }, loopSequence);
     passesDone++;
-    files.push(new File([audioBufferToWav(beatBuf, bpm)], `${uniqueStemName('BEAT')}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+    files.push(new File([audioBufferToWav(beatBuf, bpm)], `${uniqueStemName(_titleCase('BEAT'))}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
     if (showProgress) _setBounceProgress(passesDone / totalPasses, 'Rendering full mix…');
+    _renderTapTracks = null; _renderTapBeat = true;
     const mixBuf = await _renderOfflineLoop(_connectFullMix, loopSequence);
     passesDone++;
-    files.push(new File([audioBufferToWav(mixBuf, bpm)], `${uniqueStemName('FULL MIX')}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+    files.push(new File([audioBufferToWav(mixBuf, bpm)], `${uniqueStemName(_titleCase('FULL MIX'))}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
     if (showProgress) _setBounceProgress(1, 'Zipping…');
     await _zipDownload(files, base);
