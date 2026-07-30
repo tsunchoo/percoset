@@ -6522,7 +6522,9 @@ function audioBufferToWav(buffer, tempoHint) {
   const pcmBytes = len * numCh * 2;
   const bextContent = 858;
   const bextChunkTotal = 8 + bextContent;
-  const totalBytes = 4 + 4 + 4 + 8 + 16 + bextChunkTotal + 8 + pcmBytes;
+  const acidContent = 24;
+  const acidChunkTotal = 8 + acidContent;
+  const totalBytes = 4 + 4 + 4 + 8 + 16 + bextChunkTotal + acidChunkTotal + 8 + pcmBytes;
   const ab = new ArrayBuffer(totalBytes);
   const view = new DataView(ab);
   let p = 0;
@@ -6533,7 +6535,9 @@ function audioBufferToWav(buffer, tempoHint) {
   }
   function wU32(v) { view.setUint32(p, v, true); p += 4; }
   function wU16(v) { view.setUint16(p, v, true); p += 2; }
+  function wF32(v) { view.setFloat32(p, v, true); p += 4; }
   function wZero(n) { p += n; }
+  const tempo = tempoHint || 120;
   wStr('RIFF'); wU32(totalBytes - 8); wStr('WAVE');
   wStr('fmt '); wU32(16); wU16(1); wU16(numCh);
   wU32(sr); wU32(sr * numCh * 2); wU16(numCh * 2); wU16(16);
@@ -6545,7 +6549,20 @@ function audioBufferToWav(buffer, tempoHint) {
   wZero(64);
   wU16(0); wU16(0); wU16(0); wU16(0); wU16(0);
   wZero(180);
-  wStr(`BPM=${Math.round(tempoHint || 120)}\r\n`, 256);
+  wStr(`BPM=${Math.round(tempo)}\r\n`, 256);
+  // 'acid' chunk — the ACIDized-loop tag Logic (and most other DAWs) read to
+  // auto-detect tempo/beat count/time signature on import, so dragging the
+  // file in shows the real BPM instead of whatever the project happens to be
+  // set to.
+  wStr('acid'); wU32(acidContent);
+  wU32(0x00);                 // type flags: 0 = loop (not one-shot), no root note set
+  wU16(60);                   // root note (unused since root-note bit isn't set, but populated anyway)
+  wU16(0x8000);               // fixed/reserved
+  wF32(1.0);                  // fixed/reserved
+  wU32(Math.round(NUM_STEPS / 4)); // number of beats in the loop (4/4, 16 steps = 4 beats)
+  wU16(4);                    // time signature denominator
+  wU16(4);                    // time signature numerator
+  wF32(tempo);                // tempo in BPM
   wStr('data'); wU32(pcmBytes);
   const channels = [];
   for (let c = 0; c < numCh; c++) channels.push(buffer.getChannelData(c));
@@ -7025,31 +7042,89 @@ function _buildBounceGraph(targetCtx) {
 // track + beatGain for the full mix. Every track's notes still fire
 // regardless of what's connected, so sidechain/duck automation (which reacts
 // to the trigger, not the routing) stays correct for whichever tap is live.
-async function _renderOfflineLoop(connectFn, tailSec) {
+// ── Multi-loop bounce support (Auto-Rand tracks evolve bar to bar) ──────
+// Captures just what fireStepAudio reads per-track — enough to replay a
+// bar's exact pattern without re-running randomizeTrack (which would give
+// a different result each time and desync the stems from each other).
+function _capturePlaybackState() {
+  return {
+    grid: grid.map(r => [...r]),
+    trackOffset: [...trackOffset],
+    trackBassScale: Object.fromEntries(Object.entries(trackBassScale).map(([k, v]) => [k, [...v]])),
+    trackPitchOverride: Object.fromEntries(Object.entries(trackPitchOverride).map(([k, v]) => [k, {...v}])),
+    trackLegatoLen: Object.fromEntries(Object.entries(trackLegatoLen).map(([k, v]) => [k, {...v}])),
+  };
+}
+function _applyPlaybackState(snap) {
+  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    grid[tr] = [...snap.grid[tr]];
+    trackOffset[tr] = snap.trackOffset[tr];
+    if (snap.trackBassScale[tr]) trackBassScale[tr] = [...snap.trackBassScale[tr]]; else delete trackBassScale[tr];
+    if (snap.trackPitchOverride[tr]) trackPitchOverride[tr] = {...snap.trackPitchOverride[tr]}; else delete trackPitchOverride[tr];
+    if (snap.trackLegatoLen[tr]) trackLegatoLen[tr] = {...snap.trackLegatoLen[tr]}; else delete trackLegatoLen[tr];
+  }
+}
+
+// Runs the actual randomization ONCE per loop boundary (matching the real
+// per-track Auto-Rand's "regenerate every bar" behavior) and freezes the
+// result into a sequence of snapshots — one per loop — so every render pass
+// (all 6 tracks + BEAT + FULL MIX) replays the identical evolving pattern
+// instead of each rolling its own random notes.
+function _precomputeLoopSequence(numLoops) {
+  const rLevelSnap = [...trackRLevel];
+  const original = _capturePlaybackState();
+  const sequence = [original];
+  for (let i = 1; i < numLoops; i++) {
+    for (let tr = 0; tr < NUM_TRACKS; tr++) {
+      if (autoShiftStops[tr]) randomizeTrack(tr);
+    }
+    sequence.push(_capturePlaybackState());
+  }
+  _applyPlaybackState(original);
+  for (let tr = 0; tr < NUM_TRACKS; tr++) trackRLevel[tr] = rLevelSnap[tr];
+  return sequence;
+}
+
+function _askLoopCount() {
+  const raw = prompt('One or more tracks have Auto-Rand engaged — how many loops (bars) should this bounce?', '4');
+  if (raw === null) return null; // cancelled
+  const n = parseInt(raw, 10);
+  if (!isFinite(n) || n < 1) return 1;
+  return Math.min(n, 64); // sane ceiling
+}
+
+async function _renderOfflineLoop(connectFn, loopSequence, tailSec) {
   const loopSec = NUM_STEPS * stepDuration();
-  const totalSec = loopSec + (tailSec !== undefined ? tailSec : 2.5); // generous tail for decay/reverb — never short
+  const numLoops = loopSequence.length;
+  const totalSec = numLoops * loopSec + (tailSec !== undefined ? tailSec : 2.5); // generous tail for decay/reverb — never short
   const sampleRate = 44100;
   const offlineCtx = new OfflineAudioContext(2, Math.ceil(totalSec * sampleRate), sampleRate);
 
   const liveSnap = _snapshotLiveGraph();
+  const livePlayback = _capturePlaybackState();
   try {
     _buildBounceGraph(offlineCtx);
     connectFn(offlineCtx);
-    for (let step = 0; step < NUM_STEPS; step++) {
-      const swingMs = (step % 2 === 1) ? getSwingOffsetMs() : 0;
-      let t = step * stepDuration() + (swingMs / 1000);
-      if (_beatType === 'boogie') {
-        const beatPos = step % 4;
-        const sd = stepDuration();
-        const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
-        t = step * stepDuration() + _boogieOffsets[beatPos];
+    for (let loopIndex = 0; loopIndex < numLoops; loopIndex++) {
+      _applyPlaybackState(loopSequence[loopIndex]);
+      for (let step = 0; step < NUM_STEPS; step++) {
+        const swingMs = (step % 2 === 1) ? getSwingOffsetMs() : 0;
+        let stepOffset = step * stepDuration() + (swingMs / 1000);
+        if (_beatType === 'boogie') {
+          const beatPos = step % 4;
+          const sd = stepDuration();
+          const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
+          stepOffset = step * stepDuration() + _boogieOffsets[beatPos];
+        }
+        const t = loopIndex * loopSec + Math.max(0, stepOffset);
+        fireStepAudio(step, t);
       }
-      fireStepAudio(step, Math.max(0, t));
     }
     const rendered = await offlineCtx.startRendering();
     return rendered;
   } finally {
     _restoreLiveGraph(liveSnap);
+    _applyPlaybackState(livePlayback);
   }
 }
 
@@ -7060,18 +7135,30 @@ async function bounceLoop() {
   if (!hasNotes) return;
   if (playing) togglePlay(); // stop first, per spec
 
+  const hasAutoRand = Object.keys(autoShiftStops).length > 0;
+  let numLoops = 1;
+  if (hasAutoRand) {
+    numLoops = _askLoopCount();
+    if (numLoops === null) return; // cancelled
+  }
+  const loopSequence = _precomputeLoopSequence(numLoops);
+  const originalPlayback = loopSequence[0];
+
   _showBounceToast();
   try {
     const mix = await _renderOfflineLoop(offlineCtx => {
       window._postLimiterGain.connect(offlineCtx.destination);
-    });
+    }, loopSequence);
     const wav = audioBufferToWav(mix, bpm);
-    const file = new File([wav], `${_bounceBaseName()}.wav`, { type: 'audio/wav' });
+    const suffix = numLoops > 1 ? ` (${numLoops} loops)` : '';
+    const file = new File([wav], `${_bounceBaseName()}${suffix}.wav`, { type: 'audio/wav' });
     await shareOrDownload([file]);
   } catch(e) {
     console.error('Bounce Loop failed', e);
     alert('Bounce error: ' + e.message);
   } finally {
+    _applyPlaybackState(originalPlayback);
+    for (let tr = 0; tr < NUM_TRACKS; tr++) redrawTrackCells(tr);
     _hideBounceToast();
   }
 }
@@ -7083,27 +7170,36 @@ async function bounceLoopStems() {
   if (!hasNotes) return;
   if (playing) togglePlay(); // stop first, per spec
 
+  const hasAutoRand = Object.keys(autoShiftStops).length > 0;
+  let numLoops = 1;
+  if (hasAutoRand) {
+    numLoops = _askLoopCount();
+    if (numLoops === null) return; // cancelled
+  }
+  const loopSequence = _precomputeLoopSequence(numLoops);
+  const originalPlayback = loopSequence[0];
+
   _showBounceToast();
   try {
-    const base = _bounceBaseName();
+    const base = _bounceBaseName() + (numLoops > 1 ? ` (${numLoops} loops)` : '');
     const files = [];
 
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
       const buf = await _renderOfflineLoop(offlineCtx => {
         trackGainNodes[tr].connect(offlineCtx.destination);
-      });
+      }, loopSequence);
       const label = (INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`;
       files.push({ name: `${base} - ${label}.wav`, data: audioBufferToWav(buf, bpm) });
     }
 
     const beatBuf = await _renderOfflineLoop(offlineCtx => {
       window._beatGain.connect(offlineCtx.destination);
-    });
+    }, loopSequence);
     files.push({ name: `${base} - BEAT.wav`, data: audioBufferToWav(beatBuf, bpm) });
 
     const mixBuf = await _renderOfflineLoop(offlineCtx => {
       window._postLimiterGain.connect(offlineCtx.destination);
-    });
+    }, loopSequence);
     files.push({ name: `${base} - FULL MIX.wav`, data: audioBufferToWav(mixBuf, bpm) });
 
     const zipBlob = makeZip(files);
@@ -7113,6 +7209,8 @@ async function bounceLoopStems() {
     console.error('Bounce Loop Stems failed', e);
     alert('Bounce error: ' + e.message);
   } finally {
+    _applyPlaybackState(originalPlayback);
+    for (let tr = 0; tr < NUM_TRACKS; tr++) redrawTrackCells(tr);
     _hideBounceToast();
   }
 }
