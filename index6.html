@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 00:45</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6501,19 +6501,38 @@ function getExportSnaps() {
 */
 
 async function shareOrDownload(files) {
-  const shareData = { files, title: 'Si•Fi loops' };
-  try {
-    await navigator.share(shareData);
-  } catch(e) {
-    if (e.name === 'AbortError') return;
-    for (const file of files) {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a'); a.href = url; a.download = file.name;
-      document.body.appendChild(a); a.click();
-      await new Promise(r => setTimeout(r, 300));
-      URL.revokeObjectURL(url); a.remove();
+  if (files.length > 1) {
+    // Multiple files: always bundle into one zip and download/share that —
+    // multi-file navigator.share() support is inconsistent enough (silently
+    // falls back to N separate download prompts) that one predictable zip
+    // beats guessing at share support each time.
+    const zipFiles = [];
+    for (const f of files) zipFiles.push({ name: f.name, data: await f.arrayBuffer() });
+    const zipBlob = makeZip(zipFiles);
+    const zipFile = new File([zipBlob], 'Si-Fi stems.zip', { type: 'application/zip', lastModified: Date.now() });
+    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [zipFile] }))) {
+      try { await navigator.share({ files: [zipFile], title: 'Si•Fi loops' }); return; }
+      catch(e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to download', e); }
     }
+    const url = URL.createObjectURL(zipFile);
+    const a = document.createElement('a'); a.href = url; a.download = zipFile.name;
+    document.body.appendChild(a); a.click();
+    await new Promise(r => setTimeout(r, 300));
+    URL.revokeObjectURL(url); a.remove();
+    return;
   }
+
+  const file = files[0];
+  const shareData = { files, title: 'Si•Fi loops' };
+  if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+    try { await navigator.share(shareData); return; }
+    catch(e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to download', e); }
+  }
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a'); a.href = url; a.download = file.name;
+  document.body.appendChild(a); a.click();
+  await new Promise(r => setTimeout(r, 300));
+  URL.revokeObjectURL(url); a.remove();
 }
 
 // ── WAV encoder (44.1k/16-bit PCM) — used by Bounce Loop / Bounce Loop Stems ──
@@ -6591,7 +6610,9 @@ function makeZip(files) {
   const encoder = new TextEncoder();
   const localParts = [], centralParts = [];
   let offset = 0;
-  const dosTime = 0, dosDate = 0x21; // fixed nominal date/time — not meaningful for this use
+  const now = new Date();
+  const dosTime = ((now.getHours() & 0x1F) << 11) | ((now.getMinutes() & 0x3F) << 5) | ((now.getSeconds() >> 1) & 0x1F);
+  const dosDate = (((now.getFullYear() - 1980) & 0x7F) << 9) | (((now.getMonth() + 1) & 0xF) << 5) | (now.getDate() & 0x1F);
   for (const f of files) {
     const nameBytes = encoder.encode(f.name);
     const data = new Uint8Array(f.data);
