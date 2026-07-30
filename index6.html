@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 00:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 00:45</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3289,7 +3289,7 @@ function playHopkins(freq, durSec, isAccent, time, tr) {
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(vel * ct.ampMul, t0 + 0.003); // faster, punchier attack
     g.gain.setValueAtTime(vel * ct.ampMul, t0 + Math.min(decay * 0.25, 0.5)); // hold — more sustain before it decays
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay * ct.ampMul);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
     o1.connect(g); o2.connect(g); g.connect(lp); lp.connect(dest);
     o1.start(t0); o2.start(t0);
     o1.stop(t0 + decay + 0.2); o2.stop(t0 + decay + 0.2);
@@ -6995,7 +6995,11 @@ function _buildBounceGraph(targetCtx) {
   masterGain = targetCtx.createGain(); masterGain.gain.value = masterVol;
   const makeupGain = targetCtx.createGain(); makeupGain.gain.value = window._BASE_MAKEUP_GAIN || 2.5061;
   window._makeupGain = makeupGain;
-  window._beatGain = targetCtx.createGain(); window._beatGain.gain.value = 0.506; window._beatGain.connect(masterGain);
+  window._beatGain = targetCtx.createGain(); window._beatGain.gain.value = 0.506;
+  // NOT auto-connected to masterGain here — the caller wires in only the
+  // tap(s) this pass actually wants (see _renderOfflineLoop's connectFn),
+  // so an isolated track/BEAT stem doesn't carry every other track along
+  // with it, while still passing through the full downstream chain below.
   window.masterLimiter = targetCtx.createDynamicsCompressor();
   const masterLimiter = window.masterLimiter;
   masterLimiter.threshold.value = -3; masterLimiter.knee.value = 3; masterLimiter.ratio.value = 12;
@@ -7019,7 +7023,8 @@ function _buildBounceGraph(targetCtx) {
   window._reverbSendBus.connect(reverbConv); reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
   masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
   window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
-  // Caller connects whichever tap(s) it needs into targetCtx.destination.
+  // window._postLimiterGain is connected to targetCtx.destination uniformly
+  // by _renderOfflineLoop itself, once, for every pass.
 
   trackGainNodes.length = 0; trackEnvFilters.length = 0; trackFxNodes.length = 0;
   Object.keys(_reverbSendGains).forEach(k => delete _reverbSendGains[k]);
@@ -7029,7 +7034,7 @@ function _buildBounceGraph(targetCtx) {
   for (let i = 0; i < NUM_TRACKS; i++) {
     const g = targetCtx.createGain(); g.gain.value = trackVolume[i]; trackGainNodes[i] = g;
     const ef = targetCtx.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 22050; ef.Q.value = 3;
-    g.connect(ef); ef.connect(masterGain); trackEnvFilters[i] = ef;
+    g.connect(ef); trackEnvFilters[i] = ef; // caller connects ef -> masterGain for whichever track(s) it wants live
     trackFxNodes[i] = buildFxChain(g);
     if (trackInstruments[i] === 'ngate') initNoiseGate(i);
     if (trackFx[i] && (trackFx[i].x > 0 || trackFx[i].y > 0)) setFxActive(i, trackFx[i]);
@@ -7104,7 +7109,8 @@ async function _renderOfflineLoop(connectFn, loopSequence, tailSec) {
   const livePlayback = _capturePlaybackState();
   try {
     _buildBounceGraph(offlineCtx);
-    connectFn(offlineCtx);
+    connectFn(offlineCtx); // wires only the intended source(s) into masterGain
+    window._postLimiterGain.connect(offlineCtx.destination); // every pass gets the same makeup gain/duck/limiter chain
     for (let loopIndex = 0; loopIndex < numLoops; loopIndex++) {
       _applyPlaybackState(loopSequence[loopIndex]);
       for (let step = 0; step < NUM_STEPS; step++) {
@@ -7128,6 +7134,13 @@ async function _renderOfflineLoop(connectFn, loopSequence, tailSec) {
   }
 }
 
+// Wires every track + BEAT into masterGain — the full mix, same set of
+// sources as the live graph.
+function _connectFullMix() {
+  for (let tr = 0; tr < NUM_TRACKS; tr++) trackEnvFilters[tr].connect(masterGain);
+  window._beatGain.connect(masterGain);
+}
+
 async function bounceLoop() {
   if (playing) playUiSound('play');
   if (!ctx) { alert('Start playback first'); return; }
@@ -7146,9 +7159,7 @@ async function bounceLoop() {
 
   _showBounceToast();
   try {
-    const mix = await _renderOfflineLoop(offlineCtx => {
-      window._postLimiterGain.connect(offlineCtx.destination);
-    }, loopSequence);
+    const mix = await _renderOfflineLoop(_connectFullMix, loopSequence);
     const wav = audioBufferToWav(mix, bpm);
     const suffix = numLoops > 1 ? ` (${numLoops} loops)` : '';
     const file = new File([wav], `${_bounceBaseName()}${suffix}.wav`, { type: 'audio/wav' });
@@ -7186,25 +7197,21 @@ async function bounceLoopStems() {
 
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
       const buf = await _renderOfflineLoop(offlineCtx => {
-        trackGainNodes[tr].connect(offlineCtx.destination);
+        trackEnvFilters[tr].connect(masterGain); // this track only — full downstream chain still applies
       }, loopSequence);
       const label = (INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`;
-      files.push({ name: `${base} - ${label}.wav`, data: audioBufferToWav(buf, bpm) });
+      files.push(new File([audioBufferToWav(buf, bpm)], `${base} - ${label}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
     }
 
     const beatBuf = await _renderOfflineLoop(offlineCtx => {
-      window._beatGain.connect(offlineCtx.destination);
+      window._beatGain.connect(masterGain); // BEAT only
     }, loopSequence);
-    files.push({ name: `${base} - BEAT.wav`, data: audioBufferToWav(beatBuf, bpm) });
+    files.push(new File([audioBufferToWav(beatBuf, bpm)], `${base} - BEAT.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
-    const mixBuf = await _renderOfflineLoop(offlineCtx => {
-      window._postLimiterGain.connect(offlineCtx.destination);
-    }, loopSequence);
-    files.push({ name: `${base} - FULL MIX.wav`, data: audioBufferToWav(mixBuf, bpm) });
+    const mixBuf = await _renderOfflineLoop(_connectFullMix, loopSequence);
+    files.push(new File([audioBufferToWav(mixBuf, bpm)], `${base} - FULL MIX.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
-    const zipBlob = makeZip(files);
-    const zipFile = new File([zipBlob], `${base} stems.zip`, { type: 'application/zip' });
-    await shareOrDownload([zipFile]);
+    await shareOrDownload(files);
   } catch(e) {
     console.error('Bounce Loop Stems failed', e);
     alert('Bounce error: ' + e.message);
