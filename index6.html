@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6501,35 +6501,28 @@ function getExportSnaps() {
 */
 
 async function shareOrDownload(files) {
-  if (files.length > 1) {
-    // Multiple files: always bundle into one zip and download/share that —
-    // multi-file navigator.share() support is inconsistent enough (silently
-    // falls back to N separate download prompts) that one predictable zip
-    // beats guessing at share support each time.
-    const zipFiles = [];
-    for (const f of files) zipFiles.push({ name: f.name, data: await f.arrayBuffer() });
-    const zipBlob = makeZip(zipFiles);
-    const zipFile = new File([zipBlob], 'Si-Fi stems.zip', { type: 'application/zip', lastModified: Date.now() });
-    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [zipFile] }))) {
-      try { await navigator.share({ files: [zipFile], title: 'Si•Fi loops' }); return; }
-      catch(e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to download', e); }
-    }
-    const url = URL.createObjectURL(zipFile);
-    const a = document.createElement('a'); a.href = url; a.download = zipFile.name;
-    document.body.appendChild(a); a.click();
-    await new Promise(r => setTimeout(r, 300));
-    URL.revokeObjectURL(url); a.remove();
-    return;
-  }
-
-  const file = files[0];
   const shareData = { files, title: 'Si•Fi loops' };
   if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
     try { await navigator.share(shareData); return; }
     catch(e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to download', e); }
   }
-  const url = URL.createObjectURL(file);
-  const a = document.createElement('a'); a.href = url; a.download = file.name;
+  if (files.length === 1) {
+    const file = files[0];
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a'); a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click();
+    await new Promise(r => setTimeout(r, 300));
+    URL.revokeObjectURL(url); a.remove();
+    return;
+  }
+  // Only reached if the real share sheet genuinely isn't available for
+  // multiple files — one zip download beats N separate download prompts.
+  const zipFiles = [];
+  for (const f of files) zipFiles.push({ name: f.name, data: await f.arrayBuffer() });
+  const zipBlob = makeZip(zipFiles);
+  const zipFile = new File([zipBlob], 'Si-Fi stems.zip', { type: 'application/zip', lastModified: Date.now() });
+  const url = URL.createObjectURL(zipFile);
+  const a = document.createElement('a'); a.href = url; a.download = zipFile.name;
   document.body.appendChild(a); a.click();
   await new Promise(r => setTimeout(r, 300));
   URL.revokeObjectURL(url); a.remove();
