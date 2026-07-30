@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:20</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 01:30</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6953,8 +6953,7 @@ function toggleRecord() {
 }
 
 function _bounceBaseName() {
-  const key = getKeyName(); const keyPart = key ? ' ' + key.replace(/-/g, ' ') : '';
-  const raw = `${_currentSpecies}${keyPart} ${Math.round(bpm)}bpm`;
+  const raw = `${_currentSpecies} ${Math.round(bpm)}bpm`;
   return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
@@ -7155,6 +7154,22 @@ function _connectFullMix() {
   window._beatGain.connect(masterGain);
 }
 
+// Bounces always come out as one zip now, regardless of size or file count —
+// consistent/predictable beats "sometimes share sheet, sometimes a zip"
+// depending on payload size. Zip can't trigger navigator.share's actual
+// share sheet anyway (it's not a shareable type on iOS), so there's no
+// point trying — straight to a single download.
+async function _zipDownload(files, zipBaseName) {
+  const zipFiles = [];
+  for (const f of files) zipFiles.push({ name: f.name, data: await f.arrayBuffer() });
+  const zipBlob = makeZip(zipFiles);
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement('a'); a.href = url; a.download = `${zipBaseName}.zip`;
+  document.body.appendChild(a); a.click();
+  await new Promise(r => setTimeout(r, 300));
+  URL.revokeObjectURL(url); a.remove();
+}
+
 async function bounceLoop() {
   if (playing) playUiSound('play');
   if (!ctx) { alert('Start playback first'); return; }
@@ -7176,8 +7191,9 @@ async function bounceLoop() {
     const mix = await _renderOfflineLoop(_connectFullMix, loopSequence);
     const wav = audioBufferToWav(mix, bpm);
     const suffix = numLoops > 1 ? ` (${numLoops} loops)` : '';
-    const file = new File([wav], `${_bounceBaseName()}${suffix}.wav`, { type: 'audio/wav' });
-    await shareOrDownload([file]);
+    const base = `${_bounceBaseName()}${suffix}`;
+    const file = new File([wav], `${base}.wav`, { type: 'audio/wav' });
+    await _zipDownload([file], base);
   } catch(e) {
     console.error('Bounce Loop failed', e);
     alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
@@ -7214,18 +7230,18 @@ async function bounceLoopStems() {
         trackEnvFilters[tr].connect(masterGain); // this track only — full downstream chain still applies
       }, loopSequence);
       const label = (INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`;
-      files.push(new File([audioBufferToWav(buf, bpm)], `${base} - ${label}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+      files.push(new File([audioBufferToWav(buf, bpm)], `${label}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
     }
 
     const beatBuf = await _renderOfflineLoop(offlineCtx => {
       window._beatGain.connect(masterGain); // BEAT only
     }, loopSequence);
-    files.push(new File([audioBufferToWav(beatBuf, bpm)], `${base} - BEAT.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+    files.push(new File([audioBufferToWav(beatBuf, bpm)], `BEAT.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
     const mixBuf = await _renderOfflineLoop(_connectFullMix, loopSequence);
-    files.push(new File([audioBufferToWav(mixBuf, bpm)], `${base} - FULL MIX.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+    files.push(new File([audioBufferToWav(mixBuf, bpm)], `FULL MIX.wav`, { type: 'audio/wav', lastModified: Date.now() }));
 
-    await shareOrDownload(files);
+    await _zipDownload(files, base);
   } catch(e) {
     console.error('Bounce Loop Stems failed', e);
     alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
