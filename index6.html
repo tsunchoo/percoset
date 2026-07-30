@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 02:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 02:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7027,6 +7027,7 @@ function _snapshotLiveGraph() {
     sidechainDuckGains: Object.assign({}, _sidechainDuckGains),
     noiseGateNodes: Object.assign({}, _noiseGateNodes),
     sourceTrimGains: Object.assign({}, _sourceTrimGains),
+    trackPumpNodes: Object.assign({}, trackPumpNodes),
   };
 }
 function _restoreLiveGraph(snap) {
@@ -7042,6 +7043,7 @@ function _restoreLiveGraph(snap) {
   Object.keys(_sidechainDuckGains).forEach(k => delete _sidechainDuckGains[k]); Object.assign(_sidechainDuckGains, snap.sidechainDuckGains);
   Object.keys(_noiseGateNodes).forEach(k => delete _noiseGateNodes[k]); Object.assign(_noiseGateNodes, snap.noiseGateNodes);
   Object.keys(_sourceTrimGains).forEach(k => delete _sourceTrimGains[k]); Object.assign(_sourceTrimGains, snap.sourceTrimGains);
+  Object.keys(trackPumpNodes).forEach(k => delete trackPumpNodes[k]); Object.assign(trackPumpNodes, snap.trackPumpNodes);
 }
 
 // Builds a full copy of the live signal chain (master bus, per-track gain/FX/
@@ -7091,6 +7093,7 @@ function _buildBounceGraph(targetCtx) {
   Object.keys(_sidechainDuckGains).forEach(k => delete _sidechainDuckGains[k]);
   Object.keys(_noiseGateNodes).forEach(k => delete _noiseGateNodes[k]);
   Object.keys(_sourceTrimGains).forEach(k => delete _sourceTrimGains[k]);
+  Object.keys(trackPumpNodes).forEach(k => delete trackPumpNodes[k]);
   for (let i = 0; i < NUM_TRACKS; i++) {
     const g = targetCtx.createGain(); g.gain.value = trackVolume[i]; trackGainNodes[i] = g;
     const ef = targetCtx.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 22050; ef.Q.value = 3;
