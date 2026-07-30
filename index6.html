@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 03:55</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Jul26 04:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6557,15 +6557,9 @@ async function shareOrDownload(files) {
   }
   // Only reached if the real share sheet genuinely isn't available for
   // multiple files — one zip download beats N separate download prompts.
-  const zipFiles = [];
-  for (const f of files) zipFiles.push({ name: f.name, data: await f.arrayBuffer() });
-  const zipBlob = makeZip(zipFiles);
-  const zipFile = new File([zipBlob], 'Si-Fi stems.zip', { type: 'application/zip', lastModified: Date.now() });
-  const url = URL.createObjectURL(zipFile);
-  const a = document.createElement('a'); a.href = url; a.download = zipFile.name;
-  document.body.appendChild(a); a.click();
-  await new Promise(r => setTimeout(r, 300));
-  URL.revokeObjectURL(url); a.remove();
+  const zip = createZipBuilder();
+  for (const f of files) zip.addFile(f.name, await f.arrayBuffer());
+  await _downloadBlob(zip.finish(), 'Si-Fi stems.zip');
 }
 
 // ── WAV encoder (44.1k/16-bit PCM) — used by Bounce Loop / Bounce Loop Stems ──
@@ -6648,19 +6642,22 @@ function _crc32(bytes) {
   }
   return (crc ^ 0xFFFFFFFF) >>> 0;
 }
-function makeZip(files) {
-  // files: [{ name, data: ArrayBuffer }]
+function createZipBuilder() {
   const encoder = new TextEncoder();
   const localParts = [], centralParts = [];
-  let offset = 0;
+  let offset = 0, fileCount = 0;
   const now = new Date();
   const dosTime = ((now.getHours() & 0x1F) << 11) | ((now.getMinutes() & 0x3F) << 5) | ((now.getSeconds() >> 1) & 0x1F);
   const dosDate = (((now.getFullYear() - 1980) & 0x7F) << 9) | (((now.getMonth() + 1) & 0xF) << 5) | (now.getDate() & 0x1F);
-  for (const f of files) {
-    const nameBytes = encoder.encode(f.name);
-    const data = new Uint8Array(f.data);
-    const crc = _crc32(data);
-    const size = data.length;
+
+  // data: ArrayBuffer or Uint8Array — takes ownership, caller can drop its
+  // own reference right after calling this so the buffer becomes
+  // collectible instead of staying alive until the whole zip is finished.
+  function addFile(name, data) {
+    const nameBytes = encoder.encode(name);
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+    const crc = _crc32(bytes);
+    const size = bytes.length;
 
     const local = new DataView(new ArrayBuffer(30));
     local.setUint32(0, 0x04034b50, true);
@@ -6674,7 +6671,7 @@ function makeZip(files) {
     local.setUint32(22, size, true);
     local.setUint16(26, nameBytes.length, true);
     local.setUint16(28, 0, true);
-    localParts.push(new Uint8Array(local.buffer), nameBytes, data);
+    localParts.push(new Uint8Array(local.buffer), nameBytes, bytes);
 
     const central = new DataView(new ArrayBuffer(46));
     central.setUint32(0, 0x02014b50, true);
@@ -6697,22 +6694,28 @@ function makeZip(files) {
     centralParts.push(new Uint8Array(central.buffer), nameBytes);
 
     offset += 30 + nameBytes.length + size;
+    fileCount++;
   }
-  const centralStart = offset;
-  let centralSize = 0;
-  for (const p of centralParts) centralSize += p.length;
 
-  const end = new DataView(new ArrayBuffer(22));
-  end.setUint32(0, 0x06054b50, true);
-  end.setUint16(4, 0, true);
-  end.setUint16(6, 0, true);
-  end.setUint16(8, files.length, true);
-  end.setUint16(10, files.length, true);
-  end.setUint32(12, centralSize, true);
-  end.setUint32(16, centralStart, true);
-  end.setUint16(20, 0, true);
+  function finish() {
+    const centralStart = offset;
+    let centralSize = 0;
+    for (const p of centralParts) centralSize += p.length;
 
-  return new Blob([...localParts, ...centralParts, new Uint8Array(end.buffer)], { type: 'application/zip' });
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(4, 0, true);
+    end.setUint16(6, 0, true);
+    end.setUint16(8, fileCount, true);
+    end.setUint16(10, fileCount, true);
+    end.setUint32(12, centralSize, true);
+    end.setUint32(16, centralStart, true);
+    end.setUint16(20, 0, true);
+
+    return new Blob([...localParts, ...centralParts, new Uint8Array(end.buffer)], { type: 'application/zip' });
+  }
+
+  return { addFile, finish };
 }
 
 /* [Unused — not wired to any button; renderSlotToWav offline-WAV export chain kept for reference]
@@ -7258,12 +7261,9 @@ function _connectFullMix() {
 // depending on payload size. Zip can't trigger navigator.share's actual
 // share sheet anyway (it's not a shareable type on iOS), so there's no
 // point trying — straight to a single download.
-async function _zipDownload(files, zipBaseName) {
-  const zipFiles = [];
-  for (const f of files) zipFiles.push({ name: f.name, data: await f.arrayBuffer() });
-  const zipBlob = makeZip(zipFiles);
-  const url = URL.createObjectURL(zipBlob);
-  const a = document.createElement('a'); a.href = url; a.download = `${zipBaseName}.zip`;
+async function _downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
   document.body.appendChild(a); a.click();
   await new Promise(r => setTimeout(r, 300));
   URL.revokeObjectURL(url); a.remove();
@@ -7293,8 +7293,9 @@ async function bounceLoop() {
     const wav = audioBufferToWav(mix, bpm);
     const suffix = numLoops > 1 ? ` (${numLoops} loops)` : '';
     const base = `${_bounceBaseName()}${suffix}`;
-    const file = new File([wav], `${base}.wav`, { type: 'audio/wav' });
-    await _zipDownload([file], base);
+    const zip = createZipBuilder();
+    zip.addFile(`${base}.wav`, wav);
+    await _downloadBlob(zip.finish(), `${base}.zip`);
   } catch(e) {
     console.error('Bounce Loop failed', e);
     alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
@@ -7325,7 +7326,7 @@ async function bounceLoopStems() {
   _showBounceToast();
   try {
     const base = _bounceBaseName() + (numLoops > 1 ? ` (${numLoops} loops)` : '');
-    const files = [];
+    const zip = createZipBuilder();
     const totalPasses = NUM_TRACKS + 2; // 6 tracks + BEAT + FULL MIX
     let passesDone = 0;
     const showProgress = numLoops > 1;
@@ -7349,7 +7350,7 @@ async function bounceLoopStems() {
         trackEnvFilters[tr].connect(masterGain); // this track only — full downstream chain still applies
       }, loopSequence);
       passesDone++;
-      files.push(new File([audioBufferToWav(buf, bpm)], `${uniqueStemName(label)}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+      zip.addFile(`${uniqueStemName(label)}.wav`, audioBufferToWav(buf, bpm));
     }
 
     if (showProgress) _setBounceProgress(passesDone / totalPasses, 'Rendering BEAT…');
@@ -7358,16 +7359,16 @@ async function bounceLoopStems() {
       window._beatGain.connect(masterGain); // BEAT only
     }, loopSequence);
     passesDone++;
-    files.push(new File([audioBufferToWav(beatBuf, bpm)], `${uniqueStemName(_titleCase('BEAT'))}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+    zip.addFile(`${uniqueStemName(_titleCase('BEAT'))}.wav`, audioBufferToWav(beatBuf, bpm));
 
     if (showProgress) _setBounceProgress(passesDone / totalPasses, 'Rendering full mix…');
     _renderTapTracks = null; _renderTapBeat = true;
     const mixBuf = await _renderOfflineLoop(_connectFullMix, loopSequence);
     passesDone++;
-    files.push(new File([audioBufferToWav(mixBuf, bpm)], `${uniqueStemName(_titleCase('FULL MIX'))}.wav`, { type: 'audio/wav', lastModified: Date.now() }));
+    zip.addFile(`${uniqueStemName(_titleCase('FULL MIX'))}.wav`, audioBufferToWav(mixBuf, bpm));
 
     if (showProgress) _setBounceProgress(1, 'Zipping…');
-    await _zipDownload(files, base);
+    await _downloadBlob(zip.finish(), `${base}.zip`);
   } catch(e) {
     console.error('Bounce Loop Stems failed', e);
     alert('Bounce error: ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(0,4).join('\n') : ''));
