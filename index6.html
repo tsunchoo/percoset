@@ -1896,6 +1896,16 @@ function scheduler() {
     // flourish is heard.
     const _muteForTransition = _randTransitionWindow && t >= _randTransitionWindow.start && t < _randTransitionWindow.end;
     if (!_muteForTransition) {
+    fireStepAudio(step, t);
+    } // end !_muteForTransition
+    nextStepTime += stepDuration();
+  }
+}
+
+// Pure audio note-firing for one step — no DOM/UI side effects, so this can
+// be reused verbatim to drive an offline (bounce) render as well as live
+// playback. Extracted unchanged from the scheduler's per-step body.
+function fireStepAudio(step, t) {
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
       if (trackMuted[tr]) continue;
       const gs = (step - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
@@ -2182,9 +2192,6 @@ function scheduler() {
         if (step === 3 || step === 11) fireBeatSidestick(t); // pushed accent, ahead of where a backbeat would land
       }
     }
-    } // end !_muteForTransition
-    nextStepTime += stepDuration();
-  }
 }
 
 function updatePlayhead(step) {
@@ -5042,18 +5049,6 @@ function fireBeatKick(t) {
     dg.linearRampToValueAtTime(0.5, t + 0.005);
     dg.setTargetAtTime(1, t + 0.020, 0.08);
   }
-  // Mirror the exact same master-duck curve onto every stem tap so a
-  // Bounce Loop Stems export reflects the real sidechain pump even though
-  // each stem is captured pre-sum (the master duck normally only exists
-  // after all tracks combine).
-  if (window._stemDuckMirrors) {
-    window._stemDuckMirrors.forEach(g => {
-      if (!g) return;
-      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(1, t);
-      g.gain.linearRampToValueAtTime(0.5, t + 0.005);
-      g.gain.setTargetAtTime(1, t + 0.020, 0.08);
-    });
-  }
   duckPumpTracks(t);
   duckSidechainTracks(t);
 }
@@ -6926,103 +6921,133 @@ function toggleRecord() {
   }
 }
 
-// Explicit mimeType — same reasoning as toggleRecord: never trust the
-// browser's silent default container choice.
-function _pickRecMimeType() {
-  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
-  if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
-  if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
-  if (MediaRecorder.isTypeSupported('audio/ogg')) return 'audio/ogg';
-  return '';
-}
-
 function _bounceBaseName() {
   const key = getKeyName(); const keyPart = key ? ' ' + key.replace(/-/g, ' ') : '';
   const raw = `${_currentSpecies}${keyPart} ${Math.round(bpm)}bpm`;
   return raw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
-// Record exactly one loop from a fresh MediaStreamDestination tap, decode
-// it back to PCM, and hand back the AudioBuffer. Shared by Bounce Loop and
-// Bounce Loop Stems so every stem/full-mix pass is captured identically.
-// Encoder priming + MediaRecorder startup latency mean the raw decoded
-// buffer never starts exactly on the downbeat — there's an unpredictable
-// silent gap up front. Detect the first real transient in a reference tap
-// (BEAT's kick, or the full mix if BEAT is silent) and trim every buffer by
-// that same sample count, so the "1" lands at sample 0 everywhere and every
-// stem stays in phase with the others. Extra length at the tail is left
-// alone — trim-to-length happens in Logic, not here.
-function _detectOnsetSample(buffer, maxScanSec, threshold) {
-  if (!buffer) return null;
-  maxScanSec = maxScanSec || 0.5; threshold = threshold || 0.02;
-  const data = buffer.getChannelData(0);
-  const maxSamples = Math.min(data.length, Math.floor(maxScanSec * buffer.sampleRate));
-  for (let i = 0; i < maxSamples; i++) {
-    if (Math.abs(data[i]) > threshold) return i;
-  }
-  return null;
+// ── Offline (sample-exact) bounce rendering ──────────────────────────────
+// MediaRecorder was never viable for this: codec priming pushes the start
+// off the downbeat, and sparse/silent tracks (BEAT) can come back shorter
+// than they actually played. OfflineAudioContext sidesteps both — it's raw
+// PCM, scheduled and rendered deterministically, so sample 0 is the true
+// downbeat and every buffer is exactly as long as requested, silence and
+// all. Extra tail length is fine (Logic trims it); short is not possible.
+
+// Snapshot every ctx-bound global the live audio graph touches, so a bounce
+// render can safely repoint them at an offline context and then hand the
+// live graph back exactly as it was.
+function _snapshotLiveGraph() {
+  return {
+    ctx, masterGain,
+    beatGain: window._beatGain, duckGain: window._duckGain,
+    normalTrackFadeGain: window._normalTrackFadeGain, postLimiterGain: window._postLimiterGain,
+    reverbSendBus: window._reverbSendBus, reverbOutGain: window._reverbOutGain,
+    makeupGain: window._makeupGain, masterLimiter: window.masterLimiter,
+    trackGainNodes: trackGainNodes.slice(), trackEnvFilters: trackEnvFilters.slice(), trackFxNodes: trackFxNodes.slice(),
+    reverbSendGains: Object.assign({}, _reverbSendGains),
+    sidechainDuckGains: Object.assign({}, _sidechainDuckGains),
+    noiseGateNodes: Object.assign({}, _noiseGateNodes),
+  };
 }
-function _trimBufferFront(buffer, offsetSamples, audioCtx) {
-  if (!buffer || offsetSamples <= 0) return buffer;
-  const newLen = buffer.length - offsetSamples;
-  if (newLen <= 0) return buffer;
-  const out = audioCtx.createBuffer(buffer.numberOfChannels, newLen, buffer.sampleRate);
-  for (let c = 0; c < buffer.numberOfChannels; c++) {
-    out.copyToChannel(buffer.getChannelData(c).subarray(offsetSamples), c);
-  }
-  return out;
+function _restoreLiveGraph(snap) {
+  ctx = snap.ctx; masterGain = snap.masterGain;
+  window._beatGain = snap.beatGain; window._duckGain = snap.duckGain;
+  window._normalTrackFadeGain = snap.normalTrackFadeGain; window._postLimiterGain = snap.postLimiterGain;
+  window._reverbSendBus = snap.reverbSendBus; window._reverbOutGain = snap.reverbOutGain;
+  window._makeupGain = snap.makeupGain; window.masterLimiter = snap.masterLimiter;
+  trackGainNodes.length = 0; trackGainNodes.push(...snap.trackGainNodes);
+  trackEnvFilters.length = 0; trackEnvFilters.push(...snap.trackEnvFilters);
+  trackFxNodes.length = 0; trackFxNodes.push(...snap.trackFxNodes);
+  Object.keys(_reverbSendGains).forEach(k => delete _reverbSendGains[k]); Object.assign(_reverbSendGains, snap.reverbSendGains);
+  Object.keys(_sidechainDuckGains).forEach(k => delete _sidechainDuckGains[k]); Object.assign(_sidechainDuckGains, snap.sidechainDuckGains);
+  Object.keys(_noiseGateNodes).forEach(k => delete _noiseGateNodes[k]); Object.assign(_noiseGateNodes, snap.noiseGateNodes);
 }
 
-async function _captureOneLoop(tapNodes, refIndex) {
-  refIndex = refIndex || 0;
+// Builds a full copy of the live signal chain (master bus, per-track gain/FX/
+// env-filter chains, reverb bus, sidechain duck, limiter) inside targetCtx,
+// mirroring the live init block exactly. Repoints ctx/masterGain/etc so every
+// existing trigger function (playSynthBass, fireBeatKick, ...) just works
+// unmodified — they only ever reference these globals, never a context
+// passed explicitly.
+function _buildBounceGraph(targetCtx) {
+  ctx = targetCtx;
+  masterGain = targetCtx.createGain(); masterGain.gain.value = masterVol;
+  const makeupGain = targetCtx.createGain(); makeupGain.gain.value = window._BASE_MAKEUP_GAIN || 2.5061;
+  window._makeupGain = makeupGain;
+  window._beatGain = targetCtx.createGain(); window._beatGain.gain.value = 0.506; window._beatGain.connect(masterGain);
+  window.masterLimiter = targetCtx.createDynamicsCompressor();
+  const masterLimiter = window.masterLimiter;
+  masterLimiter.threshold.value = -3; masterLimiter.knee.value = 3; masterLimiter.ratio.value = 12;
+  masterLimiter.attack.value = 0.0003; masterLimiter.release.value = 0.1;
+  window._duckGain = targetCtx.createGain(); window._duckGain.gain.value = 1;
+  window._normalTrackFadeGain = targetCtx.createGain(); window._normalTrackFadeGain.gain.value = 1;
+  window._postLimiterGain = targetCtx.createGain(); window._postLimiterGain.gain.value = 1;
+  window._reverbSendBus = targetCtx.createGain(); window._reverbSendBus.gain.value = 1;
+  const reverbConv = targetCtx.createConvolver();
+  {
+    const irLen = Math.floor(targetCtx.sampleRate * 0.9);
+    const irBuf = targetCtx.createBuffer(2, irLen, targetCtx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = irBuf.getChannelData(ch);
+      for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4);
+    }
+    reverbConv.buffer = irBuf;
+  }
+  window._reverbOutGain = targetCtx.createGain();
+  window._reverbOutGain.gain.value = (window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.5;
+  window._reverbSendBus.connect(reverbConv); reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
+  masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
+  window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
+  // Caller connects whichever tap(s) it needs into targetCtx.destination.
+
+  trackGainNodes.length = 0; trackEnvFilters.length = 0; trackFxNodes.length = 0;
+  Object.keys(_reverbSendGains).forEach(k => delete _reverbSendGains[k]);
+  Object.keys(_sidechainDuckGains).forEach(k => delete _sidechainDuckGains[k]);
+  Object.keys(_noiseGateNodes).forEach(k => delete _noiseGateNodes[k]);
+  for (let i = 0; i < NUM_TRACKS; i++) {
+    const g = targetCtx.createGain(); g.gain.value = trackVolume[i]; trackGainNodes[i] = g;
+    const ef = targetCtx.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 22050; ef.Q.value = 3;
+    g.connect(ef); ef.connect(masterGain); trackEnvFilters[i] = ef;
+    trackFxNodes[i] = buildFxChain(g);
+    if (trackInstruments[i] === 'ngate') initNoiseGate(i);
+    if (trackFx[i] && (trackFx[i].x > 0 || trackFx[i].y > 0)) setFxActive(i, trackFx[i]);
+  }
+}
+
+// Renders exactly one loop offline. `connectFn(nodes)` is called once the
+// graph exists, to wire whichever tap(s) this pass needs into the offline
+// destination — e.g. only trackGainNodes[tr] for a single stem, or every
+// track + beatGain for the full mix. Every track's notes still fire
+// regardless of what's connected, so sidechain/duck automation (which reacts
+// to the trigger, not the routing) stays correct for whichever tap is live.
+async function _renderOfflineLoop(connectFn, tailSec) {
   const loopSec = NUM_STEPS * stepDuration();
-  const recMime = _pickRecMimeType();
-  const taps = tapNodes.map(node => {
-    const dest = ctx.createMediaStreamDestination();
-    node.connect(dest);
-    const rec = recMime ? new MediaRecorder(dest.stream, { mimeType: recMime }) : new MediaRecorder(dest.stream);
-    const chunks = [];
-    rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-    const stopped = new Promise(resolve => { rec.onstop = resolve; });
-    return { node, dest, rec, chunks, stopped };
-  });
+  const totalSec = loopSec + (tailSec !== undefined ? tailSec : 2.5); // generous tail for decay/reverb — never short
+  const sampleRate = 44100;
+  const offlineCtx = new OfflineAudioContext(2, Math.ceil(totalSec * sampleRate), sampleRate);
 
-  // Fresh pass from step 0, exactly one loop long.
-  currentStep = -1; nextStepTime = ctx.currentTime + 0.05;
-  if (window._duckGain) { window._duckGain.gain.cancelScheduledValues(ctx.currentTime); window._duckGain.gain.setValueAtTime(1, ctx.currentTime); }
-  playing = true;
-  document.body.classList.add('seq-playing');
-  scheduleInterval = setInterval(scheduler, SCHEDULE_MS);
-  const playBtn = document.getElementById('playBtn'); if (playBtn) playBtn.classList.add('playing');
-  updateBeatPulse();
-
-  taps.forEach(t => t.rec.start());
-  await new Promise(r => setTimeout(r, loopSec * 1000 + 60));
-  taps.forEach(t => t.rec.stop());
-
-  playing = false;
-  document.body.classList.remove('seq-playing');
-  clearInterval(scheduleInterval); scheduleInterval = null;
-  if (playBtn) playBtn.classList.remove('playing');
-  updateBeatPulse();
-  taps.forEach(t => { try { t.node.disconnect(t.dest); } catch(e) {} });
-
-  const buffers = [];
-  for (const t of taps) {
-    await t.stopped;
-    if (t.chunks.length === 0) { buffers.push(null); continue; }
-    const blob = new Blob(t.chunks, { type: t.rec.mimeType || 'audio/webm' });
-    const arrayBuf = await blob.arrayBuffer();
-    buffers.push(await ctx.decodeAudioData(arrayBuf.slice(0)));
+  const liveSnap = _snapshotLiveGraph();
+  try {
+    _buildBounceGraph(offlineCtx);
+    connectFn(offlineCtx);
+    for (let step = 0; step < NUM_STEPS; step++) {
+      const swingMs = (step % 2 === 1) ? getSwingOffsetMs() : 0;
+      let t = step * stepDuration() + (swingMs / 1000);
+      if (_beatType === 'boogie') {
+        const beatPos = step % 4;
+        const sd = stepDuration();
+        const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
+        t = step * stepDuration() + _boogieOffsets[beatPos];
+      }
+      fireStepAudio(step, Math.max(0, t));
+    }
+    const rendered = await offlineCtx.startRendering();
+    return rendered;
+  } finally {
+    _restoreLiveGraph(liveSnap);
   }
-
-  // Align every stem to the reference tap's first transient.
-  let offset = _detectOnsetSample(buffers[refIndex]);
-  if (offset === null) offset = _detectOnsetSample(buffers[buffers.length - 1]); // fall back to full mix
-  if (offset) {
-    for (let i = 0; i < buffers.length; i++) buffers[i] = _trimBufferFront(buffers[i], offset, ctx);
-  }
-  return buffers;
 }
 
 async function bounceLoop() {
@@ -7034,8 +7059,9 @@ async function bounceLoop() {
 
   _showBounceToast();
   try {
-    const [mix] = await _captureOneLoop([window._postLimiterGain]);
-    if (!mix) throw new Error('No audio captured');
+    const mix = await _renderOfflineLoop(offlineCtx => {
+      window._postLimiterGain.connect(offlineCtx.destination);
+    });
     const wav = audioBufferToWav(mix, bpm);
     const file = new File([wav], `${_bounceBaseName()}.wav`, { type: 'audio/wav' });
     await shareOrDownload([file]);
@@ -7056,39 +7082,26 @@ async function bounceLoopStems() {
 
   _showBounceToast();
   try {
-    // Per-stem duck-mirror nodes so each track/beat tap reflects the same
-    // master sidechain pump the full mix gets (see fireBeatKick).
-    const mirrors = [];
-    const tapNodes = [];
-    for (let tr = 0; tr < NUM_TRACKS; tr++) {
-      const mirror = ctx.createGain(); mirror.gain.value = 1;
-      trackGainNodes[tr].connect(mirror);
-      mirrors.push(mirror);
-      tapNodes.push(mirror);
-    }
-    const beatMirror = ctx.createGain(); beatMirror.gain.value = 1;
-    (window._beatGain || masterGain).connect(beatMirror);
-    mirrors.push(beatMirror);
-    tapNodes.push(beatMirror);
-    window._stemDuckMirrors = mirrors;
-
-    tapNodes.push(window._postLimiterGain); // full mix, same as Bounce Loop
-
-    const buffers = await _captureOneLoop(tapNodes, NUM_TRACKS); // align to BEAT's kick
-
-    mirrors.forEach(m => { try { m.disconnect(); } catch(e) {} });
-    window._stemDuckMirrors = null;
-
     const base = _bounceBaseName();
     const files = [];
+
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
-      if (!buffers[tr]) continue;
+      const buf = await _renderOfflineLoop(offlineCtx => {
+        trackGainNodes[tr].connect(offlineCtx.destination);
+      });
       const label = (INSTRUMENTS[trackInstruments[tr]] && INSTRUMENTS[trackInstruments[tr]].name) || `TRACK${tr + 1}`;
-      files.push({ name: `${base} - ${label}.wav`, data: audioBufferToWav(buffers[tr], bpm) });
+      files.push({ name: `${base} - ${label}.wav`, data: audioBufferToWav(buf, bpm) });
     }
-    if (buffers[NUM_TRACKS]) files.push({ name: `${base} - BEAT.wav`, data: audioBufferToWav(buffers[NUM_TRACKS], bpm) });
-    if (buffers[NUM_TRACKS + 1]) files.push({ name: `${base} - FULL MIX.wav`, data: audioBufferToWav(buffers[NUM_TRACKS + 1], bpm) });
-    if (files.length === 0) throw new Error('No audio captured');
+
+    const beatBuf = await _renderOfflineLoop(offlineCtx => {
+      window._beatGain.connect(offlineCtx.destination);
+    });
+    files.push({ name: `${base} - BEAT.wav`, data: audioBufferToWav(beatBuf, bpm) });
+
+    const mixBuf = await _renderOfflineLoop(offlineCtx => {
+      window._postLimiterGain.connect(offlineCtx.destination);
+    });
+    files.push({ name: `${base} - FULL MIX.wav`, data: audioBufferToWav(mixBuf, bpm) });
 
     const zipBlob = makeZip(files);
     const zipFile = new File([zipBlob], `${base} stems.zip`, { type: 'application/zip' });
