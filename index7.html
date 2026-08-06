@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -615,7 +615,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
-    <div style="display:block;width:100%;margin-bottom:10px;">
+    <div style="display:block;width:100%;margin-bottom:22px;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">BEAT VOL</div>
       <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;flex:none;display:block;" oninput="setBeatVol(this.value/100)">
     </div>
@@ -10795,10 +10795,14 @@ function _ensureBeatFxChain() {
   const ws = ctx.createWaveShaper(); ws.oversample = '2x'; ws.curve = makeDistCurve(0.5);
   const postGain = ctx.createGain(); postGain.gain.value = 0.599;
   const reverbSend = ctx.createGain(); reverbSend.gain.value = 0;
-  const reverbHP = ctx.createBiquadFilter(); reverbHP.type = 'highpass'; reverbHP.frequency.value = 300; reverbHP.Q.value = 0.7;
+  // Two cascaded highpass stages (~-24dB/octave combined) at 500Hz — a
+  // single gentle filter was still letting plenty of kick fundamental and
+  // click-transient energy through into the reverb.
+  const reverbHP1 = ctx.createBiquadFilter(); reverbHP1.type = 'highpass'; reverbHP1.frequency.value = 500; reverbHP1.Q.value = 0.7;
+  const reverbHP2 = ctx.createBiquadFilter(); reverbHP2.type = 'highpass'; reverbHP2.frequency.value = 500; reverbHP2.Q.value = 0.7;
   beatGain.connect(dryGain); dryGain.connect(masterGain);
   beatGain.connect(crunchSend); crunchSend.connect(preGain); preGain.connect(ws); ws.connect(postGain); postGain.connect(masterGain);
-  if (window._reverbSendBus) { beatGain.connect(reverbHP); reverbHP.connect(reverbSend); reverbSend.connect(window._reverbSendBus); }
+  if (window._reverbSendBus) { beatGain.connect(reverbHP1); reverbHP1.connect(reverbHP2); reverbHP2.connect(reverbSend); reverbSend.connect(window._reverbSendBus); }
   window._beatDryGain = dryGain; window._beatCrunchSend = crunchSend; window._beatReverbSend = reverbSend;
 }
 
@@ -10830,7 +10834,7 @@ function beatCtrlShift() {
 function beatCtrlToggleDelay() {
   _beatDelay = !_beatDelay;
   _ensureBeatFxChain();
-  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatDelay ? 0.45 : 0, ctx.currentTime, 0.02);
+  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatDelay ? 0.225 : 0, ctx.currentTime, 0.02); // halved from 0.45
   updateBeatCtrlRow();
   markModified();
 }
