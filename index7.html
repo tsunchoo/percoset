@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 22:30</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 22:36</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1360,7 +1360,7 @@ function _trackNote() {
 // ── Per-track reverb send ───────────────────────────────────────────────
 // REVERB MIX slider goes 0-100%, mapped onto gain 0-REVERB_GAIN_MAX rather
 // than 0-1 — doubles how far "fully up" actually reaches.
-const REVERB_GAIN_MAX = 2.0;
+const REVERB_GAIN_MAX = 1.5;
 
 function setGlobalDelayMix(v) {
   if (window._reverbOutGain) window._reverbOutGain.gain.value = v * REVERB_GAIN_MAX;
