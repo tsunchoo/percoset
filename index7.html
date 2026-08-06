@@ -182,6 +182,9 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   transform: translateY(60px);
 }
+.beat-ctrl-row { display: flex; gap: 6px; width: 100%; }
+.beat-ctrl-row .track-ctrl-icon-btn, .beat-ctrl-row .shift-btn { width: auto; flex: 1; height: 40px; }
+.beat-ctrl-row button.drag-hover { outline: 2px solid #adff00; outline-offset: -2px; }
 .beat-type-menu-grid {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
 }
@@ -213,7 +216,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 @keyframes beat-red { from { background: #111; color: #adff00; } to { background: #333; color: #adff00; } }
 #saveBtn.rec-active { background: #111; }
 #saveBtn.rec-active img { animation: rec-icon-pulse 0.5s infinite alternate; }
-#saveBtn.rec-beat-pulse { animation: rec-pump 0.22s ease-out; }
+#saveBtn.rec-beat-pulse { animation: rec-pump 0.44s ease-out; }
 @keyframes rec-pump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
 @keyframes rec-icon-pulse { from { filter: brightness(0) invert(1) sepia(1) saturate(20) hue-rotate(330deg) brightness(1.5); } to { filter: brightness(0) invert(1) sepia(1) saturate(20) hue-rotate(330deg) brightness(0.5); } }
@@ -570,7 +573,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 20:07</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 21:12</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -622,6 +625,13 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
+    <div class="beat-ctrl-row">
+      <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
+      <button class="shift-btn" id="beatCtrlShift">&lt;</button>
+      <button class="shift-btn right" id="beatCtrlDelay">R</button>
+      <button class="track-ctrl-icon-btn fx-btn" id="beatCtrlFx">FX</button>
+      <button class="track-ctrl-icon-btn rand-btn" id="beatCtrlRand">R</button>
+    </div>
     <div class="beat-type-menu-grid">
       <div class="beat-type-item" data-beat="disco">DISCO</div>
       <div class="beat-type-item" data-beat="bounce">BOUNCE</div>
@@ -1813,6 +1823,14 @@ function scheduler() {
       }
       // Per-track auto-R regeneration — fires exactly on bar starts
       document.querySelectorAll('.rand-btn').forEach(rb => { if (rb._autoBarTick) rb._autoBarTick(); });
+      // BEAT ctrl-row rand 'R' auto mode: new BEAT type every 4 bars
+      if (_beatAutoRandActive) {
+        _beatAutoRandBarCount++;
+        if (_beatAutoRandBarCount >= 4) {
+          _beatAutoRandBarCount = 0;
+          randomizeBeatType();
+        }
+      }
       // RAND button auto-mode (double-click): regenerate every exactly 4 bars,
       // counted off real bar-starts rather than wall-clock time so it can't drift.
       if (_autoRandLoopActive) {
@@ -2108,7 +2126,8 @@ function fireStepAudio(step, t) {
       if (allEmpty) playMetronome(t, step === 0);
     }
     // Beat: fire from main clock on downbeats only
-    if (step % 8 === 0 || step % 8 === 4) {
+    const bstep = (step - _beatOffset + NUM_STEPS) % NUM_STEPS; // '<' shift — same pattern as per-track offset
+    if (bstep % 8 === 0 || bstep % 8 === 4) {
       // Activate pending beat on next downbeat
       if (_beatPending) {
         beatPlaying = true; _beatPending = false;
@@ -2122,45 +2141,45 @@ function fireStepAudio(step, t) {
         let doKick = false, doSnare = false, doHat = false;
         if (_beatType === 'disco') {
           // Kick on 1+3, snare on 2+4
-          doKick  = (step === 0 || step === 8);
-          doSnare = (step === 4 || step === 12);
+          doKick  = (bstep === 0 || bstep === 8);
+          doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'halftime') {
           // Kick on 1+2, snare on 3 (half time feel)
-          doKick  = (step === 0 || step === 4);
-          doSnare = (step === 8);
+          doKick  = (bstep === 0 || bstep === 4);
+          doSnare = (bstep === 8);
         } else if (_beatType === 'reggae') {
           // ROCKERS — same as ONE DROP, but kick lands on every quarter note.
           // Hihat is upbeat-only (handled below) — no downbeat hihat hits at all.
-          doKick = (step === 0 || step === 4 || step === 8 || step === 12);
+          doKick = (bstep === 0 || bstep === 4 || bstep === 8 || bstep === 12);
         } else if (_beatType === 'breaks') {
           // Kick on 1+3 (2& handled below), snare on 2 (3& handled below)
-          doKick  = (step === 0 || step === 8);
-          doSnare = (step === 4);
+          doKick  = (bstep === 0 || bstep === 8);
+          doSnare = (bstep === 4);
         } else if (_beatType === 'bounce') {
           // Kick on 1 (2&+3& handled below), snare on 2+4
-          doKick  = (step === 0);
-          doSnare = (step === 4 || step === 12);
+          doKick  = (bstep === 0);
+          doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'reggae2') {
           // ONE DROP — kick+sidestick on beats 2 & 4; hihat is upbeat-only (handled below)
-          doKick = (step === 4 || step === 12);
+          doKick = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'drive') {
           // DRIVE — kicks on 1 & 3, snares on 2 & 4 (syncopated a's handled below)
-          doKick  = (step === 0 || step === 8);
-          doSnare = (step === 4 || step === 12);
+          doKick  = (bstep === 0 || bstep === 8);
+          doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'rock') {
           // Kick on 1 (all the &s handled below), snares on 2+4 backbeat
-          doKick  = (step === 0);
-          doSnare = (step === 4 || step === 12);
+          doKick  = (bstep === 0);
+          doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'fourfloor') {
           // 4X4 — four kick drums, one on every beat
-          doKick = (step === 0 || step === 4 || step === 8 || step === 12);
+          doKick = (bstep === 0 || bstep === 4 || bstep === 8 || bstep === 12);
         } else if (_beatType === 'rollin') {
           // ROLLIN — straight backbeat snare, rolling syncopated kick underneath
-          doKick  = (step === 0);
-          doSnare = (step === 4 || step === 12);
+          doKick  = (bstep === 0);
+          doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'doubledown') {
           // DOUBLEDOWN — kick on 1 and 3 (plus fills below); snare handled below
-          doKick = (step === 0 || step === 8);
+          doKick = (bstep === 0 || bstep === 8);
         } else if (_beatType === 'samba') {
           // SAMBA — kick on every quarter note; hihat/sidestick handled below
           doKick = true;
@@ -2173,7 +2192,7 @@ function fireStepAudio(step, t) {
           doKick = true;
         } else if (_beatType === 'afrobeat') {
           // AFROBEAT — kick on beat 1 (syncopated hits handled below); hihat steady 8ths (handled below)
-          doKick = (step === 0);
+          doKick = (bstep === 0);
           doHat = true;
         } else if (_beatType === 'boogie') {
           // BOOGIE — true eighth-note-triplet shuffle, computed directly as
@@ -2181,7 +2200,7 @@ function fireStepAudio(step, t) {
           // triplet on-grid). Hihat on triplet partials 1 & 3 every beat,
           // skipping the middle — exactly the classic shuffle/swing feel.
           // Kick on the downbeat of beats 1 & 3; snare backbeat on 2 & 4.
-          const _beatIdx = step / 4; // 0,1,2,3 for steps 0,4,8,12
+          const _beatIdx = bstep / 4; // 0,1,2,3 for steps 0,4,8,12
           const _beatDur = stepDuration() * 4;
           const _third = _beatDur / 3;
           playSynthHihat(false, t, -1);
@@ -2193,7 +2212,7 @@ function fireStepAudio(step, t) {
           fireBeatKick(t);
           if (_beatType === 'reggae2') fireBeatSidestick(t); // ONE DROP — ties to its kicks on beats 2 & 4
         }
-        if (_beatType === 'reggae' && (step === 4 || step === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
+        if (_beatType === 'reggae' && (bstep === 4 || bstep === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
         if (doSnare) playSnare(t);
         if (doHat) playSynthHihat(false, t, -1);
       }
@@ -2201,37 +2220,37 @@ function fireStepAudio(step, t) {
     // Off-beat 8th-note hits — outside the downbeat-only gate above, since that
     // gate never lets steps 2/6/10/14 through.
     if (beatPlaying) {
-      if (_beatType === 'reggae' && (step === 2 || step === 6 || step === 10 || step === 14)) {
+      if (_beatType === 'reggae' && (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14)) {
         playSynthHihat(false, t, -1);
       } else if (_beatType === 'breaks') {
-        if (step === 6) fireBeatKick(t);   // 2&
-        if (step === 10) playSnare(t);     // 3&
+        if (bstep === 6) fireBeatKick(t);   // 2&
+        if (bstep === 10) playSnare(t);     // 3&
       } else if (_beatType === 'bounce') {
-        if (step === 6 || step === 10) fireBeatKick(t); // 2&, 3&
+        if (bstep === 6 || bstep === 10) fireBeatKick(t); // 2&, 3&
       } else if (_beatType === 'reggae2') {
-        if (step === 2 || step === 6 || step === 10 || step === 14) playSynthHihat(false, t, -1); // upbeat skank — same as ROCKERS
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1); // upbeat skank — same as ROCKERS
       } else if (_beatType === 'drive') {
-        if (step === 3 || step === 11) fireBeatKick(t); // a-of-1, a-of-3
-        if (step === 7) playSnare(t);                    // a-of-2
+        if (bstep === 3 || bstep === 11) fireBeatKick(t); // a-of-1, a-of-3
+        if (bstep === 7) playSnare(t);                    // a-of-2
       } else if (_beatType === 'rock') {
-        if (step === 2 || step === 6 || step === 10 || step === 14) fireBeatKick(t); // 1&, 2&, 3&, 4&
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) fireBeatKick(t); // 1&, 2&, 3&, 4&
       } else if (_beatType === 'rollin') {
-        if (step === 3 || step === 7 || step === 10 || step === 15) fireBeatKick(t); // a-of-1, a-of-2, &-of-3, a-of-4
+        if (bstep === 3 || bstep === 7 || bstep === 10 || bstep === 15) fireBeatKick(t); // a-of-1, a-of-2, &-of-3, a-of-4
       } else if (_beatType === 'doubledown') {
-        if (step === 3 || step === 11) fireBeatKick(t); // 16th immediately before each snare
-        if (step === 2 || step === 6 || step === 10 || step === 14) playSnare(t); // restored original off-beat snare — double-time feel
+        if (bstep === 3 || bstep === 11) fireBeatKick(t); // 16th immediately before each snare
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
-        if (step === 2 || step === 6 || step === 10 || step === 14) playSynthHihat(false, t, -1);
-        if (step === 3 || step === 6 || step === 9 || step === 11 || step === 14) playSnare(t);
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
+        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) playSnare(t);
       } else if (_beatType === 'swagger') {
-        if (step === 15 || step === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
-        if (step === 4 || step === 12) playSnare(t);     // snare lands exactly on 2 & 4
+        if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
+        if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
       } else if (_beatType === 'cumbia') {
-        if (step === 2 || step === 3 || step === 6 || step === 7 || step === 10 || step === 11 || step === 14 || step === 15) playSynthHihat(false, t, -1);
+        if (bstep === 2 || bstep === 3 || bstep === 6 || bstep === 7 || bstep === 10 || bstep === 11 || bstep === 14 || bstep === 15) playSynthHihat(false, t, -1);
       } else if (_beatType === 'afrobeat') {
-        if (step === 6 || step === 10) fireBeatKick(t); // syncopated hits, off the straight downbeats
-        if (step === 2 || step === 6 || step === 10 || step === 14) playSynthHihat(false, t, -1); // remaining steady 8ths
-        if (step === 3 || step === 11) fireBeatSidestick(t); // pushed accent, ahead of where a backbeat would land
+        if (bstep === 6 || bstep === 10) fireBeatKick(t); // syncopated hits, off the straight downbeats
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1); // remaining steady 8ths
+        if (bstep === 3 || bstep === 11) fireBeatSidestick(t); // pushed accent, ahead of where a backbeat would land
       }
     }
 }
@@ -2364,6 +2383,7 @@ function togglePlay() {
 // ── Beat button: Kick on 1&3, Snare on 2&4 ──
 let beatPlaying = false, _beatPending = false;
 let _beatType = 'disco'; // 'disco' | 'halftime' | 'reggae'
+let _beatOffset = 0; // BEAT ctrl-row '<' — steps the whole pattern is shifted by, same idea as trackOffset
 
 const _revBufCache = new WeakMap();
 function reverseBuffer(buf, revLen) {
@@ -5346,8 +5366,8 @@ function beatMenuHighlightUnder(clientX, clientY) {
   const menu = document.getElementById('beatTypeMenu');
   if (!menu) return null;
   const el = document.elementFromPoint(clientX, clientY);
-  menu.querySelectorAll('.beat-type-item').forEach(it => it.classList.remove('drag-hover'));
-  const item = el && el.closest ? el.closest('.beat-type-item') : null;
+  menu.querySelectorAll('.beat-type-item, .beat-ctrl-row button').forEach(it => it.classList.remove('drag-hover'));
+  const item = el && el.closest ? el.closest('.beat-type-item, .beat-ctrl-row button') : null;
   if (item) item.classList.add('drag-hover');
   return item;
 }
@@ -5358,6 +5378,7 @@ function openBeatMenu() {
   _beatMenuOpen = true;
   refreshBeatMenuHighlight();
   updateBeatLockVisual();
+  updateBeatCtrlRow();
   menu.classList.add('visible');
   btn.classList.add('menu-open');
 }
@@ -5365,18 +5386,32 @@ function closeBeatMenu() {
   const menu = document.getElementById('beatTypeMenu');
   const btn = document.getElementById('beatBtn');
   _beatMenuOpen = false;
-  if (menu) { menu.classList.remove('visible'); menu.querySelectorAll('.beat-type-item').forEach(it => it.classList.remove('drag-hover')); }
+  if (menu) { menu.classList.remove('visible'); menu.querySelectorAll('.beat-type-item, .beat-ctrl-row button').forEach(it => it.classList.remove('drag-hover')); }
   if (btn) btn.classList.remove('menu-open');
 }
 function commitBeatMenuSelection(item) {
   if (!item) return;
   if (item.id === 'beatMenuBeatLock') {
     toggleBeatTypeLock();
+  } else if (item.id === 'beatCtrlL') {
+    beatCtrlToggleL();
+  } else if (item.id === 'beatCtrlShift') {
+    beatCtrlShift();
+  } else if (item.id === 'beatCtrlDelay') {
+    beatCtrlToggleDelay();
+  } else if (item.id === 'beatCtrlFx') {
+    beatCtrlCycleFx();
+  } else if (item.id === 'beatCtrlRand') {
+    onBeatCtrlRandTap();
   } else if (item.dataset.beat) {
     setBeatType(item.dataset.beat);
     refreshBeatMenuHighlight();
   }
 }
+// BEAT ctrl row — five buttons (L / < / R / FX / rand-R) participate in the
+// same drag-to-select gesture as the beat-type grid (see beatMenuHighlightUnder
+// / commitBeatMenuSelection below) rather than their own tap handlers, since
+// the whole BEAT menu only ever opens as part of that one continuous touch.
 (function() {
   const btn = document.getElementById('beatBtn');
   const menu = document.getElementById('beatTypeMenu');
@@ -7066,6 +7101,7 @@ function toggleRecord() {
   // If already armed/recording — stop and share
   if (_recArmed) {
     _recArmed = false;
+    if (playing) togglePlay(); // stop transport immediately — recording used to always stop playback here too
     if (_mediaRecorder && _mediaRecorder.state === 'recording') {
       _showBounceToast();
       // Extra 2s gap before actually finishing the file, so any tail/reverb
@@ -8104,6 +8140,26 @@ function playRandReleaseSweep(time) {
   src.connect(bp); bp.connect(g); g.connect(masterGain);
   src.start(time);
   src.onended = () => { try { bp.disconnect(); g.disconnect(); } catch(err) {} };
+}
+
+// Stops every flavor of auto-rand — the top-row RAND AUTO loop, every
+// per-track auto-rand button, and the BEAT ctrl-row auto rand — in one call.
+// RECALL uses this: recalling a pattern while something's still on an auto
+// loop is pointless, since the loop just overwrites the recalled state a
+// few bars later.
+function stopAllAutoRand() {
+  if (_autoRandLoopActive) {
+    _autoRandLoopActive = false;
+    _autoRandBarCount = 0;
+    const mainRandBtn = document.getElementById('randBtn');
+    if (mainRandBtn) { mainRandBtn.classList.remove('pulsing'); mainRandBtn.textContent = 'RAND'; }
+  }
+  Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
+  if (_beatAutoRandActive) {
+    _beatAutoRandActive = false;
+    _beatAutoRandBarCount = 0;
+    updateBeatCtrlRow();
+  }
 }
 
 // RAND button wiring
@@ -9669,6 +9725,11 @@ function fullReset() {
   // Global music state
   bpm = 110; swingVal = 0.625; masterVol = 0.8; randAllLevel = 0;
   _tempoLocked = false; _beatTypeLocked = false; _beatType = 'disco';
+  _beatOffset = 0; _beatDelay = false; _beatFx = false; _beatPump = false;
+  _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
+  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setValueAtTime(0, ctx.currentTime);
+  if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setValueAtTime(0, ctx.currentTime);
+  updateBeatCtrlRow();
   currentStep = -1; nextStepTime = 0;
   currentScaleName = 'penta-min'; PENTA_MINOR = SCALES['penta-min']; globalScaleRoot = null;
   activeSlot = -1;
@@ -10361,7 +10422,7 @@ async function hardResetAudioEngine() {
     if (target && !target.dataset.sweepTriggered) {
       target.dataset.sweepTriggered = '1';
       if (target.id === 'randBtn') { setBtnBlueHeld('randBtn'); queueRand(); }
-      if (target.id === 'scratchBtn') { if (_recallSnapB) { const _cur = snapshotState(); restoreState(_recallSnapB); flashBtnOrange('scratchBtn'); window._reelReversePending = true; _recallSnapB = _cur; playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
+      if (target.id === 'scratchBtn') { if (_recallSnapB) { stopAllAutoRand(); const _cur = snapshotState(); restoreState(_recallSnapB); flashBtnOrange('scratchBtn'); window._reelReversePending = true; _recallSnapB = _cur; playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
     }
   };
   btn.addEventListener('touchmove', sweepMoveHandler, { passive: false });
@@ -10429,6 +10490,7 @@ function stopRecallLoop() {
 
   const doRecall = () => {
     if (!_recallSnapB) return;
+    stopAllAutoRand();
     const rewindName = Math.random() < 0.5 ? 'rewind' : 'rewind2';
     // Duck master mix for the duration of the rewind sound
     let rewindDur = 0.6; // fallback if the buffer isn't loaded yet
@@ -10606,6 +10668,101 @@ function startHiss() {
 
 function setBeatVol(v) {
   if (window._beatGain) window._beatGain.gain.value = v;
+}
+
+// ── BEAT control row: L / < / R / FX / R(rand) — mirrors the per-track
+// control row exactly (same toggle/cycle logic), just aimed at the shared
+// BEAT bus (window._beatGain) instead of a single track's gain node.
+let _beatDelay = false;                  // 'R' — reverb send on/off
+let _beatFx = false, _beatPump = false;  // 'FX' — 3-state cycle: off / on / on+blast
+let _beatAutoRandActive = false, _beatAutoRandBarCount = 0; // rand 'R' double-tap auto mode
+
+// Built once, lazily, the first time BEAT's FX/delay is actually touched —
+// splits the beat bus into a dry path plus parallel crunch-send and
+// reverb-send paths, same shape as buildFxChain() for tracks.
+function _ensureBeatFxChain() {
+  if (!ctx || !window._beatGain || window._beatDryGain) return;
+  const beatGain = window._beatGain;
+  try { beatGain.disconnect(); } catch(e) {}
+  const dryGain = ctx.createGain(); dryGain.gain.value = 1;
+  const crunchSend = ctx.createGain(); crunchSend.gain.value = 0;
+  const preGain = ctx.createGain(); preGain.gain.value = 0.12;
+  const ws = ctx.createWaveShaper(); ws.oversample = '2x'; ws.curve = makeDistCurve(0.5);
+  const postGain = ctx.createGain(); postGain.gain.value = 0.599;
+  const reverbSend = ctx.createGain(); reverbSend.gain.value = 0;
+  beatGain.connect(dryGain); dryGain.connect(masterGain);
+  beatGain.connect(crunchSend); crunchSend.connect(preGain); preGain.connect(ws); ws.connect(postGain); postGain.connect(masterGain);
+  if (window._reverbSendBus) { beatGain.connect(reverbSend); reverbSend.connect(window._reverbSendBus); }
+  window._beatDryGain = dryGain; window._beatCrunchSend = crunchSend; window._beatReverbSend = reverbSend;
+}
+
+function updateBeatCtrlRow() {
+  const lBtn = document.getElementById('beatCtrlL');
+  if (lBtn) lBtn.classList.toggle('sweep-on', _beatTypeLocked);
+  const shiftBtn = document.getElementById('beatCtrlShift');
+  if (shiftBtn) shiftBtn.classList.toggle('on', _beatOffset !== 0);
+  const dBtn = document.getElementById('beatCtrlDelay');
+  if (dBtn) dBtn.classList.toggle('on', _beatDelay);
+  const fBtn = document.getElementById('beatCtrlFx');
+  if (fBtn) { fBtn.classList.toggle('on', _beatFx); fBtn.classList.toggle('blast-on', _beatPump); }
+  const rBtn = document.getElementById('beatCtrlRand');
+  if (rBtn) { rBtn.classList.toggle('rand-auto', _beatAutoRandActive); rBtn.textContent = _beatAutoRandActive ? 'A' : 'R'; }
+}
+
+// L — same lock, exposed on the ctrl row too
+function beatCtrlToggleL() { toggleBeatTypeLock(); updateBeatCtrlRow(); }
+
+// < — shift the whole BEAT pattern by one step, same idea as a track's shift-left
+function beatCtrlShift() {
+  _beatOffset = (_beatOffset + 1) % NUM_STEPS;
+  updateBeatCtrlRow();
+  markModified();
+}
+
+// R — reverb send toggle, same on/off as a track's delay button
+function beatCtrlToggleDelay() {
+  _beatDelay = !_beatDelay;
+  _ensureBeatFxChain();
+  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatDelay ? 0.45 : 0, ctx.currentTime, 0.02);
+  updateBeatCtrlRow();
+  markModified();
+}
+
+// FX — 3-state cycle: off -> crunch on -> crunch+blast -> off, same as a track's FX button
+function beatCtrlCycleFx() {
+  _ensureBeatFxChain();
+  if (!_beatFx) {
+    _beatFx = true;
+  } else if (!_beatPump) {
+    _beatPump = true;
+  } else {
+    _beatFx = false; _beatPump = false;
+  }
+  if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setTargetAtTime(_beatFx ? 0.5 : 0, ctx.currentTime, 0.02);
+  updateBeatCtrlRow();
+  markModified();
+}
+
+// R (rand) — single tap picks a new BEAT type once; double tap toggles an
+// auto mode that picks a new one every 4 bars, same shape as the per-track
+// randomize button and the top-row RAND AUTO loop.
+const _BEAT_TYPE_POOL = ['disco','bounce','breaks','drive','swagger','halftime','reggae','reggae2','fourfloor','doubledown','samba','cumbia','afrobeat','boogie'];
+function randomizeBeatType() {
+  const pick = _BEAT_TYPE_POOL[Math.floor(Math.random() * _BEAT_TYPE_POOL.length)];
+  setBeatType(pick);
+  refreshBeatMenuHighlight();
+}
+let _beatCtrlRandLastTap = 0;
+function onBeatCtrlRandTap() {
+  const now = Date.now();
+  if (now - _beatCtrlRandLastTap < 400) {
+    _beatAutoRandActive = !_beatAutoRandActive;
+    _beatAutoRandBarCount = 0;
+  } else if (!_beatAutoRandActive) {
+    randomizeBeatType();
+  }
+  _beatCtrlRandLastTap = now;
+  updateBeatCtrlRow();
 }
 
 function setBeatType(type) {
