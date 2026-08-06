@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:58</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 00:03</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1381,7 +1381,7 @@ function _trackNote() {
 // Both readouts on screen show the exact 0-100 number quoted in code below —
 // "set INTENSITY to 20, MIX to 20" means exactly these two sliders at 20.
 const REVERB_INTENSITY_MAX = 0.30; // IR peak amplitude at slider=100
-const REVERB_MIX_MAX = 2.0;        // output gain at slider=100
+const REVERB_MIX_MAX = 0.4;        // output gain at slider=100 (was 2.0, brought down ~80%)
 
 function _buildReverbIRBuffer(targetCtx, scale) {
   const irLen = Math.floor(targetCtx.sampleRate * 0.9);
