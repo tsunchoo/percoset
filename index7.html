@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 22:36</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 22:56</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -615,7 +615,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
-    <div style="display:flex;flex-direction:column;gap:6px;width:100%;">
+    <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-bottom:-2px;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">BEAT VOL</div>
       <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;" oninput="setBeatVol(this.value/100)">
     </div>
@@ -700,7 +700,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">REVERB MIX</div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="50" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100)">
+        <input type="range" id="delayMixBar" min="0" max="100" value="15" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100)">
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
@@ -955,7 +955,7 @@ function syncSettingsPanel() {
   const kd = document.getElementById('keyDisplay');
   if (kd) kd.textContent = (getKeyName() || '').replace(/-/g, ' ');
   const dmb = document.getElementById('delayMixBar');
-  if (dmb) dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.5) * 100);
+  if (dmb) dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.15) * 100);
   updateSwingReadout();
 }
 function updateSwingReadout() {
@@ -1358,12 +1358,21 @@ function _trackNote() {
 
 
 // ── Per-track reverb send ───────────────────────────────────────────────
-// REVERB MIX slider goes 0-100%, mapped onto gain 0-REVERB_GAIN_MAX rather
-// than 0-1 — doubles how far "fully up" actually reaches.
+// REVERB MIX slider goes 0-100%, but almost all the useful range lives in
+// the first 15% — that first sliver ramps 0 up to REVERB_GAIN_MAX (the sane
+// ceiling). Past 15% it deliberately keeps climbing into over-the-top
+// territory, up to 3x MAX at the very top of the slider.
 const REVERB_GAIN_MAX = 1.5;
+const REVERB_KNEE = 0.15;
+
+function _reverbGainForMix(v) {
+  if (v <= REVERB_KNEE) return REVERB_GAIN_MAX * (v / REVERB_KNEE);
+  const t = (v - REVERB_KNEE) / (1 - REVERB_KNEE);
+  return REVERB_GAIN_MAX + t * (REVERB_GAIN_MAX * 2); // ramps up to 3x MAX — intentionally silly
+}
 
 function setGlobalDelayMix(v) {
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = v * REVERB_GAIN_MAX;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = _reverbGainForMix(v);
   window._globalDelayMix = v;
 }
 
@@ -7321,7 +7330,7 @@ function _buildBounceGraph(targetCtx) {
     reverbConv.buffer = irBuf;
   }
   window._reverbOutGain = targetCtx.createGain();
-  window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.5) * REVERB_GAIN_MAX;
+  window._reverbOutGain.gain.value = _reverbGainForMix((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.15);
   window._reverbSendBus.connect(reverbConv); reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
   masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
   window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
@@ -9803,8 +9812,8 @@ function fullReset() {
   currentScaleName = 'penta-min'; PENTA_MINOR = SCALES['penta-min']; globalScaleRoot = null;
   activeSlot = -1;
   slots.fill(null); _pendingSlot = -1; _autoSlotQueue = [];
-  window._globalDelayMix = 0.5;
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.5 * REVERB_GAIN_MAX;
+  window._globalDelayMix = 0.15;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = _reverbGainForMix(0.15);
 
   // Display prefs back to default
   _bgPulseEnabled = false; _bgStaticEnabled = false; _bgPulseSteps = 4; _bgPulseCounter = 0;
@@ -10204,7 +10213,7 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
       }
       _reverbConv.buffer = irBuf;
     }
-    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = 0.5 * REVERB_GAIN_MAX;
+    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = _reverbGainForMix(0.15);
     window._reverbSendBus.connect(_reverbConv); _reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
     masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain); window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain); window._postLimiterGain.connect(ctx.destination);
     for (let i=0; i<NUM_TRACKS; i++) {
@@ -10760,9 +10769,10 @@ function _ensureBeatFxChain() {
   const ws = ctx.createWaveShaper(); ws.oversample = '2x'; ws.curve = makeDistCurve(0.5);
   const postGain = ctx.createGain(); postGain.gain.value = 0.599;
   const reverbSend = ctx.createGain(); reverbSend.gain.value = 0;
+  const reverbHP = ctx.createBiquadFilter(); reverbHP.type = 'highpass'; reverbHP.frequency.value = 300; reverbHP.Q.value = 0.7;
   beatGain.connect(dryGain); dryGain.connect(masterGain);
   beatGain.connect(crunchSend); crunchSend.connect(preGain); preGain.connect(ws); ws.connect(postGain); postGain.connect(masterGain);
-  if (window._reverbSendBus) { beatGain.connect(reverbSend); reverbSend.connect(window._reverbSendBus); }
+  if (window._reverbSendBus) { beatGain.connect(reverbHP); reverbHP.connect(reverbSend); reverbSend.connect(window._reverbSendBus); }
   window._beatDryGain = dryGain; window._beatCrunchSend = crunchSend; window._beatReverbSend = reverbSend;
 }
 
