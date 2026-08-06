@@ -283,8 +283,9 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #randBtn.pulsing { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 #randBtn .rand-btn-line { display: block; font-size: inherit; line-height: 1.05; letter-spacing: 0.5px; }
 .track-auto-rand { --track-color: #f71aff !important; }
-#randBtn.pulsing { background: #0468f4; color: #adff00; animation: rand-pulse 0.5s infinite alternate; }
-@keyframes rand-pulse { from { background: #0468f4; color: #adff00; } to { background: #0247a8; color: #adff00; } }
+#randBtn.pulsing { background: #0468f4; color: #adff00; }
+@keyframes rand-pulse { 0% { background: #0468f4; color: #adff00; } 50% { background: #0247a8; color: #adff00; } 100% { background: #0468f4; color: #adff00; } }
+#randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
 #scratchBtn.active { background: #111 !important; color: #adff00 !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
@@ -516,7 +517,8 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 .slot-btn.beat-pulse { animation: slot-pulse 0.22s ease-out; }
 @keyframes slot-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #playBtn.btn-beat-pulse { animation: slot-pulse 0.44s ease-out; }
-#beatBtn.btn-beat-pulse { animation: slot-pulse 0.22s ease-out; }
+#beatBtn.btn-beat-pulse { animation: slot-pulse 0.44s ease-out; }
+#clearBtn.btn-beat-pulse, #randBtn.btn-beat-pulse, #scratchBtn.btn-beat-pulse { animation: slot-pulse 0.44s ease-out; }
 .slot-btn:active { opacity: 0.7; }
 
 #loadingOverlay {
@@ -573,7 +575,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 21:12</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 21:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1804,6 +1806,15 @@ function scheduler() {
     if (step === 0) {
       _committedSwing = swingVal; // commit swing amount only at bar start
       requestAnimationFrame(updateSwingReadout);
+      // AUTO RAND's blue/green color pulse takes exactly 4 beats (one bar)
+      // to complete, retriggered fresh every bar at whatever the current tempo is.
+      if (_autoRandLoopActive) {
+        const rb = document.getElementById('randBtn');
+        if (rb) {
+          rb.style.animationDuration = ((60 / bpm) * 4) + 's';
+          rb.classList.remove('rand-color-pulse'); void rb.offsetWidth; rb.classList.add('rand-color-pulse');
+        }
+      }
       // Flip reels forward when recalled pattern starts playing
       if (window._reelReversePending) {
         window._reelReversePending = false;
@@ -2281,6 +2292,11 @@ function updatePlayhead(step) {
       const bb = document.getElementById('beatBtn');
       if (bb) { bb.classList.remove('btn-beat-pulse'); void bb.offsetWidth; bb.classList.add('btn-beat-pulse'); }
     }
+    // SWEEP / RAND / RECALL scale-pulse the same way PLAY does — one pop per beat
+    ['clearBtn', 'randBtn', 'scratchBtn'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.classList.remove('btn-beat-pulse'); void b.offsetWidth; b.classList.add('btn-beat-pulse'); }
+    });
     // R buttons in auto mode now breathe continuously across the whole
     // measure (see _randAutoBreatheTick), not a per-quarter-note flash.
     if (_recArmed) {
@@ -3705,7 +3721,7 @@ function playStab(freq, durSec, isAccent, time, tr) {
 function playChug(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.150 : 0.100;
+  const vel = isAccent ? 0.224 : 0.150; // +3.5dB over original 0.150/0.100
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.8;
   lp.frequency.setValueAtTime(isAccent ? 2600 : 1900, time);
@@ -5448,11 +5464,16 @@ function commitBeatMenuSelection(item) {
     const t = e.changedTouches[0];
     if (_beatMenuOpen) {
       const item = beatMenuHighlightUnder(t.clientX, t.clientY);
-      commitBeatMenuSelection(item);
-      closeBeatMenu();
-      // Visiting the menu always leaves BEAT active — avoids picking a beat
-      // and then not hearing it because BEAT itself happened to be off.
-      if (!beatPlaying && !_beatPending) toggleBeat();
+      if (item) {
+        commitBeatMenuSelection(item);
+        closeBeatMenu();
+        // Visiting the menu always leaves BEAT active — avoids picking a beat
+        // and then not hearing it because BEAT itself happened to be off.
+        if (!beatPlaying && !_beatPending) toggleBeat();
+      }
+      // else: held the button and let go without dragging onto a choice —
+      // the menu just stays open, now driven by ordinary taps on the items
+      // themselves (see _wireBeatMenuItemTaps below) rather than closing.
     } else {
       btn.classList.remove('menu-open');
       toggleBeat();
@@ -5460,6 +5481,27 @@ function commitBeatMenuSelection(item) {
   }, { passive: false });
 
   btn.addEventListener('touchcancel', () => { clearTimeout(holdTimer); closeBeatMenu(); });
+})();
+
+// Once the menu is left open (a plain hold-and-release with no drag), every
+// item inside it — beat types and the L/</R/FX/rand ctrl row — becomes
+// independently tappable, same commit-then-close behavior as the drag path.
+(function() {
+  const menu = document.getElementById('beatTypeMenu');
+  if (!menu) return;
+  menu.querySelectorAll('.beat-type-item, .beat-ctrl-row button').forEach(item => {
+    item.addEventListener('touchend', e => {
+      e.preventDefault(); e.stopPropagation();
+      commitBeatMenuSelection(item);
+      closeBeatMenu();
+      if (!beatPlaying && !_beatPending) toggleBeat();
+    }, { passive: false });
+  });
+  // Tapping the dimmed background (not the menu card itself) dismisses
+  // without picking anything — always a way back to the main screen.
+  menu.addEventListener('touchend', e => {
+    if (e.target === menu) { e.preventDefault(); closeBeatMenu(); }
+  }, { passive: false });
 })();
 
 // Top-bar tempo readout — single tap toggles the tempo lock (turns the
@@ -6384,7 +6426,7 @@ async function renderSlotToWav(snap) {
 
         } else if (key === 'chug') {
           // Match playChug exactly
-          const vel = isAccent ? 0.150 : 0.100;
+          const vel = isAccent ? 0.224 : 0.150; // +3.5dB over original 0.150/0.100
           const lp = o.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=1.8;
           lp.frequency.setValueAtTime(isAccent?2600:1900,t); lp.frequency.exponentialRampToValueAtTime(220,t+0.055);
           const peak = o.createBiquadFilter(); peak.type='peaking'; peak.frequency.value=900; peak.Q.value=1.0; peak.gain.value=5;
@@ -8152,7 +8194,7 @@ function stopAllAutoRand() {
     _autoRandLoopActive = false;
     _autoRandBarCount = 0;
     const mainRandBtn = document.getElementById('randBtn');
-    if (mainRandBtn) { mainRandBtn.classList.remove('pulsing'); mainRandBtn.textContent = 'RAND'; }
+    if (mainRandBtn) { mainRandBtn.classList.remove('pulsing', 'rand-color-pulse'); mainRandBtn.textContent = 'RAND'; }
   }
   Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
   if (_beatAutoRandActive) {
@@ -8173,7 +8215,7 @@ function stopAllAutoRand() {
     if (_autoRandLoopActive) {
       _autoRandLoopActive = false;
       _autoRandBarCount = 0;
-      btn.classList.remove('pulsing');
+      btn.classList.remove('pulsing', 'rand-color-pulse');
       btn.textContent = 'RAND';
     }
   };
