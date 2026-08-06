@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:26</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:48</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -615,11 +615,11 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
-    <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-bottom:10px;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">BEAT VOL</div>
-      <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;" oninput="setBeatVol(this.value/100)">
+    <div style="display:block;width:100%;margin-bottom:10px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">BEAT VOL</div>
+      <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;flex:none;display:block;" oninput="setBeatVol(this.value/100)">
     </div>
-    <div class="beat-ctrl-row" style="margin-bottom:12px;">
+    <div class="beat-ctrl-row" style="margin-top:0;margin-bottom:12px;">
       <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
       <button class="shift-btn" id="beatCtrlShift">&lt;</button>
       <button class="shift-btn right" id="beatCtrlDelay">R</button>
@@ -699,8 +699,17 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">REVERB MIX</div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="5" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100)">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+          <span>REVERB INTENSITY</span><span id="reverbIntensityVal" style="color:#adff00;">20</span>
+        </div>
+        <input type="range" id="reverbIntensityBar" min="0" max="100" value="20" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">20</span>
+        </div>
+        <input type="range" id="delayMixBar" min="0" max="100" value="20" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
@@ -955,7 +964,15 @@ function syncSettingsPanel() {
   const kd = document.getElementById('keyDisplay');
   if (kd) kd.textContent = (getKeyName() || '').replace(/-/g, ' ');
   const dmb = document.getElementById('delayMixBar');
-  if (dmb) dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.05) * 100);
+  if (dmb) {
+    dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.20) * 100);
+    const dmv = document.getElementById('reverbMixVal'); if (dmv) dmv.textContent = dmb.value;
+  }
+  const rib = document.getElementById('reverbIntensityBar');
+  if (rib) {
+    rib.value = Math.round((window._reverbIntensity !== undefined ? window._reverbIntensity : 0.20) * 100);
+    const riv = document.getElementById('reverbIntensityVal'); if (riv) riv.textContent = rib.value;
+  }
   updateSwingReadout();
 }
 function updateSwingReadout() {
@@ -1357,22 +1374,32 @@ function _trackNote() {
 
 
 
-// ── Per-track reverb send ───────────────────────────────────────────────
-// REVERB MIX slider goes 0-100%, but almost all the useful range lives in
-// the first 15% — that first sliver ramps 0 up to REVERB_GAIN_MAX (the sane
-// ceiling). Past 15% it deliberately keeps climbing into over-the-top
-// territory, up to 3x MAX at the very top of the slider.
-const REVERB_GAIN_MAX = 1.0;
-const REVERB_KNEE = 0.05; // ~5% is already 'full' — the rest of the slider is deliberately over the top
+// ── Reverb: two plain, honest, linear controls — no hidden curves.
+// INTENSITY = how hot the impulse response itself is (rebuilds the
+//   convolver's buffer; 0-100 maps to IR peak amplitude 0.0-0.30).
+// MIX = the wet output level on top of that (0-100 maps to gain 0.0-2.0).
+// Both readouts on screen show the exact 0-100 number quoted in code below —
+// "set INTENSITY to 20, MIX to 20" means exactly these two sliders at 20.
+const REVERB_INTENSITY_MAX = 0.30; // IR peak amplitude at slider=100
+const REVERB_MIX_MAX = 2.0;        // output gain at slider=100
 
-function _reverbGainForMix(v) {
-  if (v <= REVERB_KNEE) return REVERB_GAIN_MAX * (v / REVERB_KNEE);
-  const t = (v - REVERB_KNEE) / (1 - REVERB_KNEE);
-  return REVERB_GAIN_MAX + t * (REVERB_GAIN_MAX * 2); // ramps up to 3x MAX — intentionally silly
+function _buildReverbIRBuffer(targetCtx, scale) {
+  const irLen = Math.floor(targetCtx.sampleRate * 0.9);
+  const irBuf = targetCtx.createBuffer(2, irLen, targetCtx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = irBuf.getChannelData(ch);
+    for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4) * scale;
+  }
+  return irBuf;
+}
+
+function setReverbIntensity(v) {
+  window._reverbIntensity = v;
+  if (ctx && window._reverbConv) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, v * REVERB_INTENSITY_MAX);
 }
 
 function setGlobalDelayMix(v) {
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = _reverbGainForMix(v);
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = v * REVERB_MIX_MAX;
   window._globalDelayMix = v;
 }
 
@@ -7325,20 +7352,12 @@ function _buildBounceGraph(targetCtx) {
   window._normalTrackFadeGain = targetCtx.createGain(); window._normalTrackFadeGain.gain.value = 1;
   window._postLimiterGain = targetCtx.createGain(); window._postLimiterGain.gain.value = 1;
   window._reverbSendBus = targetCtx.createGain(); window._reverbSendBus.gain.value = 1;
-  const reverbConv = targetCtx.createConvolver();
-  reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
-  {
-    const irLen = Math.floor(targetCtx.sampleRate * 0.9);
-    const irBuf = targetCtx.createBuffer(2, irLen, targetCtx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-      const d = irBuf.getChannelData(ch);
-      for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4) * 0.12; // baked-in attenuation — raw noise IR is far hotter than it looks once normalize is off
-    }
-    reverbConv.buffer = irBuf;
-  }
+  window._reverbConv = targetCtx.createConvolver();
+  window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
+  window._reverbConv.buffer = _buildReverbIRBuffer(targetCtx, ((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.20) * REVERB_INTENSITY_MAX);
   window._reverbOutGain = targetCtx.createGain();
-  window._reverbOutGain.gain.value = _reverbGainForMix((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.05);
-  window._reverbSendBus.connect(reverbConv); reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
+  window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.20) * REVERB_MIX_MAX;
+  window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
   masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
   window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
   // window._postLimiterGain is connected to targetCtx.destination uniformly
@@ -9819,8 +9838,10 @@ function fullReset() {
   currentScaleName = 'penta-min'; PENTA_MINOR = SCALES['penta-min']; globalScaleRoot = null;
   activeSlot = -1;
   slots.fill(null); _pendingSlot = -1; _autoSlotQueue = [];
-  window._globalDelayMix = 0.05;
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = _reverbGainForMix(0.05);
+  window._globalDelayMix = 0.20;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.20 * REVERB_MIX_MAX;
+  window._reverbIntensity = 0.20;
+  if (window._reverbConv && ctx) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, 0.20 * REVERB_INTENSITY_MAX);
 
   // Display prefs back to default
   _bgPulseEnabled = false; _bgStaticEnabled = false; _bgPulseSteps = 4; _bgPulseCounter = 0;
@@ -10209,19 +10230,11 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
     // elsewhere), computed once and cached, not "great quality" but costs
     // almost nothing to run.
     window._reverbSendBus = ctx.createGain(); window._reverbSendBus.gain.value = 1;
-    const _reverbConv = ctx.createConvolver();
-    _reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
-    {
-      const irLen = Math.floor(ctx.sampleRate * 0.9);
-      const irBuf = ctx.createBuffer(2, irLen, ctx.sampleRate);
-      for (let ch = 0; ch < 2; ch++) {
-        const d = irBuf.getChannelData(ch);
-        for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4) * 0.12; // baked-in attenuation — raw noise IR is far hotter than it looks once normalize is off
-      }
-      _reverbConv.buffer = irBuf;
-    }
-    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = _reverbGainForMix(0.05);
-    window._reverbSendBus.connect(_reverbConv); _reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
+    window._reverbConv = ctx.createConvolver();
+    window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
+    window._reverbConv.buffer = _buildReverbIRBuffer(ctx, ((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.20) * REVERB_INTENSITY_MAX);
+    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.20) * REVERB_MIX_MAX;
+    window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
     masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain); window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain); window._postLimiterGain.connect(ctx.destination);
     for (let i=0; i<NUM_TRACKS; i++) {
       const g = ctx.createGain(); g.gain.value = trackVolume[i]; trackGainNodes[i] = g;
