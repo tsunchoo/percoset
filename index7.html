@@ -278,7 +278,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
 .rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; }
 #randBtn.pulsing { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-#randBtn .rand-btn-line { display: block; font-size: 0.6rem; line-height: 1.15; letter-spacing: 0.5px; }
+#randBtn .rand-btn-line { display: block; font-size: inherit; line-height: 1.05; letter-spacing: 0.5px; }
 .track-auto-rand { --track-color: #f71aff !important; }
 #randBtn.pulsing { background: #0468f4; color: #adff00; animation: rand-pulse 0.5s infinite alternate; }
 @keyframes rand-pulse { from { background: #0468f4; color: #adff00; } to { background: #0247a8; color: #adff00; } }
@@ -569,7 +569,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 19:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 20:03</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8124,7 +8124,7 @@ function playRandReleaseSweep(time) {
   const startAuto = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // second tap stops it
     btn.classList.add('pulsing');
-    btn.innerHTML = '<span class="rand-btn-line">RAND</span><span class="rand-btn-line">AUTO</span>';
+    btn.innerHTML = '<span class="rand-btn-line">AUTO</span><span class="rand-btn-line">RAND</span>';
     _autoRandLoopActive = true;
     _autoRandBarCount = 0; // whatever's already playing gets its full 4 bars before the first change
   };
