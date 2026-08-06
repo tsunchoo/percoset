@@ -160,8 +160,9 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #playBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
 #playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: #adff00; -webkit-mask-image: url('data:image/png;base64,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'); mask-image: url('data:image/png;base64,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'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
-#playBtn.playing #playBtnMask { display: block; animation: play-green-pulse 0.5s infinite alternate; }
-@keyframes play-green-pulse { from { opacity: 1; } to { opacity: 0.55; } }
+#playBtn.playing #playBtnMask { display: block; }
+#playBtn.playing.btn-beat-pulse #playBtnMask { animation: play-green-pulse 0.22s ease-out; }
+@keyframes play-green-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
 #playBtn.playing.btn-beat-pulse { animation: play-pulse 0.22s ease-out; }
 @keyframes play-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .btn:active { opacity: 0.7; }
@@ -275,8 +276,9 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; flex-direction: column; }
-.rand-btn-line { display: block; font-size: 0.42rem; line-height: 1.05; letter-spacing: 0; }
+.rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; }
+#randBtn.pulsing { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#randBtn .rand-btn-line { display: block; font-size: 0.6rem; line-height: 1.15; letter-spacing: 0.5px; }
 .track-auto-rand { --track-color: #f71aff !important; }
 #randBtn.pulsing { background: #0468f4; color: #adff00; animation: rand-pulse 0.5s infinite alternate; }
 @keyframes rand-pulse { from { background: #0468f4; color: #adff00; } to { background: #0247a8; color: #adff00; } }
@@ -8115,12 +8117,14 @@ function playRandReleaseSweep(time) {
       _autoRandLoopActive = false;
       _autoRandBarCount = 0;
       btn.classList.remove('pulsing');
+      btn.textContent = 'RAND';
     }
   };
 
   const startAuto = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // second tap stops it
     btn.classList.add('pulsing');
+    btn.innerHTML = '<span class="rand-btn-line">RAND</span><span class="rand-btn-line">AUTO</span>';
     _autoRandLoopActive = true;
     _autoRandBarCount = 0; // whatever's already playing gets its full 4 bars before the first change
   };
@@ -8869,7 +8873,7 @@ function _stopRandAutoBreathe(tr) {
 }
 function _setRandBtnLabel(rb, isAuto) {
   if (!rb) return;
-  rb.innerHTML = isAuto ? '<span class="rand-btn-line">RAND</span><span class="rand-btn-line">AUTO</span>' : 'R';
+  rb.textContent = isAuto ? 'A' : 'R';
 }
 function wireRandomizeButton(btn, tr) {
   let autoInterval = null, pendingTimeout = null;
@@ -9634,6 +9638,8 @@ function fullReset() {
   document.querySelectorAll('.rand-btn').forEach(rb => {
     rb.classList.remove('rand-auto', 'rand-pending', 'pulsing'); _setRandBtnLabel(rb, false);
   });
+  const _mainRandBtn = document.getElementById('randBtn');
+  if (_mainRandBtn) { _mainRandBtn.classList.remove('pulsing'); _mainRandBtn.textContent = 'RAND'; }
 
   // Per-track state back to first-load defaults
   const defaultInstruments = ['amlgm', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo'];
@@ -10116,6 +10122,8 @@ async function hardResetAudioEngine() {
     if (beatPlaying || _beatPending) { try { toggleBeat(); } catch(e) {} }
     Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
     _autoRandLoopActive = false; _autoRandPending = false;
+    const _mainRandBtn2 = document.getElementById('randBtn');
+    if (_mainRandBtn2) { _mainRandBtn2.classList.remove('pulsing'); _mainRandBtn2.textContent = 'RAND'; }
     document.getElementById('clearBtn')?.classList.remove('active'); // sweep button visual, in case it was stuck lit
 
     // Drop any cached buffers/refs tied to the old context so nothing holds
