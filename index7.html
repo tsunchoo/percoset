@@ -518,7 +518,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 @keyframes slot-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #playBtn.btn-beat-pulse { animation: slot-pulse 0.44s ease-out; }
 #beatBtn.btn-beat-pulse { animation: slot-pulse 0.44s ease-out; }
-#clearBtn.btn-beat-pulse, #randBtn.btn-beat-pulse, #scratchBtn.btn-beat-pulse { animation: slot-pulse 0.44s ease-out; }
 .slot-btn:active { opacity: 0.7; }
 
 #loadingOverlay {
@@ -575,7 +574,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 21:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 21:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2292,11 +2291,6 @@ function updatePlayhead(step) {
       const bb = document.getElementById('beatBtn');
       if (bb) { bb.classList.remove('btn-beat-pulse'); void bb.offsetWidth; bb.classList.add('btn-beat-pulse'); }
     }
-    // SWEEP / RAND / RECALL scale-pulse the same way PLAY does — one pop per beat
-    ['clearBtn', 'randBtn', 'scratchBtn'].forEach(id => {
-      const b = document.getElementById(id);
-      if (b) { b.classList.remove('btn-beat-pulse'); void b.offsetWidth; b.classList.add('btn-beat-pulse'); }
-    });
     // R buttons in auto mode now breathe continuously across the whole
     // measure (see _randAutoBreatheTick), not a per-quarter-note flash.
     if (_recArmed) {
