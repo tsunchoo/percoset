@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 22:56</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:04</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1362,7 +1362,7 @@ function _trackNote() {
 // the first 15% — that first sliver ramps 0 up to REVERB_GAIN_MAX (the sane
 // ceiling). Past 15% it deliberately keeps climbing into over-the-top
 // territory, up to 3x MAX at the very top of the slider.
-const REVERB_GAIN_MAX = 1.5;
+const REVERB_GAIN_MAX = 1.0;
 const REVERB_KNEE = 0.15;
 
 function _reverbGainForMix(v) {
@@ -7325,7 +7325,7 @@ function _buildBounceGraph(targetCtx) {
     const irBuf = targetCtx.createBuffer(2, irLen, targetCtx.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const d = irBuf.getChannelData(ch);
-      for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4);
+      for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4) * 0.12; // baked-in attenuation — raw noise IR is far hotter than it looks once normalize is off
     }
     reverbConv.buffer = irBuf;
   }
@@ -10209,7 +10209,7 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
       const irBuf = ctx.createBuffer(2, irLen, ctx.sampleRate);
       for (let ch = 0; ch < 2; ch++) {
         const d = irBuf.getChannelData(ch);
-        for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4);
+        for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4) * 0.12; // baked-in attenuation — raw noise IR is far hotter than it looks once normalize is off
       }
       _reverbConv.buffer = irBuf;
     }
