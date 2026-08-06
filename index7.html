@@ -198,17 +198,6 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 }
 .beat-type-item.current, .beat-type-item.drag-hover { background: #111; color: #adff00; }
 #beatBtn.menu-open { background: #111 !important; }
-#beatMenuBeatLock {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: transparent; border: 1px solid #555; color: #2a2a2a;
-}
-#beatMenuBeatLock img { width: 14px; height: auto; }
-#beatMenuBeatLock.current:not(.drag-hover),
-#beatMenuBeatLock.drag-hover:not(.current) { background: #111; border-color: #111; color: #adff00; }
-#beatMenuBeatLock.current:not(.drag-hover) img,
-#beatMenuBeatLock.drag-hover:not(.current) img { filter: url(#lockGreenFilter); }
-#beatMenuBeatLock.current.drag-hover { background: transparent; border-color: #555; color: #2a2a2a; }
-#beatMenuBeatLock.current.drag-hover img { filter: none; }
 #turboBtn.boost-on { animation: boost-red 0.5s infinite alternate; }
 .rec-mode-btn { width:100%; background:#ddd; color:#111; border:none; font-family:'DM Sans',sans-serif; font-size:0.68rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:12px 0; cursor:pointer; }
 .rec-mode-btn.on { background:#111; color:#fff; }
@@ -574,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 21:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 22:30</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -626,6 +615,10 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
+    <div style="display:flex;flex-direction:column;gap:6px;width:100%;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">BEAT VOL</div>
+      <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;" oninput="setBeatVol(this.value/100)">
+    </div>
     <div class="beat-ctrl-row">
       <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
       <button class="shift-btn" id="beatCtrlShift">&lt;</button>
@@ -648,7 +641,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div class="beat-type-item" data-beat="cumbia">CUMBIA</div>
       <div class="beat-type-item" data-beat="afrobeat">AFROBEAT</div>
       <div class="beat-type-item" data-beat="boogie">SHUFFLE</div>
-      <div class="beat-type-item" id="beatMenuBeatLock" title="lock beat type against RAND"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAADwCAYAAACg7+4yAAAD3ElEQVR4nO3bUW7bSBBAQTnI/a/s/QgS7GZtQBQpsh+n6gAKp+epTRvI4wEAAAAAAAAc7+PqBxjq8+oH+Ib7+suqA5ka6F7L3edKB75rtN9Z4m7vfsjVov3Obe/5rgcT7tdud993O5Bwn3Obe7/LQYT7mvz91w8g3GNkO/hx9QPsIN7jZGdZ/OZlhx2Q66H2wOI9R6aL0iuEeM+TmXUl4MxAbyQx80LAiUHe1PjZTw94/AAXMPoOJgc8enCLGXsXUwMeO7CFjbyTiQGPHBSPx2Pg3UwLeNyA+J9RdzQp4FGDoWFSwHSMWTZTAh4zEJ424s4mBDxiELzk8rubEDC87OqAL/8Gs9uld3hlwOJlt6s3MPdw2TK6KmDbl0PYwBzlkqUkYNKuCNjrA4exgTnS6cvp59n/YMi0/5nrJ9cXzr6k6ZcwLdrvTJ7jqTMU8C+VcP+2/DxXf4Wohvvb7+efGvLbnflL3LQh1+P9tzudZZNV/wpxxwufdKbTltWKAU+66KPd+WxfWi3gFS54hTP+sVrA3MxZAU/4BW6lzbTMWW1g3uWUpSVg0gRM2ioBL/NOuJpVAl7REl9aAZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkfRz8eZ8Hfx73dUh7R3yIaNljV4N7XyHEy167Gnq1fuHyDpt7fGUDi5d32dzW1oDFyyj+jMY0m5bkloBtX8axgZno6WUpYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImbUvAH297Cvivp1uzgUnbGrAtzLttaswGZpLNC/KVgG1hxnh1A4uYo73U1BEhfh7wGaxrV4NHb1Ix8ww/wQEAAAAAAGC0fwDhV0KVLoch3gAAAABJRU5ErkJggg==" style="pointer-events:none;" alt="">BEAT LOCK</div>
     </div>
   </div>
 </div>
@@ -704,11 +696,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
         <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">BEAT VOL</div>
-        <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;" oninput="setBeatVol(this.value/100)">
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1371,9 +1358,12 @@ function _trackNote() {
 
 
 // ── Per-track reverb send ───────────────────────────────────────────────
+// REVERB MIX slider goes 0-100%, mapped onto gain 0-REVERB_GAIN_MAX rather
+// than 0-1 — doubles how far "fully up" actually reaches.
+const REVERB_GAIN_MAX = 2.0;
 
 function setGlobalDelayMix(v) {
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = v;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = v * REVERB_GAIN_MAX;
   window._globalDelayMix = v;
 }
 
@@ -2030,7 +2020,7 @@ function fireStepAudio(step, t) {
           if (key === 'satk')    playSynthAttack(freq, dur, val === 2, t, tr);
           if (key === 'boog')    playPrimePiano(freq, dur, val === 2, t, tr);
           if (key === 'damask')  playDamask(freq, dur, val === 2, t, tr);
-          if (key === 'yamask')  playYamask(freq, dur, val === 2, t, tr);
+          if (key === 'yamask')  playYamask(freq, dur, val === 2, t, tr, _yamaskPhraseTick(tr));
           if (key === 'dulc')    playDulcimer(freq, dur, val === 2, t, tr);
           if (key === 'opening') playOpening(freq, dur, val === 2, t, tr);
           if (key === 'fflute')  {
@@ -2591,6 +2581,7 @@ const MELODY_ROOTS  = [220, 247, 262, 294, 330];   // A3 B3 C4 D4 E4
 const MID_ROOTS     = [110, 123, 131, 147, 165];   // A2 B2 C3 D3 E3
 const HIGH_ROOTS    = [440, 494, 523, 587, 659];   // A4 B4 C5 D5 E5
 const SPARKLE_ROOTS = [82, 98, 110, 130, 147, 165];  // E2 G2 A2 C3 D3 E3
+const CHUG_ROOTS    = [82, 92, 98, 110, 123];   // E2 F#2 G2 A2 B2 — a bit lower than MID_ROOTS
 
 // Per-track pentatonic scale (set on each R press for tonal tracks)
 const trackBassScale = {}; // tr -> [freq, ...]
@@ -2617,7 +2608,8 @@ function getRangeRoots(key) {
   if (key === 'sparkle') return SPARKLE_ROOTS;
   if (key === 'sflute' || key === 'boog' || key === 'fflute' || key === 'dulc') return HIGH_ROOTS;
   if (key === 'blunt') return MID_ROOTS;
-  if (key === 'stab' || key === 'chug' || key === 'bashp') return MID_ROOTS;
+  if (key === 'chug') return CHUG_ROOTS;
+  if (key === 'stab' || key === 'bashp') return MID_ROOTS;
   if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening') return MELODY_ROOTS;
   return BASS_ROOTS;
 }
@@ -2701,8 +2693,10 @@ function randomizeBassTrack(tr, level) {
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
   // Rhythm guitar: all downbeats, all upbeats, or random pattern
+  // (CHUG also gets a 4th mode — a dense straight-8th hi-hat-style feel,
+  // biasing it toward that busier, more chattering pattern.)
   if (key === 'stab' || key === 'chug' || key === 'bashp') {
-    const mode = Math.floor(Math.random() * 3); // 0=downbeats 1=upbeats 2=random
+    const mode = Math.floor(Math.random() * (key === 'chug' ? 4 : 3)); // 0=downbeats 1=upbeats 2=random 3=hi-hat-style (CHUG only)
     if (mode === 0) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
@@ -2713,9 +2707,14 @@ function randomizeBassTrack(tr, level) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
         grid[tr][gs] = (s % 4 === 2) ? 1 : 0;
       }
+    } else if (mode === 3) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 2 === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
+      }
     }
     // mode 2 = falls through to normal random placeNotes below
-    if (mode < 2) { redrawTrackCells(tr); markModified(); return; }
+    if (mode !== 2) { redrawTrackCells(tr); markModified(); return; }
   }
 
   // Choir: redistribute notes to beat positions for longer legato stretches
@@ -4903,6 +4902,23 @@ function playDamask(freq, durSec, isAccent, time, tr) {
   };
 }
 
+// YAMASK phrase tracking — every 3rd or 4th live note gets a long, languid
+// downward glide instead of a static pitch, then the count resets. Purely a
+// note-trigger counter (not silence-aware), which is enough to give YAMASK
+// that "trails off at the end of a phrase" character in practice.
+const _yamaskPhrase = {}; // tr -> { count, target }
+function _yamaskPhraseTick(tr) {
+  if (!_yamaskPhrase[tr]) _yamaskPhrase[tr] = { count: 0, target: 3 + Math.floor(Math.random() * 2) };
+  const p = _yamaskPhrase[tr];
+  p.count++;
+  if (p.count >= p.target) {
+    p.count = 0;
+    p.target = 3 + Math.floor(Math.random() * 2); // 3 or 4
+    return true;
+  }
+  return false;
+}
+
 // ── YAMASK: a purer, breathier blown instrument — built alongside DAMASK
 // but deliberately different in character. Where DAMASK is reedy (detuned
 // triangle pair beating against each other, bandpassed, quick vibrato
@@ -4910,13 +4926,18 @@ function playDamask(freq, durSec, isAccent, time, tr) {
 // no beating unison, lowpass instead of bandpass (rounder, fewer upper
 // harmonics), a quick noisy "chiff" right at the attack, louder sustained
 // breath noise throughout, and a slower vibrato that eases in later.
-function playYamask(freq, durSec, isAccent, time, tr) {
+function playYamask(freq, durSec, isAccent, time, tr, phraseDescend) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const vel = isAccent ? 0.078 : 0.052;
   const attack = 0.08; // slower entrance — more world-weary, less quick-speaking
-  const decay = Math.min(durSec + 1.4, 3.0); // longer, more lingering tail — lonesome, not brisk
+  // A phrase-end note lingers far longer than a normal one — the whole point
+  // is a long, slow slide down, not a quick blip.
+  const decay = phraseDescend ? 2.2 : Math.min(durSec + 1.4, 3.0); // longer, more lingering tail — lonesome, not brisk
   const release = Math.min(decay * 0.4, 0.6);
+  // Descend a perfect fifth down, eased out over most of the note's length.
+  const descendRatio = 0.667;
+  const descendDur = decay * 0.82;
 
   // Vibrato — slower, narrower, and eases in even later than before — a
   // resigned, restrained wobble rather than an expressive one.
@@ -4940,7 +4961,13 @@ function playYamask(freq, durSec, isAccent, time, tr) {
   const oscs = [];
   partials.forEach(p => {
     const o = ctx.createOscillator(); o.type = p.type;
-    o.frequency.value = freq * p.ratio;
+    o.frequency.setValueAtTime(freq * p.ratio, time);
+    if (phraseDescend) {
+      // Slow, eased slide down a fifth — starts after the attack settles,
+      // not immediately, so the note still speaks clearly before it sags.
+      o.frequency.setValueAtTime(freq * p.ratio, time + attack + 0.15);
+      o.frequency.exponentialRampToValueAtTime(freq * p.ratio * descendRatio, time + attack + 0.15 + descendDur);
+    }
     vibGain.connect(o.detune);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, time);
@@ -5368,8 +5395,6 @@ function refreshBeatMenuHighlight() {
   menu.querySelectorAll('.beat-type-item[data-beat]').forEach(it => {
     it.classList.toggle('current', it.dataset.beat === _beatType);
   });
-  const lockItem = document.getElementById('beatMenuBeatLock');
-  if (lockItem) lockItem.classList.toggle('current', _beatTypeLocked);
 }
 let _beatMenuOpen = false;
 function beatMenuHighlightUnder(clientX, clientY) {
@@ -5389,6 +5414,8 @@ function openBeatMenu() {
   refreshBeatMenuHighlight();
   updateBeatLockVisual();
   updateBeatCtrlRow();
+  const volBar = document.getElementById('beatVolBar');
+  if (volBar && window._beatGain) volBar.value = Math.round(window._beatGain.gain.value * 100);
   menu.classList.add('visible');
   btn.classList.add('menu-open');
 }
@@ -5401,9 +5428,7 @@ function closeBeatMenu() {
 }
 function commitBeatMenuSelection(item) {
   if (!item) return;
-  if (item.id === 'beatMenuBeatLock') {
-    toggleBeatTypeLock();
-  } else if (item.id === 'beatCtrlL') {
+  if (item.id === 'beatCtrlL') {
     beatCtrlToggleL();
   } else if (item.id === 'beatCtrlShift') {
     beatCtrlShift();
@@ -7285,6 +7310,7 @@ function _buildBounceGraph(targetCtx) {
   window._postLimiterGain = targetCtx.createGain(); window._postLimiterGain.gain.value = 1;
   window._reverbSendBus = targetCtx.createGain(); window._reverbSendBus.gain.value = 1;
   const reverbConv = targetCtx.createConvolver();
+  reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
   {
     const irLen = Math.floor(targetCtx.sampleRate * 0.9);
     const irBuf = targetCtx.createBuffer(2, irLen, targetCtx.sampleRate);
@@ -7295,7 +7321,7 @@ function _buildBounceGraph(targetCtx) {
     reverbConv.buffer = irBuf;
   }
   window._reverbOutGain = targetCtx.createGain();
-  window._reverbOutGain.gain.value = (window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.5;
+  window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.5) * REVERB_GAIN_MAX;
   window._reverbSendBus.connect(reverbConv); reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
   masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
   window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
@@ -8744,8 +8770,10 @@ function randomizeTrack(tr) {
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
   // Rhythm guitar: all downbeats, all upbeats, or random pattern
+  // (CHUG also gets a 4th mode — a dense straight-8th hi-hat-style feel,
+  // biasing it toward that busier, more chattering pattern.)
   if (key === 'stab' || key === 'chug' || key === 'bashp') {
-    const mode = Math.floor(Math.random() * 3); // 0=downbeats 1=upbeats 2=random
+    const mode = Math.floor(Math.random() * (key === 'chug' ? 4 : 3)); // 0=downbeats 1=upbeats 2=random 3=hi-hat-style (CHUG only)
     if (mode === 0) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
@@ -8756,9 +8784,14 @@ function randomizeTrack(tr) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
         grid[tr][gs] = (s % 4 === 2) ? 1 : 0;
       }
+    } else if (mode === 3) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 2 === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
+      }
     }
     // mode 2 = falls through to normal random placeNotes below
-    if (mode < 2) { redrawTrackCells(tr); markModified(); return; }
+    if (mode !== 2) { redrawTrackCells(tr); markModified(); return; }
   }
 
   // Choir: redistribute notes to beat positions for longer legato stretches
@@ -9771,7 +9804,7 @@ function fullReset() {
   activeSlot = -1;
   slots.fill(null); _pendingSlot = -1; _autoSlotQueue = [];
   window._globalDelayMix = 0.5;
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.5;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.5 * REVERB_GAIN_MAX;
 
   // Display prefs back to default
   _bgPulseEnabled = false; _bgStaticEnabled = false; _bgPulseSteps = 4; _bgPulseCounter = 0;
@@ -10161,6 +10194,7 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
     // almost nothing to run.
     window._reverbSendBus = ctx.createGain(); window._reverbSendBus.gain.value = 1;
     const _reverbConv = ctx.createConvolver();
+    _reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
     {
       const irLen = Math.floor(ctx.sampleRate * 0.9);
       const irBuf = ctx.createBuffer(2, irLen, ctx.sampleRate);
@@ -10170,7 +10204,7 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
       }
       _reverbConv.buffer = irBuf;
     }
-    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = 0.5;
+    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = 0.5 * REVERB_GAIN_MAX;
     window._reverbSendBus.connect(_reverbConv); _reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
     masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain); window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain); window._postLimiterGain.connect(ctx.destination);
     for (let i=0; i<NUM_TRACKS; i++) {
