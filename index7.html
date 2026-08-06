@@ -178,7 +178,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .beat-type-menu-inner {
   background: var(--bg); padding: 24px;
   min-width: min(340px, 90vw);
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex; flex-direction: column; gap: 0;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   transform: translateY(60px);
 }
@@ -563,7 +563,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:04</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05Aug26 23:26</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -615,11 +615,11 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
-    <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-bottom:-2px;">
+    <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-bottom:10px;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">BEAT VOL</div>
       <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;" oninput="setBeatVol(this.value/100)">
     </div>
-    <div class="beat-ctrl-row">
+    <div class="beat-ctrl-row" style="margin-bottom:12px;">
       <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
       <button class="shift-btn" id="beatCtrlShift">&lt;</button>
       <button class="shift-btn right" id="beatCtrlDelay">R</button>
@@ -700,7 +700,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">REVERB MIX</div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="15" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100)">
+        <input type="range" id="delayMixBar" min="0" max="100" value="5" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100)">
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
@@ -955,7 +955,7 @@ function syncSettingsPanel() {
   const kd = document.getElementById('keyDisplay');
   if (kd) kd.textContent = (getKeyName() || '').replace(/-/g, ' ');
   const dmb = document.getElementById('delayMixBar');
-  if (dmb) dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.15) * 100);
+  if (dmb) dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.05) * 100);
   updateSwingReadout();
 }
 function updateSwingReadout() {
@@ -1363,7 +1363,7 @@ function _trackNote() {
 // ceiling). Past 15% it deliberately keeps climbing into over-the-top
 // territory, up to 3x MAX at the very top of the slider.
 const REVERB_GAIN_MAX = 1.0;
-const REVERB_KNEE = 0.15;
+const REVERB_KNEE = 0.05; // ~5% is already 'full' — the rest of the slider is deliberately over the top
 
 function _reverbGainForMix(v) {
   if (v <= REVERB_KNEE) return REVERB_GAIN_MAX * (v / REVERB_KNEE);
@@ -5494,10 +5494,14 @@ function commitBeatMenuSelection(item) {
       const item = beatMenuHighlightUnder(t.clientX, t.clientY);
       if (item) {
         commitBeatMenuSelection(item);
-        closeBeatMenu();
-        // Visiting the menu always leaves BEAT active — avoids picking a beat
-        // and then not hearing it because BEAT itself happened to be off.
-        if (!beatPlaying && !_beatPending) toggleBeat();
+        if (item.classList.contains('beat-type-item')) {
+          closeBeatMenu();
+          // Visiting the menu always leaves BEAT active — avoids picking a beat
+          // and then not hearing it because BEAT itself happened to be off.
+          if (!beatPlaying && !_beatPending) toggleBeat();
+        }
+        // ctrl-row buttons (L/</R/FX/rand) just apply their toggle and leave
+        // the menu open — only tapping outside the menu should close it.
       }
       // else: held the button and let go without dragging onto a choice —
       // the menu just stays open, now driven by ordinary taps on the items
@@ -5521,8 +5525,11 @@ function commitBeatMenuSelection(item) {
     item.addEventListener('touchend', e => {
       e.preventDefault(); e.stopPropagation();
       commitBeatMenuSelection(item);
-      closeBeatMenu();
-      if (!beatPlaying && !_beatPending) toggleBeat();
+      if (item.classList.contains('beat-type-item')) {
+        closeBeatMenu();
+        if (!beatPlaying && !_beatPending) toggleBeat();
+      }
+      // ctrl-row buttons apply their toggle and leave the menu open.
     }, { passive: false });
   });
   // Tapping the dimmed background (not the menu card itself) dismisses
@@ -7330,7 +7337,7 @@ function _buildBounceGraph(targetCtx) {
     reverbConv.buffer = irBuf;
   }
   window._reverbOutGain = targetCtx.createGain();
-  window._reverbOutGain.gain.value = _reverbGainForMix((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.15);
+  window._reverbOutGain.gain.value = _reverbGainForMix((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.05);
   window._reverbSendBus.connect(reverbConv); reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
   masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
   window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
@@ -9812,8 +9819,8 @@ function fullReset() {
   currentScaleName = 'penta-min'; PENTA_MINOR = SCALES['penta-min']; globalScaleRoot = null;
   activeSlot = -1;
   slots.fill(null); _pendingSlot = -1; _autoSlotQueue = [];
-  window._globalDelayMix = 0.15;
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = _reverbGainForMix(0.15);
+  window._globalDelayMix = 0.05;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = _reverbGainForMix(0.05);
 
   // Display prefs back to default
   _bgPulseEnabled = false; _bgStaticEnabled = false; _bgPulseSteps = 4; _bgPulseCounter = 0;
@@ -10213,7 +10220,7 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
       }
       _reverbConv.buffer = irBuf;
     }
-    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = _reverbGainForMix(0.15);
+    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = _reverbGainForMix(0.05);
     window._reverbSendBus.connect(_reverbConv); _reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
     masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain); window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain); window._postLimiterGain.connect(ctx.destination);
     for (let i=0; i<NUM_TRACKS; i++) {
@@ -10514,9 +10521,15 @@ async function hardResetAudioEngine() {
       if (_beatMenuOpen) {
         const t = e.changedTouches && e.changedTouches[0];
         const item = t ? beatMenuHighlightUnder(t.clientX, t.clientY) : null;
-        commitBeatMenuSelection(item);
-        closeBeatMenu();
-        if (!beatPlaying && !_beatPending) toggleBeat();
+        if (item) {
+          commitBeatMenuSelection(item);
+          if (item.classList.contains('beat-type-item')) {
+            closeBeatMenu();
+            if (!beatPlaying && !_beatPending) toggleBeat();
+          }
+        } else {
+          closeBeatMenu(); // dragged from SWEEP and let go over nothing — bail out cleanly
+        }
       }
     }
   };
@@ -10779,8 +10792,8 @@ function _ensureBeatFxChain() {
 function updateBeatCtrlRow() {
   const lBtn = document.getElementById('beatCtrlL');
   if (lBtn) lBtn.classList.toggle('sweep-on', _beatTypeLocked);
-  const shiftBtn = document.getElementById('beatCtrlShift');
-  if (shiftBtn) shiftBtn.classList.toggle('on', _beatOffset !== 0);
+  // '<' deliberately has no persistent 'on' state here — it doesn't stay
+  // engaged, so it only gets the momentary flash in beatCtrlShift() below.
   const dBtn = document.getElementById('beatCtrlDelay');
   if (dBtn) dBtn.classList.toggle('on', _beatDelay);
   const fBtn = document.getElementById('beatCtrlFx');
@@ -10792,10 +10805,11 @@ function updateBeatCtrlRow() {
 // L — same lock, exposed on the ctrl row too
 function beatCtrlToggleL() { toggleBeatTypeLock(); updateBeatCtrlRow(); }
 
-// < — shift the whole BEAT pattern by one step, same idea as a track's shift-left
+// < — shift the whole BEAT pattern by one step, same idea as a track's
+// shift-left. Doesn't stay engaged, so just a momentary rollover flash.
 function beatCtrlShift() {
   _beatOffset = (_beatOffset + 1) % NUM_STEPS;
-  updateBeatCtrlRow();
+  flashBtnOrange('beatCtrlShift');
   markModified();
 }
 
