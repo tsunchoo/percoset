@@ -393,11 +393,11 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { 
 /* Option B — same idea as A, but the darker end of each pair stays put and
    the OTHER end is pulled in to that pair's midpoint, for a more subtle
    fade instead of swinging all the way out to the original lighter color. */
-@keyframes pulse-kit-b   { from { background: #0b5394; } to { background: #1b61a0; } }
-@keyframes pulse-perc-b  { from { background: #567b10; } to { background: #4a6b0e; } }
-@keyframes pulse-tonal-b { from { background: #c32a47; } to { background: #b02040; } }
-@keyframes pulse-bass-b  { from { background: #6a2b7e; } to { background: #5e2670; } }
-@keyframes pulse-pad-b   { from { background: #49b36a; } to { background: #3a9c5a; } }
+@keyframes pulse-kit-b   { from { background: #0b5394; } to { background: #135a9a; } }
+@keyframes pulse-perc-b  { from { background: #50730f; } to { background: #4a6b0e; } }
+@keyframes pulse-tonal-b { from { background: #b92543; } to { background: #b02040; } }
+@keyframes pulse-bass-b  { from { background: #642977; } to { background: #5e2670; } }
+@keyframes pulse-pad-b   { from { background: #41a761; } to { background: #3a9c5a; } }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-b   0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-b  0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-b 0.6s infinite alternate; }
@@ -487,7 +487,9 @@ body.track-pulse-c.seq-playing .track-name-btn.has-notes.note-flash { opacity: 1
 .step-cell.soft::after { background: var(--track-color, var(--text)); opacity: 0.4; }
 .step-cell.on::after   { background: var(--track-color, var(--text)); opacity: 1; }
 .step-lane.lane-muted .step-cell.soft::after,
-.step-lane.lane-muted .step-cell.on::after { opacity: 0.15 !important; filter: grayscale(1); }
+.step-lane.lane-muted .step-cell.on::after,
+.step-lane.lane-muted .step-cell.split32::after,
+.step-lane.lane-muted .step-cell.legato-tail::after { opacity: 0.15 !important; filter: grayscale(1); }
 body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: 1; }
@@ -594,7 +596,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:16</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:44</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1622,7 +1624,7 @@ function getPumpChain(tr, dest) {
   // effect compounds and gets out of control — ease off specifically for
   // these two. Re-applied every call so it's correct even if the track's
   // instrument changes after the chain was first created.
-  const isPad = (trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg');
+  const isPad = (trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'drone');
   nodes.comp.threshold.value = isPad ? -20 : -28;
   nodes.comp.knee.value = 6;
   nodes.comp.ratio.value = isPad ? 4 : 8;
@@ -5886,7 +5888,7 @@ function openSoundPicker(tr) {
   document.getElementById('soundPickerTitle').textContent = `TRK ${tr+1} — SOUND`;
   const list = document.getElementById('soundPickerList'); list.innerHTML = '';
   const _isBass = k => ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(k);
-  const _isPad = k => ['fflute', 'blunt', 'sstring', 'sleg', 'opening'].includes(k);
+  const _isPad = k => ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone'].includes(k);
   // Same category order as before (KIT, PERC, LEAD, PAD, BASS), just no
   // section headers/sub-grids — one flat grid to fit on one page.
   const GROUPS = [
@@ -5918,7 +5920,7 @@ function setTrackNameColor(tr, key) {
   const g = INSTRUMENTS[key]?.group || 'perc';
   const _laneColors = {'kit':'#0b5394','perc':'#85A838','tonal':'#fd475d'};
   const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(key);
-  const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening'].includes(key);
+  const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone'].includes(key);
   let laneColor = _laneColors[g] || 'var(--text)';
   if (isBass) laneColor = '#8d3ba8';
   else if (isPad) laneColor = '#76f898';
@@ -8299,19 +8301,31 @@ function randAll(mode, opts) {
     // Never duplicate anything already in the current deck
     const currentDeck = new Set(trackInstruments);
 
-    // Bass: max one across all tracks — skip if a locked track already has bass
+    // Bass: max one across all tracks — skip if a locked track already has
+    // bass. Picked FIRST and guaranteed a slot if one exists anywhere,
+    // rather than being silently skipped just because non-bass tonal locks
+    // happened to already use up the whole 3-slot tonal budget — RAND was
+    // ending up with no bass at all far too often because of exactly that.
     const bassAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && bassKeys.has(trackInstruments[tr]));
+    const totalUnlockedSlots = REAL_TRACK_COUNT - lockedTonal - lockedPerc;
     let bassChoice = null;
-    if (!bassAlreadyLocked && tonalSlots > 0) {
+    if (!bassAlreadyLocked && totalUnlockedSlots > 0) {
       const bassAvail = tonalKeys.filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const allBassAvail = Object.keys(INSTRUMENTS).filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const pool2 = bassAvail.length > 0 ? bassAvail : allBassAvail;
       if (pool2.length > 0) bassChoice = pool2[Math.floor(Math.random() * pool2.length)];
     }
+    // If bass got picked but the tonal budget had already hit 0 (locked
+    // non-bass tonal tracks ate the whole thing), borrow a slot from perc
+    // instead — bass takes priority over the exact 3/2 split.
+    let tonalSlotsEff = tonalSlots, percSlotsEff = percSlots;
+    if (bassChoice && tonalSlotsEff === 0 && percSlotsEff > 0) {
+      tonalSlotsEff = 1; percSlotsEff -= 1;
+    }
 
     const nonBassAvail = tonalKeys.filter(k => !bassKeys.has(k) && !currentDeck.has(k));
     const nonBassShuffled = [...nonBassAvail].sort(() => Math.random() - 0.5);
-    const wantCount = Math.max(0, tonalSlots - (bassChoice ? 1 : 0));
+    const wantCount = Math.max(0, tonalSlotsEff - (bassChoice ? 1 : 0));
     // Solo-group instruments (JCX GUITAR / EWOK VILLAGE / BOOG, and SLAY)
     // must stay capped at one each — this path used to build its own pool
     // independently of buildPool() and so never checked these at all.
@@ -8328,11 +8342,11 @@ function randAll(mode, opts) {
       nonBassShuffle.push(k);
       if (nonBassShuffle.length === wantCount) break;
     }
-    const tPool = [...(bassChoice ? [bassChoice] : []), ...nonBassShuffle].slice(0, tonalSlots);
+    const tPool = [...(bassChoice ? [bassChoice] : []), ...nonBassShuffle].slice(0, tonalSlotsEff);
 
     const percAvail = percKeys.filter(k => !currentDeck.has(k));
     const pShuffle = [...percAvail].sort(() => Math.random() - 0.5);
-    const pPool = percSlots > 0 ? buildPool(pShuffle).slice(0, percSlots) : [];
+    const pPool = percSlotsEff > 0 ? buildPool(pShuffle).slice(0, percSlotsEff) : [];
 
     // Deduplicate and enforce max one bass
     const seenInPool = new Set();
