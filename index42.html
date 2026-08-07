@@ -168,7 +168,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .btn:active { opacity: 0.7; }
 
 #beatBtn.active { background: #111 !important; color: #adff00 !important; }
-#beatBtn.active.btn-beat-pulse { animation: beat-text-pulse 0.44s ease-out; }
+#beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
 @keyframes beat-text-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
 .beat-type-menu {
   display: none; position: fixed; inset: 0; z-index: 500;
@@ -204,6 +204,8 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .rec-mode-btn.on { background:#111; color:#fff; }
 @keyframes boost-red { from { background: #e0142c; color: #fff; } to { background: #7a0016; color: #ffb3bb; } }
 #saveBtn.rec-active { background: #111; }
+.transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
+@keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #saveBtn.rec-active img { animation: rec-icon-pulse 0.5s infinite alternate; }
 #saveBtn.rec-beat-pulse { animation: rec-pump 0.44s ease-out; }
 @keyframes rec-pump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
@@ -321,7 +323,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   background: var(--bg); border: none;
   min-width: 320px; padding: 16px 16px 30px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-  position: relative; max-height: calc(80vh + 20px); overflow-y: auto;
+  position: relative; max-height: calc(80vh + 40px); overflow-y: auto;
 }
 .sound-picker-close {
   position: absolute; top: 8px; right: 8px;
@@ -562,7 +564,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 01:04</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 01:37</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -607,7 +609,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   <button class="btn" id="saveBtn" onclick="onRecClick()" style="padding:0;display:flex;align-items:center;justify-content:center;"><img id="recBtnImg" src="data:image/png;base64,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" style="height:32px;width:32px;object-fit:contain;"></button>
   <button class="btn" id="playBtn" onclick="togglePlay()" style="padding:0;display:flex;align-items:center;justify-content:center;position:relative;"><img id="playBtnImg" src="data:image/png;base64,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" style="height:36px;width:36px;object-fit:contain;"><span id="playBtnMask"></span></button>
   <button class="btn" id="clearBtn">SWEEP</button>
-  <button class="btn" id="beatBtn">BEAT</button>
+  <button class="btn" id="beatBtn"><span id="beatBtnText">BEAT</span></button>
   <button class="btn" id="randBtn">RAND</button>
   <button class="btn" id="scratchBtn">RECALL</button>
 </div>
@@ -1385,22 +1387,31 @@ function _trackNote() {
 // MIX = the wet output level on top of that (0-100 maps to gain 0.0-2.0).
 // Both readouts on screen show the exact 0-100 number quoted in code below —
 // "set INTENSITY to 20, MIX to 20" means exactly these two sliders at 20.
-const REVERB_INTENSITY_MAX = 0.30; // IR peak amplitude at slider=100
+// INTENSITY = room size — plate (short, tight, bright decay) at 0%, through
+//   room (medium) in the middle, to hall (long, slow, cavernous) at 100%.
+//   Rebuilds the convolver's actual impulse response (length + decay curve),
+//   not just a volume knob.
+// MIX = the wet output level on top of that (0-100 maps to gain 0.0-2.0).
+// Both readouts on screen show the exact 0-100 number quoted in code below —
+// "set INTENSITY to 20, MIX to 20" means exactly these two sliders at 20.
 const REVERB_MIX_MAX = 0.4;        // output gain at slider=100 (was 2.0, brought down ~80%)
 
-function _buildReverbIRBuffer(targetCtx, scale) {
-  const irLen = Math.floor(targetCtx.sampleRate * 0.9);
+function _buildReverbIRBuffer(targetCtx, v) {
+  // v: 0 = plate (short/tight/bright), 1 = hall (long/slow/cavernous)
+  const irLen = Math.floor(targetCtx.sampleRate * (0.35 + v * 2.15)); // 0.35s (plate) -> 2.5s (hall)
+  const decayExp = 2.2 - v * 1.5; // 2.2 = fast, tight decay (plate) -> 0.7 = slow, sustained (hall)
+  const peakScale = 0.22 - v * 0.10; // slightly quieter peak on the long end, keeps perceived loudness sane
   const irBuf = targetCtx.createBuffer(2, irLen, targetCtx.sampleRate);
   for (let ch = 0; ch < 2; ch++) {
     const d = irBuf.getChannelData(ch);
-    for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.4) * scale;
+    for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, decayExp) * peakScale;
   }
   return irBuf;
 }
 
 function setReverbIntensity(v) {
   window._reverbIntensity = v;
-  if (ctx && window._reverbConv) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, v * REVERB_INTENSITY_MAX);
+  if (ctx && window._reverbConv) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, v);
 }
 
 function setGlobalDelayMix(v) {
@@ -5546,6 +5557,7 @@ function commitBeatMenuSelection(item) {
 
   btn.addEventListener('touchstart', e => {
     e.preventDefault();
+    _pressPulse('beatBtn');
     startX = e.touches[0].clientX; startY = e.touches[0].clientY;
     clearTimeout(holdTimer);
     btn.classList.add('menu-open'); // lock the black background in immediately, no grey flash during hold-detection
@@ -5652,6 +5664,19 @@ function commitBeatMenuSelection(item) {
   el.addEventListener('touchmove', () => clearTimeout(holdTimer));
 })();
 
+
+// Top-row buttons (REC / PLAY / SWEEP / BEAT / RAND / RECALL) all pop with
+// the same scale reaction the instant they're pressed — independent of any
+// beat-sync pulsing PLAY/BEAT already have, this is purely a press reaction.
+// Most of these buttons run their own custom touch gestures that call
+// preventDefault() on touchstart, which suppresses the native 'click' a
+// generic delegated listener would need — so this is called explicitly from
+// each button's actual press handler instead of relying on click bubbling.
+function _pressPulse(id) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.classList.remove('press-pulse'); void b.offsetWidth; b.classList.add('press-pulse');
+}
 
 function toggleBeat() {
   if (ctx) ctx.resume();
@@ -7258,6 +7283,7 @@ function getKeyName() {
   return `${note}-${currentScaleName}`;
 }
 function onRecClick() {
+  _pressPulse('saveBtn');
   if (_recordMode === 'bounceLoop') { bounceLoop(); return; }
   if (_recordMode === 'bounceStems') { bounceLoopStems(); return; }
   toggleRecord();
@@ -7419,7 +7445,7 @@ function _buildBounceGraph(targetCtx) {
   window._reverbSendBus = targetCtx.createGain(); window._reverbSendBus.gain.value = 1;
   window._reverbConv = targetCtx.createConvolver();
   window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
-  window._reverbConv.buffer = _buildReverbIRBuffer(targetCtx, ((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.50) * REVERB_INTENSITY_MAX);
+  window._reverbConv.buffer = _buildReverbIRBuffer(targetCtx, (window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.50);
   window._reverbOutGain = targetCtx.createGain();
   window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.50) * REVERB_MIX_MAX;
   window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
@@ -8351,6 +8377,7 @@ function stopAllAutoRand() {
   // Single tap = one rand. Double tap = start/stop auto mode.
   let lastTap = 0;
   const onTap = () => {
+    _pressPulse('randBtn');
     const now = Date.now();
     if (now - lastTap < 400) {
       // Double tap — toggle auto mode
@@ -9906,7 +9933,7 @@ function fullReset() {
   window._globalDelayMix = 0.50;
   if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.50 * REVERB_MIX_MAX;
   window._reverbIntensity = 0.50;
-  if (window._reverbConv && ctx) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, 0.50 * REVERB_INTENSITY_MAX);
+  if (window._reverbConv && ctx) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, 0.50);
 
   // Display prefs back to default
   _bgPulseEnabled = false; _bgStaticEnabled = false; _bgPulseSteps = 4; _bgPulseCounter = 0;
@@ -10297,7 +10324,7 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
     window._reverbSendBus = ctx.createGain(); window._reverbSendBus.gain.value = 1;
     window._reverbConv = ctx.createConvolver();
     window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
-    window._reverbConv.buffer = _buildReverbIRBuffer(ctx, ((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.50) * REVERB_INTENSITY_MAX);
+    window._reverbConv.buffer = _buildReverbIRBuffer(ctx, (window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.50);
     window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.50) * REVERB_MIX_MAX;
     window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
     masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain); window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain); window._postLimiterGain.connect(ctx.destination);
@@ -10389,6 +10416,7 @@ async function hardResetAudioEngine() {
     lastTap = now;
   };
   const armHold = () => {
+    _pressPulse('playBtn');
     _longPressFired = false;
     clearTimeout(_holdTimer);
     _holdTimer = setTimeout(() => { _longPressFired = true; hardResetAudioEngine(); }, 1800);
@@ -10532,7 +10560,7 @@ async function hardResetAudioEngine() {
     }, measure * 1000);
   }
 
-  const beginPress = () => { startSweep(); startSweepTakeover(); };
+  const beginPress = () => { _pressPulse('clearBtn'); startSweep(); startSweepTakeover(); };
   const endPress = () => {
     if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
     stopSweep(); // released early — cuts off right where the ramps currently are
@@ -10660,6 +10688,7 @@ function stopRecallLoop() {
 
   const doRecall = () => {
     if (!_recallSnapB) return;
+    _pressPulse('scratchBtn');
     stopAllAutoRand();
     const rewindName = Math.random() < 0.5 ? 'rewind' : 'rewind2';
     // Duck master mix for the duration of the rewind sound
@@ -10867,10 +10896,21 @@ function _ensureBeatFxChain() {
   // click-transient energy through into the reverb.
   const reverbHP1 = ctx.createBiquadFilter(); reverbHP1.type = 'highpass'; reverbHP1.frequency.value = 500; reverbHP1.Q.value = 0.7;
   const reverbHP2 = ctx.createBiquadFilter(); reverbHP2.type = 'highpass'; reverbHP2.frequency.value = 500; reverbHP2.Q.value = 0.7;
+  // BEAT gets its own dedicated convolver + output stage here — deliberately
+  // NOT sharing window._reverbSendBus/_reverbConv/_reverbOutGain with the
+  // tracks, so the Settings REVERB MIX/INTENSITY sliders can never bleed
+  // into it. Fixed at a mid "room" size since only a MIX control was asked
+  // for here, not a separate intensity control.
+  const beatReverbConv = ctx.createConvolver();
+  beatReverbConv.normalize = false;
+  beatReverbConv.buffer = _buildReverbIRBuffer(ctx, 0.4);
+  const beatReverbOut = ctx.createGain(); beatReverbOut.gain.value = 1;
   beatGain.connect(dryGain); dryGain.connect(masterGain);
   beatGain.connect(crunchSend); crunchSend.connect(preGain); preGain.connect(ws); ws.connect(postGain); postGain.connect(masterGain);
-  if (window._reverbSendBus) { beatGain.connect(reverbHP1); reverbHP1.connect(reverbHP2); reverbHP2.connect(reverbSend); reverbSend.connect(window._reverbSendBus); }
+  beatGain.connect(reverbHP1); reverbHP1.connect(reverbHP2); reverbHP2.connect(reverbSend);
+  reverbSend.connect(beatReverbConv); beatReverbConv.connect(beatReverbOut); beatReverbOut.connect(masterGain);
   window._beatDryGain = dryGain; window._beatCrunchSend = crunchSend; window._beatReverbSend = reverbSend;
+  window._beatReverbConv = beatReverbConv; window._beatReverbOut = beatReverbOut;
 }
 
 function updateBeatCtrlRow() {
