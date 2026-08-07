@@ -273,10 +273,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: #f71aff !important; }
-#randBtn.pulsing { background: #ff2200; color: #fff; }
-@keyframes rand-pulse { 0% { background: #ff2200; color: #fff; } 50% { background: #7a1000; color: #fff; } 100% { background: #ff2200; color: #fff; } }
+#randBtn.pulsing { background: #f71aff; color: #fff; }
+@keyframes rand-pulse { 0% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } 100% { opacity: 0.4; transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
-#randBtn.btn-flash-blue { background: #ff2200 !important; color: #fff !important; }
+#randBtn.btn-flash-blue { background: #f71aff !important; color: #fff !important; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
 #scratchBtn.active { background: #111 !important; color: #adff00 !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
@@ -565,7 +565,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:53</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1898,17 +1898,25 @@ function scheduler() {
       }
       // RAND button auto-mode (double-click): regenerate every exactly 4 bars,
       // counted off real bar-starts rather than wall-clock time so it can't drift.
+      // The left tape spool re-triggers step 0 every time it's released (to
+      // refire the current pattern from the top) — that's a manual replay,
+      // not a bar actually elapsing, so it must not count toward the 4-bar
+      // auto-regenerate threshold.
       if (_autoRandLoopActive) {
-        _autoRandBarCount++;
-        if (_autoRandBarCount >= 4) {
-          _autoRandBarCount = 0;
-          _recallSnapB = snapshotState();
-          const _savedSlot2 = activeSlot;
-          randAll(undefined);
-          activeSlot = _savedSlot2; // automatic evolution isn't a manual edit — don't invalidate the slot match
-          updateSlotButtons();
-          clearBtnBlueHeld('randBtn');
-          playRandReleaseSweep(t);
+        if (window._spoolBarCreditSkip) {
+          window._spoolBarCreditSkip = false; // consumed — this bar-start doesn't count
+        } else {
+          _autoRandBarCount++;
+          if (_autoRandBarCount >= 4) {
+            _autoRandBarCount = 0;
+            _recallSnapB = snapshotState();
+            const _savedSlot2 = activeSlot;
+            randAll(undefined);
+            activeSlot = _savedSlot2; // automatic evolution isn't a manual edit — don't invalidate the slot match
+            updateSlotButtons();
+            clearBtnBlueHeld('randBtn');
+            playRandReleaseSweep(t);
+          }
         }
       }
     }
@@ -9507,6 +9515,9 @@ function _leftSpoolRelease() {
   });
   currentStep = -1;
   nextStepTime = ctx.currentTime + 0.05;
+  // Refiring from step 0 here is a manual replay, not a bar actually
+  // elapsing — don't let it feed the RAND button's 4-bar auto-regenerate count.
+  window._spoolBarCreditSkip = true;
   // Always land on a downbeat bass note. If beat 1 falls inside a note
   // that's sustaining over from the end of the bar (a legato rollover),
   // the normal scheduler wouldn't retrigger it — so force it here.
