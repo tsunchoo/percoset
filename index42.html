@@ -274,7 +274,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: #f71aff !important; }
 #randBtn.pulsing { background: #f71aff; color: #fff; }
-@keyframes rand-pulse { 0% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } 100% { opacity: 0.4; transform: scale(1); } }
+@keyframes rand-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: #555; transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
 #randBtn.btn-flash-blue { background: #f71aff !important; color: #fff !important; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
@@ -565,7 +565,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:53</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 03:29</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -607,12 +607,12 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </header>
 
 <div class="transport">
+  <button class="btn" id="randBtn">RAND</button>
+  <button class="btn" id="scratchBtn">RECALL</button>
   <button class="btn" id="saveBtn" onclick="onRecClick()" style="padding:0;display:flex;align-items:center;justify-content:center;"><img id="recBtnImg" src="data:image/png;base64,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" style="height:32px;width:32px;object-fit:contain;"></button>
   <button class="btn" id="playBtn" onclick="togglePlay()" style="padding:0;display:flex;align-items:center;justify-content:center;position:relative;"><img id="playBtnImg" src="data:image/png;base64,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" style="height:36px;width:36px;object-fit:contain;"><span id="playBtnMask"></span></button>
   <button class="btn" id="clearBtn">SWEEP</button>
   <button class="btn" id="beatBtn"><span id="beatBtnText">BEAT</span></button>
-  <button class="btn" id="randBtn">RAND</button>
-  <button class="btn" id="scratchBtn">RECALL</button>
 </div>
 
 <div id="beatTypeMenu" class="beat-type-menu">
@@ -1896,7 +1896,7 @@ function scheduler() {
           randomizeBeatType();
         }
       }
-      // RAND button auto-mode (double-click): regenerate every exactly 4 bars,
+      // RAND button auto-mode (press and hold): regenerate every exactly 4 bars,
       // counted off real bar-starts rather than wall-clock time so it can't drift.
       // The left tape spool re-triggers step 0 every time it's released (to
       // refire the current pattern from the top) — that's a manual replay,
@@ -2244,9 +2244,7 @@ function fireStepAudio(step, t) {
           doKick  = (bstep === 0);
           doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'push') {
-          // PUSH — programmed from a reference MIDI roll: a syncopated
-          // "3-3-2-3-3-2" kick pattern (steps 0, 3, 6, 8, 11, 14 of 16).
-          doKick = (bstep === 0 || bstep === 3 || bstep === 6 || bstep === 8 || bstep === 11 || bstep === 14);
+          doKick = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'rollin') {
           // ROLLIN — straight backbeat snare, rolling syncopated kick underneath
           doKick  = (bstep === 0);
@@ -2325,6 +2323,8 @@ function fireStepAudio(step, t) {
         if (bstep === 6 || bstep === 10) fireBeatKick(t); // syncopated hits, off the straight downbeats
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1); // remaining steady 8ths
         if (bstep === 3 || bstep === 11) fireBeatSidestick(t); // pushed accent, ahead of where a backbeat would land
+      } else if (_beatType === 'push') {
+        if (bstep === 1 || bstep === 7 || bstep === 9 || bstep === 14) fireBeatKick(t);
       }
     }
 }
@@ -7163,7 +7163,7 @@ function scheduleRandTransition() {
 let _pendingRandTimeouts = []; // staggered per-track pattern-gen timeouts from randAll — cancel stale ones if RAND fires again before they land
 let _tempoLocked = false; // tap the lock icon next to the tempo screen's BPM readout to lock it against RAND
 let _beatTypeLocked = false; // tap the already-active BEAT TYPE button to lock it against RAND
-let _autoRandLoopActive = false; // RAND button double-click auto-mode
+let _autoRandLoopActive = false; // RAND button press-and-hold auto-mode
 let _autoRandBarCount = 0;       // counts real bar-starts toward the next 4-bar regenerate
 
 function queueRand(mode) {
@@ -7299,9 +7299,15 @@ document.documentElement.style.setProperty('--bar-color', _currentBarColor);
 // 80s sci-fi movie character names (not actors) — a database roughly matching the scale of the celestial objects list above (~240 entries), drawn from Star Wars, Blade Runner, Aliens, The Terminator, Back to the Future, RoboCop, Predator, The Thing, Tron, Flash Gordon, Dune, Star Trek II-IV, and many more.
 const SPECIES_NAMES = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'phobos', 'deimos', 'io', 'europa', 'ganymede', 'callisto', 'amalthea', 'himalia', 'titan', 'enceladus', 'mimas', 'dione', 'rhea', 'tethys', 'hyperion', 'iapetus', 'phoebe', 'titania', 'oberon', 'umbriel', 'ariel', 'miranda', 'puck', 'caliban', 'sycorax', 'triton', 'nereid', 'proteus', 'larissa', 'galatea', 'despina', 'thalassa', 'charon', 'nix', 'hydra', 'kerberos', 'styx', 'ceres', 'pluto', 'eris', 'makemake', 'haumea', 'sedna', 'orcus', 'quaoar', 'ixion', 'pallas', 'vesta', 'hygiea', 'juno', 'psyche', 'davida', 'sylvia', 'interamnia', 'bamberga', 'herculina', 'euphrosyne', 'doris', 'themis', 'cybele', 'camilla', 'halley', 'encke', 'tempel', 'hartley', 'churyumov', 'biela', 'arend', 'bennett', 'bradfield', 'hale', 'bopp', 'hyakutake', 'ikeya', 'seki', 'lovejoy', 'neowise', 'sirius', 'canopus', 'rigel', 'vega', 'capella', 'arcturus', 'aldebaran', 'spica', 'antares', 'fomalhaut', 'deneb', 'regulus', 'altair', 'betelgeuse', 'pollux', 'castor', 'procyon', 'achernar', 'acrux', 'mimosa', 'hadar', 'mizar', 'alioth', 'alcor', 'dubhe', 'merak', 'phecda', 'megrez', 'alnitak', 'alnilam', 'mintaka', 'saiph', 'bellatrix', 'alderamin', 'alpheratz', 'schedar', 'caph', 'ruchbah', 'segin', 'enif', 'sadalsuud', 'sadalmelik', 'sadachbia', 'sadalbari', 'ancha', 'shaula', 'lesath', 'alniyat', 'graffias', 'dschubba', 'fang', 'pi', 'rho', 'zubenelgenubi', 'zubeneschamali', 'zubenelhakrabi', 'andromeda', 'triangulum', 'centaurus', 'sculptor', 'fornax', 'tucana', 'carina', 'orion', 'helix', 'crab', 'ring', 'eagle', 'lagoon', 'trifid', 'rosette', 'omega', 'dumbell', 'blinking', 'eskimo', 'cat', 'owl', 'boomerang', 'hourglass', 'red', 'spider', 'butterfly', 'stingray', 'cassiopeia', 'cygnus', 'lyra', 'aquila', 'serpens', 'ophiuchus', 'hercules', 'bootes', 'corona', 'virgo', 'libra', 'scorpius', 'sagittarius', 'capricornus', 'aquarius', 'pisces', 'aries', 'taurus', 'gemini', 'leo', 'draco', 'ursa', 'lupus', 'ara', 'pavo', 'grus', 'phoenix', 'hydrus', 'reticulum', 'pictor', 'columba', 'lepus', 'eridanus', 'milkyway', 'lmc', 'smc', 'bodes', 'cigar', 'whirlpool', 'sombrero', 'pinwheel', 'southernpinwheel', 'blackeye', 'sunflower', 'centaurusa', 'sculptorgalaxy', 'barnards', 'ic10', 'ic1613', 'leoi', 'leoii', 'wlm', 'pegasusdwarf', 'aquariusdwarf', 'sextansa', 'sextansb', 'dracodwarf', 'ursaminordwarf', 'sculptordwarf', 'fornaxdwarf', 'carinadwarf', 'ngc185', 'ngc147', 'm32', 'm110', 'piscesdwarf', 'cetusdwarf', 'antliadwarf', 'tucanadwarf', 'phoenixdwarf', 'cartwheel', 'antennae']
 const SCIFI_SURNAMES = ['Deckard','Kowalski','Sebastian','Tyrell','Ripley','Hicks','Vasquez','Hudson','Gorman','Apone','Drake','Ferro','Frost','Spunkmeyer','Connor','Reese','Traxler','Vukovich','Silberman','Buchanan','Ventura','Brown','Tannen','Garrett','Baines','Parker','Wilson','Murphy','Lewis','Boddicker','Jones','Morton','Antonowsky','Schaefer','Flynn','Bradley','Gibbs','Arden','Zarkov','Halleck','Idaho','Vries','Yueh','Crandall','Muller','Woods','Davidge','McCoy','Marcus','Scott','Taylor','Luckett','Selwyn','Finley','Lefkowitz','Speck','Crosby','Jabituya','Marner','Riley','Pendleton','Putter','Maxwell','Scrimshaw','Brundle','Quaife','Borans','Rogan','Gordon','Priddy','Gomez','OConnor','Carruthers','Wallace','Donnelly','Freeman','McAdams','Richardson','Webster','Treadwell','Johnson','Owens','Lightman','Mack','Falken','Beringer','Brace','Reynolds','Floyd','Chandra','Curnow','Kirbuk','Bowman','Hayden','Shermin','Fox','Donovan','Parrish','Carter','Carlsen','Fallada','Caine','McFadden','Brigman','Coffey','Sykes','Harcourt','Benson','Cane','Lazarus','Nix','Laan','Schopmeyer']; // just surnames now — first names were dead weight, never actually used
+// 90s sci-fi movie character surnames — Terminator 2, Jurassic Park, The
+// Matrix, Total Recall, Stargate, 12 Monkeys, Starship Troopers, Contact,
+// Gattaca, The Fifth Element, Event Horizon, Independence Day, Species,
+// Demolition Man, Alien 3/Resurrection, Star Trek Generations/First Contact.
+const SCIFI_SURNAMES_90S = ['Dyson','Grant','Sattler','Malcolm','Hammond','Nedry','Muldoon','Arnold','Gennaro','Anderson','Smith','Levinson','Hiller','Whitmore','Nimziki','Dallas','Zorg','Cornelius','Rico','Ibanez','Barcalow','Arroway','Drumlin','Joss','Jackson','Kawalsky','Cole','Railly','Goines','Weir','Justin','Morrow','Irons','Fitch','Voss','Deacon','Picard','Riker','Soran','Spartan','Phoenix','Cocteau','Hendricksson','Golic','Morse','Dillon','Call','Wren','Kanemitsu'];
 function getSpeciesName() {
   const celestial = SPECIES_NAMES[Math.floor(Math.random() * SPECIES_NAMES.length)];
-  const surname = SCIFI_SURNAMES[Math.floor(Math.random() * SCIFI_SURNAMES.length)];
+  const surnamePool = Math.random() < 0.5 ? SCIFI_SURNAMES : SCIFI_SURNAMES_90S;
+  const surname = surnamePool[Math.floor(Math.random() * surnamePool.length)];
   // Some celestial names are stored as single concatenated words (e.g.
   // "ursaminordwarf") — split them wherever "major", "minor", or "dwarf"
   // appears as part of the word, since those are meant to read as separate
@@ -7312,7 +7318,8 @@ function getSpeciesName() {
     if (idx > 0) split = split.slice(0, idx) + ' ' + split.slice(idx);
   });
   const celestialCap = split.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  return `${celestialCap} ${surname}`;
+  // 50/50 which comes first
+  return Math.random() < 0.5 ? `${celestialCap} ${surname}` : `${surname} ${celestialCap}`;
 }
 let _currentSpecies = getSpeciesName();
 function getKeyName() {
@@ -7895,7 +7902,7 @@ function randAll(mode, opts) {
   mode = mode || 'all';
   const level = Math.floor(Math.random() * 5); // random pick every press, not a 1-5 cycle
   // FX and Delay are 25% more likely to be added when RAND is running in
-  // auto mode (the #randBtn double-click loop) versus a one-off press.
+  // auto mode (the #randBtn press-and-hold loop) versus a one-off press.
   const autoBoost = _autoRandLoopActive ? 1.25 : 1;
   // Cancel any still-pending per-track timeouts from a previous RAND call — otherwise
   // a stale one can land after this call and write notes into a track this call just
@@ -8390,12 +8397,13 @@ function stopAllAutoRand() {
   }
 }
 
-// RAND button wiring
-// On iOS, touchend fires during long-press before we can detect hold duration.
-// So: tap = single randAll. Hold = user must tap again to stop auto-mode.
+// RAND button wiring — hold to enter/exit AUTO mode; a plain tap fires a
+// single rand, but only on release (not on press), so a press that turns
+// into a hold never also fires a stray single rand first.
 (function() {
   const btn = document.getElementById('randBtn');
   if (!btn) return;
+  const HOLD_MS = 500;
 
   const stopAuto = () => {
     if (_autoRandLoopActive) {
@@ -8407,45 +8415,50 @@ function stopAllAutoRand() {
   };
 
   const startAuto = () => {
-    if (_autoRandLoopActive) { stopAuto(); return; } // second tap stops it
+    if (_autoRandLoopActive) { stopAuto(); return; } // holding again while already in auto stops it
     btn.classList.add('pulsing');
     btn.textContent = 'AUTO';
     _autoRandLoopActive = true;
     _autoRandBarCount = 0; // whatever's already playing gets its full 4 bars before the first change
   };
 
-  // Single tap = one rand. Double tap = start/stop auto mode.
-  let lastTap = 0;
-  const onTap = () => {
+  const singleFire = () => {
     _pressPulse('randBtn');
-    const now = Date.now();
-    if (now - lastTap < 400) {
-      // Double tap — toggle auto mode
-      startAuto();
-    } else {
-      // Single tap — one rand
-      if (_autoRandLoopActive) { stopAuto(); }
-      else { setBtnBlueHeld('randBtn'); queueRand(); }
-    }
-    lastTap = now;
+    if (_autoRandLoopActive) { stopAuto(); }
+    else { setBtnBlueHeld('randBtn'); queueRand(); }
+  };
+
+  let holdTimer = null, holdFired = false;
+  const beginPress = () => {
+    if (!ctx) initAudio(); else ctx.resume().catch(()=>{});
+    holdFired = false;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => { holdFired = true; startAuto(); }, HOLD_MS);
+  };
+  const endPress = () => {
+    clearTimeout(holdTimer);
+    if (!holdFired) singleFire(); // only a plain tap fires the single rand, and only on release
   };
 
   let _lastTouchTime = 0;
   btn.addEventListener('touchstart', e => {
     e.preventDefault();
     _lastTouchTime = Date.now();
-    if (!ctx) initAudio(); else ctx.resume().catch(()=>{});
-    onTap();
+    beginPress();
   }, { passive: false });
   btn.addEventListener('touchend', e => {
     e.preventDefault();
+    endPress();
   }, { passive: false });
+  btn.addEventListener('touchcancel', () => { clearTimeout(holdTimer); });
   btn.addEventListener('mousedown', () => {
-    if (Date.now() - _lastTouchTime < 500) return; // ignore synthetic mousedown following a real touch
-    if (!ctx) initAudio(); else ctx.resume().catch(()=>{});
-    onTap();
+    if (Date.now() - _lastTouchTime < 500) return; // ignore synthetic mouse events following a real touch
+    beginPress();
   });
-  btn.addEventListener('mouseup', () => {});
+  btn.addEventListener('mouseup', () => {
+    if (Date.now() - _lastTouchTime < 500) return;
+    endPress();
+  });
 })();
 
 const NUM_SLOTS = 6, slots = new Array(NUM_SLOTS).fill(null);
@@ -10923,7 +10936,7 @@ let _beatDelay = false;                  // 'R' — reverb send on/off
 let _beatReverbMix = 0.5;                // slider under BEAT VOL — 0-1, scales the send level whenever 'R' is on
 let _beatFx = false, _beatPump = false;  // 'FX' — 3-state cycle: off / on / on+blast
 let _beatAutoRandActive = false, _beatAutoRandBarCount = 0; // rand 'R' double-tap auto mode
-const BEAT_REVERB_MIX_MAX = 0.18; // send level at slider=100% (was 0.45, cut back 60%)
+const BEAT_REVERB_MIX_MAX = 0.09; // send level at slider=100% (was 0.18, cut 50% more)
 function _beatReverbGainForMix(v) {
   // Squared taper — gives much finer control at the low end of the slider,
   // since even a small linear fraction was still too much send.
