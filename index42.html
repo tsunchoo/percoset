@@ -276,8 +276,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #randBtn.pulsing { background: #f71aff; color: #fff; }
 @keyframes rand-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: #555; transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
-@keyframes rand-hold-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.1); } 100% { background: #555; transform: scale(1); } }
+@keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
+@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
+#randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
 #randBtn.btn-flash-blue { background: #f71aff !important; color: #fff !important; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
 #scratchBtn.active { background: #111 !important; color: #adff00 !important; }
@@ -569,7 +571,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 05:42</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 06:24</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -623,7 +625,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   <div class="beat-type-menu-inner">
     <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">BEAT VOL</div>
-      <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatVol(this.value/100)">
+      <input type="range" id="beatVolBar" min="0" max="100" value="45" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatVol(this.value/100)">
     </div>
     <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;">
@@ -719,9 +721,9 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">50</span>
+          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">25</span>
         </div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="50" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
+        <input type="range" id="delayMixBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
@@ -978,7 +980,7 @@ function syncSettingsPanel() {
   if (kd) kd.textContent = (getKeyName() || '').replace(/-/g, ' ');
   const dmb = document.getElementById('delayMixBar');
   if (dmb) {
-    dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.50) * 100);
+    dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.25) * 100);
     const dmv = document.getElementById('reverbMixVal'); if (dmv) dmv.textContent = dmb.value;
   }
   const rib = document.getElementById('reverbIntensityBar');
@@ -1855,6 +1857,18 @@ function scheduler() {
       const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
       t = nextStepTime + _boogieOffsets[beatPos];
     }
+    // Single-tap RAND, while playing, waits for the next bar boundary
+    // before actually applying (_autoRandPending) — pulse on every 8th
+    // note during that wait so it's clear something's about to happen,
+    // stopping the instant the new pattern actually lands (see the
+    // _autoRandPending consumer below, which removes this class).
+    if (_autoRandPending && step % 2 === 0) {
+      const rbP = document.getElementById('randBtn');
+      if (rbP) {
+        rbP.style.setProperty('--rand-pending-dur', (stepDuration() * 2 * 0.92) + 's');
+        rbP.classList.remove('rand-pending-fast'); void rbP.offsetWidth; rbP.classList.add('rand-pending-fast');
+      }
+    }
     // AUTO RAND's color pulse also retriggers halfway through the bar (step
     // 8), not just at bar-start — twice as often as before, with the cycle
     // duration matching that interval exactly so one pulse finishes right
@@ -1878,8 +1892,16 @@ function scheduler() {
       // past them to a stale save slot. The explicit captures inside the
       // RAND/slot-swap blocks below still take precedence for those exact
       // moments — this just keeps things fresh on ordinary bars too.
-      if (window._rollingBarSnap) _recallSnapB = window._rollingBarSnap;
-      window._rollingBarSnap = snapshotState();
+      // Only actually advances when something changed since the last
+      // capture — otherwise several quiet bars in a row would keep
+      // overwriting the rolling snapshot with an identical copy of what's
+      // already playing, making RECALL a no-op (recalling "the same
+      // pattern") once nothing had changed for a bar or two.
+      if (window._patternDirtySinceSnap) {
+        if (window._rollingBarSnap) _recallSnapB = window._rollingBarSnap;
+        window._rollingBarSnap = snapshotState();
+        window._patternDirtySinceSnap = false;
+      }
       _committedSwing = swingVal; // commit swing amount only at bar start
       requestAnimationFrame(updateSwingReadout);
       // AUTO RAND's blue/green color pulse takes exactly 4 beats (one bar)
@@ -1903,6 +1925,7 @@ function scheduler() {
       }
       if (_autoRandPending) {
         _autoRandPending = false;
+        const rbClear = document.getElementById('randBtn'); if (rbClear) rbClear.classList.remove('rand-pending-fast');
         _recallSnapB = snapshotState(); // save current as previous before change
         randAll(_autoRandMode); _autoRandMode = undefined;
         clearBtnBlueHeld('randBtn');
@@ -7533,7 +7556,7 @@ function _buildBounceGraph(targetCtx) {
   masterGain = targetCtx.createGain(); masterGain.gain.value = masterVol;
   const makeupGain = targetCtx.createGain(); makeupGain.gain.value = window._BASE_MAKEUP_GAIN || 2.5061;
   window._makeupGain = makeupGain;
-  window._beatGain = targetCtx.createGain(); window._beatGain.gain.value = 0.506;
+  window._beatGain = targetCtx.createGain(); window._beatGain.gain.value = 0.4508; // -1dB (was 0.506)
   // NOT auto-connected to masterGain here — the caller wires in only the
   // tap(s) this pass actually wants (see _renderOfflineLoop's connectFn),
   // so an isolated track/BEAT stem doesn't carry every other track along
@@ -7550,7 +7573,7 @@ function _buildBounceGraph(targetCtx) {
   window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
   window._reverbConv.buffer = _buildReverbIRBuffer(targetCtx, _reverbSizeFromSlider((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.50));
   window._reverbOutGain = targetCtx.createGain();
-  window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.50) * REVERB_MIX_MAX;
+  window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.25) * REVERB_MIX_MAX;
   window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
   masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
   window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
@@ -8022,6 +8045,7 @@ function randAll(mode, opts) {
   const soloUniqueKeys = new Set(['jcmgtr','clar','boog']); // max one of these — JCX GUITAR / EWOK VILLAGE / BOOG
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
   const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/DULCIMER
+  const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
   // Exclude instruments already locked on other tracks
   const lockedInstruments = new Set();
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
@@ -8044,7 +8068,7 @@ function randAll(mode, opts) {
 
   function buildPool(keys) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5);
-    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false;
+    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false; let jinxClashUsed = false;
     // Bass is always included when available, rather than leaving it to
     // shuffle luck — with ~20 tonal options and only 5 basses, a plain
     // shuffle rarely happened to draw one.
@@ -8062,11 +8086,12 @@ function randAll(mode, opts) {
       if (soloUniqueKeys.has(k)) { if (soloUniqueUsed) continue; soloUniqueUsed = true; }
       if (soloHatKeys.has(k)) { if (soloHatUsed) continue; soloHatUsed = true; }
       if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed) continue; soloRareLeadUsed = true; }
+      if (jinxClashKeys.has(k)) { if (jinxClashUsed) continue; jinxClashUsed = true; }
       result.push(k);
     }
     // Fill remaining from keys excluding solo perc/unique/hat if already used
     while (result.length < REAL_TRACK_COUNT) {
-      const fill = keys.filter(k => !(soloPercUsed && soloPercKeys.has(k) && !result.includes(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k) && !result.includes(k)) && !(soloHatUsed && soloHatKeys.has(k) && !result.includes(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k) && !result.includes(k)));
+      const fill = keys.filter(k => !(soloPercUsed && soloPercKeys.has(k) && !result.includes(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k) && !result.includes(k)) && !(soloHatUsed && soloHatKeys.has(k) && !result.includes(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k) && !result.includes(k)) && !(jinxClashUsed && jinxClashKeys.has(k) && !result.includes(k)));
       result.push(fill[Math.floor(Math.random() * fill.length)] || keys[0]);
     }
     return result;
@@ -8114,11 +8139,13 @@ function randAll(mode, opts) {
     let soloLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloLeadKeys.has(trackInstruments[tr]));
     let soloUniqueUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloUniqueKeys.has(trackInstruments[tr]));
     let soloRareLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloRareLeadKeys.has(trackInstruments[tr]));
+    let jinxClashUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && jinxClashKeys.has(trackInstruments[tr]));
     const nonBassShuffle = [];
     for (const k of nonBassShuffled) {
       if (soloLeadKeys.has(k)) { if (soloLeadUsed2) continue; soloLeadUsed2 = true; }
       if (soloUniqueKeys.has(k)) { if (soloUniqueUsed2) continue; soloUniqueUsed2 = true; }
       if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed2) continue; soloRareLeadUsed2 = true; }
+      if (jinxClashKeys.has(k)) { if (jinxClashUsed2) continue; jinxClashUsed2 = true; }
       nonBassShuffle.push(k);
       if (nonBassShuffle.length === wantCount) break;
     }
@@ -8159,9 +8186,16 @@ function randAll(mode, opts) {
   }
   pool = [...pool].sort((a, b) => trackRank(a) - trackRank(b));
 
-  // Every RAND track now gets an instrument — Track 1 is permanently
-  // reserved for TEXTURE, so the old "leave one track blank" feature (which
-  // picked a random track to empty out) no longer applies here.
+  // At the top intensity tier (level 4 of 0-4, i.e. the top 90%+ of the
+  // range), it's fine — good, even — to leave one track completely silent
+  // rather than cramming an instrument into every single slot. Picked once,
+  // up front, from whichever real tracks aren't locked.
+  let _emptyTrackIdx = -1;
+  if (level === 4) {
+    const _emptyCandidates = [];
+    for (let tr = 1; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _emptyCandidates.push(tr);
+    if (_emptyCandidates.length > 0) _emptyTrackIdx = _emptyCandidates[Math.floor(Math.random() * _emptyCandidates.length)];
+  }
 
   // Assign sorted pool sequentially to unlocked tracks
   // Note budget: total notes spread across all tracks — busy tracks leave less for others
@@ -8169,6 +8203,22 @@ function randAll(mode, opts) {
 
   let poolIdx = 0;
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    if (tr === _emptyTrackIdx) {
+      // Leave it genuinely silent — no notes, muted, FX/Delay/BLAST cleared.
+      // Instrument label itself is cosmetic once muted and empty, so it's
+      // left alone rather than needing a "blank" instrument that doesn't exist.
+      grid[tr].fill(0);
+      trackDelay[tr] = false;
+      trackFx[tr] = { x: 0, y: 0 };
+      trackPump[tr] = false;
+      if (ctx) setFxActive(tr, trackFx[tr]);
+      trackMuted[tr] = true;
+      updateTrackMute(tr);
+      redrawTrackCells(tr);
+      const db3 = document.getElementById(`delaybtn-${tr}`); if (db3) db3.classList.toggle('on', false);
+      const fb3 = document.getElementById(`fxbtn-${tr}`); if (fb3) { fb3.classList.remove('on'); fb3.classList.remove('blast-on'); }
+      continue;
+    }
     if (tr === 0) continue; // Track 1 (TEXTURE) — RAND never touches it; pool is sized for the 5 real tracks only, nothing wasted here
     if (trackSweep[tr]) continue; // L button locked — skip, without consuming a pool slot
     const k = pool[poolIdx++] || pool[pool.length - 1];
@@ -8328,7 +8378,7 @@ function randAll(mode, opts) {
       // Never on a track with no actual notes in it.
       const hasNotes = grid[tr].some(v => v > 0);
       const blastChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
-      const blastOn = hasNotes && Math.random() < blastChance;
+      const blastOn = fxOn && hasNotes && Math.random() < blastChance; // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle
       trackPump[tr] = blastOn;
       if (fb) fb.classList.toggle('blast-on', blastOn);
     } else if (!trackSweep[tr]) {
@@ -8495,9 +8545,9 @@ function stopAllAutoRand() {
   };
 
   const singleFire = () => {
+    if (_autoRandLoopActive) { stopAuto(); return; } // turning AUTO off doesn't need its own press-pulse
     _pressPulse('randBtn');
-    if (_autoRandLoopActive) { stopAuto(); }
-    else { setBtnBlueHeld('randBtn'); queueRand(); }
+    setBtnBlueHeld('randBtn'); queueRand();
   };
 
   let holdTimer = null, holdFired = false;
@@ -8694,9 +8744,18 @@ function markModified() {
   activeSlot = -1;
   updateSlotButtons();
   updateLegatoVisuals();
+  window._patternDirtySinceSnap = true; // RECALL's rolling snapshot only advances on a real change — see the step===0 handler
 }
 let _pendingSlot = -1;
 function slotPress(i) {
+  // Choosing a saved pattern is a deliberate override — AUTO RAND (top bar)
+  // shouldn't keep evolving on top of whatever the user just explicitly picked.
+  if (_autoRandLoopActive) {
+    _autoRandLoopActive = false;
+    _autoRandBarCount = 0;
+    const _mainRandBtnSlot = document.getElementById('randBtn');
+    if (_mainRandBtnSlot) { _mainRandBtnSlot.classList.remove('pulsing', 'rand-color-pulse'); _mainRandBtnSlot.textContent = 'RAND'; }
+  }
   if (slots[i] === null) {
     // Empty slot — save current state immediately
     slots[i] = snapshotState();
@@ -9365,8 +9424,7 @@ function hideSettings() {
 // Tempo lock: tap the lock icon next to the tempo readout to lock resting
 // tempo against RAND (manual RAND press and RAND auto-mode both skip tempo
 // while locked).
-function toggleTempoLock() {
-  _tempoLocked = !_tempoLocked;
+function _syncTempoLockUI() {
   const slider = document.getElementById('bpmSettingsSlider');
   const icon = document.getElementById('tempoLockIcon');
   const btn = document.getElementById('tempoScreenLockBtn');
@@ -9379,6 +9437,10 @@ function toggleTempoLock() {
   if (num) num.style.color = _tempoLocked ? 'var(--playhead)' : 'var(--header-text-color, #111)';
   if (lbl) lbl.style.color = _tempoLocked ? 'var(--playhead)' : 'var(--header-text-dim, #555)';
   if (locked) locked.style.display = _tempoLocked ? 'block' : 'none';
+}
+function toggleTempoLock() {
+  _tempoLocked = !_tempoLocked;
+  _syncTempoLockUI();
 }
 (function() {
   const btn = document.getElementById('tempoScreenLockBtn');
@@ -10105,7 +10167,8 @@ function hideInstructions() {
 // and leave the page blank, so the reset gesture must never depend on one.
 function fullReset() {
   if (playing) togglePlay();
-  window._rollingBarSnap = null; _recallSnapB = null;
+  window._rollingBarSnap = null; _recallSnapB = null; window._patternDirtySinceSnap = true;
+  const _rbReset = document.getElementById('randBtn'); if (_rbReset) _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
   beatPlaying = false; _beatPending = false;
   const bb = document.getElementById('beatBtn');
   if (bb) { bb.classList.remove('active'); }
@@ -10156,7 +10219,7 @@ function fullReset() {
   currentScaleName = 'penta-min'; PENTA_MINOR = SCALES['penta-min']; globalScaleRoot = null;
   activeSlot = -1;
   slots.fill(null); _pendingSlot = -1; _autoSlotQueue = [];
-  window._globalDelayMix = 0.50;
+  window._globalDelayMix = 0.25;
   if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.50 * REVERB_MIX_MAX;
   window._reverbIntensity = 0.50;
   if (window._reverbConv && ctx) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, _reverbSizeFromSlider(0.50));
@@ -10524,7 +10587,7 @@ async function initAudio() {
     window._BASE_MAKEUP_GAIN = 2.5061; // +8dB fixed output boost (was +14dB — halved)
     const makeupGain = ctx.createGain(); makeupGain.gain.value = window._BASE_MAKEUP_GAIN;
     window._makeupGain = makeupGain;
-    window._beatGain = ctx.createGain(); window._beatGain.gain.value = 0.506; window._beatGain.connect(masterGain); // +2dB default (was 0.402)
+    window._beatGain = ctx.createGain(); window._beatGain.gain.value = 0.4508; window._beatGain.connect(masterGain); // -1dB (was 0.506)
     // UI Sounds
     const _uiSoundBufs = {};
     window._uiSoundBufs = _uiSoundBufs;
@@ -10551,7 +10614,7 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
     window._reverbConv = ctx.createConvolver();
     window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
     window._reverbConv.buffer = _buildReverbIRBuffer(ctx, _reverbSizeFromSlider((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.50));
-    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.50) * REVERB_MIX_MAX;
+    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.25) * REVERB_MIX_MAX;
     window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
     masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain); window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain); window._postLimiterGain.connect(ctx.destination);
     for (let i=0; i<NUM_TRACKS; i++) {
@@ -10897,6 +10960,7 @@ function loadScratchSample() {
 // RECALL button — saves last pattern every bar, tap to restore it
 let _recallSnapA = null; // currently playing
 let _recallSnapB = null; // previous
+window._patternDirtySinceSnap = true; // starts true so the very first bar's rolling snapshot actually captures
 let _recallSnap = null; // kept for compatibility
 let _recallInterval = null;
 
@@ -11216,10 +11280,23 @@ function randomizeBeatType() {
 let _beatCtrlRandLastTap = 0;
 function onBeatCtrlRandTap() {
   const now = Date.now();
-  if (now - _beatCtrlRandLastTap < 400) {
-    _beatAutoRandActive = !_beatAutoRandActive;
+  if (_beatAutoRandActive) {
+    // Turning it off is a single tap, no double-tap timing required — once
+    // already active there's nothing else a tap here could ambiguously
+    // mean, unlike turning it on (which has to stay distinguishable from a
+    // plain single-tap randomize). Requiring the same tight double-tap
+    // window to escape as to enter was why this could feel impossible to
+    // turn back off.
+    _beatAutoRandActive = false;
     _beatAutoRandBarCount = 0;
-  } else if (!_beatAutoRandActive) {
+  } else if (now - _beatCtrlRandLastTap < 400) {
+    _beatAutoRandActive = true;
+    _beatAutoRandBarCount = 0;
+    // BEAT auto-rand also locks the tempo against RAND — made explicit and
+    // visible here (same indicator as the manual tempo-lock button) rather
+    // than just an implicit side effect.
+    if (!_tempoLocked) { _tempoLocked = true; _syncTempoLockUI(); }
+  } else {
     randomizeBeatType();
   }
   _beatCtrlRandLastTap = now;
