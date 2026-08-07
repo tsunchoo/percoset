@@ -562,7 +562,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 00:51</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 01:04</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -614,15 +614,15 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
-    <div style="display:block;width:100%;margin-bottom:22px;">
+    <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">BEAT VOL</div>
-      <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;flex:none;display:block;" oninput="setBeatVol(this.value/100)">
+      <input type="range" id="beatVolBar" min="0" max="100" value="40" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatVol(this.value/100)">
     </div>
-    <div style="display:block;width:100%;margin-bottom:22px;">
+    <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;">
         <span>REVERB MIX</span><span id="beatReverbMixVal" style="color:#adff00;">50</span>
       </div>
-      <input type="range" id="beatReverbMixBar" min="0" max="100" value="50" class="master-vol-slider" style="width:100%;flex:none;display:block;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
+      <input type="range" id="beatReverbMixBar" min="0" max="100" value="50" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
     </div>
     <div class="beat-ctrl-row" style="margin-top:0;margin-bottom:12px;">
       <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
@@ -5616,6 +5616,19 @@ function commitBeatMenuSelection(item) {
   menu.addEventListener('touchend', e => {
     if (e.target === menu) { e.preventDefault(); closeBeatMenu(); }
   }, { passive: false });
+
+  // BEAT VOL / REVERB MIX sliders — plain native range inputs, but they live
+  // inside a menu otherwise driven by a custom touch-drag gesture. Stop
+  // their own touch events from bubbling anywhere so nothing upstream (the
+  // hold/drag system on #beatBtn, the background-tap-to-close handler above)
+  // can ever intercept a drag that starts directly on one of these sliders.
+  ['beatVolBar', 'beatReverbMixBar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    ['touchstart', 'touchmove', 'touchend'].forEach(evt => {
+      el.addEventListener(evt, e => { e.stopPropagation(); }, { passive: true });
+    });
+  });
 })();
 
 // Top-bar tempo readout — single tap toggles the tempo lock (turns the
