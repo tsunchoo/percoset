@@ -393,11 +393,11 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { 
 /* Option B — same idea as A, but the darker end of each pair stays put and
    the OTHER end is pulled in to that pair's midpoint, for a more subtle
    fade instead of swinging all the way out to the original lighter color. */
-@keyframes pulse-kit-b   { from { background: #0b5394; } to { background: #2b6fac; } }
-@keyframes pulse-perc-b  { from { background: #638b13; } to { background: #4a6b0e; } }
-@keyframes pulse-tonal-b { from { background: #d7344f; } to { background: #b02040; } }
-@keyframes pulse-bass-b  { from { background: #76318c; } to { background: #5e2670; } }
-@keyframes pulse-pad-b   { from { background: #58ca79; } to { background: #3a9c5a; } }
+@keyframes pulse-kit-b   { from { background: #0b5394; } to { background: #1b61a0; } }
+@keyframes pulse-perc-b  { from { background: #567b10; } to { background: #4a6b0e; } }
+@keyframes pulse-tonal-b { from { background: #c32a47; } to { background: #b02040; } }
+@keyframes pulse-bass-b  { from { background: #6a2b7e; } to { background: #5e2670; } }
+@keyframes pulse-pad-b   { from { background: #49b36a; } to { background: #3a9c5a; } }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-b   0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-b  0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-b 0.6s infinite alternate; }
@@ -405,9 +405,11 @@ body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { 
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-b  0.6s infinite alternate; }
 
 /* Option C — no color tweening at all, just a plain on/off flash between
-   solid and near-transparent. Opacity only, so it can't touch layout. */
-@keyframes pulse-flash-c { from { opacity: 1; } to { opacity: 0.15; } }
-body.track-pulse-c.seq-playing .track-name-btn.has-notes { animation: pulse-flash-c 0.6s infinite alternate; }
+   solid and near-transparent. Opacity only, so it can't touch layout. Hard
+   cut at the halfway point of each cycle — no interpolation, a genuine
+   flash rather than a smooth fade. */
+@keyframes pulse-flash-c { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.15; } }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes { animation: pulse-flash-c 0.6s infinite; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -590,7 +592,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 07:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1765,7 +1767,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.25 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.397 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.5014 : 0.5;
+  instrumentGain.gain.value = (key === 'shak') ? 0.315 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.397 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.5014 : 0.5; // SHAKER +2dB (was 0.25) — already exempt from bass's sidechain duck but still getting buried; baseline was just quiet
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -2550,7 +2552,7 @@ function togglePlay() {
 }
 
 // ── Beat button: Kick on 1&3, Snare on 2&4 ──
-let beatPlaying = false, _beatPending = false;
+let beatPlaying = true, _beatPending = false; // BEAT on by default at page load
 let _beatType = 'disco'; // 'disco' | 'halftime' | 'reggae'
 let _beatOffset = 0; // BEAT ctrl-row '<' — steps the whole pattern is shifted by, same idea as trackOffset
 
@@ -5389,8 +5391,14 @@ function getSourceTrimGain(tr, dest) {
   nodes.gain.gain.value = _BASS_KEYS_FOR_TRIM.has(trackInstruments[tr]) ? 1 : 0.891; // -1dB for everything except basses
   return nodes.gain;
 }
+// High-frequency percussion (shaker, hihat, ride, guiro, tambourine) has
+// essentially no low-end content to clash with bass in the first place —
+// ducking it alongside everything else just makes it disappear for no
+// sonic benefit. Kick/snare/toms/congas stay eligible since those do have
+// enough body to genuinely compete with a bass line.
+const NO_BASS_DUCK_KEYS = new Set(['shak', 'shihat', 'ride', 'guiro', 'tamb']);
 function _duckEligible(tr) {
-  return tr !== undefined && trackInstruments[tr] !== undefined && !LEAD_INSTRUMENT_KEYS.has(trackInstruments[tr]);
+  return tr !== undefined && trackInstruments[tr] !== undefined && !LEAD_INSTRUMENT_KEYS.has(trackInstruments[tr]) && !NO_BASS_DUCK_KEYS.has(trackInstruments[tr]);
 }
 const _sidechainDuckGains = {};
 function getSidechainDuckGain(tr, dest) {
@@ -9560,6 +9568,11 @@ function wireRandomizeButton(btn, tr) {
 buildUI();
 updateMasterVolCells();
 setTrackPulseMode('a');
+// BEAT is on by default — sync the button's visible state to match, since
+// nothing else touches it this early (buildUI() doesn't, and the deferred
+// startup RAND call below doesn't either).
+document.getElementById('beatBtn')?.classList.toggle('active', beatPlaying);
+updateBeatPulse();
 // Track 1 is always TEXTURE, and always starts with Auto-Random engaged.
 (function() {
   const rb0 = document.getElementById('randbtn-0');
