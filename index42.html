@@ -404,12 +404,14 @@ body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal { animation:
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass-b 0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-b  0.6s infinite alternate; }
 
-/* Option C — no color tweening at all, just a plain on/off flash between
-   solid and near-transparent. Opacity only, so it can't touch layout. Hard
-   cut at the halfway point of each cycle — no interpolation, a genuine
-   flash rather than a smooth fade. */
-@keyframes pulse-flash-c { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.15; } }
-body.track-pulse-c.seq-playing .track-name-btn.has-notes { animation: pulse-flash-c 0.6s infinite; }
+/* Option C — no color tweening at all, just a plain on/off flash — but
+   genuinely triggered by that track's own note hits now, not a generic
+   loop tied to tempo. Idle at a low opacity; each real note trigger snaps
+   it to full brightness for a moment via the .note-flash class (see
+   _flashTrackButtonNow), then it settles back down — no CSS animation/
+   transition here at all, so the actual snap is instant either way. */
+body.track-pulse-c.seq-playing .track-name-btn.has-notes { opacity: 0.35; }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.note-flash { opacity: 1; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -592,7 +594,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2132,6 +2134,7 @@ function fireStepAudio(step, t) {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
+        if (document.body.classList.contains('track-pulse-c')) _flashTrackButtonNow(tr, t);
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
         if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening') {
@@ -7043,6 +7046,19 @@ function getExportSnaps() {
 // Track button pulse style — three options, default 'a' (unchanged from
 // how it's always worked). Just swaps a body class; the actual keyframes
 // live in the CSS above.
+// FLASH mode's per-note trigger — called once per real note hit, from the
+// live scheduler only. Timed to when the note actually sounds (t is a
+// Web-Audio-scheduled, possibly-lookahead time), not when this JS runs.
+function _flashTrackButtonNow(tr, t) {
+  if (!ctx) return;
+  const delayMs = Math.max(0, (t - ctx.currentTime) * 1000);
+  setTimeout(() => {
+    const btn = document.getElementById(`tbtn-${tr}`);
+    if (!btn) return;
+    btn.classList.remove('note-flash'); void btn.offsetWidth; btn.classList.add('note-flash');
+    setTimeout(() => btn.classList.remove('note-flash'), 130);
+  }, delayMs);
+}
 function setTrackPulseMode(mode) {
   document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c');
   document.body.classList.add('track-pulse-' + (mode === 'b' || mode === 'c' ? mode : 'a'));
