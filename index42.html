@@ -384,11 +384,30 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-name-btn.has-notes.inst-kit,
 .track-name-btn.has-notes.inst-perc,
 .track-name-btn.has-notes.inst-tonal { animation: none; }
-body.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit   0.6s infinite alternate; }
-body.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc  0.6s infinite alternate; }
-body.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal 0.6s infinite alternate; }
-body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass 0.6s infinite alternate; }
-body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad  0.6s infinite alternate; }
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit   0.6s infinite alternate; }
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc  0.6s infinite alternate; }
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal 0.6s infinite alternate; }
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass 0.6s infinite alternate; }
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad  0.6s infinite alternate; }
+
+/* Option B — same idea as A, but the darker end of each pair stays put and
+   the OTHER end is pulled in to that pair's midpoint, for a more subtle
+   fade instead of swinging all the way out to the original lighter color. */
+@keyframes pulse-kit-b   { from { background: #0b5394; } to { background: #2b6fac; } }
+@keyframes pulse-perc-b  { from { background: #638b13; } to { background: #4a6b0e; } }
+@keyframes pulse-tonal-b { from { background: #d7344f; } to { background: #b02040; } }
+@keyframes pulse-bass-b  { from { background: #76318c; } to { background: #5e2670; } }
+@keyframes pulse-pad-b   { from { background: #58ca79; } to { background: #3a9c5a; } }
+body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-b   0.6s infinite alternate; }
+body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-b  0.6s infinite alternate; }
+body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-b 0.6s infinite alternate; }
+body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass-b 0.6s infinite alternate; }
+body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-b  0.6s infinite alternate; }
+
+/* Option C — no color tweening at all, just a plain on/off flash between
+   solid and near-transparent. Opacity only, so it can't touch layout. */
+@keyframes pulse-flash-c { from { opacity: 1; } to { opacity: 0.15; } }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes { animation: pulse-flash-c 0.6s infinite alternate; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -571,7 +590,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 06:38</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 07:38</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -741,8 +760,24 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
+          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
-          <input type="file" id="tapeFileInput" accept=".json,.txt,.sifitape" style="display:none;" onchange="importTapeFile(this.files[0])">
+          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt" style="display:none;" onchange="importTapeFile(this.files[0])">
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackPulseMode" value="a" checked onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackPulseMode" value="b" onchange="setTrackPulseMode('b')" style="width:15px;height:15px;cursor:pointer;">SUBTLE FADE
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackPulseMode" value="c" onchange="setTrackPulseMode('c')" style="width:15px;height:15px;cursor:pointer;">FLASH
+          </label>
         </div>
       </div>
 
@@ -948,7 +983,7 @@ const INSTRUMENTS = {
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
   amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
-  drone:  { name: 'DRONE',       soft: null, accent: null, group: 'tonal' },
+  drone:  { name: 'ATMOS',       soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
@@ -2867,7 +2902,7 @@ function randomizeBassTrack(tr, level) {
     yamask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // YAMASK — same sparse, spacious character as DAMASK
     dulc:    [[2,4,0.35],[3,6,0.45],[5,8,0.60]],   // DULCIMER — bright twinkling runs, similar to Sparkles
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
-    jcmgtr:  [[1,3,0.20],[2,4,0.35],[3,6,0.50]],   // JINX — calmer lead, was falling through to the busy generic default
+    jcmgtr:  [[3,6,0.20],[5,9,0.35],[8,13,0.50]],   // JINX — busier now, filling a lot more of the 16th-note grid (was a deliberately calm [1,3]/[2,4]/[3,6])
   };
   const levelTable = noteTables[key] || [
     [2, 5,  0.20],
@@ -2931,12 +2966,13 @@ function randomizeBassTrack(tr, level) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute']);
+  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute','jcmgtr']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
     const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute') ? 3 : 99;
+    const splitChance = (key === 'jcmgtr') ? 0.45 : 0.18; // JINX gets 32nds a lot more often than everyone else here
     for (let s = 0; s < NUM_STEPS; s++) {
-      if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < 0.18) {
+      if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < splitChance) {
         grid[tr][s] = 3;
         splitCount++;
       }
@@ -3576,7 +3612,8 @@ const _dbassGlide = {};
 function playPlunkBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 1.601 : 1.155; // +3dB on top (was too quiet without FX)
+  const _blastAtten = trackPump[tr] ? 0.7079 : 1; // -3dB when BLAST is on this track — was too hot combined with the crunch chain
+  const vel = (isAccent ? 1.601 : 1.155) * _blastAtten; // +3dB on top (was too quiet without FX)
   _plunkGlide[tr] = freq;
 
   // Distorted sawtooth through a tight bandpass — nasal, aggressive
@@ -5393,11 +5430,13 @@ function duckEchoTrack(t) {
   const g = _sidechainDuckGains[0].gain.gain;
   g.cancelScheduledValues(t);
   if (trackInstruments[0] === 'drone') {
-    // DRONE — heavily gated. Much deeper pump and a snappier recovery than
-    // TEXTURE's subtle nudge, for an obvious rhythmic chopping character.
+    // ATMOS — heavily gated, but not so hard it clips/clicks at the bottom
+    // of the dip. Slightly shallower floor and a touch more time on both
+    // the attack and release than the original, still snappy and obviously
+    // rhythmic, just not harsh.
     g.setValueAtTime(1, t);
-    g.linearRampToValueAtTime(0.08, t + 0.008); // -22dB, almost fully gated
-    g.setTargetAtTime(1, t + 0.03, 0.06);
+    g.linearRampToValueAtTime(0.18, t + 0.015); // -15dB (was -22dB @ 8ms)
+    g.setTargetAtTime(1, t + 0.045, 0.09);
     // Also kick every currently-sounding DRONE note's filter — a quick jump
     // then settle, so it visibly/audibly reacts to whatever else just
     // played, not just a volume dip like TEXTURE gets.
@@ -5433,11 +5472,12 @@ function playKick(t) {
   // Matches playSynthKick — same character, slightly louder for the beat,
   // tightened up for a drier hit (shorter pitch ramp and decay, less boom)
   const beatDest = window._beatGain || masterGain;
+  const _pushAtten = (_beatType === 'push') ? 0.5623 : 1; // -5dB, PUSH only
   const osc = ctx.createOscillator(), g = ctx.createGain();
   osc.connect(g); g.connect(beatDest);
   osc.frequency.setValueAtTime(160, t);
   osc.frequency.exponentialRampToValueAtTime(38, t + 0.22);
-  g.gain.setValueAtTime(0.504, t);
+  g.gain.setValueAtTime(0.504 * _pushAtten, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.30);
   osc.start(t); osc.stop(t + 0.31);
   osc.onended = () => { try { g.disconnect(); } catch(e) {} };
@@ -6992,18 +7032,82 @@ function getExportSnaps() {
 // Wraps the exact same snapshot used by slots/RECALL, tagged with a format
 // marker and version so a future release can tell old tapes apart from new
 // ones if the format ever needs to change.
-function exportTape() {
-  const payload = {
+// Track button pulse style — three options, default 'a' (unchanged from
+// how it's always worked). Just swaps a body class; the actual keyframes
+// live in the CSS above.
+function setTrackPulseMode(mode) {
+  document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c');
+  document.body.classList.add('track-pulse-' + (mode === 'b' || mode === 'c' ? mode : 'a'));
+}
+function _tapePayloadForCurrent() {
+  return {
     format: 'sifi-tape',
     version: 1,
     name: _currentSpecies || 'Untitled',
     createdAt: new Date().toISOString(),
     state: snapshotState()
   };
+}
+function exportTape() {
+  const payload = _tapePayloadForCurrent();
   const json = JSON.stringify(payload, null, 2);
-  const safeName = (payload.name || 'tape').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'tape';
-  const file = new File([json], `${safeName}.sifitape.json`, { type: 'application/json' });
+  const safeName = (payload.name || 'tape').replace(/[^a-z0-9]+/gi, ' ').replace(/^\s+|\s+$/g, '') || 'tape';
+  const file = new File([json], `${safeName}.SiFiTape`, { type: 'application/json' });
   shareOrDownload([file]);
+}
+// A tape as a clickable LINK, not a file — sent in a message, tapped, and
+// the app opens straight into that pattern with no manual save/import step.
+// The whole tape lives in the URL's hash fragment: hashes are never sent
+// over the network even on a static host like this one, so the link works
+// standalone with nothing to host or store server-side.
+function buildTapeLink() {
+  const payload = _tapePayloadForCurrent();
+  const json = JSON.stringify(payload); // minified — no pretty-print, keeps the link shorter
+  const b64 = btoa(unescape(encodeURIComponent(json))); // UTF-8-safe base64
+  const url = new URL(location.href);
+  url.hash = 'tape=' + b64;
+  return url.toString();
+}
+async function shareTapeLink() {
+  const link = buildTapeLink();
+  const shareData = { title: 'Si•Fi tape', text: _currentSpecies || 'Si•Fi tape', url: link };
+  if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+    try { await navigator.share(shareData); return; }
+    catch (e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to clipboard', e); }
+  }
+  try {
+    await navigator.clipboard.writeText(link);
+    alert('Tape link copied — paste it into a message.');
+  } catch (e) {
+    prompt('Copy this tape link:', link);
+  }
+}
+// Runs once at page load. If the URL carries a tape in its hash, offers to
+// load it (replacing whatever's currently on the deck), then clears the
+// hash so refreshing the page doesn't keep re-triggering the same prompt.
+function _tryLoadTapeFromHash() {
+  const h = location.hash;
+  const idx = h.indexOf('tape=');
+  if (idx === -1) return;
+  try {
+    const b64 = h.slice(idx + 5);
+    const json = decodeURIComponent(escape(atob(b64)));
+    const payload = JSON.parse(json);
+    if (!payload || payload.format !== 'sifi-tape' || !payload.state) return;
+    const proceed = confirm(`Load tape "${payload.name || 'Untitled'}"? This replaces the current pattern.`);
+    if (proceed) {
+      stopAllAutoRand();
+      if (playing) togglePlay();
+      restoreState(payload.state);
+      activeSlot = -1;
+      updateSlotButtons();
+      markModified();
+    }
+  } catch (e) {
+    console.error('Tape link parse failed', e);
+  } finally {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
 }
 async function importTapeFile(file) {
   const inp = document.getElementById('tapeFileInput');
@@ -9103,10 +9207,11 @@ function randomizeTrack(tr) {
     redrawTrackCells(tr); markModified(); return;
   }
 
-  // NOISE: always straight, full measure, either all downbeats or all upbeats
+  // NOISE: mostly random placement now — regular straight down/upbeat
+  // patterns were showing up far too often.
   if (key === 'ngate') {
-    if (Math.random() < 0.33) {
-      // Random placement 33% of the time
+    if (Math.random() < 0.65) {
+      // Random placement most of the time now (was 33%)
       placeNotes(tr, 4 + Math.floor(Math.random() * 5), 0.3, level);
     } else {
       const isUpbeat = Math.random() < 0.5;
@@ -9185,12 +9290,13 @@ function randomizeTrack(tr) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute']);
+  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute','jcmgtr']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
     const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute') ? 3 : 99;
+    const splitChance = (key === 'jcmgtr') ? 0.45 : 0.18; // JINX gets 32nds a lot more often than everyone else here
     for (let s = 0; s < NUM_STEPS; s++) {
-      if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < 0.18) {
+      if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < splitChance) {
         grid[tr][s] = 3;
         splitCount++;
       }
@@ -9453,11 +9559,20 @@ function wireRandomizeButton(btn, tr) {
 
 buildUI();
 updateMasterVolCells();
+setTrackPulseMode('a');
 // Track 1 is always TEXTURE, and always starts with Auto-Random engaged.
 (function() {
   const rb0 = document.getElementById('randbtn-0');
   if (rb0 && rb0._restartAuto) rb0._restartAuto();
 })();
+// Load with something already on the deck rather than a blank grid — same
+// call the RAND button itself makes. Safe to run before ctx/audio exists;
+// randAll() only touches the grid/instrument state and skips anything
+// audio-only (like the preview echo) until a real AudioContext shows up.
+randAll(undefined, { skipTempo: false });
+// If this page was opened from a shared tape link, offer to load it —
+// overwrites the random starter pattern above if the user says yes.
+_tryLoadTapeFromHash();
 
 
 // ── Settings panel ──
@@ -9846,7 +9961,7 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   if (!ctx) return;
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1);
   const sustain = Math.max(durSec || 0.35, 0.35);
-  const bodyTail = 0.3;
+  const bodyTail = 0.45; // a little more sustain — compensates for the airier/thinner EQ below
 
   // Three detuned oscillators for a thicker, less stable core than TEXTURE's
   // plain sine+triangle pair.
@@ -9879,13 +9994,20 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   // Evolving lowpass sweep — the main "evolving" character. One slow sweep
   // cycle spans most of the note's length, so a full-bar DRONE note audibly
   // opens and closes over the course of the bar rather than sitting static.
-  const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 1.4;
-  filter.frequency.value = 900; // center — LFO swings roughly 300-2000Hz around this
+  // Center and range both raised, and Q lowered, to move it away from a
+  // middy character and let more top end through — airier, less boxy.
+  const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 0.9;
+  filter.frequency.value = 2200; // center — LFO swings roughly 600-4200Hz around this (was 300-2000Hz)
   const sweepLfo = ctx.createOscillator(); sweepLfo.type = 'sine';
   sweepLfo.frequency.value = Math.max(0.05, 1 / (sustain * (1.4 + Math.random() * 0.6)));
-  const sweepDepth = ctx.createGain(); sweepDepth.gain.value = 1100; // Hz swing around the center
+  const sweepDepth = ctx.createGain(); sweepDepth.gain.value = 1700; // Hz swing around the center (was 1100)
   sweepLfo.connect(sweepDepth); sweepDepth.connect(filter.frequency);
   sweepLfo.start(t); sweepLfo.stop(stopAt);
+
+  // A gentle midrange dip plus a high shelf lift — the actual "less middy,
+  // more airy" EQ move, on top of the brighter filter sweep above.
+  const midDip = ctx.createBiquadFilter(); midDip.type = 'peaking'; midDip.frequency.value = 700; midDip.Q.value = 1.1; midDip.gain.value = -4;
+  const airShelf = ctx.createBiquadFilter(); airShelf.type = 'highshelf'; airShelf.frequency.value = 5000; airShelf.gain.value = 4.5;
 
   // Grit — mild waveshaper distortion, the "more fucked up" texture TEXTURE
   // never has.
@@ -9899,7 +10021,7 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
 
   const hp1 = ctx.createBiquadFilter(); hp1.type = 'highpass'; hp1.frequency.value = 140; hp1.Q.value = 0.7;
 
-  bodyMix.connect(filter); filter.connect(ws); ws.connect(env); env.connect(hp1); hp1.connect(dest);
+  bodyMix.connect(filter); filter.connect(midDip); midDip.connect(airShelf); airShelf.connect(ws); ws.connect(env); env.connect(hp1); hp1.connect(dest);
 
   // Registered with the reactive-duck system — whenever something else fires
   // and ducks track 0, this filter also gets an audible "kick" (see
@@ -9909,7 +10031,7 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   setTimeout(() => {
     _droneActiveFilters = _droneActiveFilters.filter(f => f !== filter);
     try {
-      bodyMix.disconnect(); filter.disconnect(); ws.disconnect(); env.disconnect(); hp1.disconnect();
+      bodyMix.disconnect(); filter.disconnect(); midDip.disconnect(); airShelf.disconnect(); ws.disconnect(); env.disconnect(); hp1.disconnect();
       sweepDepth.disconnect(); driftGain.disconnect();
       createdOscs.forEach(({ g }) => { try { g.disconnect(); } catch(e) {} });
     } catch(e) {}
@@ -10219,6 +10341,8 @@ function hideInstructions() {
 function fullReset() {
   if (playing) togglePlay();
   window._rollingBarSnap = null; _recallSnapB = null; window._patternDirtySinceSnap = true;
+  setTrackPulseMode('a');
+  const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="a"]'); if (_tpmRadio) _tpmRadio.checked = true;
   const _rbReset = document.getElementById('randBtn'); if (_rbReset) _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
   beatPlaying = false; _beatPending = false;
   const bb = document.getElementById('beatBtn');
