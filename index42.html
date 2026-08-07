@@ -276,6 +276,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #randBtn.pulsing { background: #f71aff; color: #fff; }
 @keyframes rand-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: #555; transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
+@keyframes rand-hold-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.1); } 100% { background: #555; transform: scale(1); } }
+#randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
 #randBtn.btn-flash-blue { background: #f71aff !important; color: #fff !important; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
 #scratchBtn.active { background: #111 !important; color: #adff00 !important; }
@@ -565,7 +567,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 04:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 04:44</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1396,7 +1398,7 @@ function _trackNote() {
 // MIX = the wet output level on top of that (0-100 maps to gain 0.0-2.0).
 // Both readouts on screen show the exact 0-100 number quoted in code below —
 // "set INTENSITY to 20, MIX to 20" means exactly these two sliders at 20.
-const REVERB_MIX_MAX = 0.1;        // output gain at slider=100 (was 0.2, cut in half again)
+const REVERB_MIX_MAX = 0.08;       // output gain at slider=100 (was 0.1, down 20% more)
 
 function _buildReverbIRBuffer(targetCtx, v) {
   // v: 0 = plate (short/tight/bright), 1 = hall (long/slow/cavernous)
@@ -1851,6 +1853,17 @@ function scheduler() {
       const sd = stepDuration();
       const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
       t = nextStepTime + _boogieOffsets[beatPos];
+    }
+    // AUTO RAND's color pulse also retriggers halfway through the bar (step
+    // 8), not just at bar-start — twice as often as before, with the cycle
+    // duration matching that interval exactly so one pulse finishes right
+    // as the next begins, instead of sitting static and then snapping.
+    if (step === 8 && _autoRandLoopActive) {
+      const rb8 = document.getElementById('randBtn');
+      if (rb8) {
+        rb8.style.animationDuration = ((60 / bpm) * 2) + 's';
+        rb8.classList.remove('rand-color-pulse'); void rb8.offsetWidth; rb8.classList.add('rand-color-pulse');
+      }
     }
     // Fire pending auto-rand on downbeat
     if (step === 0) {
@@ -8449,10 +8462,12 @@ function stopAllAutoRand() {
     if (!ctx) initAudio(); else ctx.resume().catch(()=>{});
     holdFired = false;
     clearTimeout(holdTimer);
+    btn.classList.add('rand-holding'); // fast pulse while held, so it's clear the press is registering
     holdTimer = setTimeout(() => { holdFired = true; startAuto(); }, HOLD_MS);
   };
   const endPress = () => {
     clearTimeout(holdTimer);
+    btn.classList.remove('rand-holding');
     if (!holdFired) singleFire(); // only a plain tap fires the single rand, and only on release
   };
 
@@ -10558,7 +10573,7 @@ async function hardResetAudioEngine() {
     const baseGain = ctx.createGain();
     const attackDur = stepDuration() * 4; // fades in from silence over a quarter note, instead of snapping on
     baseGain.gain.setValueAtTime(0, t);
-    baseGain.gain.linearRampToValueAtTime(0.27, t + attackDur); // -4dB total (was -6dB, now +2dB)
+    baseGain.gain.linearRampToValueAtTime(0.2145, t + attackDur); // -2dB more (was 0.27)
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
@@ -10644,7 +10659,7 @@ async function hardResetAudioEngine() {
     // Don't touch anything before the fade-in completes — cancelling here
     // used to wipe out the quarter-note attack before it ever had a chance
     // to run, since both functions fire in the same instant on press.
-    gain.gain.linearRampToValueAtTime(1.9065, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; -2dB overall from the previous 2.4 peak (was -4dB)
+    gain.gain.linearRampToValueAtTime(1.5145, t + measure); // -2dB more (was 1.9065)
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
       stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
