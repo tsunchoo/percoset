@@ -564,7 +564,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 01:37</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1394,7 +1394,7 @@ function _trackNote() {
 // MIX = the wet output level on top of that (0-100 maps to gain 0.0-2.0).
 // Both readouts on screen show the exact 0-100 number quoted in code below —
 // "set INTENSITY to 20, MIX to 20" means exactly these two sliders at 20.
-const REVERB_MIX_MAX = 0.4;        // output gain at slider=100 (was 2.0, brought down ~80%)
+const REVERB_MIX_MAX = 0.2;        // output gain at slider=100 (was 0.4, cut in half again — still too strong overall)
 
 function _buildReverbIRBuffer(targetCtx, v) {
   // v: 0 = plate (short/tight/bright), 1 = hall (long/slow/cavernous)
@@ -1845,6 +1845,18 @@ function scheduler() {
     }
     // Fire pending auto-rand on downbeat
     if (step === 0) {
+      // RECALL should always be able to revert to whatever was actually
+      // playing a moment ago — not just "whatever was playing right before
+      // the last RAND or slot swap." Rolling one-bar-delayed capture: at
+      // the start of each bar, whatever we captured LAST bar becomes the
+      // RECALL target, then we capture the current (about-to-play) state
+      // for next time. That way manual edits (per-track R, drawing on the
+      // grid) get picked up too, instead of RECALL jumping all the way back
+      // past them to a stale save slot. The explicit captures inside the
+      // RAND/slot-swap blocks below still take precedence for those exact
+      // moments — this just keeps things fresh on ordinary bars too.
+      if (window._rollingBarSnap) _recallSnapB = window._rollingBarSnap;
+      window._rollingBarSnap = snapshotState();
       _committedSwing = swingVal; // commit swing amount only at bar start
       requestAnimationFrame(updateSwingReadout);
       // AUTO RAND's blue/green color pulse takes exactly 4 beats (one bar)
@@ -2676,6 +2688,7 @@ function getRangeRoots(key) {
 // the scale on every 8th note. Standalone helper so it's easy to call from
 // both randomizeBassTrack() and anywhere else that might want it later.
 const ARPEGGIO_KEYS = new Set(['rhodes2', 'rhodes', 'sflute', 'boog']); // DX PIANO, SPACE KOTO, XYLOPHONE, DREAM PIANO
+const BASS_ARPEGGIO_KEYS = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']); // rarer — 1 in 8, not 1 in 4
 function _writeArpeggioPattern(tr, scale) {
   const steps8 = [0, 2, 4, 6, 8, 10, 12, 14];
   const scaleLen = Math.max(1, scale.length);
@@ -2754,6 +2767,11 @@ function randomizeBassTrack(tr, level) {
 
   // 1-in-4 chance of an 8th-note arpeggio instead of the usual scattered notes
   if (ARPEGGIO_KEYS.has(key) && Math.random() < 0.25) {
+    _writeArpeggioPattern(tr, trackBassScale[tr]);
+    return;
+  }
+  // Bass gets the same treatment, just much rarer — 1 in 8
+  if (BASS_ARPEGGIO_KEYS.has(key) && Math.random() < 0.125) {
     _writeArpeggioPattern(tr, trackBassScale[tr]);
     return;
   }
@@ -3808,7 +3826,7 @@ function playStab(freq, durSec, isAccent, time, tr) {
 function playChug(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.224 : 0.150; // +3.5dB over original 0.150/0.100
+  const vel = isAccent ? 0.282 : 0.189; // +2dB on top of the earlier +3.5dB (was 0.224/0.150)
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.8;
   lp.frequency.setValueAtTime(isAccent ? 2600 : 1900, time);
@@ -6578,7 +6596,7 @@ async function renderSlotToWav(snap) {
 
         } else if (key === 'chug') {
           // Match playChug exactly
-          const vel = isAccent ? 0.224 : 0.150; // +3.5dB over original 0.150/0.100
+          const vel = isAccent ? 0.282 : 0.189; // +2dB on top of the earlier +3.5dB (was 0.224/0.150)
           const lp = o.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=1.8;
           lp.frequency.setValueAtTime(isAccent?2600:1900,t); lp.frequency.exponentialRampToValueAtTime(220,t+0.055);
           const peak = o.createBiquadFilter(); peak.type='peaking'; peak.frequency.value=900; peak.Q.value=1.0; peak.gain.value=5;
@@ -9880,6 +9898,7 @@ function hideInstructions() {
 // and leave the page blank, so the reset gesture must never depend on one.
 function fullReset() {
   if (playing) togglePlay();
+  window._rollingBarSnap = null; _recallSnapB = null;
   beatPlaying = false; _beatPending = false;
   const bb = document.getElementById('beatBtn');
   if (bb) { bb.classList.remove('active'); }
@@ -10331,7 +10350,10 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
     for (let i=0; i<NUM_TRACKS; i++) {
       const g = ctx.createGain(); g.gain.value = trackVolume[i]; trackGainNodes[i] = g;
       const ef = ctx.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 22050; ef.Q.value = 3;
-      g.connect(ef); ef.connect(masterGain); trackEnvFilters[i] = ef;
+      // A little alternating stereo separation between tracks — nothing
+      // drastic, just enough that six tracks don't all sit dead-center.
+      const pan = ctx.createStereoPanner(); pan.pan.value = (i % 2 === 0) ? -0.15 : 0.15;
+      g.connect(ef); ef.connect(pan); pan.connect(masterGain); trackEnvFilters[i] = ef;
       trackFxNodes[i] = buildFxChain(g);
       if (trackInstruments[i] === 'ngate') initNoiseGate(i);
       // Reflect any FX state already set in the data model (e.g. Track 1's
@@ -10876,7 +10898,12 @@ let _beatDelay = false;                  // 'R' — reverb send on/off
 let _beatReverbMix = 0.5;                // slider under BEAT VOL — 0-1, scales the send level whenever 'R' is on
 let _beatFx = false, _beatPump = false;  // 'FX' — 3-state cycle: off / on / on+blast
 let _beatAutoRandActive = false, _beatAutoRandBarCount = 0; // rand 'R' double-tap auto mode
-const BEAT_REVERB_MIX_MAX = 0.45; // send level at slider=100% — matches the pre-halving 0.45 ceiling
+const BEAT_REVERB_MIX_MAX = 0.18; // send level at slider=100% (was 0.45, cut back 60%)
+function _beatReverbGainForMix(v) {
+  // Squared taper — gives much finer control at the low end of the slider,
+  // since even a small linear fraction was still too much send.
+  return Math.pow(v, 2) * BEAT_REVERB_MIX_MAX;
+}
 
 // Built once, lazily, the first time BEAT's FX/delay is actually touched —
 // splits the beat bus into a dry path plus parallel crunch-send and
@@ -10941,7 +10968,7 @@ function beatCtrlShift() {
 function beatCtrlToggleDelay() {
   _beatDelay = !_beatDelay;
   _ensureBeatFxChain();
-  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatDelay ? _beatReverbMix * BEAT_REVERB_MIX_MAX : 0, ctx.currentTime, 0.02);
+  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatDelay ? _beatReverbGainForMix(_beatReverbMix) : 0, ctx.currentTime, 0.02);
   updateBeatCtrlRow();
   markModified();
 }
@@ -10951,7 +10978,7 @@ function beatCtrlToggleDelay() {
 function setBeatReverbMix(v) {
   _beatReverbMix = v;
   _ensureBeatFxChain();
-  if (_beatDelay && window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(v * BEAT_REVERB_MIX_MAX, ctx.currentTime, 0.02);
+  if (_beatDelay && window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatReverbGainForMix(v), ctx.currentTime, 0.02);
 }
 
 // FX — 3-state cycle: off -> crunch on -> crunch+blast -> off, same as a track's FX button
