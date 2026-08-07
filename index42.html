@@ -406,12 +406,12 @@ body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { 
 
 /* Option C — no color tweening at all, just a plain on/off flash — but
    genuinely triggered by that track's own note hits now, not a generic
-   loop tied to tempo. Idle at a low opacity; each real note trigger snaps
-   it to full brightness for a moment via the .note-flash class (see
-   _flashTrackButtonNow), then it settles back down — no CSS animation/
-   transition here at all, so the actual snap is instant either way. */
-body.track-pulse-c.seq-playing .track-name-btn.has-notes { opacity: 0.35; }
-body.track-pulse-c.seq-playing .track-name-btn.has-notes.note-flash { opacity: 1; }
+   loop tied to tempo. Idle at full brightness; each real note trigger dips
+   it briefly via the .note-flash class (see _flashTrackButtonNow), then it
+   settles back up — no CSS animation/transition here at all, so the actual
+   snap is instant either way. */
+body.track-pulse-c.seq-playing .track-name-btn.has-notes { opacity: 1; }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.note-flash { opacity: 0.35; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -596,7 +596,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:44</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:48</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
