@@ -461,6 +461,8 @@ body.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pul
 }
 .step-cell.soft::after { background: var(--track-color, var(--text)); opacity: 0.4; }
 .step-cell.on::after   { background: var(--track-color, var(--text)); opacity: 1; }
+.step-lane.lane-muted .step-cell.soft::after,
+.step-lane.lane-muted .step-cell.on::after { opacity: 0.15 !important; filter: grayscale(1); }
 body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: 1; }
@@ -567,7 +569,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 05:14</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 05:32</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1676,20 +1678,13 @@ function _rawSynthConnectNode(tr) {
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
-  if (key === 'amlgm')  {
+  if (key === 'amlgm' || key === 'drone')  {
     triggerFxEnvelope(tr, time);
     let dur = stepDuration();
     if (!trackChop[tr] && trackLegatoLen[tr] && trackLegatoLen[tr][stepIdx]) {
       dur = stepDuration() * Math.min(trackLegatoLen[tr][stepIdx], LEGATO_CAP_STEPS);
     }
     playAmalgamStep(isAccent, time, tr, dur);
-    return;
-  }
-  if (key === 'drone') {
-    // Same engine as TEXTURE, but always sustains for the full measure
-    // regardless of legato length or chop — a constant drone, not an echo.
-    triggerFxEnvelope(tr, time);
-    playAmalgamStep(isAccent, time, tr, stepDuration() * NUM_STEPS);
     return;
   }
   if (key === 'sbass')   { return; } // handled in scheduler with legato duration
@@ -1757,7 +1752,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
 const NUM_TRACKS = 6, NUM_STEPS = 16, VOL_NODES_COUNT = 10;
 
-const trackInstruments = ['drone','sleg','sparkle','sbass3','congHi','congLo']; // DRONE default instead of TEXTURE, for now
+const trackInstruments = [(Math.random() < 0.5 ? 'drone' : 'amlgm'),'sleg','sparkle','sbass3','congHi','congLo']; // DRONE/TEXTURE share slot 0, 50/50
 const grid        = Array.from({length: NUM_TRACKS}, () => new Array(NUM_STEPS).fill(0));
 const trackOffset = new Array(NUM_TRACKS).fill(0);
 const trackMuted  = new Array(NUM_TRACKS).fill(false);
@@ -2014,6 +2009,7 @@ function scheduler() {
           if (sb) { sb.textContent = 'L'; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
           const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.toggle('on', trackFx[tr].x > 0 || trackFx[tr].y > 0);
           const row = document.getElementById(`ctrlrow-${tr}`); if (row) row.classList.toggle('row-muted', trackMuted[tr]);
+          const lm = document.getElementById(`lane-${tr}`); if (lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
           const vb = document.getElementById(`vbar-${tr}`); if (vb) { vb.classList.toggle('muted', trackMuted[tr]); const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
         }
         document.getElementById('bpmSlider').value = bpm;
@@ -6085,6 +6081,7 @@ function updateTrackMute(tr) {
   const nb = document.getElementById(`tbtn-${tr}`); if (nb) nb.classList.toggle('muted', trackMuted[tr]);
   const vb = document.getElementById(`vbar-${tr}`); if (vb) vb.classList.toggle('muted', trackMuted[tr]);
   const row = document.getElementById(`ctrlrow-${tr}`); if (row) row.classList.toggle('row-muted', trackMuted[tr]);
+  const lm = document.getElementById(`lane-${tr}`); if (lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
 }
 
 function attachVolBarEvents(bar, tr) {
@@ -7879,7 +7876,7 @@ function fullClear() {
     delete _noiseGateNodes[+tr];
   });
   randAllLevel = 0;
-  const defaultInstruments = ['drone','sleg','sparkle','sbass3','congHi','congLo']; // DRONE default instead of TEXTURE, for now
+  const defaultInstruments = [(Math.random() < 0.5 ? 'drone' : 'amlgm'),'sleg','sparkle','sbass3','congHi','congLo']; // DRONE/TEXTURE share slot 0, 50/50
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0); trackOffset[tr] = 0; trackPatternState[tr] = 0;
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
@@ -8583,6 +8580,7 @@ function restoreState(snap) {
       setTrackNameColor(tr, trackInstruments[tr]);
     }
     const row=document.getElementById(`ctrlrow-${tr}`); if(row) row.classList.toggle('row-muted', trackMuted[tr]);
+    const lm=document.getElementById(`lane-${tr}`); if(lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
     const vb=document.getElementById(`vbar-${tr}`); if(vb) { vb.classList.toggle('muted', trackMuted[tr]); const f=vb.querySelector('.track-vol-fill'); if(f) f.style.width=Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
     redrawTrackCells(tr);
   }
@@ -8889,22 +8887,15 @@ function randomizeTrack(tr) {
     return;
   }
 
-  // DRONE — a single accented hit at the top of the bar, sustained the full
-  // measure by playBuffer's own duration override. No density table, no
-  // echo-spacing logic needed — it's deliberately one continuous note.
-  if (trackInstruments[tr] === 'drone') {
-    for (let s = 0; s < NUM_STEPS; s++) grid[tr][s] = (s === 0) ? 2 : 0;
-    redrawTrackCells(tr); markModified(); return;
-  }
-
-  // TEXTURE has no pitch/scale of its own — it echoes whatever chord the other
-  // tracks capture — so it can't be routed through randomizeBassTrack (that
-  // would risk it picking a fresh root and setting it as the whole song's
-  // scale root before any real tonal track has). But its trigger pattern
-  // should be populated the same way DENIALISM's is: DENIALISM has no
-  // custom density table, so it just uses the generic tonal default —
-  // replicated here directly, plus the same "never more than 3 in a row" cap.
-  if (trackInstruments[tr] === 'amlgm') {
+  // TEXTURE (and DRONE — same routine, shared 50/50 into this same slot) has
+  // no pitch/scale of its own — it echoes whatever chord the other tracks
+  // capture — so it can't be routed through randomizeBassTrack (that would
+  // risk it picking a fresh root and setting it as the whole song's scale
+  // root before any real tonal track has). But its trigger pattern should be
+  // populated the same way DENIALISM's is: DENIALISM has no custom density
+  // table, so it just uses the generic tonal default — replicated here
+  // directly, plus the same "never more than 3 in a row" cap.
+  if (trackInstruments[tr] === 'amlgm' || trackInstruments[tr] === 'drone') {
     const [minN, maxN0, accentRatio] = [
       [2, 6,  0.20],
       [5, 9,  0.40],
@@ -9934,7 +9925,7 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
   const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
   const vol = 0.1256 * chordNormFactor * (isAccent ? 1.3 : 1); // -12dB total (was -8dB) — fills in quieter bits, shouldn't be heard over everything
-  const droneAtten = (trackInstruments[tr] === 'drone') ? 0.4467 : 1; // -7dB, DRONE only — TEXTURE unaffected
+  const droneAtten = (trackInstruments[tr] === 'drone') ? 0.3163 : 1; // -10dB total now (was -7dB, +3dB more), DRONE only — TEXTURE unaffected
   _amalgamVolOverride = trackPump[tr] ? vol * droneAtten * 0.5623 : vol * droneAtten; // -5dB when BLAST is on this track
   const dest = getSynthConnectNode(tr); // one resolution — Delay/FX/BLAST all behave like any other instrument now
   notes.forEach(n => {
@@ -10114,7 +10105,7 @@ function fullReset() {
   if (_mainRandBtn) { _mainRandBtn.classList.remove('pulsing'); _mainRandBtn.textContent = 'RAND'; }
 
   // Per-track state back to first-load defaults
-  const defaultInstruments = ['drone', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo']; // DRONE default instead of TEXTURE, for now
+  const defaultInstruments = [(Math.random() < 0.5 ? 'drone' : 'amlgm'), 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo']; // DRONE/TEXTURE share slot 0, 50/50
   const defaultVolumes = [0.0501, 0.505, 0.8, 0.8, 0.8, 0.8];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0);
