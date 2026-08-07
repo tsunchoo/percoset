@@ -569,7 +569,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 05:32</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 05:42</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -4573,8 +4573,8 @@ function playBoog(freq, durSec, isAccent, time, tr) {
 // internal synthesis parameters, which gets the same "blended hybrid"
 // result with a fraction of the complexity. ──
 function playPrimePiano(freq, durSec, isAccent, time, tr) {
-  playSynthLeg(freq, durSec, isAccent, time, tr, 0.8913); // -1dB
-  playRhodes2(freq, durSec, isAccent, time, tr, 0.8913); // -1dB
+  playSynthLeg(freq, durSec, isAccent, time, tr, 0.6310); // -4dB total (was -1dB, +3dB more)
+  playRhodes2(freq, durSec, isAccent, time, tr, 0.6310); // -4dB total (was -1dB, +3dB more)
 }
 
 // ── Synth Flute: 80s FM-style breathy flute ──
@@ -8233,8 +8233,10 @@ function randAll(mode, opts) {
       }
       // Dense track (top 80% of its note cap) — don't let it carry Delay or FX
       const _effMax = window._lastNoteMaxUsed;
+      let _densityRatio = 0;
       if (_effMax && _effMax > 0) {
         const _actualNotes = grid[_tr].filter(v => v > 0).length;
+        _densityRatio = Math.min(1, _actualNotes / _effMax);
         if (_actualNotes >= 0.8 * _effMax) {
           if (trackDelay[_tr]) {
             trackDelay[_tr] = false;
@@ -8248,6 +8250,20 @@ function randAll(mode, opts) {
             if (fb) fb.classList.toggle('on', false);
           }
         }
+      }
+      // A track that ends up busy AND still carrying Delay/FX (below the 80%
+      // strip threshold above, or one of the always-FX instruments like
+      // CHUG/DAMASK/YAMASK) gets pulled back on the fader proportionally —
+      // more notes and more wetness both push the reduction up, capped so
+      // it never gets silenced outright.
+      let _volReduction = _densityRatio * 0.15; // up to -15% purely from note density
+      if (trackDelay[_tr]) _volReduction += 0.08;
+      if (trackFx[_tr] && (trackFx[_tr].x > 0 || trackFx[_tr].y > 0)) _volReduction += 0.08;
+      _volReduction = Math.min(0.35, _volReduction);
+      if (_volReduction > 0) {
+        trackVolume[_tr] = Math.max(0.05, trackVolume[_tr] * (1 - _volReduction));
+        if (ctx && trackGainNodes[_tr]) trackGainNodes[_tr].gain.setTargetAtTime(trackVolume[_tr], ctx.currentTime, 0.05);
+        const vb3 = document.getElementById(`vbar-${_tr}`); if (vb3) { const f3 = vb3.querySelector('.track-vol-fill'); if (f3) f3.style.width = Math.round(volGainToPos(trackVolume[_tr])*100)+'%'; }
       }
     }, _tr * 30); // stagger 30ms per track
     _pendingRandTimeouts.push(_tid);
