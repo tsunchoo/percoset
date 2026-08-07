@@ -273,9 +273,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: #f71aff !important; }
-#randBtn.pulsing { background: #0468f4; color: #adff00; }
-@keyframes rand-pulse { 0% { background: #0468f4; color: #adff00; } 50% { background: #0247a8; color: #adff00; } 100% { background: #0468f4; color: #adff00; } }
+#randBtn.pulsing { background: #ff2200; color: #fff; }
+@keyframes rand-pulse { 0% { background: #ff2200; color: #fff; } 50% { background: #7a1000; color: #fff; } 100% { background: #ff2200; color: #fff; } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
+#randBtn.btn-flash-blue { background: #ff2200 !important; color: #fff !important; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
 #scratchBtn.active { background: #111 !important; color: #adff00 !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
@@ -564,7 +565,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -707,7 +708,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB INTENSITY</span><span id="reverbIntensityVal" style="color:#adff00;">50</span>
+          <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">50</span>
         </div>
         <input type="range" id="reverbIntensityBar" min="0" max="100" value="50" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
       </div>
@@ -2690,13 +2691,24 @@ function getRangeRoots(key) {
 const ARPEGGIO_KEYS = new Set(['rhodes2', 'rhodes', 'sflute', 'boog']); // DX PIANO, SPACE KOTO, XYLOPHONE, DREAM PIANO
 const BASS_ARPEGGIO_KEYS = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']); // rarer — 1 in 8, not 1 in 4
 function _writeArpeggioPattern(tr, scale) {
-  const steps8 = [0, 2, 4, 6, 8, 10, 12, 14];
+  // Below 100bpm there's room for it to breathe, so sometimes go 16th notes
+  // instead of 8ths — never at faster tempos, where it'd turn to mush.
+  const useSixteenth = (bpm < 100) && Math.random() < 0.35;
+  const allSteps = useSixteenth
+    ? [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    : [0, 2, 4, 6, 8, 10, 12, 14];
   const scaleLen = Math.max(1, scale.length);
   const shapes = ['up', 'down', 'updown', 'downup'];
   const shape = shapes[Math.floor(Math.random() * shapes.length)];
   if (!trackPitchOverride[tr]) trackPitchOverride[tr] = {};
   const period = Math.max(2, (scaleLen - 1) * 2);
-  steps8.forEach((s, i) => {
+  // Leave a few notes out — a dead-straight unbroken run stops sounding like
+  // a played arpeggio and starts sounding like a machine-gun.
+  const restCount = useSixteenth ? (2 + Math.floor(Math.random() * 3)) : (1 + Math.floor(Math.random() * 2));
+  const restIdx = new Set();
+  while (restIdx.size < restCount) restIdx.add(Math.floor(Math.random() * allSteps.length));
+  allSteps.forEach((s, i) => {
+    if (restIdx.has(i)) { grid[tr][s] = 0; return; }
     let idx;
     if (shape === 'up') idx = i % scaleLen;
     else if (shape === 'down') idx = (scaleLen - 1) - (i % scaleLen);
@@ -2711,7 +2723,8 @@ function _writeArpeggioPattern(tr, scale) {
     grid[tr][s] = (i % 4 === 0) ? 2 : 1; // accent on the quarter-note beats
     trackPitchOverride[tr][s] = scale[idx];
   });
-  for (let s = 0; s < NUM_STEPS; s++) if (!steps8.includes(s)) grid[tr][s] = 0;
+  const stepSet = new Set(allSteps);
+  for (let s = 0; s < NUM_STEPS; s++) if (!stepSet.has(s)) grid[tr][s] = 0;
   redrawTrackCells(tr); markModified();
 }
 
@@ -3186,7 +3199,7 @@ const _rhodesGlide = {};
 function playSpaceKoto(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.34 : 0.22;
+  const vel = isAccent ? 0.241 : 0.156; // -3dB (was 0.34/0.22) — was getting loud with FX+Reverb
   _rhodesGlide[tr] = freq;
 
   // Karplus-Strong plucked string, computed directly into a sample buffer —
@@ -3488,7 +3501,7 @@ const _dbassGlide = {};
 function playPlunkBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 1.1332 : 0.8178; // +4dB total (was +2dB)
+  const vel = isAccent ? 1.601 : 1.155; // +3dB on top (was too quiet without FX)
   _plunkGlide[tr] = freq;
 
   // Distorted sawtooth through a tight bandpass — nasal, aggressive
@@ -6529,7 +6542,7 @@ async function renderSlotToWav(snap) {
 
         } else if (key === 'sbass4') {
           // Match playPlunkBass exactly
-          const vel = isAccent ? 1.1332 : 0.8178; // +4dB total (was +2dB)
+          const vel = isAccent ? 1.601 : 1.155; // +3dB on top (was too quiet without FX)
           const osc1 = o.createOscillator(); osc1.type='sawtooth'; osc1.frequency.value=freq;
           const osc2 = o.createOscillator(); osc2.type='sawtooth'; osc2.frequency.value=freq*0.5;
           const mix = o.createGain(); mix.gain.value=0.4;
@@ -6730,7 +6743,7 @@ async function renderSlotToWav(snap) {
 
         } else if (key === 'rhodes') {
           // Matches live playSpaceKoto voice — Karplus-Strong precomputed into a buffer
-          const rVel = isAccent ? 0.34 : 0.22;
+          const rVel = isAccent ? 0.241 : 0.156; // -3dB (was 0.34/0.22)
           const decayTime = Math.min(dur + 1.8, 2.4);
           const numSamples = Math.max(2, Math.round(sampleRate * decayTime));
           const period = Math.max(2, Math.round(sampleRate / freq));
