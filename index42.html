@@ -565,7 +565,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:20</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 02:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -643,7 +643,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div class="beat-type-item" data-beat="halftime">HALFTIME</div>
       <div class="beat-type-item" data-beat="reggae">ROCKERS</div>
       <div class="beat-type-item" data-beat="reggae2">ONE DROP</div>
-      <div class="beat-type-item" data-beat="fourfloor">4X4</div>
+      <div class="beat-type-item" data-beat="push">PUSH</div>
       <div class="beat-type-item" data-beat="doubledown">DOUBLEDOWN</div>
       <div class="beat-type-item" data-beat="samba">SAMBA</div>
       <div class="beat-type-item" data-beat="cumbia">CUMBIA</div>
@@ -2235,9 +2235,10 @@ function fireStepAudio(step, t) {
           // Kick on 1 (all the &s handled below), snares on 2+4 backbeat
           doKick  = (bstep === 0);
           doSnare = (bstep === 4 || bstep === 12);
-        } else if (_beatType === 'fourfloor') {
-          // 4X4 — four kick drums, one on every beat
-          doKick = (bstep === 0 || bstep === 4 || bstep === 8 || bstep === 12);
+        } else if (_beatType === 'push') {
+          // PUSH — programmed from a reference MIDI roll: a syncopated
+          // "3-3-2-3-3-2" kick pattern (steps 0, 3, 6, 8, 11, 14 of 16).
+          doKick = (bstep === 0 || bstep === 3 || bstep === 6 || bstep === 8 || bstep === 11 || bstep === 14);
         } else if (_beatType === 'rollin') {
           // ROLLIN — straight backbeat snare, rolling syncopated kick underneath
           doKick  = (bstep === 0);
@@ -7918,7 +7919,7 @@ function randAll(mode, opts) {
   if (!_beatTypeLocked) {
     const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown' || _beatType === 'boogie');
     if (!onHalfFeel) {
-      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'fourfloor', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie'];
+      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie'];
       if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie');
       setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
     }
@@ -11012,7 +11013,7 @@ function beatCtrlCycleFx() {
 // R (rand) — single tap picks a new BEAT type once; double tap toggles an
 // auto mode that picks a new one every 4 bars, same shape as the per-track
 // randomize button and the top-row RAND AUTO loop.
-const _BEAT_TYPE_POOL = ['disco','bounce','breaks','drive','swagger','halftime','reggae','reggae2','fourfloor','doubledown','samba','cumbia','afrobeat','boogie'];
+const _BEAT_TYPE_POOL = ['disco','bounce','breaks','drive','swagger','halftime','reggae','reggae2','push','doubledown','samba','cumbia','afrobeat','boogie'];
 function randomizeBeatType() {
   const pick = _BEAT_TYPE_POOL[Math.floor(Math.random() * _BEAT_TYPE_POOL.length)];
   setBeatType(pick);
