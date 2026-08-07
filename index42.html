@@ -565,7 +565,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 03:42</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 04:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -933,6 +933,7 @@ const INSTRUMENTS = {
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
   amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
+  drone:  { name: 'DRONE',       soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
@@ -1676,6 +1677,13 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
     playAmalgamStep(isAccent, time, tr, dur);
     return;
   }
+  if (key === 'drone') {
+    // Same engine as TEXTURE, but always sustains for the full measure
+    // regardless of legato length or chop — a constant drone, not an echo.
+    triggerFxEnvelope(tr, time);
+    playAmalgamStep(isAccent, time, tr, stepDuration() * NUM_STEPS);
+    return;
+  }
   if (key === 'sbass')   { return; } // handled in scheduler with legato duration
   if (key === 'ngate')   { return; } // handled in scheduler
   if (key === 'sbass3')  { return; }
@@ -1741,7 +1749,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
 const NUM_TRACKS = 6, NUM_STEPS = 16, VOL_NODES_COUNT = 10;
 
-const trackInstruments = ['amlgm','sleg','sparkle','sbass3','congHi','congLo'];
+const trackInstruments = ['drone','sleg','sparkle','sbass3','congHi','congLo']; // DRONE default instead of TEXTURE, for now
 const grid        = Array.from({length: NUM_TRACKS}, () => new Array(NUM_STEPS).fill(0));
 const trackOffset = new Array(NUM_TRACKS).fill(0);
 const trackMuted  = new Array(NUM_TRACKS).fill(false);
@@ -2183,10 +2191,10 @@ function fireStepAudio(step, t) {
             if (key === 'boog')    playPrimePiano(freq2, dur2, false, t2, tr);
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
             if (key === 'blunt')   playBlunt(freq2, dur2, false, t2, tr);
-          } else if (key === 'amlgm') {
-            // TEXTURE can't actually receive a 32nd-split value (it's not in
-            // split32Keys), so this is unreachable in practice — left as a
-            // no-op rather than removed, in case that ever changes.
+          } else if (key === 'amlgm' || key === 'drone') {
+            // TEXTURE/DRONE can't actually receive a 32nd-split value (not
+            // in split32Keys), so this is unreachable in practice — left as
+            // a no-op rather than removed, in case that ever changes.
           } else {
             playBuffer(key, false, t2, tr);
           }
@@ -5323,12 +5331,20 @@ function duckSidechainTracks(t) {
 // the depth is more moderate than the general duck — a rhythmic breathing
 // pump driven by how busy the mix is, not a near-silence stab each time.
 function duckEchoTrack(t) {
-  if (!_sidechainDuckGains[0]) return; // TEXTURE hasn't played a note yet this session — nothing to duck
+  if (!_sidechainDuckGains[0]) return; // TEXTURE/DRONE hasn't played a note yet this session — nothing to duck
   const g = _sidechainDuckGains[0].gain.gain;
   g.cancelScheduledValues(t);
-  g.setValueAtTime(1, t);
-  g.linearRampToValueAtTime(0.35, t + 0.01); // -9dB — noticeable pump without wiping it out
-  g.setTargetAtTime(1, t + 0.04, 0.12);
+  if (trackInstruments[0] === 'drone') {
+    // DRONE — heavily gated. Much deeper pump and a snappier recovery than
+    // TEXTURE's subtle nudge, for an obvious rhythmic chopping character.
+    g.setValueAtTime(1, t);
+    g.linearRampToValueAtTime(0.08, t + 0.008); // -22dB, almost fully gated
+    g.setTargetAtTime(1, t + 0.03, 0.06);
+  } else {
+    g.setValueAtTime(1, t);
+    g.linearRampToValueAtTime(0.35, t + 0.01); // -9dB — noticeable pump without wiping it out
+    g.setTargetAtTime(1, t + 0.04, 0.12);
+  }
 }
 function fireBeatKick(t) {
   playKick(t);
@@ -7820,7 +7836,7 @@ function fullClear() {
     delete _noiseGateNodes[+tr];
   });
   randAllLevel = 0;
-  const defaultInstruments = ['amlgm','sleg','sparkle','sbass3','congHi','congLo'];
+  const defaultInstruments = ['drone','sleg','sparkle','sbass3','congHi','congLo']; // DRONE default instead of TEXTURE, for now
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0); trackOffset[tr] = 0; trackPatternState[tr] = 0;
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
@@ -7972,7 +7988,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'amlgm' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'amlgm' && k !== 'drone' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k));
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
@@ -8826,6 +8842,14 @@ function randomizeTrack(tr) {
     if (trackLegatoLen[tr]) trackLegatoLen[tr] = {};
     redrawTrackCells(tr); markModified();
     return;
+  }
+
+  // DRONE — a single accented hit at the top of the bar, sustained the full
+  // measure by playBuffer's own duration override. No density table, no
+  // echo-spacing logic needed — it's deliberately one continuous note.
+  if (trackInstruments[tr] === 'drone') {
+    for (let s = 0; s < NUM_STEPS; s++) grid[tr][s] = (s === 0) ? 2 : 0;
+    redrawTrackCells(tr); markModified(); return;
   }
 
   // TEXTURE has no pitch/scale of its own — it echoes whatever chord the other
@@ -9952,7 +9976,7 @@ function fullReset() {
   if (_mainRandBtn) { _mainRandBtn.classList.remove('pulsing'); _mainRandBtn.textContent = 'RAND'; }
 
   // Per-track state back to first-load defaults
-  const defaultInstruments = ['amlgm', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo'];
+  const defaultInstruments = ['drone', 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo']; // DRONE default instead of TEXTURE, for now
   const defaultVolumes = [0.0501, 0.505, 0.8, 0.8, 0.8, 0.8];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     grid[tr].fill(0);
