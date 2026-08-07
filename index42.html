@@ -571,7 +571,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 06:24</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 06:38</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -734,6 +734,15 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <button id="recMode_realtime" class="rec-mode-btn" onclick="setRecordMode('realtime')">REALTIME</button>
           <button id="recMode_bounceLoop" class="rec-mode-btn" onclick="setRecordMode('bounceLoop')">BOUNCE LOOP</button>
           <button id="recMode_bounceStems" class="rec-mode-btn" onclick="setRecordMode('bounceStems')">BOUNCE LOOP STEMS</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
+          <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
+          <input type="file" id="tapeFileInput" accept=".json,.txt,.sifitape" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
       </div>
 
@@ -6978,6 +6987,48 @@ function getExportSnaps() {
   return snaps;
 }
 */
+
+// ── Tapes — save/load a full pattern as a shareable text file ──────────────
+// Wraps the exact same snapshot used by slots/RECALL, tagged with a format
+// marker and version so a future release can tell old tapes apart from new
+// ones if the format ever needs to change.
+function exportTape() {
+  const payload = {
+    format: 'sifi-tape',
+    version: 1,
+    name: _currentSpecies || 'Untitled',
+    createdAt: new Date().toISOString(),
+    state: snapshotState()
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const safeName = (payload.name || 'tape').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'tape';
+  const file = new File([json], `${safeName}.sifitape.json`, { type: 'application/json' });
+  shareOrDownload([file]);
+}
+async function importTapeFile(file) {
+  const inp = document.getElementById('tapeFileInput');
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    if (!payload || payload.format !== 'sifi-tape' || !payload.state) {
+      alert("That doesn't look like a valid tape file.");
+      if (inp) inp.value = '';
+      return;
+    }
+    stopAllAutoRand();
+    if (playing) togglePlay();
+    restoreState(payload.state);
+    activeSlot = -1; // a loaded tape is new content — no slot claims to match it
+    updateSlotButtons();
+    markModified();
+    hideSettings();
+  } catch (e) {
+    console.error('Tape import failed', e);
+    alert('Could not load that tape file.');
+  }
+  if (inp) inp.value = ''; // allow re-selecting the same file later
+}
 
 async function shareOrDownload(files) {
   const shareData = { files, title: 'Si•Fi loops' };
