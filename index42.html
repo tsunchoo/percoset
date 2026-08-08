@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 12:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 12:29</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1192,13 +1192,12 @@ function updateBgPulseSpeedReadout() {
     return hslToHex(bgH, HUE_SATURATION, variantL);
   }
   function applyTrackLineColor() {
-
     document.documentElement.style.setProperty('--track-line-color',
-      _trackLineTransparent ? 'transparent' : tintedFor(_trackLineBaseColor));
+      _trackLineTransparent ? 'transparent' : _trackLineBaseColor);
   }
   function applyEmptyCellColor() {
     document.documentElement.style.setProperty('--empty-cell-color',
-      _emptyCellTransparent ? 'transparent' : tintedFor(_emptyCellBaseColor));
+      _emptyCellTransparent ? 'transparent' : _emptyCellBaseColor);
   }
   // Exposed so the DISPLAY background controls can trigger a re-tint when the bg changes.
   window._applyTrackLineColor = applyTrackLineColor;
@@ -7281,7 +7280,7 @@ async function importTapeFile(file) {
 }
 
 async function shareOrDownload(files) {
-  const shareData = { files, title: 'Si•Fi loops' };
+  const shareData = { files }; // no title/text here — some share targets (Save to Files, in particular) were spinning that into a separate, pointless companion text file alongside the real one
   if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
     try { await navigator.share(shareData); return; }
     catch(e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to download', e); }
@@ -8521,16 +8520,17 @@ function randAll(mode, opts) {
   let poolIdx = 0;
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (tr === _emptyTrackIdx) {
-      // Leave it genuinely silent — no notes, muted, FX/Delay/BLAST cleared.
-      // Instrument label itself is cosmetic once muted and empty, so it's
-      // left alone rather than needing a "blank" instrument that doesn't exist.
+      // Leave it genuinely silent — no notes, FX/Delay/BLAST cleared. Stays
+      // UNMUTED though — every RAND track is always unmuted regardless of
+      // whether it actually has notes in it, so a manual edit later is
+      // immediately audible without needing a separate unmute step first.
+      // Instrument label itself is cosmetic once empty, so it's left alone
+      // rather than needing a "blank" instrument that doesn't exist.
       grid[tr].fill(0);
       trackDelay[tr] = false;
       trackFx[tr] = { x: 0, y: 0 };
       trackPump[tr] = false;
       if (ctx) setFxActive(tr, trackFx[tr]);
-      trackMuted[tr] = true;
-      updateTrackMute(tr);
       redrawTrackCells(tr);
       const db3 = document.getElementById(`delaybtn-${tr}`); if (db3) db3.classList.toggle('on', false);
       const fb3 = document.getElementById(`fxbtn-${tr}`); if (fb3) { fb3.classList.remove('on'); fb3.classList.remove('blast-on'); }
@@ -9709,12 +9709,15 @@ function wireRandomizeButton(btn, tr) {
   let autoInterval = null, pendingTimeout = null;
 
   const doRand = () => {
-    // Same rule as the main RAND button: fresh notes shouldn't land on a
-    // track that's still silenced from a previous, unrelated mute decision.
-    if (trackMuted[tr]) { trackMuted[tr] = false; updateTrackMute(tr); }
     randomizeTrack(tr);
     // Do not reset volume — keep whatever the user has set
   };
+  // Only a genuine manual tap should pull a track out of mute — the
+  // background auto-rand loop (btn._autoBarTick, below) calls doRand() on
+  // its own every bar too, and that must NOT unmute a track someone
+  // deliberately silenced just because its auto-evolution happened to tick
+  // over in the background.
+  const unmuteIfNeeded = () => { if (trackMuted[tr]) { trackMuted[tr] = false; updateTrackMute(tr); } };
 
   const stopAuto = () => {
     if (typeof autoInterval === 'number') clearInterval(autoInterval);
@@ -9732,6 +9735,7 @@ function wireRandomizeButton(btn, tr) {
   // Single tap: pulse red, randomize this track on next downbeat (or immediately if stopped)
   const doSingleTap = () => {
     if (autoInterval) { stopAuto(); return; }
+    unmuteIfNeeded();
     doRand();
     btn.style.background = 'var(--playhead)';
     btn.style.color = '#fff';
@@ -9749,6 +9753,7 @@ function wireRandomizeButton(btn, tr) {
     const _lane = document.getElementById(`lane-${tr}`);
     if (_lane) _lane.style.setProperty('--track-color', '#f71aff');
     window._isAutoBarRand = true;
+    unmuteIfNeeded();
     doRand();
     window._isAutoBarRand = false;
     autoInterval = true; // flag only — the scheduler's bar-start hook does the work
