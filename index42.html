@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 13:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 14:25</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1004,7 +1004,7 @@ const INSTRUMENTS = {
   spiano: { name: 'SCHOOL PIANO', soft: null, accent: null, group: 'tonal' },
   damask: { name: 'DAMASK',      soft: null, accent: null, group: 'tonal' },
   yamask: { name: 'YAMASK',      soft: null, accent: null, group: 'tonal' },
-  dulc:   { name: 'TINA',        soft: null, accent: null, group: 'tonal' },
+  dulc:   { name: 'BOOBOO',      soft: null, accent: null, group: 'tonal' },
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
   amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
@@ -2196,7 +2196,7 @@ function fireStepAudio(step, t) {
           if (key === 'boog')    playPrimePiano(freq, dur, val === 2, t, tr);
           if (key === 'damask')  playDamask(freq, dur, val === 2, t, tr);
           if (key === 'yamask')  playYamask(freq, dur, val === 2, t, tr, _yamaskPhraseTick(tr));
-          if (key === 'dulc')    playTina(freq, dur, val === 2, t, tr);
+          if (key === 'dulc')    playBooboo(freq, dur, val === 2, t, tr);
           if (key === 'opening') playOpening(freq, dur, val === 2, t, tr);
           if (key === 'fflute')  {
             playGlassBell(freq, dur, val === 2, t, tr);
@@ -2279,7 +2279,7 @@ function fireStepAudio(step, t) {
             if (key === 'clar')    playSteelGuitar(freq2, dur2, false, t2, tr);
             if (key === 'rhodes')  playSpaceKoto(freq2, dur2, false, t2, tr);
             if (key === 'rhodes2') playRhodes2(freq2, dur2, false, t2, tr);
-            if (key === 'dulc')    playTina(freq2, dur2, false, t2, tr);
+            if (key === 'dulc')    playBooboo(freq2, dur2, false, t2, tr);
             if (key === 'sflute')  playXylophone(freq2, dur2, false, t2, tr);
             if (key === 'spiano')  playSchoolPiano(freq2, dur2, false, t2, tr);
             if (key === 'satk')    playSynthAttack(freq2, dur2, false, t2, tr);
@@ -2762,7 +2762,7 @@ const BASS_ROOTS    = [55, 58, 62, 65, 69, 73];   // A1 B1 D2 F2 A2 C#2
 const MELODY_ROOTS  = [220, 247, 262, 294, 330];   // A3 B3 C4 D4 E4
 const MID_ROOTS     = [110, 123, 131, 147, 165];   // A2 B2 C3 D3 E3
 const HIGH_ROOTS    = [440, 494, 523, 587, 659];   // A4 B4 C5 D5 E5
-const TINA_ROOTS     = [165, 220, 262, 330, 440, 587]; // E3 up to D5 — TINA roams a wide range instead of sitting in one register
+// (BOOBOO's register matches JINX — routed to MELODY_ROOTS directly below, no separate array needed)
 const SPARKLE_ROOTS = [82, 98, 110, 130, 147, 165];  // E2 G2 A2 C3 D3 E3
 const CHUG_ROOTS    = [82, 92, 98, 110, 123];   // E2 F#2 G2 A2 B2 — a bit lower than MID_ROOTS
 
@@ -2790,11 +2790,10 @@ function transposeRootToRange(root, roots) {
 function getRangeRoots(key) {
   if (key === 'sparkle') return SPARKLE_ROOTS;
   if (key === 'sflute' || key === 'boog' || key === 'fflute') return HIGH_ROOTS;
-  if (key === 'dulc') return TINA_ROOTS;
   if (key === 'blunt') return MID_ROOTS;
   if (key === 'chug') return CHUG_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
-  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening' || key === 'spiano') return MELODY_ROOTS;
+  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening' || key === 'spiano' || key === 'dulc') return MELODY_ROOTS;
   return BASS_ROOTS;
 }
 
@@ -2916,7 +2915,7 @@ function randomizeBassTrack(tr, level) {
     boog:    [[1,3,0.20],[3,4,0.40],[4,7,0.60]],   // BOOG — half the generic default density
     damask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // DAMASK — sparse, spacious, plaintive phrases
     yamask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // YAMASK — same sparse, spacious character as DAMASK
-    dulc:    [[2,4,0.35],[3,6,0.45],[5,8,0.60]],   // TINA — bright twinkling runs, similar to Sparkles
+    dulc:    [[3,6,0.20],[5,9,0.35],[8,13,0.50]],   // BOOBOO — same note assignment as JINX
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
     jcmgtr:  [[3,6,0.20],[5,9,0.35],[8,13,0.50]],   // JINX — busier now, filling a lot more of the 16th-note grid (was a deliberately calm [1,3]/[2,4]/[3,6])
   };
@@ -2986,7 +2985,7 @@ function randomizeBassTrack(tr, level) {
   if (split32Keys.has(key)) {
     let splitCount = 0;
     const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute' || key === 'spiano') ? 3 : 99;
-    const splitChance = (key === 'jcmgtr') ? 0.45 : 0.18; // JINX gets 32nds a lot more often than everyone else here
+    const splitChance = (key === 'jcmgtr' || key === 'dulc') ? 0.45 : 0.18; // JINX/BOOBOO get 32nds a lot more often than everyone else here
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < splitChance) {
         grid[tr][s] = 3;
@@ -4852,74 +4851,54 @@ function playXylophone(freq, durSec, isAccent, time, tr) {
   });
   setTimeout(() => { try { lp.disconnect(); mix.disconnect(); } catch(e) {} }, (decay + 0.3) * 1000);
 }
-// TINA — a blues harmonica: reedy sawtooth core (two slightly-detuned
-// reeds beating against each other, the way a real harp's two reeds per
-// hole do), pushed through a nasal bandpass formant, sustained for as long
-// as the note lasts (breath-driven, not a decaying pluck/strike), with a
-// bit of vibrato and a touch of breath noise for realism.
-function playTina(freq, durSec, isAccent, time, tr) {
+// BOOBOO — a short, pulsey analog lead. Two detuned square-wave oscillators
+// for a fat unison lead tone, a classic analog filter envelope (fast open
+// on attack, closing back down over the note), a short phrase length (it
+// never rings out long), and a pitch slide-off at the tail of each note —
+// the pitch bends down as the note dies out, a common analog-lead
+// articulation.
+function playBooboo(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.2124 : 0.1416; // -3dB (was 0.30/0.20)
-  const sustain = Math.max(durSec, 0.18);
-  const release = 0.18;
-  const stopAt = time + sustain + release + 0.05;
+  const vel = isAccent ? 0.24 : 0.16;
+  const noteDur = Math.min(Math.max(durSec, 0.12), 0.5); // short phrases — never rings out long
+  const stopAt = time + noteDur + 0.12;
 
-  // Two reeds, slightly detuned from each other — the natural beating/
-  // buzz that gives a harmonica its reedy character.
   const bodyMix = ctx.createGain(); bodyMix.gain.value = 1;
-  const reeds = [
-    { detune: -7, amp: 0.9 },
-    { detune: 7,  amp: 0.9 },
+  const oscDefs = [
+    { detune: -8 },
+    { detune: 8 },
   ];
   const createdOscs = [];
-  reeds.forEach(r => {
-    const o = ctx.createOscillator(); o.type = 'sawtooth';
-    o.frequency.value = freq; o.detune.value = r.detune;
-    const g = ctx.createGain(); g.gain.value = r.amp;
-    o.connect(g); g.connect(bodyMix);
-    o.start(time); o.stop(stopAt);
-    createdOscs.push({ o, g });
+  oscDefs.forEach(o => {
+    const osc = ctx.createOscillator(); osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, time);
+    osc.detune.value = o.detune;
+    // Pitch slide-off — the pitch scoops down as the note dies out
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq * 0.55), stopAt);
+    const g = ctx.createGain(); g.gain.value = 0.5;
+    osc.connect(g); g.connect(bodyMix);
+    osc.start(time); osc.stop(stopAt);
+    createdOscs.push({ osc, g });
   });
 
-  // Vibrato — the expressive hand/breath wobble on a held note
-  const vibrato = ctx.createOscillator(); vibrato.type = 'sine'; vibrato.frequency.value = 5.5;
-  const vibratoGain = ctx.createGain(); vibratoGain.gain.value = 6; // cents
-  vibrato.connect(vibratoGain);
-  createdOscs.forEach(({ o }) => vibratoGain.connect(o.detune));
-  vibrato.start(time); vibrato.stop(stopAt);
-
-  // Nasal reed-plate formant — a bandpass tuned to a fixed absolute
-  // frequency (not tracking pitch), the way a real harmonica's reed plate
-  // and comb resonance colors every note roughly the same way regardless
-  // of which hole is played.
-  const formant = ctx.createBiquadFilter(); formant.type = 'bandpass';
-  formant.frequency.value = 1500; formant.Q.value = 1.8;
-  const formant2 = ctx.createBiquadFilter(); formant2.type = 'peaking';
-  formant2.frequency.value = 2600; formant2.Q.value = 2.2; formant2.gain.value = 5; // extra buzz/bite
-
-  // A little breath noise — quiet, filtered, sustained alongside the tone
-  const breathBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * (sustain + release + 0.1)), ctx.sampleRate);
-  { const d = breathBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
-  const breath = ctx.createBufferSource(); breath.buffer = breathBuf;
-  const breathBP = ctx.createBiquadFilter(); breathBP.type = 'bandpass'; breathBP.frequency.value = 2000; breathBP.Q.value = 0.7;
-  const breathGain = ctx.createGain(); breathGain.gain.value = 0.05;
+  // Analog-style filter envelope — opens fast on attack, closes down through the note
+  const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.Q.value = 6;
+  filter.frequency.setValueAtTime(400, time);
+  filter.frequency.linearRampToValueAtTime(freq * 5.5, time + 0.012); // fast open
+  filter.frequency.exponentialRampToValueAtTime(freq * 1.2, time + noteDur); // closes down through the note
 
   const env = ctx.createGain();
   env.gain.setValueAtTime(0, time);
-  env.gain.linearRampToValueAtTime(vel, time + 0.03); // breath onset, not a hard strike
-  env.gain.setValueAtTime(vel, time + sustain); // held while the note lasts
-  env.gain.linearRampToValueAtTime(0, time + sustain + release); // breath stops
+  env.gain.linearRampToValueAtTime(vel, time + 0.008); // punchy attack
+  env.gain.setValueAtTime(vel, time + noteDur * 0.5);
+  env.gain.exponentialRampToValueAtTime(0.0006, time + noteDur + 0.1); // short — never rings out
 
-  bodyMix.connect(formant); formant.connect(formant2); formant2.connect(env);
-  breath.connect(breathBP); breathBP.connect(breathGain); breathGain.connect(env);
-  env.connect(dest);
+  bodyMix.connect(filter); filter.connect(env); env.connect(dest);
 
-  breath.start(time); breath.stop(stopAt);
-  breath.onended = () => {
+  createdOscs[0].osc.onended = () => {
     try {
-      env.disconnect(); formant.disconnect(); formant2.disconnect(); bodyMix.disconnect();
-      breathBP.disconnect(); breathGain.disconnect(); vibratoGain.disconnect();
+      env.disconnect(); filter.disconnect(); bodyMix.disconnect();
       createdOscs.forEach(({ g }) => { try { g.disconnect(); } catch(e) {} });
     } catch(e) {}
   };
@@ -5498,7 +5477,7 @@ function hideCelestialMap() {
 // synth-based instrument picks it up automatically without each one having
 // to wrap its own output — only the sample-based (WAV) percussion voices in
 // playBuffer need their own explicit call, since they route separately.
-const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhodes', 'rhodes2', 'denial', 'damask', 'yamask', 'dulc']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, ARBY, DAMASK, YAMASK, TINA
+const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhodes', 'rhodes2', 'denial', 'damask', 'yamask', 'dulc']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, ARBY, DAMASK, YAMASK, BOOBOO
 // Basses were getting lost in the mix — rather than boosting them (which
 // just risks clipping/distortion), every OTHER instrument gets a small
 // -1dB trim applied right at its own output, before any FX/delay/pump
@@ -6373,7 +6352,7 @@ function previewNote(tr, isAccent) {
     else if (key === 'boog')    playPrimePiano(freq, dur, isAccent, t, tr);
     else if (key === 'damask')  playDamask(freq, dur, isAccent, t, tr);
     else if (key === 'yamask')  playYamask(freq, dur, isAccent, t, tr);
-    else if (key === 'dulc')    playTina(freq, dur, isAccent, t, tr);
+    else if (key === 'dulc')    playBooboo(freq, dur, isAccent, t, tr);
     else if (key === 'opening') playOpening(freq, dur, isAccent, t, tr);
     else if (key === 'fflute')  playGlassBell(freq, dur, isAccent, t, tr);
     else if (key === 'blunt')   playBlunt(freq, dur, isAccent, t, tr);
@@ -8345,17 +8324,21 @@ function randAll(mode, opts) {
   // up during ordinary RAND use, only by luck of which one the page
   // happened to start on. Re-rolling the same 50/50 here, every RAND press
   // (still skipped if track 0 is locked, same as everywhere else).
+  // Deliberately NOT calling randomizeTrack(0) after a swap — that runs
+  // track 0 through a note-generation path it was never previously
+  // exercised through (RAND has always skipped track 0 completely up to
+  // now), and a hard freeze showed up immediately after this was added,
+  // with AUTO RAND running and re-rolling every few bars. Suspect but not
+  // confirmed — pulling it out until there's a safer way to regenerate
+  // track 0's pattern. The instrument swap itself (cheap, well-established
+  // code) stays; a freshly-swapped ATMOS will keep whatever pattern was
+  // already there until something else regenerates it.
   if (!trackSweep[0]) {
     const _newSlot0 = Math.random() < 0.5 ? 'drone' : 'amlgm';
     if (_newSlot0 !== trackInstruments[0]) {
       trackInstruments[0] = _newSlot0;
       const tb0 = document.getElementById('tbtn-0'); if (tb0) tb0.textContent = INSTRUMENTS[_newSlot0]?.name || _newSlot0;
       setTrackNameColor(0, _newSlot0);
-      // Track 0's notes were otherwise never touched by RAND at all (frozen
-      // from whatever page load/reset originally wrote), so an actual swap
-      // needs its own fresh pattern generated too — otherwise ATMOS would
-      // just inherit TEXTURE's old, much sparser layout rather than its own.
-      randomizeTrack(0);
     }
   }
   // Pick a fresh random scale and root for this randomize pass
@@ -8369,7 +8352,7 @@ function randAll(mode, opts) {
   const soloLeadKeys = new Set(['fflute', 'damask', 'yamask']); // max one of these
   const soloUniqueKeys = new Set(['jcmgtr','clar','boog']); // max one of these — JCX GUITAR / EWOK VILLAGE / BOOG
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
-  const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/TINA
+  const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/BOOBOO
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
   const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone']); // max one PAD-classified instrument per pattern — ATMOS/HASSELL/etc. never together
   // Exclude instruments already locked on other tracks
@@ -8583,11 +8566,6 @@ function randAll(mode, opts) {
     if (k === 'clar' && Math.random() < 0.6 && !autoShiftStops[tr]) {
       const _erb = document.getElementById(`randbtn-${tr}`);
       if (_erb && _erb._restartAuto) setTimeout(() => { if (!autoShiftStops[tr]) _erb._restartAuto(); }, 50);
-    }
-    // TINA roams — often arrives with per-track auto-randomization engaged too
-    if (k === 'dulc' && Math.random() < 0.6 && !autoShiftStops[tr]) {
-      const _trb = document.getElementById(`randbtn-${tr}`);
-      if (_trb && _trb._restartAuto) setTimeout(() => { if (!autoShiftStops[tr]) _trb._restartAuto(); }, 50);
     }
     const tb = document.getElementById(`tbtn-${tr}`); if (tb) tb.textContent = INSTRUMENTS[k]?.name || k;
     setTrackNameColor(tr, k);
@@ -8853,7 +8831,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK/TINA fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry; BOOBOO uses the generic formula, same as JINX
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -9555,7 +9533,7 @@ function randomizeTrack(tr) {
   if (split32Keys.has(key)) {
     let splitCount = 0;
     const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute' || key === 'spiano') ? 3 : 99;
-    const splitChance = (key === 'jcmgtr') ? 0.45 : 0.18; // JINX gets 32nds a lot more often than everyone else here
+    const splitChance = (key === 'jcmgtr' || key === 'dulc') ? 0.45 : 0.18; // JINX/BOOBOO get 32nds a lot more often than everyone else here
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < splitChance) {
         grid[tr][s] = 3;
