@@ -428,11 +428,11 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-perc  { background
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal { background: #b02040; }
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { background: #5e2670; }
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { background: #3a9c5a; }
-@keyframes flash-kit-d   { from { background: #f8ff00; } to { background: #0b5394; } }
-@keyframes flash-perc-d  { from { background: #f8ff00; } to { background: #4a6b0e; } }
-@keyframes flash-tonal-d { from { background: #f8ff00; } to { background: #b02040; } }
-@keyframes flash-bass-d  { from { background: #f8ff00; } to { background: #5e2670; } }
-@keyframes flash-pad-d   { from { background: #f8ff00; } to { background: #3a9c5a; } }
+@keyframes flash-kit-d   { from { background: var(--playhead-color, #f8ff00); } to { background: #0b5394; } }
+@keyframes flash-perc-d  { from { background: var(--playhead-color, #f8ff00); } to { background: #4a6b0e; } }
+@keyframes flash-tonal-d { from { background: var(--playhead-color, #f8ff00); } to { background: #b02040; } }
+@keyframes flash-bass-d  { from { background: var(--playhead-color, #f8ff00); } to { background: #5e2670; } }
+@keyframes flash-pad-d   { from { background: var(--playhead-color, #f8ff00); } to { background: #3a9c5a; } }
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-kit.note-flash   { animation: flash-kit-d   0.25s ease-out; }
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-perc.note-flash  { animation: flash-perc-d  0.25s ease-out; }
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.note-flash { animation: flash-tonal-d 0.25s ease-out; }
@@ -622,7 +622,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 10:41</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 11:36</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -824,9 +824,8 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
       </div>
 
-      <!-- Color options temporarily disabled — code kept for later restore
       <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">PLAYHEAD COLOR</div>
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">NOTE MARKER / PULSE COLOR</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <input type="color" id="playheadColorPicker" value="#f8ff00" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           <style>#playheadColorPicker::-webkit-color-swatch-wrapper{padding:0;}#playheadColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#playheadColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
@@ -878,7 +877,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <input type="range" id="bgPulseSpeedBar" min="4" max="32" value="4" class="master-vol-slider" style="width:100%;">
         </div>
       </div>
-      end color options -->
+
 
     </div>
 
@@ -1802,7 +1801,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.315 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.397 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.5014 : 0.5; // SHAKER +2dB (was 0.25) — already exempt from bass's sidechain duck but still getting buried; baseline was just quiet
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.5014 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -2931,6 +2930,7 @@ function randomizeBassTrack(tr, level) {
   // Per-instrument note density rules
   const noteTables = {
     sstring: [[1,2,0.50],[1,3,0.70],[2,3,0.80]],   // Choir — very few, mostly accented
+    spiano:  [[2,4,0.30],[3,6,0.40],[5,8,0.55]],   // SCHOOL PIANO — moderate and spaced out, so it doesn't trip the "too dense" check that zeroes out its reverb chance
     fflute: [[2,4,0.60],[3,6,0.70],[5,9,0.80]],   // SLAY — medium notes, no FX
     sleg:    [[1,2,0.10],[2,3,0.20],[2,5,0.30]],   // Strings — fewest
     satk:    [[1,2,0.25],[2,3,0.40],[2,3,0.50]],   // Syn Attack — max 3
@@ -8643,11 +8643,24 @@ function randAll(mode, opts) {
     const bassTracks = [];
     for (let tr = 1; tr < NUM_TRACKS; tr++) if (bassKeys.has(trackInstruments[tr])) bassTracks.push(tr);
     if (bassTracks.length === 0) {
-      // Nothing currently has bass — force one onto the first unlocked,
-      // non-empty real track, if any such track exists.
+      // Nothing currently has bass — force one onto the LAST unlocked,
+      // non-empty real track (highest index), not the first. The pool this
+      // whole assignment is built from gets rank-sorted before assignment
+      // (hihat → perc → lead → mid → bass → kick), so bass belongs near the
+      // bottom of the track list — grabbing the first available track here
+      // instead would stick bass up near the top, in a slot meant for
+      // hihat/perc, and push everything else out of its intended order.
+      // Deliberately does NOT schedule its own note-write: that track
+      // already has a randomizeTrack() call queued from the main
+      // assignment loop above, and since that call reads
+      // trackInstruments[tr] fresh when it actually fires (not a stale
+      // captured value), reassigning the instrument here — before any
+      // timeout has run — is enough for it to pick up correctly. A second,
+      // separately-scheduled write here would just race against that first
+      // one and re-randomize the same track twice for no reason.
       let target = -1;
-      for (let tr = 1; tr < NUM_TRACKS; tr++) {
-        if (tr === _emptyTrackIdx || trackSweep[tr]) continue;
+      for (let tr = NUM_TRACKS - 1; tr >= 1; tr--) {
+        if (tr === _emptyTrackIdx || trackSweep[tr] || trackInstruments[tr] === 'skick') continue; // don't displace an already-correctly-bottom-ranked kick
         target = tr; break;
       }
       if (target !== -1) {
@@ -8656,13 +8669,6 @@ function randAll(mode, opts) {
         trackInstruments[target] = forcedBass;
         const tbF = document.getElementById(`tbtn-${target}`); if (tbF) tbF.textContent = INSTRUMENTS[forcedBass]?.name || forcedBass;
         setTrackNameColor(target, forcedBass);
-        const _tidF = setTimeout(() => {
-          window._randNoteMax = null; window._lastNoteMaxUsed = null;
-          randomizeTrack(target);
-          if (grid[target].every(v => v === 0)) placeNotes(target, 4, 0.3, Math.min(level, 2));
-          redrawTrackCells(target); markModified();
-        }, REAL_TRACK_COUNT * 30 + 30); // after every other staggered track has already been written
-        _pendingRandTimeouts.push(_tidF);
       }
     }
     // (RAND's own selection paths above already dedupe within a single
@@ -8670,6 +8676,23 @@ function randAll(mode, opts) {
     // track carrying a different bass than this pass just picked —
     // deliberately left alone, since a locked track is a manual choice.)
   })();
+  // One more check, scheduled to run after every staggered per-track write
+  // above has already completed — confirms whichever track actually ended
+  // up with bass has real notes in it, not just an assigned instrument with
+  // an empty grid. Doesn't touch trackInstruments at all here, so there's
+  // no race with the per-track writes the way a second randomizeTrack()
+  // call scheduled early would have caused.
+  {
+    const _bassCheckTid = setTimeout(() => {
+      for (let tr = 1; tr < NUM_TRACKS; tr++) {
+        if (bassKeys.has(trackInstruments[tr]) && grid[tr].every(v => v === 0)) {
+          placeNotes(tr, 4 + Math.floor(Math.random() * 3), 0.3, Math.min(level, 2));
+          redrawTrackCells(tr); markModified();
+        }
+      }
+    }, REAL_TRACK_COUNT * 30 + 60);
+    _pendingRandTimeouts.push(_bassCheckTid);
+  }
   // Levels 3+4: activate auto-rand on some tracks and boost FX
   if (level >= 3) {
     const autoCount = level === 3 ? 1 : 2; // hard cap to limit node load
