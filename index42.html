@@ -622,7 +622,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 10:12</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 10:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3906,10 +3906,10 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
   const sustainHold = decayTime * 0.35; // holds near peak instead of starting to decay immediately
   const tailTime = 0.35; // a little extra low-level tail past the main decay, instead of stopping dead
 
-  // Two sawtooths in parallel — unison plus a slightly-off fifth, texture
-  // that gets uglier the harder the envelope drives into the waveshaper
+  // One sawtooth for edge, one triangle for warmth — was two sawtooths,
+  // which read as harder/more angular than intended.
   const osc1 = ctx.createOscillator(); osc1.type = 'sawtooth'; osc1.frequency.value = freq;
-  const osc2 = ctx.createOscillator(); osc2.type = 'sawtooth'; osc2.frequency.value = freq * 1.4983;
+  const osc2 = ctx.createOscillator(); osc2.type = 'triangle'; osc2.frequency.value = freq * 1.4983;
 
   const env = ctx.createGain(); // feeds the waveshaper directly — its own level IS the distortion control
   env.gain.setValueAtTime(0, time);
@@ -3920,24 +3920,28 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
   env.gain.exponentialRampToValueAtTime(0.02, time + decayTime); // leaves a touch of body instead of dropping to near-silence
   env.gain.exponentialRampToValueAtTime(0.0008, time + decayTime + tailTime); // the little trailing tail
 
-  // Fixed aggressive curve — the actual distortion character comes from how
-  // hard the envelope drives into it, not from the curve itself changing
+  // Softer drive and a much smaller fold — still has character, but no
+  // longer the hard-clipped, digitally-broken edge it had before.
   const ws = ctx.createWaveShaper();
   const curve = new Float32Array(1024);
   for (let i = 0; i < 1024; i++) {
     const x = (i * 2) / 1024 - 1;
-    curve[i] = Math.tanh(x * 6) + Math.sin(x * 9) * 0.15; // hard clip plus a folded wobble for the "broken" character
+    curve[i] = Math.tanh(x * 3.5) + Math.sin(x * 5) * 0.06; // gentler clip, much subtler wobble
   }
   ws.curve = curve; ws.oversample = '4x';
+  // A lowpass right after the distortion — rounds off the harsh upper
+  // harmonics the waveshaper generates, the main thing that actually reads
+  // as "warmer" rather than just "quieter."
+  const warmthLP = ctx.createBiquadFilter(); warmthLP.type = 'lowpass'; warmthLP.frequency.value = 3800; warmthLP.Q.value = 0.6;
   const outGain = ctx.createGain(); outGain.gain.value = 0.0398; // -28dB total (was -26dB) — output level only, doesn't touch the distortion drive
 
   osc1.connect(env); osc2.connect(env);
-  env.connect(ws); ws.connect(outGain); outGain.connect(dest);
+  env.connect(ws); ws.connect(warmthLP); warmthLP.connect(outGain); outGain.connect(dest);
 
   const stopAt = time + decayTime + tailTime + 0.1;
   osc1.start(time); osc1.stop(stopAt);
   osc2.start(time); osc2.stop(stopAt);
-  osc1.onended = () => { try { env.disconnect(); ws.disconnect(); outGain.disconnect(); } catch(e) {} };
+  osc1.onended = () => { try { env.disconnect(); ws.disconnect(); warmthLP.disconnect(); outGain.disconnect(); } catch(e) {} };
 }
 
 // ── Stab: short sharp synth chord stab, fast tail ──
@@ -4769,7 +4773,8 @@ function playSynthFlute(freq, durSec, isAccent, time, tr) {
 function playSchoolPiano(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.42 : 0.28;
+  const rawAtten = trackDelay[tr] ? 1 : 0.7079; // -3dB when this track's reverb send is off — "raw"
+  const vel = (isAccent ? 0.42 : 0.28) * rawAtten;
   const decay = Math.min(Math.max(durSec * 1.4, 0.6), 2.6); // real piano notes ring past their written length
   const stopAt = time + decay + 0.15;
 
@@ -8629,6 +8634,42 @@ function randAll(mode, opts) {
     if (ctx && trackFxNodes[tr]) setFxActive(tr, { x: 0, y: 0 });
     const fxBtn = document.getElementById(`fxbtn-${tr}`); if (fxBtn) fxBtn.classList.remove('on');
   }
+  // Final safety net — regardless of which path above ran, there should
+  // always be exactly one bass somewhere among the real tracks whenever
+  // there's room for one. RAND should never produce a pattern with none,
+  // and never more than one on its own (a person deliberately assigning a
+  // second bass by hand is the only way two should ever coexist).
+  (function _ensureExactlyOneBass() {
+    const bassTracks = [];
+    for (let tr = 1; tr < NUM_TRACKS; tr++) if (bassKeys.has(trackInstruments[tr])) bassTracks.push(tr);
+    if (bassTracks.length === 0) {
+      // Nothing currently has bass — force one onto the first unlocked,
+      // non-empty real track, if any such track exists.
+      let target = -1;
+      for (let tr = 1; tr < NUM_TRACKS; tr++) {
+        if (tr === _emptyTrackIdx || trackSweep[tr]) continue;
+        target = tr; break;
+      }
+      if (target !== -1) {
+        const bassChoiceKeys = Object.keys(INSTRUMENTS).filter(k => bassKeys.has(k));
+        const forcedBass = bassChoiceKeys[Math.floor(Math.random() * bassChoiceKeys.length)];
+        trackInstruments[target] = forcedBass;
+        const tbF = document.getElementById(`tbtn-${target}`); if (tbF) tbF.textContent = INSTRUMENTS[forcedBass]?.name || forcedBass;
+        setTrackNameColor(target, forcedBass);
+        const _tidF = setTimeout(() => {
+          window._randNoteMax = null; window._lastNoteMaxUsed = null;
+          randomizeTrack(target);
+          if (grid[target].every(v => v === 0)) placeNotes(target, 4, 0.3, Math.min(level, 2));
+          redrawTrackCells(target); markModified();
+        }, REAL_TRACK_COUNT * 30 + 30); // after every other staggered track has already been written
+        _pendingRandTimeouts.push(_tidF);
+      }
+    }
+    // (RAND's own selection paths above already dedupe within a single
+    // pass, so more than one bass here would only happen via a locked
+    // track carrying a different bass than this pass just picked —
+    // deliberately left alone, since a locked track is a manual choice.)
+  })();
   // Levels 3+4: activate auto-rand on some tracks and boost FX
   if (level >= 3) {
     const autoCount = level === 3 ? 1 : 2; // hard cap to limit node load
@@ -8751,7 +8792,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.6 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 60% — "quite often"; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
