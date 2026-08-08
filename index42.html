@@ -380,7 +380,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 @keyframes pulse-perc  { from { background: #7baa17; } to { background: #4a6b0e; } }
 @keyframes pulse-tonal { from { background: #fd475d; } to { background: #b02040; } }
 @keyframes pulse-bass  { from { background: #8d3ba8; } to { background: #5e2670; } }
-@keyframes pulse-pad   { from { background: #76f898; } to { background: #3a9c5a; } }
+@keyframes pulse-pad   { from { background: #3a9c5a; } to { background: #76f898; } }
 .track-name-btn.has-notes.inst-kit,
 .track-name-btn.has-notes.inst-perc,
 .track-name-btn.has-notes.inst-tonal { animation: none; }
@@ -397,7 +397,7 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { 
 @keyframes pulse-perc-b  { from { background: #50730f; } to { background: #4a6b0e; } }
 @keyframes pulse-tonal-b { from { background: #b92543; } to { background: #b02040; } }
 @keyframes pulse-bass-b  { from { background: #642977; } to { background: #5e2670; } }
-@keyframes pulse-pad-b   { from { background: #41a761; } to { background: #3a9c5a; } }
+@keyframes pulse-pad-b   { from { background: #3a9c5a; } to { background: #41a761; } }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-b   0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-b  0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-b 0.6s infinite alternate; }
@@ -410,27 +410,34 @@ body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { 
 @keyframes pulse-perc-c  { from { background: #4d6f0f; } to { background: #4a6b0e; } }
 @keyframes pulse-tonal-c { from { background: #b52242; } to { background: #b02040; } }
 @keyframes pulse-bass-c  { from { background: #612773; } to { background: #5e2670; } }
-@keyframes pulse-pad-c   { from { background: #3ea25e; } to { background: #3a9c5a; } }
+@keyframes pulse-pad-c   { from { background: #3a9c5a; } to { background: #3ea25e; } }
 body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-c   0.6s infinite alternate; }
 body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-c  0.6s infinite alternate; }
 body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-c 0.6s infinite alternate; }
 body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass-c 0.6s infinite alternate; }
 body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-c  0.6s infinite alternate; }
 
-/* Option D — every category pulses from its own darkest anchor color up to
-   the exact same chrome-yellow used for the note markers as the playhead
-   sweeps over them (--playhead-color, #f8ff00) — one shared target color
-   instead of each category having its own lighter shade. */
-@keyframes pulse-kit-d   { from { background: #0b5394; } to { background: #f8ff00; } }
-@keyframes pulse-perc-d  { from { background: #4a6b0e; } to { background: #f8ff00; } }
-@keyframes pulse-tonal-d { from { background: #b02040; } to { background: #f8ff00; } }
-@keyframes pulse-bass-d  { from { background: #5e2670; } to { background: #f8ff00; } }
-@keyframes pulse-pad-d   { from { background: #3a9c5a; } to { background: #f8ff00; } }
-body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-d   0.6s infinite alternate; }
-body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-d  0.6s infinite alternate; }
-body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-d 0.6s infinite alternate; }
-body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass-d 0.6s infinite alternate; }
-body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-d  0.6s infinite alternate; }
+/* Option D — a genuine momentary flash to the note-marker chrome-yellow
+   (#f8ff00, same as --playhead-color) on each real note hit, like RAND/PLAY
+   flash to their own secondary colors — not a continuous loop. Idle state
+   is each category's own darkest anchor color; .note-flash (added per-hit
+   by _flashTrackButtonNow, same mechanism the other momentary button
+   flashes in the app already use) snaps it to yellow and eases back down. */
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-kit   { background: #0b5394; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-perc  { background: #4a6b0e; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal { background: #b02040; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { background: #5e2670; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { background: #3a9c5a; }
+@keyframes flash-kit-d   { from { background: #f8ff00; } to { background: #0b5394; } }
+@keyframes flash-perc-d  { from { background: #f8ff00; } to { background: #4a6b0e; } }
+@keyframes flash-tonal-d { from { background: #f8ff00; } to { background: #b02040; } }
+@keyframes flash-bass-d  { from { background: #f8ff00; } to { background: #5e2670; } }
+@keyframes flash-pad-d   { from { background: #f8ff00; } to { background: #3a9c5a; } }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-kit.note-flash   { animation: flash-kit-d   0.25s ease-out; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-perc.note-flash  { animation: flash-perc-d  0.25s ease-out; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.note-flash { animation: flash-tonal-d 0.25s ease-out; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass.note-flash { animation: flash-bass-d 0.25s ease-out; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad.note-flash  { animation: flash-pad-d  0.25s ease-out; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -615,7 +622,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 09:04</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 10:12</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -673,9 +680,9 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;">
-        <span>REVERB MIX</span><span id="beatReverbMixVal" style="color:#adff00;">22</span>
+        <span>REVERB MIX</span><span id="beatReverbMixVal" style="color:#adff00;">24</span>
       </div>
-      <input type="range" id="beatReverbMixBar" min="0" max="100" value="22" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
+      <input type="range" id="beatReverbMixBar" min="0" max="100" value="24" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
     </div>
     <div class="beat-ctrl-row" style="margin-top:0;margin-bottom:12px;">
       <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
@@ -1005,6 +1012,7 @@ const INSTRUMENTS = {
   blunt:  { name: 'HASSELL',      soft: null, accent: null, group: 'tonal' },
   sprkls: { name: 'SPARKLES',    soft: null, accent: null, group: 'tonal' },
   sflute: { name: 'XYLOPHONE',   soft: null, accent: null, group: 'tonal' },
+  spiano: { name: 'SCHOOL PIANO', soft: null, accent: null, group: 'tonal' },
   damask: { name: 'DAMASK',      soft: null, accent: null, group: 'tonal' },
   yamask: { name: 'YAMASK',      soft: null, accent: null, group: 'tonal' },
   dulc:   { name: 'DULCIMER',    soft: null, accent: null, group: 'tonal' },
@@ -1776,6 +1784,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'rhodes')  { return; } // handled in scheduler
   if (key === 'rhodes2')  { return; }
   if (key === 'sflute')   { return; }
+  if (key === 'spiano')   { return; }
   if (key === 'satk')     { return; }
   if (key === 'boog')     { return; }
   if (key === 'jcmgtr')   { return; }
@@ -2158,9 +2167,10 @@ function fireStepAudio(step, t) {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
+        if (document.body.classList.contains('track-pulse-d')) _flashTrackButtonNow(tr, t);
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
-        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening') {
+        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening') {
           const scale = trackBassScale[tr] || [110];
           const noteIdx = gs % scale.length;
           const freq = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale[noteIdx];
@@ -2208,6 +2218,7 @@ function fireStepAudio(step, t) {
           if (key === 'rhodes')  playSpaceKoto(freq, dur, val === 2, t, tr);
           if (key === 'rhodes2') playRhodes2(freq, dur, val === 2, t, tr);
           if (key === 'sflute')  playXylophone(freq, dur, val === 2, t, tr);
+          if (key === 'spiano')  playSchoolPiano(freq, dur, val === 2, t, tr);
           if (key === 'satk')    playSynthAttack(freq, dur, val === 2, t, tr);
           if (key === 'boog')    playPrimePiano(freq, dur, val === 2, t, tr);
           if (key === 'damask')  playDamask(freq, dur, val === 2, t, tr);
@@ -2297,6 +2308,7 @@ function fireStepAudio(step, t) {
             if (key === 'rhodes2') playRhodes2(freq2, dur2, false, t2, tr);
             if (key === 'dulc')    playDulcimer(freq2, dur2, false, t2, tr);
             if (key === 'sflute')  playXylophone(freq2, dur2, false, t2, tr);
+            if (key === 'spiano')  playSchoolPiano(freq2, dur2, false, t2, tr);
             if (key === 'satk')    playSynthAttack(freq2, dur2, false, t2, tr);
             if (key === 'boog')    playPrimePiano(freq2, dur2, false, t2, tr);
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
@@ -2785,7 +2797,7 @@ const trackBassScale = {}; // tr -> [freq, ...]
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
-const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','satk','boog','fflute','blunt','damask','yamask','dulc','opening']);
+const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening']);
 
 function buildScaleFromRoot(root, scaleOverride) {
   const scaleArr = scaleOverride || PENTA_MINOR;
@@ -2807,7 +2819,7 @@ function getRangeRoots(key) {
   if (key === 'blunt') return MID_ROOTS;
   if (key === 'chug') return CHUG_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
-  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening') return MELODY_ROOTS;
+  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening' || key === 'spiano') return MELODY_ROOTS;
   return BASS_ROOTS;
 }
 
@@ -2815,7 +2827,7 @@ function getRangeRoots(key) {
 // the usual scattered notes, walk straight up/down/up-down/down-up through
 // the scale on every 8th note. Standalone helper so it's easy to call from
 // both randomizeBassTrack() and anywhere else that might want it later.
-const ARPEGGIO_KEYS = new Set(['rhodes2', 'rhodes', 'sflute']); // DX PIANO, SPACE KOTO, XYLOPHONE (DREAM PIANO removed)
+const ARPEGGIO_KEYS = new Set(['rhodes2', 'rhodes', 'sflute', 'spiano']); // DX PIANO, SPACE KOTO, XYLOPHONE, SCHOOL PIANO (DREAM PIANO removed)
 const BASS_ARPEGGIO_KEYS = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']); // rarer — 1 in 8, not 1 in 4
 function _writeArpeggioPattern(tr, scale) {
   // Below 100bpm there's room for it to breathe, so sometimes go 16th notes
@@ -2994,10 +3006,10 @@ function randomizeBassTrack(tr, level) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute','jcmgtr']);
+  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute','spiano','jcmgtr']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
-    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute') ? 3 : 99;
+    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute' || key === 'spiano') ? 3 : 99;
     const splitChance = (key === 'jcmgtr') ? 0.45 : 0.18; // JINX gets 32nds a lot more often than everyone else here
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < splitChance) {
@@ -4747,6 +4759,79 @@ function playSynthFlute(freq, durSec, isAccent, time, tr) {
 // inharmonic ~3.93x overtone of a free-free wooden bar, lowpassed for warmth
 // rather than metallic shimmer. Longer sustain than a real xylophone for a
 // more stylized, ringing character. ──
+// SCHOOL PIANO — an upright, slightly worn, close-mic'd piano: real
+// timbre, not too wet on its own (that's what the reverb send is for).
+// Inharmonic partials (real strings run sharp of exact integer multiples),
+// two very-slightly-detuned unison "strings" per note for a natural
+// beating shimmer, a short hammer-noise transient, and higher partials
+// dying out faster than the fundamental — all things a plain oscillator
+// note doesn't have on its own.
+function playSchoolPiano(freq, durSec, isAccent, time, tr) {
+  if (!ctx || !freq) return;
+  const dest = getSynthConnectNode(tr);
+  const vel = isAccent ? 0.42 : 0.28;
+  const decay = Math.min(Math.max(durSec * 1.4, 0.6), 2.6); // real piano notes ring past their written length
+  const stopAt = time + decay + 0.15;
+
+  const partials = [
+    { mult: 1.000, detune: -3, amp: 1.0  },
+    { mult: 1.000, detune: 4,  amp: 0.85 }, // second unison "string", slightly detuned — the natural chorus/beating
+    { mult: 2.005, detune: 0,  amp: 0.28 }, // slightly sharp octave — real strings aren't perfectly harmonic
+    { mult: 3.02,  detune: 0,  amp: 0.12 },
+    { mult: 4.04,  detune: 0,  amp: 0.06 },
+  ];
+  const bodyMix = ctx.createGain(); bodyMix.gain.value = 1;
+  const createdOscs = [];
+  partials.forEach(p => {
+    const osc = ctx.createOscillator(); osc.type = 'triangle';
+    osc.frequency.value = freq * p.mult; osc.detune.value = p.detune;
+    const g = ctx.createGain();
+    const partialDecay = decay / Math.sqrt(p.mult); // higher partials die out faster than the fundamental
+    g.gain.setValueAtTime(p.amp, time);
+    g.gain.exponentialRampToValueAtTime(0.0006, time + partialDecay);
+    osc.connect(g); g.connect(bodyMix);
+    osc.start(time); osc.stop(stopAt);
+    createdOscs.push({ osc, g });
+  });
+
+  // Hammer strike — very short filtered noise burst right at the attack
+  const hammerLen = Math.ceil(ctx.sampleRate * 0.012);
+  const hBuf = ctx.createBuffer(1, hammerLen, ctx.sampleRate);
+  { const d = hBuf.getChannelData(0); for (let i = 0; i < hammerLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / hammerLen, 1.8); }
+  const hammer = ctx.createBufferSource(); hammer.buffer = hBuf;
+  const hammerBP = ctx.createBiquadFilter(); hammerBP.type = 'bandpass'; hammerBP.frequency.value = Math.min(4500, freq * 3); hammerBP.Q.value = 0.9;
+  const hammerGain = ctx.createGain(); hammerGain.gain.value = vel * 0.35;
+  hammer.connect(hammerBP); hammerBP.connect(hammerGain);
+
+  // Slowly closing lowpass — strings lose their high harmonics as they decay
+  const bodyFilter = ctx.createBiquadFilter(); bodyFilter.type = 'lowpass'; bodyFilter.Q.value = 0.7;
+  bodyFilter.frequency.setValueAtTime(6500, time);
+  bodyFilter.frequency.exponentialRampToValueAtTime(900, time + decay);
+
+  // A little upright-piano body warmth — mild boxy resonance
+  const bodyReso = ctx.createBiquadFilter(); bodyReso.type = 'peaking'; bodyReso.frequency.value = 480; bodyReso.Q.value = 1.3; bodyReso.gain.value = 2.5;
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0, time);
+  env.gain.linearRampToValueAtTime(vel, time + 0.004); // fast hammer-strike attack
+  env.gain.exponentialRampToValueAtTime(vel * 0.55, time + 0.12); // quick initial settle
+  env.gain.exponentialRampToValueAtTime(0.0008, time + decay); // then a natural, longer ring-out
+
+  bodyMix.connect(bodyFilter); bodyFilter.connect(bodyReso); bodyReso.connect(env);
+  hammerGain.connect(env);
+  env.connect(dest);
+
+  hammer.start(time); hammer.stop(time + 0.02);
+  hammer.onended = () => { try { hammerBP.disconnect(); hammerGain.disconnect(); } catch(e) {} };
+
+  const cleanupMs = Math.max(0, (stopAt + 0.05 - ctx.currentTime)) * 1000;
+  setTimeout(() => {
+    try {
+      bodyMix.disconnect(); bodyFilter.disconnect(); bodyReso.disconnect(); env.disconnect();
+      createdOscs.forEach(({ g }) => { try { g.disconnect(); } catch(e) {} });
+    } catch(e) {}
+  }, cleanupMs);
+}
 function playXylophone(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
@@ -6265,6 +6350,7 @@ function previewNote(tr, isAccent) {
     else if (key === 'rhodes')  playSpaceKoto(freq, dur, isAccent, t, tr);
     else if (key === 'rhodes2') playRhodes2(freq, dur, isAccent, t, tr);
     else if (key === 'sflute')  playXylophone(freq, dur, isAccent, t, tr);
+    else if (key === 'spiano')  playSchoolPiano(freq, dur, isAccent, t, tr);
     else if (key === 'satk')    playSynthAttack(freq, dur, isAccent, t, tr);
     else if (key === 'boog')    playPrimePiano(freq, dur, isAccent, t, tr);
     else if (key === 'damask')  playDamask(freq, dur, isAccent, t, tr);
@@ -8248,6 +8334,7 @@ function randAll(mode, opts) {
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
   const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/DULCIMER
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
+  const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone']); // max one PAD-classified instrument per pattern — ATMOS/HASSELL/etc. never together
   // Exclude instruments already locked on other tracks
   const lockedInstruments = new Set();
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
@@ -8270,7 +8357,7 @@ function randAll(mode, opts) {
 
   function buildPool(keys) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5);
-    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false; let jinxClashUsed = false;
+    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false; let jinxClashUsed = false; let padUsed = padKeys.has(trackInstruments[0]); // track 0 (TEXTURE/ATMOS) counts toward the one-pad limit too
     // Bass is always included when available, rather than leaving it to
     // shuffle luck — with ~20 tonal options and only 5 basses, a plain
     // shuffle rarely happened to draw one.
@@ -8289,11 +8376,12 @@ function randAll(mode, opts) {
       if (soloHatKeys.has(k)) { if (soloHatUsed) continue; soloHatUsed = true; }
       if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed) continue; soloRareLeadUsed = true; }
       if (jinxClashKeys.has(k)) { if (jinxClashUsed) continue; jinxClashUsed = true; }
+      if (padKeys.has(k)) { if (padUsed) continue; padUsed = true; }
       result.push(k);
     }
     // Fill remaining from keys excluding solo perc/unique/hat if already used
     while (result.length < REAL_TRACK_COUNT) {
-      const fill = keys.filter(k => !(soloPercUsed && soloPercKeys.has(k) && !result.includes(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k) && !result.includes(k)) && !(soloHatUsed && soloHatKeys.has(k) && !result.includes(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k) && !result.includes(k)) && !(jinxClashUsed && jinxClashKeys.has(k) && !result.includes(k)));
+      const fill = keys.filter(k => !(soloPercUsed && soloPercKeys.has(k) && !result.includes(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k) && !result.includes(k)) && !(soloHatUsed && soloHatKeys.has(k) && !result.includes(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k) && !result.includes(k)) && !(jinxClashUsed && jinxClashKeys.has(k) && !result.includes(k)) && !(padUsed && padKeys.has(k) && !result.includes(k)));
       result.push(fill[Math.floor(Math.random() * fill.length)] || keys[0]);
     }
     return result;
@@ -8354,12 +8442,14 @@ function randAll(mode, opts) {
     let soloUniqueUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloUniqueKeys.has(trackInstruments[tr]));
     let soloRareLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloRareLeadKeys.has(trackInstruments[tr]));
     let jinxClashUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && jinxClashKeys.has(trackInstruments[tr]));
+    let padUsed2 = padKeys.has(trackInstruments[0]) || [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && padKeys.has(trackInstruments[tr]));
     const nonBassShuffle = [];
     for (const k of nonBassShuffled) {
       if (soloLeadKeys.has(k)) { if (soloLeadUsed2) continue; soloLeadUsed2 = true; }
       if (soloUniqueKeys.has(k)) { if (soloUniqueUsed2) continue; soloUniqueUsed2 = true; }
       if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed2) continue; soloRareLeadUsed2 = true; }
       if (jinxClashKeys.has(k)) { if (jinxClashUsed2) continue; jinxClashUsed2 = true; }
+      if (padKeys.has(k)) { if (padUsed2) continue; padUsed2 = true; }
       nonBassShuffle.push(k);
       if (nonBassShuffle.length === wantCount) break;
     }
@@ -8661,7 +8751,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.6 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 60% — "quite often"; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -9221,7 +9311,7 @@ function randomizeTrack(tr) {
     redrawTrackCells(tr); markModified(); return;
   }
 
-  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening') {
+  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening') {
     randomizeBassTrack(tr, level); return;
   }
 
@@ -9349,10 +9439,10 @@ function randomizeTrack(tr) {
 
   // RAND-time only: chance to promote a soft hit to a 32nd-split for select instruments.
   // This is the ONLY place split-32 notes are ever assigned — never during live playback.
-  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute','jcmgtr']);
+  const split32Keys = new Set(['shihat','congHi','bongHi','rhodes','rhodes2','dulc','shak','sflute','spiano','jcmgtr']);
   if (split32Keys.has(key)) {
     let splitCount = 0;
-    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute') ? 3 : 99;
+    const maxSplits = (key === 'rhodes' || key === 'rhodes2' || key === 'dulc' || key === 'sflute' || key === 'spiano') ? 3 : 99;
     const splitChance = (key === 'jcmgtr') ? 0.45 : 0.18; // JINX gets 32nds a lot more often than everyone else here
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] === 1 && splitCount < maxSplits && Math.random() < splitChance) {
@@ -9638,6 +9728,15 @@ setTimeout(() => {
   // If this page was opened from a shared tape link, offer to load it —
   // overwrites the random starter pattern above if the user says yes.
   try { _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
+  // Seed RECALL with this startup pattern right away — otherwise it isn't
+  // reachable via RECALL until playback has actually run for a bar (the
+  // rolling snapshot only advances during live playback), so an edit made
+  // before ever pressing PLAY would have nothing valid to revert to.
+  try {
+    const _startupSnap = snapshotState();
+    _recallSnapB = _startupSnap;
+    window._rollingBarSnap = _startupSnap;
+  } catch (e) { console.error('Startup RECALL seed failed', e); }
 }, 300);
 
 
@@ -10071,9 +10170,21 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   sweepLfo.start(t); sweepLfo.stop(stopAt);
 
   // A gentle midrange dip plus a high shelf lift — the actual "less middy,
-  // more airy" EQ move, on top of the brighter filter sweep above.
-  const midDip = ctx.createBiquadFilter(); midDip.type = 'peaking'; midDip.frequency.value = 700; midDip.Q.value = 1.1; midDip.gain.value = -4;
-  const airShelf = ctx.createBiquadFilter(); airShelf.type = 'highshelf'; airShelf.frequency.value = 5000; airShelf.gain.value = 4.5;
+  // more airy" EQ move, on top of the brighter filter sweep above. Pushed
+  // further this pass: shelf starts lower and lifts harder, highpass raised
+  // a bit more to thin out the low end further.
+  const midDip = ctx.createBiquadFilter(); midDip.type = 'peaking'; midDip.frequency.value = 650; midDip.Q.value = 1.1; midDip.gain.value = -5;
+  const airShelf = ctx.createBiquadFilter(); airShelf.type = 'highshelf'; airShelf.frequency.value = 3800; airShelf.gain.value = 7;
+
+  // A quiet breathy noise layer — actual high-frequency air/texture, not
+  // just an EQ trick. Filtered white noise, bandpassed up around 7-9kHz,
+  // very low level, following the same envelope as the tonal body.
+  const airNoiseBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * (sustain + bodyTail + 0.1)), ctx.sampleRate);
+  { const d = airNoiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const airNoise = ctx.createBufferSource(); airNoise.buffer = airNoiseBuf;
+  const airBP = ctx.createBiquadFilter(); airBP.type = 'bandpass'; airBP.frequency.value = 8000; airBP.Q.value = 0.6;
+  const airNoiseGain = ctx.createGain(); airNoiseGain.gain.value = 0.09; // env below already scales by vel — this is a fixed ratio on top of that, not vel*constant again
+  airNoise.connect(airBP); airBP.connect(airNoiseGain);
 
   // Grit — mild waveshaper distortion, the "more fucked up" texture TEXTURE
   // never has.
@@ -10085,9 +10196,12 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   env.gain.setValueAtTime(vel, t + sustain);
   env.gain.exponentialRampToValueAtTime(0.0005, t + sustain + bodyTail);
 
-  const hp1 = ctx.createBiquadFilter(); hp1.type = 'highpass'; hp1.frequency.value = 140; hp1.Q.value = 0.7;
+  const hp1 = ctx.createBiquadFilter(); hp1.type = 'highpass'; hp1.frequency.value = 180; hp1.Q.value = 0.7;
 
   bodyMix.connect(filter); filter.connect(midDip); midDip.connect(airShelf); airShelf.connect(ws); ws.connect(env); env.connect(hp1); hp1.connect(dest);
+  airNoiseGain.connect(env); // routes through the same envelope as the tonal body, so it fades in/out with the note instead of clicking on/off
+  airNoise.start(t); airNoise.stop(stopAt);
+  airNoise.onended = () => { try { airBP.disconnect(); airNoiseGain.disconnect(); } catch(e) {} };
 
   // Registered with the reactive-duck system — whenever something else fires
   // and ducks track 0, this filter also gets an audible "kick" (see
@@ -10451,7 +10565,7 @@ function fullReset() {
   // Global music state
   bpm = 110; swingVal = 0.625; masterVol = 0.8; randAllLevel = 0;
   _tempoLocked = false; _beatTypeLocked = false; _beatType = 'disco';
-  _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.22; _beatFx = false; _beatPump = false;
+  _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.24; _beatFx = false; _beatPump = false;
   _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
   if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setValueAtTime(_beatReverbGainForMix(_beatReverbMix), ctx.currentTime); // on by default now, not silenced
   if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setValueAtTime(0, ctx.currentTime);
@@ -11407,7 +11521,7 @@ function setBeatVol(v) {
 // control row exactly (same toggle/cycle logic), just aimed at the shared
 // BEAT bus (window._beatGain) instead of a single track's gain node.
 let _beatDelay = true;                   // 'R' — reverb send on/off — on by default
-let _beatReverbMix = 0.22;               // slider under BEAT VOL — 0-1, scales the send level whenever 'R' is on — 22% default (up 10% relative from 20%)
+let _beatReverbMix = 0.24;               // slider under BEAT VOL — 0-1, scales the send level whenever 'R' is on — 24% default (up another 10% relative from 22%)
 let _beatFx = false, _beatPump = false;  // 'FX' — 3-state cycle: off / on / on+blast
 let _beatAutoRandActive = false, _beatAutoRandBarCount = 0; // rand 'R' double-tap auto mode
 const BEAT_REVERB_MIX_MAX = 0.045; // send level at slider=100% (was 0.09, cut 50% more)
