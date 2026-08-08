@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 14:25</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 15:04</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -745,7 +745,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <div id="settingsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);" id="settingsBg">
-  <div id="settingsPanel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:24px;min-width:min(340px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;">
+  <div id="settingsPanel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:24px;min-width:min(340px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;max-height:85vh;overflow-y:auto;">
 
     <!-- Song name on its own line, scale + tempo on the line below -->
     <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:12px;border-bottom:1px solid #ddd;">
@@ -830,41 +830,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="display:flex;align-items:center;gap:10px;">
           <input type="color" id="playheadColorPicker" value="#f8ff00" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           <style>#playheadColorPicker::-webkit-color-swatch-wrapper{padding:0;}#playheadColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#playheadColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">NOTE BG COLOR</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="emptyCellColorPicker" value="#d6d6d6" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          <style>#emptyCellColorPicker::-webkit-color-swatch-wrapper{padding:0;}#emptyCellColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#emptyCellColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="checkbox" id="emptyCellTransparentEnable" style="width:15px;height:15px;cursor:pointer;">TRANSPARENT
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DISPLAY</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="bgColorPicker" value="#2a2a2a" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="checkbox" id="bgPulseEnable" style="width:15px;height:15px;cursor:pointer;">PULSE
-          </label>
-          <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="checkbox" id="bgStaticEnable" style="width:15px;height:15px;cursor:pointer;">CUSTOM
-          </label>
-        </div>
-        <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
-          <input type="checkbox" id="notesGrayscaleEnable" style="width:15px;height:15px;cursor:pointer;">GRAYSCALE NOTES
-        </label>
-        <div id="bgPulseSpeedWrap" style="display:none;flex-direction:column;gap:5px;">
-          <div style="display:flex;justify-content:space-between;">
-            <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">PULSE SPEED</div>
-            <div id="bgPulseSpeedReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">every beat</div>
-          </div>
-          <input type="range" id="bgPulseSpeedBar" min="4" max="32" value="4" class="master-vol-slider" style="width:100%;">
         </div>
       </div>
 
@@ -2931,6 +2896,23 @@ function randomizeBassTrack(tr, level) {
   if (key === 'jcmgtr' && window._isAutoBarRand) noteCount = Math.max(1, Math.round(noteCount * 0.75)); // auto mode — 25% fewer notes
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
+  // BOOBOO — connect some of its onsets into short legato runs, so it isn't
+  // exclusively short isolated blips. A genuine addition on top of JINX's
+  // otherwise-identical note assignment, not something JINX itself gets.
+  if (key === 'dulc') {
+    const onsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
+    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    onsets.forEach((s, i) => {
+      if (Math.random() < 0.35) { // roughly a third of its notes get connected into a short run
+        const nextOnset = onsets[i + 1];
+        const gapToNext = nextOnset !== undefined ? nextOnset - s : NUM_STEPS - s;
+        const span = Math.min(gapToNext, 1 + Math.floor(Math.random() * 3)); // 2-4 steps, never overlapping the next note
+        if (span > 1) trackLegatoLen[tr][s] = span;
+      }
+    });
+  }
+
   // Rhythm guitar: all downbeats, all upbeats, or random pattern
   // (CHUG also gets a 4th mode — a dense straight-8th hi-hat-style feel.)
   if (key === 'stab' || key === 'chug' || key === 'bashp') {
@@ -4860,8 +4842,8 @@ function playXylophone(freq, durSec, isAccent, time, tr) {
 function playBooboo(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.24 : 0.16;
-  const noteDur = Math.min(Math.max(durSec, 0.12), 0.5); // short phrases — never rings out long
+  const vel = (isAccent ? 0.24 : 0.16) * 0.7079; // -3dB
+  const noteDur = Math.min(Math.max(durSec, 0.12), 1.6); // short single hits stay short; legato-connected runs can actually sustain now (was capped at 0.5, clipping any legato notes short regardless of their real length)
   const stopAt = time + noteDur + 0.12;
 
   const bodyMix = ctx.createGain(); bodyMix.gain.value = 1;
@@ -8209,10 +8191,21 @@ function fullClear() {
     redrawTrackCells(tr);
   }
   // Track 1 is always TEXTURE — its Auto-Random loop was just stopped along
-  // with everything else above; re-engage it since Track 1 always keeps it running.
-  const rb0 = document.getElementById('randbtn-0');
-  if (rb0 && rb0._restartAuto) rb0._restartAuto();
+  // with everything else above; re-engage it since Track 1 always keeps it
+  // running. ATMOS doesn't get this — just a one-time note pick instead.
+  _engageOrPickTrack0();
   markModified();
+}
+// Track 1's own R button: TEXTURE always starts with Auto-Random engaged,
+// but ATMOS shouldn't — it just gets its notes picked once, same as any
+// other single randomize, not a continuously-regenerating loop.
+function _engageOrPickTrack0() {
+  const rb0 = document.getElementById('randbtn-0');
+  if (trackInstruments[0] === 'drone') {
+    randomizeTrack(0);
+  } else if (rb0 && rb0._restartAuto) {
+    rb0._restartAuto();
+  }
 }
 const PATTERNS = [
   [0,8],[0,4,8,12],[0,2,4,6,8,10,12,14],
@@ -9812,11 +9805,9 @@ setTrackPulseMode('a');
 // startup RAND call below doesn't either).
 document.getElementById('beatBtn')?.classList.toggle('active', beatPlaying);
 updateBeatPulse();
-// Track 1 is always TEXTURE, and always starts with Auto-Random engaged.
-(function() {
-  const rb0 = document.getElementById('randbtn-0');
-  if (rb0 && rb0._restartAuto) rb0._restartAuto();
-})();
+// Track 1 always starts with either TEXTURE's Auto-Random engaged, or
+// ATMOS getting a one-time note pick.
+_engageOrPickTrack0();
 // Load with something already on the deck rather than a blank grid — same
 // call the RAND button itself makes. Deferred (and wrapped) so nothing in
 // here can ever delay or interfere with the tap-to-load screen's own
@@ -10697,13 +10688,13 @@ function fullReset() {
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
-  // Track 1 is always TEXTURE — re-apply its always-on FX and Auto-Random now
-  // that buildUI() just recreated the button elements fresh. Deferred a tick
-  // to rule out any DOM/closure timing race right after a full rebuild.
+  // Track 1: TEXTURE re-applies its always-on FX and Auto-Random now that
+  // buildUI() just recreated the button elements fresh; ATMOS just gets a
+  // one-time note pick instead. Deferred a tick to rule out any DOM/closure
+  // timing race right after a full rebuild.
   if (ctx && trackFxNodes[0]) setFxActive(0, trackFx[0]);
   setTimeout(() => {
-    const rb0 = document.getElementById('randbtn-0');
-    if (rb0 && rb0._restartAuto && !autoShiftStops[0]) rb0._restartAuto();
+    if (!autoShiftStops[0]) _engageOrPickTrack0();
     const fb0 = document.getElementById('fxbtn-0');
     if (fb0) fb0.classList.toggle('on', true);
   }, 50);
