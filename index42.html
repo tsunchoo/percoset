@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 12:29</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 12:48</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1015,7 +1015,7 @@ const INSTRUMENTS = {
   spiano: { name: 'SCHOOL PIANO', soft: null, accent: null, group: 'tonal' },
   damask: { name: 'DAMASK',      soft: null, accent: null, group: 'tonal' },
   yamask: { name: 'YAMASK',      soft: null, accent: null, group: 'tonal' },
-  dulc:   { name: 'DULCIMER',    soft: null, accent: null, group: 'tonal' },
+  dulc:   { name: 'TINA',        soft: null, accent: null, group: 'tonal' },
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
   amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
@@ -2229,7 +2229,7 @@ function fireStepAudio(step, t) {
           if (key === 'boog')    playPrimePiano(freq, dur, val === 2, t, tr);
           if (key === 'damask')  playDamask(freq, dur, val === 2, t, tr);
           if (key === 'yamask')  playYamask(freq, dur, val === 2, t, tr, _yamaskPhraseTick(tr));
-          if (key === 'dulc')    playDulcimer(freq, dur, val === 2, t, tr);
+          if (key === 'dulc')    playTina(freq, dur, val === 2, t, tr);
           if (key === 'opening') playOpening(freq, dur, val === 2, t, tr);
           if (key === 'fflute')  {
             playGlassBell(freq, dur, val === 2, t, tr);
@@ -2312,7 +2312,7 @@ function fireStepAudio(step, t) {
             if (key === 'clar')    playSteelGuitar(freq2, dur2, false, t2, tr);
             if (key === 'rhodes')  playSpaceKoto(freq2, dur2, false, t2, tr);
             if (key === 'rhodes2') playRhodes2(freq2, dur2, false, t2, tr);
-            if (key === 'dulc')    playDulcimer(freq2, dur2, false, t2, tr);
+            if (key === 'dulc')    playTina(freq2, dur2, false, t2, tr);
             if (key === 'sflute')  playXylophone(freq2, dur2, false, t2, tr);
             if (key === 'spiano')  playSchoolPiano(freq2, dur2, false, t2, tr);
             if (key === 'satk')    playSynthAttack(freq2, dur2, false, t2, tr);
@@ -2795,6 +2795,7 @@ const BASS_ROOTS    = [55, 58, 62, 65, 69, 73];   // A1 B1 D2 F2 A2 C#2
 const MELODY_ROOTS  = [220, 247, 262, 294, 330];   // A3 B3 C4 D4 E4
 const MID_ROOTS     = [110, 123, 131, 147, 165];   // A2 B2 C3 D3 E3
 const HIGH_ROOTS    = [440, 494, 523, 587, 659];   // A4 B4 C5 D5 E5
+const TINA_ROOTS     = [165, 220, 262, 330, 440, 587]; // E3 up to D5 — TINA roams a wide range instead of sitting in one register
 const SPARKLE_ROOTS = [82, 98, 110, 130, 147, 165];  // E2 G2 A2 C3 D3 E3
 const CHUG_ROOTS    = [82, 92, 98, 110, 123];   // E2 F#2 G2 A2 B2 — a bit lower than MID_ROOTS
 
@@ -2821,7 +2822,8 @@ function transposeRootToRange(root, roots) {
 }
 function getRangeRoots(key) {
   if (key === 'sparkle') return SPARKLE_ROOTS;
-  if (key === 'sflute' || key === 'boog' || key === 'fflute' || key === 'dulc') return HIGH_ROOTS;
+  if (key === 'sflute' || key === 'boog' || key === 'fflute') return HIGH_ROOTS;
+  if (key === 'dulc') return TINA_ROOTS;
   if (key === 'blunt') return MID_ROOTS;
   if (key === 'chug') return CHUG_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
@@ -2947,7 +2949,7 @@ function randomizeBassTrack(tr, level) {
     boog:    [[1,3,0.20],[3,4,0.40],[4,7,0.60]],   // BOOG — half the generic default density
     damask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // DAMASK — sparse, spacious, plaintive phrases
     yamask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // YAMASK — same sparse, spacious character as DAMASK
-    dulc:    [[2,4,0.35],[3,6,0.45],[5,8,0.60]],   // DULCIMER — bright twinkling runs, similar to Sparkles
+    dulc:    [[2,4,0.35],[3,6,0.45],[5,8,0.60]],   // TINA — bright twinkling runs, similar to Sparkles
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
     jcmgtr:  [[3,6,0.20],[5,9,0.35],[8,13,0.50]],   // JINX — busier now, filling a lot more of the 16th-note grid (was a deliberately calm [1,3]/[2,4]/[3,6])
   };
@@ -4883,51 +4885,47 @@ function playXylophone(freq, durSec, isAccent, time, tr) {
   });
   setTimeout(() => { try { lp.disconnect(); mix.disconnect(); } catch(e) {} }, (decay + 0.3) * 1000);
 }
-// ── DULCIMER: hammered dulcimer — bright struck metal strings, tri-chorus
-// unison stringing (three slightly detuned strings per note, like a real
-// dulcimer's course), a sharp mallet-strike transient, and a metallic
-// inharmonic overtone for shimmer. Moderate ringing decay, not a long bell tail.
-function playDulcimer(freq, durSec, isAccent, time, tr) {
+// TINA — a DX7-style 2-operator FM electric piano/bell tone, the classic
+// bright, glassy "E.PIANO 1" character (the sound under "Simply the Best").
+// A sine carrier gets frequency-modulated by a second sine whose own output
+// level decays fast — that's the actual mechanism behind the sound: a
+// metallic, complex-harmonic attack that quickly mellows into a rounder,
+// simpler tone as the modulator's influence fades. A quiet high partial on
+// top adds the extra chime/shimmer.
+function playTina(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.0642 : 0.0428; // -1dB
-  const decay = isAccent ? 1.8 : 1.4;
+  const vel = isAccent ? 0.34 : 0.22;
+  const decay = Math.min(Math.max(durSec * 1.3, 0.5), 2.2);
+  const stopAt = time + decay + 0.15;
 
-  // Hammer strike — sharp, bright, harder-edged than a soft mallet
-  const clickLen = Math.ceil(ctx.sampleRate * 0.005);
-  const cBuf = ctx.createBuffer(1, clickLen, ctx.sampleRate);
-  const cd = cBuf.getChannelData(0);
-  for (let i = 0; i < clickLen; i++) cd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / clickLen, 1.5);
-  const click = ctx.createBufferSource(); click.buffer = cBuf;
-  const cHP = ctx.createBiquadFilter(); cHP.type = 'highpass'; cHP.frequency.value = freq * 3;
-  const cEnv = ctx.createGain(); cEnv.gain.value = vel * 0.6;
-  click.connect(cHP); cHP.connect(cEnv); cEnv.connect(dest);
-  click.start(time);
-  click.onended = () => { try { cHP.disconnect(); cEnv.disconnect(); } catch(e) {} };
+  const carrier = ctx.createOscillator(); carrier.type = 'sine'; carrier.frequency.value = freq;
+  const modulator = ctx.createOscillator(); modulator.type = 'sine'; modulator.frequency.value = freq * 1.0007; // near-unison ratio — classic EP1 character
+  const modGain = ctx.createGain();
+  modGain.gain.setValueAtTime(freq * 2.4, time); // bright FM index right at the attack
+  modGain.gain.exponentialRampToValueAtTime(freq * 0.35, time + 0.35); // settles into the mellower sustain tone
+  modGain.gain.exponentialRampToValueAtTime(freq * 0.08, time + decay);
+  modulator.connect(modGain); modGain.connect(carrier.frequency);
 
-  // Tri-chorus stringing — three slightly detuned unison strings beating
-  // against each other, plus one bright inharmonic overtone for metallic shine.
-  const partials = [
-    { ratio: 1.0,  detune: -6, amp: 0.85, decayMul: 1.0 },
-    { ratio: 1.0,  detune: 0,  amp: 1.0,  decayMul: 1.0 },
-    { ratio: 1.0,  detune: 6,  amp: 0.85, decayMul: 1.0 },
-    { ratio: 2.76, detune: 0,  amp: 0.22, decayMul: 0.4 }, // inharmonic shimmer, like a struck steel string
-  ];
-  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = freq * 10; lp.Q.value = 0.5;
-  const mix = ctx.createGain(); mix.gain.value = 1;
-  mix.connect(lp); lp.connect(dest);
-  partials.forEach(p => {
-    const o = ctx.createOscillator(); o.type = 'triangle';
-    o.frequency.value = freq * p.ratio; o.detune.value = p.detune;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0, time);
-    g.gain.linearRampToValueAtTime(vel * p.amp, time + 0.003); // fast, hard strike
-    g.gain.exponentialRampToValueAtTime(0.0001, time + decay * p.decayMul);
-    o.connect(g); g.connect(mix);
-    o.start(time); o.stop(time + decay + 0.2);
-    o.onended = () => { try { g.disconnect(); } catch(e) {} };
-  });
-  setTimeout(() => { try { lp.disconnect(); mix.disconnect(); } catch(e) {} }, (decay + 0.3) * 1000);
+  // A quiet higher bell/shimmer partial — extra chime on top of the core FM tone
+  const bell = ctx.createOscillator(); bell.type = 'sine'; bell.frequency.value = freq * 4.03;
+  const bellGain = ctx.createGain();
+  bellGain.gain.setValueAtTime(vel * 0.18, time);
+  bellGain.gain.exponentialRampToValueAtTime(0.0004, time + decay * 0.6);
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0, time);
+  env.gain.linearRampToValueAtTime(vel, time + 0.006);
+  env.gain.exponentialRampToValueAtTime(vel * 0.5, time + 0.3);
+  env.gain.exponentialRampToValueAtTime(0.0006, time + decay);
+
+  carrier.connect(env); bell.connect(bellGain); bellGain.connect(env);
+  env.connect(dest);
+
+  carrier.start(time); carrier.stop(stopAt);
+  modulator.start(time); modulator.stop(stopAt);
+  bell.start(time); bell.stop(stopAt);
+  carrier.onended = () => { try { env.disconnect(); modGain.disconnect(); bellGain.disconnect(); } catch(e) {} };
 }
 // ── OPENING: a light, airy pad — root, 3rd, and 6th unfold in one at a time,
 // then sustain together, like a chord blooming open. Bright and hopeful,
@@ -5492,7 +5490,7 @@ function hideCelestialMap() {
 // synth-based instrument picks it up automatically without each one having
 // to wrap its own output — only the sample-based (WAV) percussion voices in
 // playBuffer need their own explicit call, since they route separately.
-const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhodes', 'rhodes2', 'denial', 'damask', 'yamask', 'dulc']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, DENIALISM, DAMASK, YAMASK, DULCIMER
+const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhodes', 'rhodes2', 'denial', 'damask', 'yamask', 'dulc']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, DENIALISM, DAMASK, YAMASK, TINA
 // Basses were getting lost in the mix — rather than boosting them (which
 // just risks clipping/distortion), every OTHER instrument gets a small
 // -1dB trim applied right at its own output, before any FX/delay/pump
@@ -6367,7 +6365,7 @@ function previewNote(tr, isAccent) {
     else if (key === 'boog')    playPrimePiano(freq, dur, isAccent, t, tr);
     else if (key === 'damask')  playDamask(freq, dur, isAccent, t, tr);
     else if (key === 'yamask')  playYamask(freq, dur, isAccent, t, tr);
-    else if (key === 'dulc')    playDulcimer(freq, dur, isAccent, t, tr);
+    else if (key === 'dulc')    playTina(freq, dur, isAccent, t, tr);
     else if (key === 'opening') playOpening(freq, dur, isAccent, t, tr);
     else if (key === 'fflute')  playGlassBell(freq, dur, isAccent, t, tr);
     else if (key === 'blunt')   playBlunt(freq, dur, isAccent, t, tr);
@@ -8344,7 +8342,7 @@ function randAll(mode, opts) {
   const soloLeadKeys = new Set(['fflute', 'damask', 'yamask']); // max one of these
   const soloUniqueKeys = new Set(['jcmgtr','clar','boog']); // max one of these — JCX GUITAR / EWOK VILLAGE / BOOG
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
-  const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/DULCIMER
+  const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/TINA
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
   const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone']); // max one PAD-classified instrument per pattern — ATMOS/HASSELL/etc. never together
   // Exclude instruments already locked on other tracks
@@ -8558,6 +8556,11 @@ function randAll(mode, opts) {
     if (k === 'clar' && Math.random() < 0.6 && !autoShiftStops[tr]) {
       const _erb = document.getElementById(`randbtn-${tr}`);
       if (_erb && _erb._restartAuto) setTimeout(() => { if (!autoShiftStops[tr]) _erb._restartAuto(); }, 50);
+    }
+    // TINA roams — often arrives with per-track auto-randomization engaged too
+    if (k === 'dulc' && Math.random() < 0.6 && !autoShiftStops[tr]) {
+      const _trb = document.getElementById(`randbtn-${tr}`);
+      if (_trb && _trb._restartAuto) setTimeout(() => { if (!autoShiftStops[tr]) _trb._restartAuto(); }, 50);
     }
     const tb = document.getElementById(`tbtn-${tr}`); if (tb) tb.textContent = INSTRUMENTS[k]?.name || k;
     setTrackNameColor(tr, k);
@@ -8823,7 +8826,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK/TINA fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
