@@ -518,6 +518,7 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad.not
 .step-lane.lane-muted .step-cell.legato-tail::after { opacity: 0.15 !important; filter: grayscale(1); }
 body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
+.step-cell.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.15; }
 .step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: 1; }
 .step-cell.soft.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.7; }
 .step-cell.split32::after {
@@ -622,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 11:36</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 12:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -835,10 +836,10 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK LINE COLOR</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="trackLineColorPicker" value="#858585" disabled style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <input type="color" id="trackLineColorPicker" value="#858585" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           <style>#trackLineColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackLineColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackLineColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="checkbox" id="trackLineTransparentEnable" checked style="width:15px;height:15px;cursor:pointer;">TRANSPARENT
+            <input type="checkbox" id="trackLineTransparentEnable" style="width:15px;height:15px;cursor:pointer;">TRANSPARENT
           </label>
         </div>
       </div>
@@ -1169,7 +1170,7 @@ function updateBgPulseSpeedReadout() {
 
   let _trackLineBaseColor = trackLineColorPicker ? trackLineColorPicker.value : '#858585';
   let _emptyCellBaseColor = emptyCellColorPicker ? emptyCellColorPicker.value : '#d6d6d6';
-  let _trackLineTransparent = true;
+  let _trackLineTransparent = false;
   let _emptyCellTransparent = false;
 
   function getEffectiveBgHex() {
@@ -1202,6 +1203,13 @@ function updateBgPulseSpeedReadout() {
   // Exposed so the DISPLAY background controls can trigger a re-tint when the bg changes.
   window._applyTrackLineColor = applyTrackLineColor;
   window._applyEmptyCellColor = applyEmptyCellColor;
+  // Apply the actual resting state right away — these were previously only
+  // ever invoked reactively from an input/change event, so nothing ran the
+  // color logic at all until the person had already interacted with a
+  // control once, leaving the CSS custom property unset (and silently
+  // falling back to its own default) the whole time before that.
+  applyTrackLineColor();
+  applyEmptyCellColor();
 
   if (trackLineColorPicker) {
     trackLineColorPicker.addEventListener('input', () => {
@@ -9701,6 +9709,9 @@ function wireRandomizeButton(btn, tr) {
   let autoInterval = null, pendingTimeout = null;
 
   const doRand = () => {
+    // Same rule as the main RAND button: fresh notes shouldn't land on a
+    // track that's still silenced from a previous, unrelated mute decision.
+    if (trackMuted[tr]) { trackMuted[tr] = false; updateTrackMute(tr); }
     randomizeTrack(tr);
     // Do not reset volume — keep whatever the user has set
   };
