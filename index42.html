@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 16:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 16:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3970,7 +3970,7 @@ function playChug(freq, durSec, isAccent, time, tr) {
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.8;
   lp.frequency.setValueAtTime(isAccent ? 2600 : 1900, time);
-  lp.frequency.exponentialRampToValueAtTime(220, time + 0.055);
+  lp.frequency.exponentialRampToValueAtTime(340, time + 0.14); // floor raised and slowed a touch (was 220 @ 0.055s) — so the longer amplitude tail still has some tone left to sustain, not just filtered-down thump
 
   const peak = ctx.createBiquadFilter(); peak.type = 'peaking';
   peak.frequency.value = 900; peak.Q.value = 1.0; peak.gain.value = 5;
@@ -3988,9 +3988,9 @@ function playChug(freq, durSec, isAccent, time, tr) {
     env.gain.setValueAtTime(0, time);
     env.gain.linearRampToValueAtTime(vel * (i < 2 ? 1.0 : 0.55), time + 0.002);
     env.gain.exponentialRampToValueAtTime(vel * 0.15, time + 0.035);
-    env.gain.exponentialRampToValueAtTime(0.0001, time + (isAccent ? 0.19 : 0.14)); // a bit more sustain than fully choked, still mostly muted (was 0.14/0.10)
+    env.gain.exponentialRampToValueAtTime(0.0001, time + (isAccent ? 0.30 : 0.22)); // more sustain again (was 0.19/0.14)
     osc.connect(env); env.connect(lp);
-    osc.start(time); osc.stop(time + 0.26);
+    osc.start(time); osc.stop(time + 0.38);
     osc.onended = () => {
       try { env.disconnect(); } catch(e) {}
       if (i === freqRatios.length - 1) { try { lp.disconnect(); peak.disconnect(); } catch(e) {} }
@@ -8725,11 +8725,30 @@ function randAll(mode, opts) {
         const tbF = document.getElementById(`tbtn-${target}`); if (tbF) tbF.textContent = INSTRUMENTS[forcedBass]?.name || forcedBass;
         setTrackNameColor(target, forcedBass);
       }
+    } else if (bassTracks.length > 1) {
+      // More than one bass got through somehow — a real report of this
+      // happening despite the dedup logic in both selection paths above, so
+      // catching it here as a hard guarantee rather than continuing to
+      // chase the exact cause blind. Keep whichever one is locked (a
+      // deliberate choice), or the first one found if none are locked, and
+      // reassign the rest — never touching a locked track.
+      const lockedBassTr = bassTracks.find(tr => trackSweep[tr]);
+      const keepTr = lockedBassTr !== undefined ? lockedBassTr : bassTracks[0];
+      // Restricted to percussion/kit, not the full instrument list — a
+      // relabel-in-place here doesn't re-sort the track's position, and a
+      // bass track sits near the bottom of the intended visual order
+      // (hihat → perc → lead → mid → bass → kick). Dropping a lead/pad
+      // instrument in there was exactly the bug just reported; percussion
+      // is at least in the right neighborhood, not at the very top.
+      const replacementPool = Object.keys(INSTRUMENTS).filter(k => !bassKeys.has(k) && k !== 'amlgm' && k !== 'drone' && INSTRUMENTS[k].group !== 'tonal');
+      bassTracks.forEach(tr => {
+        if (tr === keepTr || trackSweep[tr]) return;
+        const replacement = replacementPool[Math.floor(Math.random() * replacementPool.length)];
+        trackInstruments[tr] = replacement;
+        const tbR = document.getElementById(`tbtn-${tr}`); if (tbR) tbR.textContent = INSTRUMENTS[replacement]?.name || replacement;
+        setTrackNameColor(tr, replacement);
+      });
     }
-    // (RAND's own selection paths above already dedupe within a single
-    // pass, so more than one bass here would only happen via a locked
-    // track carrying a different bass than this pass just picked —
-    // deliberately left alone, since a locked track is a manual choice.)
   })();
   // One more check, scheduled to run after every staggered per-track write
   // above has already completed — confirms whichever track actually ended
