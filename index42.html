@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 13:21</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 13:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -834,17 +834,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       </div>
 
       <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK LINE COLOR</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="trackLineColorPicker" value="#858585" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          <style>#trackLineColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackLineColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackLineColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          <label style="display:flex;align-items:center;gap:5px;font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="checkbox" id="trackLineTransparentEnable" style="width:15px;height:15px;cursor:pointer;">TRANSPARENT
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">NOTE BG COLOR</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <input type="color" id="emptyCellColorPicker" value="#d6d6d6" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
@@ -1002,7 +991,7 @@ const INSTRUMENTS = {
   sparkle:{ name: 'DENIECE',     soft: null, accent: null, group: 'tonal' },
   rhodes: { name: 'SPACE KOTO',       soft: null, accent: null, group: 'tonal' },
   rhodes2:{ name: 'DX PIANO',    soft: null, accent: null, group: 'tonal' },
-  denial: { name: 'DENIALISM',   soft: null, accent: null, group: 'tonal' },
+  denial: { name: 'ARBY',        soft: null, accent: null, group: 'tonal' },
   stab:   { name: 'RYTM GTR',     soft: null, accent: null, group: 'tonal' },
   chug:   { name: 'CHUG',        soft: null, accent: null, group: 'tonal' },
   bashp:  { name: 'MARIO PIANO',  soft: null, accent: null, group: 'tonal' },
@@ -1161,16 +1150,12 @@ function updateBgPulseSpeedReadout() {
   const DEFAULT_APP_BG = '#f5f0e8'; // matches --bg in CSS
   const HUE_SATURATION = 0.16; // how strongly the background's hue reads through the grey
 
-  const trackLineColorPicker = document.getElementById('trackLineColorPicker');
   const emptyCellColorPicker = document.getElementById('emptyCellColorPicker');
-  const trackLineTransparentCb = document.getElementById('trackLineTransparentEnable');
   const emptyCellTransparentCb = document.getElementById('emptyCellTransparentEnable');
   const bgColorPicker = document.getElementById('bgColorPicker');
   const bgStaticCb = document.getElementById('bgStaticEnable');
 
-  let _trackLineBaseColor = trackLineColorPicker ? trackLineColorPicker.value : '#858585';
   let _emptyCellBaseColor = emptyCellColorPicker ? emptyCellColorPicker.value : '#d6d6d6';
-  let _trackLineTransparent = false;
   let _emptyCellTransparent = false;
 
   function getEffectiveBgHex() {
@@ -1191,42 +1176,25 @@ function updateBgPulseSpeedReadout() {
     const [bgH] = hexToHsl(bg);
     return hslToHex(bgH, HUE_SATURATION, variantL);
   }
-  function applyTrackLineColor() {
-    document.documentElement.style.setProperty('--track-line-color',
-      _trackLineTransparent ? 'transparent' : _trackLineBaseColor);
-  }
+  // Track lines always stay transparent now — no picker, no toggle.
+  document.documentElement.style.setProperty('--track-line-color', 'transparent');
   function applyEmptyCellColor() {
     document.documentElement.style.setProperty('--empty-cell-color',
       _emptyCellTransparent ? 'transparent' : _emptyCellBaseColor);
   }
   // Exposed so the DISPLAY background controls can trigger a re-tint when the bg changes.
-  window._applyTrackLineColor = applyTrackLineColor;
   window._applyEmptyCellColor = applyEmptyCellColor;
-  // Apply the actual resting state right away — these were previously only
+  // Apply the actual resting state right away — this was previously only
   // ever invoked reactively from an input/change event, so nothing ran the
   // color logic at all until the person had already interacted with a
   // control once, leaving the CSS custom property unset (and silently
   // falling back to its own default) the whole time before that.
-  applyTrackLineColor();
   applyEmptyCellColor();
 
-  if (trackLineColorPicker) {
-    trackLineColorPicker.addEventListener('input', () => {
-      _trackLineBaseColor = trackLineColorPicker.value;
-      applyTrackLineColor();
-    });
-  }
   if (emptyCellColorPicker) {
     emptyCellColorPicker.addEventListener('input', () => {
       _emptyCellBaseColor = emptyCellColorPicker.value;
       applyEmptyCellColor();
-    });
-  }
-  if (trackLineTransparentCb) {
-    trackLineTransparentCb.addEventListener('change', () => {
-      _trackLineTransparent = trackLineTransparentCb.checked;
-      if (trackLineColorPicker) trackLineColorPicker.disabled = _trackLineTransparent;
-      applyTrackLineColor();
     });
   }
   if (emptyCellTransparentCb) {
@@ -1237,7 +1205,6 @@ function updateBgPulseSpeedReadout() {
     });
   }
 
-  applyTrackLineColor();
   applyEmptyCellColor();
 })();
 (function() {
@@ -1274,9 +1241,9 @@ function updateBgPulseSpeedReadout() {
       document.body.style.removeProperty('--header-text-dim');
       document.body.style.removeProperty('--reel-filter');
     }
-    // Track lines and note markers re-tint against whatever the effective
-    // background now is (custom color, or back to the default app bg).
-    if (window._applyTrackLineColor) window._applyTrackLineColor();
+    // Note markers re-tint against whatever the effective background now
+    // is (custom color, or back to the default app bg). Track lines always
+    // stay transparent, so there's nothing to re-tint there anymore.
     if (window._applyEmptyCellColor) window._applyEmptyCellColor();
     // Keep the tempo lock's red override intact if it's currently locked —
     // only refresh the unlocked color so it doesn't get stuck on a stale one.
@@ -4026,9 +3993,9 @@ function playChug(freq, durSec, isAccent, time, tr) {
     env.gain.setValueAtTime(0, time);
     env.gain.linearRampToValueAtTime(vel * (i < 2 ? 1.0 : 0.55), time + 0.002);
     env.gain.exponentialRampToValueAtTime(vel * 0.15, time + 0.035);
-    env.gain.exponentialRampToValueAtTime(0.0001, time + (isAccent ? 0.14 : 0.10)); // choked short — the mute
+    env.gain.exponentialRampToValueAtTime(0.0001, time + (isAccent ? 0.19 : 0.14)); // a bit more sustain than fully choked, still mostly muted (was 0.14/0.10)
     osc.connect(env); env.connect(lp);
-    osc.start(time); osc.stop(time + 0.2);
+    osc.start(time); osc.stop(time + 0.26);
     osc.onended = () => {
       try { env.disconnect(); } catch(e) {}
       if (i === freqRatios.length - 1) { try { lp.disconnect(); peak.disconnect(); } catch(e) {} }
@@ -4783,7 +4750,7 @@ function playSchoolPiano(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
   const rawAtten = trackDelay[tr] ? 1 : 0.7079; // -3dB when this track's reverb send is off — "raw"
-  const vel = (isAccent ? 0.42 : 0.28) * rawAtten;
+  const vel = (isAccent ? 0.315 : 0.21) * rawAtten; // -2.5dB (was 0.42/0.28)
   const decay = Math.min(Math.max(durSec * 1.4, 0.6), 2.6); // real piano notes ring past their written length
   const stopAt = time + decay + 0.15;
 
@@ -4893,7 +4860,7 @@ function playXylophone(freq, durSec, isAccent, time, tr) {
 function playTina(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.30 : 0.20;
+  const vel = isAccent ? 0.2124 : 0.1416; // -3dB (was 0.30/0.20)
   const sustain = Math.max(durSec, 0.18);
   const release = 0.18;
   const stopAt = time + sustain + release + 0.05;
@@ -5524,14 +5491,14 @@ function hideCelestialMap() {
 // beat-type branch (including off-beat 8th-note kicks like BREAKS/BOUNCE 2&/3&)
 // ── Sidechain duck — a dedicated, always-on duck applied to every
 // instrument EXCEPT the lead-tonal group (JINX, EWOK VILLAGE, DREAM PIANO, DENIECE,
-// SPACE KOTO, DX PIANO, DENIALISM), triggered by every kick and every bass
+// SPACE KOTO, DX PIANO, ARBY), triggered by every kick and every bass
 // note. Deeper and punchier than the general master duck, since this is
 // meant to be a real characteristic of the mix, not a subtle glue effect.
 // Applied centrally inside getSynthConnectNode (see below) so every
 // synth-based instrument picks it up automatically without each one having
 // to wrap its own output — only the sample-based (WAV) percussion voices in
 // playBuffer need their own explicit call, since they route separately.
-const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhodes', 'rhodes2', 'denial', 'damask', 'yamask', 'dulc']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, DENIALISM, DAMASK, YAMASK, TINA
+const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhodes', 'rhodes2', 'denial', 'damask', 'yamask', 'dulc']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, ARBY, DAMASK, YAMASK, TINA
 // Basses were getting lost in the mix — rather than boosting them (which
 // just risks clipping/distortion), every OTHER instrument gets a small
 // -1dB trim applied right at its own output, before any FX/delay/pump
@@ -8372,6 +8339,25 @@ function randAll(mode, opts) {
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (trackMuted[tr]) { trackMuted[tr] = false; updateTrackMute(tr); }
   }
+  // TEXTURE/ATMOS share track 0, but that choice previously only ever got
+  // made once — at page load or a full reset — since RAND otherwise never
+  // touches track 0 at all. That meant ATMOS effectively could never come
+  // up during ordinary RAND use, only by luck of which one the page
+  // happened to start on. Re-rolling the same 50/50 here, every RAND press
+  // (still skipped if track 0 is locked, same as everywhere else).
+  if (!trackSweep[0]) {
+    const _newSlot0 = Math.random() < 0.5 ? 'drone' : 'amlgm';
+    if (_newSlot0 !== trackInstruments[0]) {
+      trackInstruments[0] = _newSlot0;
+      const tb0 = document.getElementById('tbtn-0'); if (tb0) tb0.textContent = INSTRUMENTS[_newSlot0]?.name || _newSlot0;
+      setTrackNameColor(0, _newSlot0);
+      // Track 0's notes were otherwise never touched by RAND at all (frozen
+      // from whatever page load/reset originally wrote), so an actual swap
+      // needs its own fresh pattern generated too — otherwise ATMOS would
+      // just inherit TEXTURE's old, much sparser layout rather than its own.
+      randomizeTrack(0);
+    }
+  }
   // Pick a fresh random scale and root for this randomize pass
   const scaleNames = Object.keys(SCALES);
   currentScaleName = scaleNames[Math.floor(Math.random() * scaleNames.length)];
@@ -8531,7 +8517,7 @@ function randAll(mode, opts) {
   const tonalNonBassKeys = new Set([...TONAL_KEYS].filter(k => !bassKeys2.has(k)));
 
   // Rank each instrument: 0=hihat, 1=perc, 2=tonal lead, 2.5=tonal mid, 3=bass, 4=kick
-  const leadTonalKeys = new Set(['jcmgtr','clar','boog','sparkle','rhodes','rhodes2','denial']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, DENIALISM
+  const leadTonalKeys = new Set(['jcmgtr','clar','boog','sparkle','rhodes','rhodes2','denial']); // JINX, EWOK VILLAGE, DREAM PIANO, DENIECE, SPACE KOTO, DX PIANO, ARBY
   function trackRank(k) {
     if (hihatKeys.has(k)) return 0;
     if (kickKeys.has(k)) return 4;
@@ -9387,7 +9373,7 @@ function randomizeTrack(tr) {
   // capture — so it can't be routed through randomizeBassTrack (that would
   // risk it picking a fresh root and setting it as the whole song's scale
   // root before any real tonal track has). But its trigger pattern should be
-  // populated the same way DENIALISM's is: DENIALISM has no custom density
+  // populated the same way ARBY's is: ARBY has no custom density
   // table, so it just uses the generic tonal default — replicated here
   // directly, plus the same "never more than 3 in a row" cap.
   if (trackInstruments[tr] === 'amlgm' || trackInstruments[tr] === 'drone') {
@@ -10726,10 +10712,10 @@ function fullReset() {
   const staticCb = document.getElementById('bgStaticEnable'); if (staticCb) staticCb.checked = false;
   const grayCb = document.getElementById('notesGrayscaleEnable'); if (grayCb) grayCb.checked = false;
   const speedWrap = document.getElementById('bgPulseSpeedWrap'); if (speedWrap) speedWrap.style.display = 'none';
-  // Track line / note marker colors are tinted against whatever background
-  // is currently in effect — re-sync them now that CUSTOM bg is back off,
-  // otherwise they'd stay tinted to the old custom color after a reset.
-  if (window._applyTrackLineColor) window._applyTrackLineColor();
+  // Note marker color is tinted against whatever background is currently
+  // in effect — re-sync it now that CUSTOM bg is back off, otherwise it'd
+  // stay tinted to the old custom color after a reset. Track lines always
+  // stay transparent, so there's nothing to re-sync there anymore.
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
