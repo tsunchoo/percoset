@@ -404,14 +404,33 @@ body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal { animation:
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass-b 0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-b  0.6s infinite alternate; }
 
-/* Option C — no color tweening at all, just a plain on/off flash — but
-   genuinely triggered by that track's own note hits now, not a generic
-   loop tied to tempo. Idle at full brightness; each real note trigger dips
-   it briefly via the .note-flash class (see _flashTrackButtonNow), then it
-   settles back up — no CSS animation/transition here at all, so the actual
-   snap is instant either way. */
-body.track-pulse-c.seq-playing .track-name-btn.has-notes { opacity: 1; }
-body.track-pulse-c.seq-playing .track-name-btn.has-notes.note-flash { opacity: 0.35; }
+/* Option C — same mechanism as B (a continuous color fade, darker end
+   fixed), just pulled in even closer than B's — noticeably subtler still. */
+@keyframes pulse-kit-c   { from { background: #0b5394; } to { background: #0f5697; } }
+@keyframes pulse-perc-c  { from { background: #4d6f0f; } to { background: #4a6b0e; } }
+@keyframes pulse-tonal-c { from { background: #b52242; } to { background: #b02040; } }
+@keyframes pulse-bass-c  { from { background: #612773; } to { background: #5e2670; } }
+@keyframes pulse-pad-c   { from { background: #3ea25e; } to { background: #3a9c5a; } }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-c   0.6s infinite alternate; }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-c  0.6s infinite alternate; }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-c 0.6s infinite alternate; }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass-c 0.6s infinite alternate; }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-c  0.6s infinite alternate; }
+
+/* Option D — every category pulses from its own darkest anchor color up to
+   the exact same chrome-yellow used for the note markers as the playhead
+   sweeps over them (--playhead-color, #f8ff00) — one shared target color
+   instead of each category having its own lighter shade. */
+@keyframes pulse-kit-d   { from { background: #0b5394; } to { background: #f8ff00; } }
+@keyframes pulse-perc-d  { from { background: #4a6b0e; } to { background: #f8ff00; } }
+@keyframes pulse-tonal-d { from { background: #b02040; } to { background: #f8ff00; } }
+@keyframes pulse-bass-d  { from { background: #5e2670; } to { background: #f8ff00; } }
+@keyframes pulse-pad-d   { from { background: #3a9c5a; } to { background: #f8ff00; } }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-kit   { animation: pulse-kit-d   0.6s infinite alternate; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-perc  { animation: pulse-perc-d  0.6s infinite alternate; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal { animation: pulse-tonal-d 0.6s infinite alternate; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass { animation: pulse-bass-d 0.6s infinite alternate; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-d  0.6s infinite alternate; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -596,7 +615,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 08:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 09:04</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -654,9 +673,9 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;">
-        <span>REVERB MIX</span><span id="beatReverbMixVal" style="color:#adff00;">20</span>
+        <span>REVERB MIX</span><span id="beatReverbMixVal" style="color:#adff00;">22</span>
       </div>
-      <input type="range" id="beatReverbMixBar" min="0" max="100" value="20" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
+      <input type="range" id="beatReverbMixBar" min="0" max="100" value="22" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
     </div>
     <div class="beat-ctrl-row" style="margin-top:0;margin-bottom:12px;">
       <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
@@ -782,7 +801,10 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             <input type="radio" name="trackPulseMode" value="b" onchange="setTrackPulseMode('b')" style="width:15px;height:15px;cursor:pointer;">SUBTLE FADE
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="c" onchange="setTrackPulseMode('c')" style="width:15px;height:15px;cursor:pointer;">FLASH
+            <input type="radio" name="trackPulseMode" value="c" onchange="setTrackPulseMode('c')" style="width:15px;height:15px;cursor:pointer;">SUBTLER STILL
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackPulseMode" value="d" onchange="setTrackPulseMode('d')" style="width:15px;height:15px;cursor:pointer;">CHROME YELLOW
           </label>
         </div>
       </div>
@@ -2136,7 +2158,6 @@ function fireStepAudio(step, t) {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
-        if (document.body.classList.contains('track-pulse-c')) _flashTrackButtonNow(tr, t);
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
         if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening') {
@@ -7062,8 +7083,8 @@ function _flashTrackButtonNow(tr, t) {
   }, delayMs);
 }
 function setTrackPulseMode(mode) {
-  document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c');
-  document.body.classList.add('track-pulse-' + (mode === 'b' || mode === 'c' ? mode : 'a'));
+  document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c', 'track-pulse-d');
+  document.body.classList.add('track-pulse-' + (mode === 'b' || mode === 'c' || mode === 'd' ? mode : 'a'));
 }
 function _tapePayloadForCurrent() {
   return {
@@ -10430,7 +10451,7 @@ function fullReset() {
   // Global music state
   bpm = 110; swingVal = 0.625; masterVol = 0.8; randAllLevel = 0;
   _tempoLocked = false; _beatTypeLocked = false; _beatType = 'disco';
-  _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.2; _beatFx = false; _beatPump = false;
+  _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.22; _beatFx = false; _beatPump = false;
   _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
   if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setValueAtTime(_beatReverbGainForMix(_beatReverbMix), ctx.currentTime); // on by default now, not silenced
   if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setValueAtTime(0, ctx.currentTime);
@@ -11386,7 +11407,7 @@ function setBeatVol(v) {
 // control row exactly (same toggle/cycle logic), just aimed at the shared
 // BEAT bus (window._beatGain) instead of a single track's gain node.
 let _beatDelay = true;                   // 'R' — reverb send on/off — on by default
-let _beatReverbMix = 0.2;                // slider under BEAT VOL — 0-1, scales the send level whenever 'R' is on — 20% default
+let _beatReverbMix = 0.22;               // slider under BEAT VOL — 0-1, scales the send level whenever 'R' is on — 22% default (up 10% relative from 20%)
 let _beatFx = false, _beatPump = false;  // 'FX' — 3-state cycle: off / on / on+blast
 let _beatAutoRandActive = false, _beatAutoRandBarCount = 0; // rand 'R' double-tap auto mode
 const BEAT_REVERB_MIX_MAX = 0.045; // send level at slider=100% (was 0.09, cut 50% more)
