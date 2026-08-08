@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 15:04</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 15:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2016,7 +2016,7 @@ function scheduler() {
         if (snap.trackChop)  trackChop[tr]  = snap.trackChop[tr]  || false;
         if (snap.trackRLevel) trackRLevel[tr] = snap.trackRLevel[tr] ?? 0;
         if (snap.trackAutoRand) {
-          const isAuto = !!snap.trackAutoRand[tr];
+          const isAuto = !!snap.trackAutoRand[tr] && !(tr === 0 && trackInstruments[0] === 'drone'); // ATMOS never gets auto-rand, even if a restored snapshot says it should
           const lane = document.getElementById(`lane-${tr}`);
           const rb = document.getElementById(`randbtn-${tr}`);
           if (isAuto) {
@@ -8197,15 +8197,16 @@ function fullClear() {
   markModified();
 }
 // Track 1's own R button: TEXTURE always starts with Auto-Random engaged,
-// but ATMOS shouldn't — it just gets its notes picked once, same as any
-// other single randomize, not a continuously-regenerating loop.
+// but ATMOS shouldn't. NOT calling randomizeTrack(0) here — that's the same
+// function implicated in an earlier crash, and re-adding it (even as a
+// one-shot call) is suspected of causing a second crash within seconds of
+// page load, exactly when ATMOS got picked by the startup coin flip. So for
+// ATMOS this now does nothing at all beyond skipping the auto-loop — it
+// just keeps whatever notes were already there instead of regenerating.
 function _engageOrPickTrack0() {
+  if (trackInstruments[0] === 'drone') return;
   const rb0 = document.getElementById('randbtn-0');
-  if (trackInstruments[0] === 'drone') {
-    randomizeTrack(0);
-  } else if (rb0 && rb0._restartAuto) {
-    rb0._restartAuto();
-  }
+  if (rb0 && rb0._restartAuto) rb0._restartAuto();
 }
 const PATTERNS = [
   [0,8],[0,4,8,12],[0,2,4,6,8,10,12,14],
@@ -9050,7 +9051,8 @@ function restoreState(snap) {
   const kd = document.getElementById('keyDisplay'); if (kd) kd.textContent = (getKeyName()||''). replace(/-/g,' ');
   // Restore auto-rand lane colors and R button state
   if (snap.trackAutoRand) {
-    snap.trackAutoRand.forEach((isAuto, tr) => {
+    snap.trackAutoRand.forEach((isAutoRaw, tr) => {
+      const isAuto = isAutoRaw && !(tr === 0 && trackInstruments[0] === 'drone'); // ATMOS never gets auto-rand, even if a restored snapshot says it should
       const lane = document.getElementById(`lane-${tr}`);
       const rb = document.getElementById(`randbtn-${tr}`);
       if (isAuto) {
