@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 18:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 18:38</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9933,25 +9933,37 @@ setTimeout(() => {
   // each get their own freshly randomized pattern. Same tempo across all
   // six, so browsing between them doesn't jump speed each time. Ends by
   // restoring slot 1 so what's actually loaded matches what's on screen.
-  try {
-    slots[0] = snapshotState();
-    for (let i = 1; i < NUM_SLOTS; i++) {
-      randAll(undefined, { skipTempo: true });
-      slots[i] = snapshotState();
-    }
-    restoreState(slots[0]);
-    activeSlot = 0;
-    updateSlotButtons();
-  } catch (e) { console.error('Slot pre-fill failed', e); }
-  // Seed RECALL with this startup pattern right away — otherwise it isn't
-  // reachable via RECALL until playback has actually run for a bar (the
-  // rolling snapshot only advances during live playback), so an edit made
-  // before ever pressing PLAY would have nothing valid to revert to.
-  try {
-    const _startupSnap = snapshotState();
-    _recallSnapB = _startupSnap;
-    window._rollingBarSnap = _startupSnap;
-  } catch (e) { console.error('Startup RECALL seed failed', e); }
+  //
+  // randAll() doesn't finish its own work synchronously — the actual
+  // per-track note-writing (randomizeTrack) runs inside a setTimeout,
+  // staggered 30ms per track, plus a further-delayed bass safety-net check
+  // on top. A plain synchronous loop calling randAll() six times in a row
+  // would queue all of that staggered work and then snapshot before any of
+  // it had actually run — capturing six copies of essentially the same
+  // stale grid. Waiting between each call and its snapshot is required.
+  const _slotFillDelayMs = 500; // comfortably past the ~150ms track stagger and the bass safety-net's own delay on top of that
+  (async () => {
+    try {
+      slots[0] = snapshotState();
+      for (let i = 1; i < NUM_SLOTS; i++) {
+        randAll(undefined, { skipTempo: true });
+        await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
+        slots[i] = snapshotState();
+      }
+      restoreState(slots[0]);
+      activeSlot = 0;
+      updateSlotButtons();
+    } catch (e) { console.error('Slot pre-fill failed', e); }
+    // Seed RECALL with this startup pattern right away — otherwise it isn't
+    // reachable via RECALL until playback has actually run for a bar (the
+    // rolling snapshot only advances during live playback), so an edit made
+    // before ever pressing PLAY would have nothing valid to revert to.
+    try {
+      const _startupSnap = snapshotState();
+      _recallSnapB = _startupSnap;
+      window._rollingBarSnap = _startupSnap;
+    } catch (e) { console.error('Startup RECALL seed failed', e); }
+  })();
 }, 300);
 
 
@@ -10205,18 +10217,21 @@ function _leftSpoolEngage() {
   if (!playing || !ctx || window._tempoBraking) return;
   window._tempoBraking = true;
   clearInterval(scheduleInterval); scheduleInterval = null;
-  playUiSound('Stop');
   // Deliberately no gain ramp here — letting notes ring out is the point.
   window._spoolHeldReverse = [];
   document.querySelectorAll('.reel-wrap').forEach((r, i) => {
     window._spoolHeldReverse[i] = r.classList.contains('spinning-reverse');
     r.classList.remove('spinning', 'spinning-reverse');
   });
+  // Sweeps down from wherever SWEEP (or a previous hold of this) left the
+  // pitch — on top of the stop/restart behavior above, not replacing it.
+  if (window._sweepEngageDown) window._sweepEngageDown();
 }
 function _leftSpoolRelease() {
   if (!window._tempoBraking || !ctx) return;
   window._tempoBraking = false;
   playUiSound('Cymbal');
+  if (window._sweepRelease) window._sweepRelease();
   document.querySelectorAll('.reel-wrap').forEach((r, i) => {
     const wasReverse = window._spoolHeldReverse && window._spoolHeldReverse[i];
     r.classList.add(wasReverse ? 'spinning-reverse' : 'spinning');
@@ -11327,23 +11342,29 @@ async function hardResetAudioEngine() {
     _sweepAnalyserData = new Uint8Array(_sweepAnalyser.frequencyBinCount);
   }
 
-  function startSweep() {
+  // Shared pitch position between SWEEP (up) and the right tape spool
+  // (down) — whichever one fires next continues from wherever the other
+  // one left off, rather than each resetting to its own fixed start point.
+  window._sweepSharedFreq = window._sweepSharedFreq || 200;
+  const SWEEP_FLOOR = 200, SWEEP_CEIL = 4000;
+  function startSweep(direction) {
     if (!ctx || sweepNodes) return;
-    playUiSound('Stop'); // same cue the left tape spool plays on engage — added on top of SWEEP's existing sound, not replacing it
     ctx.resume();
     ensureSweepAnalyser();
     window._sweepStartMs = Date.now();
+    window._sweepDirection = direction || 'up';
     const bufDur = 12; // generous buffer length so long holds never run out
-    const riseDur = 2.5; // time to reach the capped peak frequency while held (was 3.5s — quicker now)
-    const capFreq = 4000; // reasonable ceiling — never rises past this no matter how long it's held
+    const riseDur = 2.5; // time to reach the capped peak/floor frequency while held (was 3.5s — quicker now)
     const t = ctx.currentTime;
     const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * bufDur), ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < buf.length; i++) d[i] = Math.random() * 2 - 1;
     const noise = ctx.createBufferSource(); noise.buffer = buf;
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3;
-    bp.frequency.setValueAtTime(200, t);
-    bp.frequency.exponentialRampToValueAtTime(capFreq, t + riseDur); // only rises while held — release is what makes it descend
+    const startFreq = Math.min(SWEEP_CEIL, Math.max(SWEEP_FLOOR, window._sweepSharedFreq));
+    const targetFreq = window._sweepDirection === 'down' ? SWEEP_FLOOR : SWEEP_CEIL;
+    bp.frequency.setValueAtTime(startFreq, t);
+    bp.frequency.exponentialRampToValueAtTime(targetFreq, t + riseDur); // only moves while held — release is what stops it wherever it is
 
     // baseGain holds the "intended" envelope level; duckGain applies sidechain ducking on top
     const baseGain = ctx.createGain();
@@ -11399,6 +11420,10 @@ async function hardResetAudioEngine() {
     if (!sweepNodes || !ctx) return;
     playUiSound('Cymbal'); // same cue the left tape spool plays on release — added on top of SWEEP's existing sound, not replacing it
     const { bp, gain, noise, duckGain } = sweepNodes;
+    // Capture wherever the pitch actually is right now — this is what lets
+    // the next engagement (SWEEP or the left spool) continue from here
+    // instead of resetting. Read before cancelScheduledValues touches it.
+    window._sweepSharedFreq = bp.frequency.value;
     sweepNodes = null;
     if (_sweepDuckLoop) cancelAnimationFrame(_sweepDuckLoop); _sweepDuckLoop = null;
     btn.classList.remove('active');
@@ -11412,12 +11437,19 @@ async function hardResetAudioEngine() {
     duckGain.gain.setValueAtTime(duckGain.gain.value, t);
     duckGain.gain.linearRampToValueAtTime(1, t + 0.08);
     bp.frequency.cancelScheduledValues(t);
-    bp.frequency.exponentialRampToValueAtTime(200, t + quarterNote);
+    // The audible fade-out tail settles toward the floor regardless of
+    // direction — it's fading to silence anyway (gain below), so this is
+    // just how the tail sounds, not the logical position that persists
+    // (that's window._sweepSharedFreq, captured above).
+    bp.frequency.exponentialRampToValueAtTime(SWEEP_FLOOR, t + quarterNote);
     gain.gain.cancelScheduledValues(t);
     gain.gain.setValueAtTime(gain.gain.value * 0.355, t); // -9dB total on the release tail (-5dB then another -4dB)
     gain.gain.linearRampToValueAtTime(0, t + quarterNote);
     setTimeout(() => { try { noise.stop(); noise.disconnect(); } catch(e) {} }, quarterNote * 1000 + 100);
   }
+  window._sweepEngageUp = () => startSweep('up');
+  window._sweepEngageDown = () => startSweep('down');
+  window._sweepRelease = stopSweep;
 
   // The hold itself is now a full-measure crossfade takeover: SWEEP's
   // presence rises while the normal mix fades out under it, for as long as
@@ -11443,7 +11475,7 @@ async function hardResetAudioEngine() {
     }, measure * 1000);
   }
 
-  const beginPress = () => { _pressPulse('clearBtn'); startSweep(); startSweepTakeover(); };
+  const beginPress = () => { _pressPulse('clearBtn'); startSweep('up'); startSweepTakeover(); };
   const endPress = () => {
     if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
     stopSweep(); // released early — cuts off right where the ramps currently are
