@@ -654,7 +654,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 21:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 21:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1741,7 +1741,54 @@ function getSynthConnectNode(tr) {
   if (ctx && tr !== undefined) {
     node = getSourceTrimGain(tr, node);
   }
+  if (ctx && tr !== undefined) {
+    node = getSourceSoftClip(tr, node);
+  }
   return node;
+}
+// A gentle, transparent-until-needed soft-clip safety net — applied
+// universally, to every synthesized track, as the very first thing any
+// instrument's oscillators/noise sources actually connect into. Several
+// synth functions sum multiple full-amplitude oscillators before their own
+// gain stage (e.g. JAMES BASS: two detuned sawtooths plus a sine sub, all
+// at close to full amplitude), and depending on how in-phase they land,
+// that summing can genuinely exceed the digital ceiling well before
+// reaching any downstream limiter — audible as clipping/crackle,
+// especially in a busy sequence where notes overlap. This doesn't touch
+// or color normal-level signal at all (transparent, linear passthrough
+// below the threshold); it only engages for genuine peaks, smoothly
+// saturating them into a safe ceiling instead of hard digital clipping.
+const _sourceSoftClips = {};
+function _makeSoftClipCurve() {
+  const n = 2048;
+  const curve = new Float32Array(n);
+  const threshold = 0.85; // fully transparent up to here
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1; // -1 to 1
+    if (Math.abs(x) <= threshold) {
+      curve[i] = x;
+    } else {
+      const sign = x < 0 ? -1 : 1;
+      const excess = (Math.abs(x) - threshold) / (1 - threshold);
+      curve[i] = sign * (threshold + (1 - threshold) * Math.tanh(excess));
+    }
+  }
+  return curve;
+}
+function getSourceSoftClip(tr, dest) {
+  if (!_sourceSoftClips[tr]) {
+    const shaper = ctx.createWaveShaper();
+    shaper.curve = _makeSoftClipCurve();
+    shaper.oversample = '4x'; // reduces aliasing artifacts from the nonlinear curve
+    _sourceSoftClips[tr] = { shaper, dest: null };
+  }
+  const nodes = _sourceSoftClips[tr];
+  if (nodes.dest !== dest) {
+    try { nodes.shaper.disconnect(); } catch(e) {}
+    nodes.shaper.connect(dest);
+    nodes.dest = dest;
+  }
+  return nodes.shaper;
 }
 function _rawSynthConnectNode(tr) {
   const fxVal = tr !== undefined ? trackFx[tr] : null;
