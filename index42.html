@@ -357,6 +357,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 }
 .sound-option:hover { background: var(--text); color: var(--bg); }
 .sound-option.active { background: #ffe033; color: #111; border: none; }
+.sound-option.active.has-notes-playing { animation: sound-option-pulse 0.6s infinite alternate; }
+@keyframes sound-option-pulse { from { filter: brightness(1); } to { filter: brightness(1.45); } }
 /* Instrument group colours */
 .inst-kit   { background: #0b5394; color: #fff; }
 .inst-perc  { background: #7baa17; color: #fff; }
@@ -375,6 +377,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-name-btn.inst-tonal { background: #fd475d; color: #fff; }
 .track-name-btn.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
 .track-name-btn.inst-tonal.inst-pad  { background: #76f898; color: #111; }
+.track-name-btn.names-uniform { background: #555; color: #fff; }
 
 @keyframes pulse-kit   { from { background: #0b5394; } to { background: #4a8ac4; } }
 @keyframes pulse-perc  { from { background: #7baa17; } to { background: #4a6b0e; } }
@@ -464,7 +467,7 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad.not
 }
 
 /* ── Sequencer grid (middle) ── */
-.seq-wrap { width: 100%; max-width: 960px; margin-top: 0; margin-bottom: 0; display: flex; flex-direction: column; gap: clamp(4px, 2vw, 10px); }
+.seq-wrap { width: 100%; max-width: 960px; margin-top: 10px; margin-bottom: 0; display: flex; flex-direction: column; gap: clamp(4px, 2vw, 10px); }
 .track-wrap { display: flex; flex-direction: column; gap: 4px; }
 .track-row {
   display: flex; align-items: stretch;
@@ -623,7 +626,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 18:56</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 19:44</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -795,6 +798,18 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
           <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt" style="display:none;" onchange="importTapeFile(this.files[0])">
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">UNIFORM GREY
+          </label>
         </div>
       </div>
 
@@ -2947,17 +2962,17 @@ function randomizeBassTrack(tr, level) {
     if (mode === 0) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-        grid[tr][gs] = (s % 4 === 0) ? (s === 0 ? 2 : 1) : 0;
+        grid[tr][gs] = (s % 4 === 0) ? ((s === 0 || Math.random() < 0.45) ? 2 : 1) : 0; // accented more often now — was only ever step 0
       }
     } else if (mode === 1) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-        grid[tr][gs] = (s % 4 === 2) ? 1 : 0;
+        grid[tr][gs] = (s % 4 === 2) ? (Math.random() < 0.35 ? 2 : 1) : 0; // used to never accent at all
       }
     } else if (mode === 3) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-        grid[tr][gs] = (s % 2 === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
+        grid[tr][gs] = (s % 2 === 0) ? ((s % 4 === 0 || Math.random() < 0.2) ? 2 : 1) : 0; // a bit more often on the offbeats too now
       }
     }
     // mode 2 = falls through to normal random placeNotes below
@@ -3624,7 +3639,7 @@ const _dbassGlide = {};
 function playPlunkBass(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const _blastAtten = trackPump[tr] ? 0.7079 : 1; // -3dB when BLAST is on this track — was too hot combined with the crunch chain
+  const _blastAtten = trackPump[tr] ? 0.5623 : 1; // -5dB when BLAST is on this track (was -3dB, another -2dB) — still too hot combined with the crunch chain
   const vel = (isAccent ? 1.601 : 1.155) * _blastAtten; // +3dB on top (was too quiet without FX)
   _plunkGlide[tr] = freq;
 
@@ -6008,6 +6023,10 @@ function openSoundPicker(tr) {
     opt.className = 'sound-option inst-' + (INSTRUMENTS[k].group||'perc') + (_isBass(k) ? ' inst-bass' : '') + (_isPad(k) ? ' inst-pad' : '') + (trackInstruments[tr] === k ? ' active' : '');
     opt.dataset.key = k;
     opt.textContent = INSTRUMENTS[k].name;
+    // Keep the currently-selected instrument's option pulsing along with
+    // the track's own note markers while this menu is open, the same way
+    // its name button pulses in the main grid.
+    if (trackInstruments[tr] === k) opt.classList.toggle('has-notes-playing', playing && grid[tr].some(v => v > 0));
     opt.addEventListener('mouseenter', () => {
       list.querySelectorAll('.sound-option').forEach(o => o.classList.toggle('active', o.dataset.key === k));
     });
@@ -6019,7 +6038,7 @@ function openSoundPicker(tr) {
 }
 function setTrackNameColor(tr, key) {
   const btn = document.getElementById(`tbtn-${tr}`); if (!btn) return;
-  btn.classList.remove('inst-kit','inst-perc','inst-tonal','inst-bass','inst-pad');
+  btn.classList.remove('inst-kit','inst-perc','inst-tonal','inst-bass','inst-pad','names-uniform');
   const g = INSTRUMENTS[key]?.group || 'perc';
   const _laneColors = {'kit':'#0b5394','perc':'#85A838','tonal':'#fd475d'};
   const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(key);
@@ -6029,6 +6048,12 @@ function setTrackNameColor(tr, key) {
   else if (isPad) laneColor = '#76f898';
   const lane = document.getElementById(`lane-${tr}`);
   if (lane) lane.style.setProperty('--track-color', laneColor);
+  // TRACK NAMES setting: skip the instrument-group color classes entirely
+  // (not just override them) when uniform names are on, so it's correct
+  // regardless of any pulse/flash animation touching background elsewhere
+  // — those are all scoped to the .inst-* classes, so if the class was
+  // never added, none of that can ever apply in the first place.
+  if (window._trackNamesUniform) { btn.classList.add('names-uniform'); return; }
   btn.classList.add('inst-' + g);
   if (isBass) btn.classList.add('inst-bass');
   else if (isPad) btn.classList.add('inst-pad');
@@ -7169,6 +7194,10 @@ function setTrackPulseMode(mode) {
   document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c', 'track-pulse-d');
   document.body.classList.add('track-pulse-' + (mode === 'b' || mode === 'c' || mode === 'd' ? mode : 'a'));
 }
+function setTrackNamesUniform(on) {
+  window._trackNamesUniform = !!on;
+  for (let tr = 0; tr < NUM_TRACKS; tr++) setTrackNameColor(tr, trackInstruments[tr]);
+}
 function _tapePayloadForCurrent() {
   return {
     format: 'sifi-tape',
@@ -8256,7 +8285,7 @@ function _writeTrack0Pattern() {
     if (split32Onsets.has(s)) return;
     const maxLen = _legatoMaxLen(tr, s); trackLegatoLen[tr][s] = Math.min(4, maxLen);
   });
-  if (isDrone) trackDelay[0] = Math.random() < 0.5; // ATMOS — reverb about half the time
+  trackDelay[0] = Math.random() < 0.5; // ATMOS or TEXTURE — reverb about half the time either way
   redrawTrackCells(tr);
 }
 // TEXTURE always starts with Auto-Random engaged too (on top of the
@@ -8405,6 +8434,14 @@ function randAll(mode, opts) {
         if (lane0Swap) lane0Swap.style.removeProperty('--track-color');
       }
     }
+    // Reverb chance for track 1 (TEXTURE or ATMOS, either one) — rolled
+    // fresh on every RAND press, not just when the instrument actually
+    // swaps. This used to only live inside _writeTrack0Pattern and the
+    // manual single-tap branch, neither of which the main RAND button ever
+    // actually calls for track 0 — so it never had a chance to fire during
+    // ordinary RAND use at all. Fixed here, in the one place every RAND
+    // press genuinely does run.
+    trackDelay[0] = Math.random() < 0.5;
   }
   // Pick a fresh random scale and root for this randomize pass
   const scaleNames = Object.keys(SCALES);
@@ -9500,7 +9537,7 @@ function randomizeTrack(tr) {
       const maxLen = _legatoMaxLen(tr, s);
       trackLegatoLen[tr][s] = Math.min(4, maxLen);
     });
-    if (isDrone) trackDelay[0] = Math.random() < 0.5; // ATMOS — reverb about half the time
+    trackDelay[0] = Math.random() < 0.5; // ATMOS or TEXTURE — reverb about half the time either way
     redrawTrackCells(tr); markModified(); return;
   }
 
@@ -9601,17 +9638,17 @@ function randomizeTrack(tr) {
     if (mode === 0) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-        grid[tr][gs] = (s % 4 === 0) ? (s === 0 ? 2 : 1) : 0;
+        grid[tr][gs] = (s % 4 === 0) ? ((s === 0 || Math.random() < 0.45) ? 2 : 1) : 0; // accented more often now — was only ever step 0
       }
     } else if (mode === 1) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-        grid[tr][gs] = (s % 4 === 2) ? 1 : 0;
+        grid[tr][gs] = (s % 4 === 2) ? (Math.random() < 0.35 ? 2 : 1) : 0; // used to never accent at all
       }
     } else if (mode === 3) {
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-        grid[tr][gs] = (s % 2 === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
+        grid[tr][gs] = (s % 2 === 0) ? ((s % 4 === 0 || Math.random() < 0.2) ? 2 : 1) : 0; // a bit more often on the offbeats too now
       }
     }
     // mode 2 = falls through to normal random placeNotes below
@@ -9928,8 +9965,9 @@ setTimeout(() => {
   // overwrites the random starter pattern above if the user says yes.
   try { _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
   // Pre-fill all 6 save slots with distinct patterns right away instead of
-  // starting empty. Ends by restoring slot 1 so what's actually loaded
-  // matches what's on screen.
+  // starting empty — each with its own independently randomized tempo, not
+  // sharing one across all six. Ends by restoring slot 1 so what's
+  // actually loaded matches what's on screen.
   //
   // randAll() doesn't finish its own work synchronously — the actual
   // per-track note-writing (randomizeTrack) runs inside a setTimeout,
@@ -9942,10 +9980,12 @@ setTimeout(() => {
   // goes through its own randAll-then-wait-then-snapshot cycle — 6 full
   // cycles total, none of them reusing that first throwaway call.
   const _slotFillDelayMs = 500; // comfortably past the ~150ms track stagger and the bass safety-net's own delay on top of that
+  const _slotSettleMs = 200; // extra pause right before each subsequent randAll() call — the sequencer is genuinely playing live through all of this, so each call abruptly changes whatever's currently ringing with no settle time at all; this gives it a moment of quiet first, instead of an instant hard cut
   (async () => {
     try {
       for (let i = 0; i < NUM_SLOTS; i++) {
-        randAll(undefined, { skipTempo: i > 0 });
+        if (i > 0) await new Promise(resolve => setTimeout(resolve, _slotSettleMs));
+        randAll(undefined, { skipTempo: false }); // each slot gets its own independently randomized tempo
         await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
         slots[i] = snapshotState();
       }
@@ -10213,6 +10253,11 @@ function _tempoBrakeRelease() {
 // spin classes outright (the reliable path) rather than pausing the
 // animation, which the per-beat pulse effect can knock loose.
 function _leftSpoolEngage() {
+  // Sweeps down from wherever SWEEP (or a previous hold of this) left the
+  // pitch — independent of playback state, since SWEEP itself has no such
+  // requirement. The stop/restart transport behavior below is separate and
+  // still gated on actually playing.
+  if (window._sweepSwitchDirection) window._sweepSwitchDirection('down');
   if (!playing || !ctx || window._tempoBraking) return;
   window._tempoBraking = true;
   clearInterval(scheduleInterval); scheduleInterval = null;
@@ -10222,15 +10267,14 @@ function _leftSpoolEngage() {
     window._spoolHeldReverse[i] = r.classList.contains('spinning-reverse');
     r.classList.remove('spinning', 'spinning-reverse');
   });
-  // Sweeps down from wherever SWEEP (or a previous hold of this) left the
-  // pitch — on top of the stop/restart behavior above, not replacing it.
-  if (window._sweepEngageDown) window._sweepEngageDown();
 }
 function _leftSpoolRelease() {
+  // Mirrors the engage above — always try to switch SWEEP back upward,
+  // independent of playback state.
+  if (window._sweepSwitchDirection) window._sweepSwitchDirection('up');
   if (!window._tempoBraking || !ctx) return;
   window._tempoBraking = false;
   playUiSound('Cymbal');
-  if (window._sweepRelease) window._sweepRelease();
   document.querySelectorAll('.reel-wrap').forEach((r, i) => {
     const wasReverse = window._spoolHeldReverse && window._spoolHeldReverse[i];
     r.classList.add(wasReverse ? 'spinning-reverse' : 'spinning');
@@ -11415,9 +11459,9 @@ async function hardResetAudioEngine() {
     duckLoop();
   }
 
-  function stopSweep() {
+  function stopSweep(isSwitch) {
     if (!sweepNodes || !ctx) return;
-    playUiSound('Cymbal'); // same cue the left tape spool plays on release — added on top of SWEEP's existing sound, not replacing it
+    if (!isSwitch) playUiSound('Cymbal'); // same cue the left tape spool plays on release — skipped mid-drag direction switches, only plays on a genuine release
     const { bp, gain, noise, duckGain } = sweepNodes;
     // Capture wherever the pitch actually is right now — this is what lets
     // the next engagement (SWEEP or the left spool) continue from here
@@ -11449,6 +11493,15 @@ async function hardResetAudioEngine() {
   window._sweepEngageUp = () => startSweep('up');
   window._sweepEngageDown = () => startSweep('down');
   window._sweepRelease = stopSweep;
+  // Switches direction mid-hold — stops whichever sweep is currently
+  // running (capturing its position into the shared frequency, same as a
+  // normal release) and immediately starts the other direction from there.
+  // Needed because startSweep()'s own guard silently no-ops if a sweep is
+  // already active, which is exactly the case every time this fires.
+  window._sweepSwitchDirection = (newDir) => {
+    if (sweepNodes) stopSweep(true); // true = mid-drag switch, not a genuine release — skip the release sound
+    startSweep(newDir);
+  };
 
   // The hold itself is now a full-measure crossfade takeover: SWEEP's
   // presence rises while the normal mix fades out under it, for as long as
@@ -11474,7 +11527,7 @@ async function hardResetAudioEngine() {
     }, measure * 1000);
   }
 
-  const beginPress = () => { _pressPulse('clearBtn'); startSweep('up'); startSweepTakeover(); };
+  const beginPress = () => { _pressPulse('clearBtn'); window._sweepSwitchDirection('up'); startSweepTakeover(); };
   const endPress = () => {
     if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
     stopSweep(); // released early — cuts off right where the ramps currently are
