@@ -658,7 +658,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 23:33</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 23:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -828,6 +828,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="display:flex;flex-direction:column;gap:6px;">
           <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
           <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
+          <button id="shareTapeHtmlBtn" class="rec-mode-btn" onclick="shareTapeAsHtml()">SEND TAPE FILE</button>
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
           <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
@@ -7416,6 +7417,21 @@ async function shareTapeLink() {
     prompt('Copy this tape link:', link);
   }
 }
+// Shared by both the URL-hash tape loader and the embedded-file tape
+// loader below — given a parsed tape payload, confirms with the user and
+// restores it, replacing whatever's currently on the deck.
+function _offerToLoadTapePayload(payload) {
+  if (!payload || payload.format !== 'sifi-tape' || !payload.state) return;
+  const proceed = confirm(`Load tape "${payload.name || 'Untitled'}"? This replaces the current pattern.`);
+  if (proceed) {
+    stopAllAutoRand();
+    if (playing) togglePlay();
+    restoreState(payload.state);
+    activeSlot = -1;
+    updateSlotButtons();
+    markModified();
+  }
+}
 // Runs once at page load. If the URL carries a tape in its hash, offers to
 // load it (replacing whatever's currently on the deck), then clears the
 // hash so refreshing the page doesn't keep re-triggering the same prompt.
@@ -7427,21 +7443,52 @@ function _tryLoadTapeFromHash() {
     const b64 = h.slice(idx + 5);
     const json = decodeURIComponent(escape(atob(b64)));
     const payload = JSON.parse(json);
-    if (!payload || payload.format !== 'sifi-tape' || !payload.state) return;
-    const proceed = confirm(`Load tape "${payload.name || 'Untitled'}"? This replaces the current pattern.`);
-    if (proceed) {
-      stopAllAutoRand();
-      if (playing) togglePlay();
-      restoreState(payload.state);
-      activeSlot = -1;
-      updateSlotButtons();
-      markModified();
-    }
+    _offerToLoadTapePayload(payload);
   } catch (e) {
     console.error('Tape link parse failed', e);
   } finally {
     history.replaceState(null, '', location.pathname + location.search);
   }
+}
+// Runs once at page load too. A tape shared as a standalone HTML file (see
+// shareTapeAsHtml below) carries its payload as an embedded variable
+// rather than a URL hash — this is what a copy of the app opened directly
+// from that file checks for.
+function _tryLoadEmbeddedTape() {
+  if (typeof window.__embeddedTapePayload === 'undefined') return;
+  try {
+    _offerToLoadTapePayload(window.__embeddedTapePayload);
+  } catch (e) {
+    console.error('Embedded tape load failed', e);
+  }
+}
+// A tape as a genuinely standalone, self-contained HTML file — a full copy
+// of this app with the pattern already baked in, rather than a link whose
+// entire payload lives in the URL (which some share targets render as raw
+// text alongside the link instead of a clean preview, especially once the
+// URL gets long). Opening the file directly plays the tape immediately,
+// no separate import step, and shares as a genuine file attachment rather
+// than a text+link combination.
+async function shareTapeAsHtml() {
+  let html;
+  try {
+    const res = await fetch(location.href, { cache: 'no-store' });
+    html = await res.text();
+  } catch (e) {
+    console.error('Could not fetch own source for tape file', e);
+    alert('Could not build the tape file — try SEND TAPE LINK instead.');
+    return;
+  }
+  const payload = _tapePayloadForCurrent();
+  const embed = `<script>window.__embeddedTapePayload = ${JSON.stringify(payload)};</` + `script>\n`;
+  // Right after <head> — early enough that _tryLoadEmbeddedTape() (called
+  // during normal startup, alongside the existing hash-based check) always
+  // finds it already defined by the time it runs.
+  const headIdx = html.indexOf('<head>');
+  html = headIdx === -1 ? (embed + html) : (html.slice(0, headIdx + 6) + '\n' + embed + html.slice(headIdx + 6));
+  const safeName = (payload.name || 'tape').replace(/[^a-z0-9]+/gi, ' ').replace(/^\s+|\s+$/g, '') || 'tape';
+  const file = new File([html], `${safeName}.html`, { type: 'text/html' });
+  shareOrDownload([file]);
 }
 async function importTapeFile(file) {
   const inp = document.getElementById('tapeFileInput');
@@ -10071,6 +10118,9 @@ setTimeout(() => {
   // If this page was opened from a shared tape link, offer to load it —
   // overwrites the random starter pattern above if the user says yes.
   try { _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
+  // Same idea, but for a tape shared as a standalone HTML file rather than
+  // a link — see shareTapeAsHtml/embed comment above.
+  try { _tryLoadEmbeddedTape(); } catch (e) { console.error('Embedded tape check failed', e); }
   // Pre-fill all 6 save slots with distinct patterns right away instead of
   // starting empty — each with its own independently randomized tempo, not
   // sharing one across all six. Ends by restoring slot 1 so what's
