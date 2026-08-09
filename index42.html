@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 17:34</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 18:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2263,9 +2263,13 @@ function fireStepAudio(step, t) {
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
             if (key === 'blunt')   playBlunt(freq2, dur2, false, t2, tr);
           } else if (key === 'amlgm' || key === 'drone') {
-            // TEXTURE/DRONE can't actually receive a 32nd-split value (not
-            // in split32Keys), so this is unreachable in practice — left as
-            // a no-op rather than removed, in case that ever changes.
+            // Now reachable — TEXTURE/ATMOS can get 32nd-note splits too.
+            // Mirrors the primary hit's own dispatch (playBuffer routes
+            // amlgm/drone to playAmalgamStep), just fired again at the
+            // offset split timing.
+            const dur2amlgm = stepDuration() * 0.5;
+            if (!trackChop[tr]) triggerFxEnvelope(tr, t2);
+            playAmalgamStep(false, t2, tr, dur2amlgm);
           } else {
             playBuffer(key, false, t2, tr);
           }
@@ -4856,7 +4860,7 @@ function playXylophone(freq, durSec, isAccent, time, tr) {
 function playBooboo(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = (isAccent ? 0.24 : 0.16) * 0.7079; // -3dB
+  const vel = (isAccent ? 0.24 : 0.16) * 0.7079 * 0.631; // -3dB, then another -4dB (total -7dB)
   const noteDur = Math.min(Math.max(durSec, 0.12), 1.6); // short single hits stay short; legato-connected runs can actually sustain now (was capped at 0.5, clipping any legato notes short regardless of their real length)
   const stopAt = time + noteDur + 0.12;
 
@@ -8240,8 +8244,19 @@ function _writeTrack0Pattern() {
   if (onsets.length > 1 && (onsets[0] + NUM_STEPS - onsets[onsets.length - 1]) < minGap) {
     grid[tr][onsets[onsets.length - 1]] = 0; onsets.pop();
   }
+  // Same 32nd-note-split treatment as the shared branch in
+  // randomizeBassTrack — kept consistent across every path that writes
+  // track 1's pattern, not just the RAND-triggered one.
+  const split32Onsets = new Set();
+  onsets.forEach(s => {
+    if (Math.random() < 0.4) { grid[tr][s] = 3; split32Onsets.add(s); }
+  });
   if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
-  onsets.forEach(s => { const maxLen = _legatoMaxLen(tr, s); trackLegatoLen[tr][s] = Math.min(4, maxLen); });
+  onsets.forEach(s => {
+    if (split32Onsets.has(s)) return;
+    const maxLen = _legatoMaxLen(tr, s); trackLegatoLen[tr][s] = Math.min(4, maxLen);
+  });
+  if (isDrone) trackDelay[0] = Math.random() < 0.5; // ATMOS — reverb about half the time
   redrawTrackCells(tr);
 }
 // TEXTURE always starts with Auto-Random engaged too (on top of the
@@ -8907,7 +8922,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'ride') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK/BOOBOO fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; JINX/RIDE fixed at 50%; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; JINX/RIDE/BOOBOO fixed at 50%; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -9468,13 +9483,24 @@ function randomizeTrack(tr) {
     if (_echoOnsets.length > 1 && (_echoOnsets[0] + NUM_STEPS - _echoOnsets[_echoOnsets.length - 1]) < minGap) {
       grid[tr][_echoOnsets[_echoOnsets.length - 1]] = 0; _echoOnsets.pop();
     }
+    // TEXTURE/ATMOS get 32nd-note splits often now too — the same idea as
+    // HIHAT: some onsets subdivide into a quick 32nd-note burst instead of
+    // a single hit. Done before the legato pass below, since a split note
+    // and a held legato note don't make sense on the same onset — legato
+    // skips anything already marked here.
+    const _split32Onsets = new Set();
+    _echoOnsets.forEach(s => {
+      if (Math.random() < 0.4) { grid[tr][s] = 3; _split32Onsets.add(s); }
+    });
     // And each note actually sustains for that full quarter note, rather
     // than just being spaced apart while still playing as a quick blip.
     if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
     _echoOnsets.forEach(s => {
+      if (_split32Onsets.has(s)) return;
       const maxLen = _legatoMaxLen(tr, s);
       trackLegatoLen[tr][s] = Math.min(4, maxLen);
     });
+    if (isDrone) trackDelay[0] = Math.random() < 0.5; // ATMOS — reverb about half the time
     redrawTrackCells(tr); markModified(); return;
   }
 
@@ -9901,6 +9927,22 @@ setTimeout(() => {
   // If this page was opened from a shared tape link, offer to load it —
   // overwrites the random starter pattern above if the user says yes.
   try { _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
+  // Pre-fill all 6 save slots with distinct patterns right away instead of
+  // starting empty — slot 1 keeps whatever's already loaded above (the
+  // random starter, or the tape link if one was just loaded), slots 2-6
+  // each get their own freshly randomized pattern. Same tempo across all
+  // six, so browsing between them doesn't jump speed each time. Ends by
+  // restoring slot 1 so what's actually loaded matches what's on screen.
+  try {
+    slots[0] = snapshotState();
+    for (let i = 1; i < NUM_SLOTS; i++) {
+      randAll(undefined, { skipTempo: true });
+      slots[i] = snapshotState();
+    }
+    restoreState(slots[0]);
+    activeSlot = 0;
+    updateSlotButtons();
+  } catch (e) { console.error('Slot pre-fill failed', e); }
   // Seed RECALL with this startup pattern right away — otherwise it isn't
   // reachable via RECALL until playback has actually run for a bar (the
   // rolling snapshot only advances during live playback), so an edit made
