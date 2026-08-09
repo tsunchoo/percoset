@@ -243,7 +243,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   height: clamp(28px, 8vw, 32px);
 }
 .track-name-btn {
-  font-size: clamp(0.64rem, 2.3vw, 0.86rem); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
+  font-size: calc(clamp(0.64rem, 2.3vw, 0.86rem) * var(--track-name-font-scale, 1)); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   cursor: pointer; background: #b0b0b0; color: var(--text);
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
   font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: clamp(78px, 22vw, 106px);
@@ -357,7 +357,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 }
 .sound-option:hover { background: var(--text); color: var(--bg); }
 .sound-option.active { background: #ffe033; color: #111; border: none; }
-.sound-option.active.has-notes-playing { animation: sound-option-pulse 0.6s infinite alternate; }
+.sound-option.current-instrument.has-notes-playing { animation: sound-option-pulse 0.6s infinite alternate; }
 @keyframes sound-option-pulse { from { filter: brightness(1); } to { filter: brightness(1.45); } }
 /* Instrument group colours */
 .inst-kit   { background: #0b5394; color: #fff; }
@@ -442,6 +442,22 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.note-flash {
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-bass.note-flash { animation: flash-bass-d 0.25s ease-out; }
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad.note-flash  { animation: flash-pad-d  0.25s ease-out; }
 
+/* UNIFORM GREY mode gets its own parallel set — same idea as above, but
+   grey as the fixed anchor instead of an instrument color, and the NOTE
+   PULSE color picker (--playhead-color) as the "lit" color throughout,
+   not just for option D. color-mix() gives B/C a genuinely subtler swing
+   toward that same picker color instead of a hardcoded intermediate. */
+@keyframes pulse-uniform   { from { background: #555; } to { background: var(--playhead-color, #f8ff00); } }
+@keyframes pulse-uniform-b { from { background: #555; } to { background: color-mix(in srgb, #555 55%, var(--playhead-color, #f8ff00) 45%); } }
+@keyframes pulse-uniform-c { from { background: #555; } to { background: color-mix(in srgb, #555 75%, var(--playhead-color, #f8ff00) 25%); } }
+.track-name-btn.has-notes.names-uniform { animation: none; }
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.names-uniform { animation: pulse-uniform   0.6s infinite alternate; }
+body.track-pulse-b.seq-playing .track-name-btn.has-notes.names-uniform { animation: pulse-uniform-b 0.6s infinite alternate; }
+body.track-pulse-c.seq-playing .track-name-btn.has-notes.names-uniform { animation: pulse-uniform-c 0.6s infinite alternate; }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform { background: #555; }
+@keyframes flash-uniform-d { from { background: var(--playhead-color, #f8ff00); } to { background: #555; } }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform.note-flash { animation: flash-uniform-d 0.25s ease-out; }
+
 /* ── Vol overlay ── */
 #volOverlay {
   display: none; position: fixed; inset: 0; z-index: 200;
@@ -467,7 +483,7 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad.not
 }
 
 /* ── Sequencer grid (middle) ── */
-.seq-wrap { width: 100%; max-width: 960px; margin-top: 10px; margin-bottom: 0; display: flex; flex-direction: column; gap: clamp(4px, 2vw, 10px); }
+.seq-wrap { width: 100%; max-width: 960px; margin-top: 5px; margin-bottom: 0; display: flex; flex-direction: column; gap: clamp(4px, 2vw, 10px); }
 .track-wrap { display: flex; flex-direction: column; gap: 4px; }
 .track-row {
   display: flex; align-items: stretch;
@@ -626,7 +642,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 19:44</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 20:44</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -840,6 +856,14 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       </div>
 
       <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;justify-content:space-between;">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAME SIZE</div>
+          <div id="trackNameSizeReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">100%</div>
+        </div>
+        <input type="range" id="trackNameSizeBar" min="70" max="150" value="100" class="master-vol-slider" style="width:100%;" oninput="setTrackNameFontScale(+this.value)">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">NOTE PULSE</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <input type="color" id="playheadColorPicker" value="#f8ff00" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
@@ -989,7 +1013,7 @@ const INSTRUMENTS = {
   dulc:   { name: 'BOOBOO',      soft: null, accent: null, group: 'tonal' },
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
-  amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
+  amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'perc' },
   drone:  { name: 'ATMOS',       soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
@@ -1306,10 +1330,27 @@ function playUiSound(name) {
   const g = ctx.createGain();
   // Stop (spool hold touch): -8.5dB (x0.376) from base 0.7
   // Cymbal (spool release): -10.5dB (x0.299) from base 0.7
-  g.gain.value = name === 'rewind' ? 0.625 : name === 'Stop' ? 0.7 * 0.376 : name === 'Cymbal' ? 0.7 * 0.299 : name === 'Rand' ? 0.7 * 0.3548 : 0.7;
+  g.gain.value = name === 'rewind' ? 0.625 : name === 'Stop' ? 0.7 * 0.376 : name === 'StopReversed' ? 0.7 * 0.376 : name === 'Cymbal' ? 0.7 * 0.299 : name === 'Rand' ? 0.7 * 0.3548 : 0.7;
   src.connect(g); g.connect(masterGain);
   src.start();
   src.onended = () => { try { g.disconnect(); } catch(e) {} };
+}
+// Builds (and caches) a reversed copy of a decoded UI sound buffer — Web
+// Audio doesn't support negative playbackRate reliably, so an actual
+// reversed buffer is needed rather than trying to play one backwards.
+function _getReversedUiSound(name) {
+  if (!window._uiSoundBufs || !window._uiSoundBufs[name] || !ctx) return null;
+  const reversedName = name + 'Reversed';
+  if (window._uiSoundBufs[reversedName]) return window._uiSoundBufs[reversedName];
+  const src = window._uiSoundBufs[name];
+  const rev = ctx.createBuffer(src.numberOfChannels, src.length, src.sampleRate);
+  for (let ch = 0; ch < src.numberOfChannels; ch++) {
+    const srcData = src.getChannelData(ch);
+    const revData = rev.getChannelData(ch);
+    for (let i = 0; i < srcData.length; i++) revData[i] = srcData[srcData.length - 1 - i];
+  }
+  window._uiSoundBufs[reversedName] = rev;
+  return rev;
 }
 function resumeCtx() { if (ctx && ctx.state !== 'running') ctx.resume(); }
 document.addEventListener('touchstart', resumeCtx, false);
@@ -1446,7 +1487,7 @@ function _trackNote() {
 // MIX = the wet output level on top of that (0-100 maps to gain 0.0-2.0).
 // Both readouts on screen show the exact 0-100 number quoted in code below —
 // "set INTENSITY to 20, MIX to 20" means exactly these two sliders at 20.
-const REVERB_MIX_MAX = 0.08;       // output gain at slider=100 (was 0.1, down 20% more)
+const REVERB_MIX_MAX = 0.1;        // output gain at slider=100 — +25% more liberal overall (was 0.08)
 
 function _buildReverbIRBuffer(targetCtx, v) {
   // v: 0 = plate (short/tight/bright), 1 = hall (long/slow/cavernous)
@@ -1509,7 +1550,7 @@ function connectToDelay(tr, sourceNode) {
   if (!trackDelay[tr] || !ctx || !window._reverbSendBus) return;
   if (!_reverbSendGains[tr]) {
     _reverbSendGains[tr] = ctx.createGain();
-    _reverbSendGains[tr].gain.value = tr === 0 ? 0.175 : 0.35; // per-track send level into the shared reverb bus — TEXTURE halved
+    _reverbSendGains[tr].gain.value = 0.35; // per-track send level into the shared reverb bus — no longer special-cased for track 0
     _reverbSendGains[tr].connect(window._reverbSendBus);
   }
   sourceNode.connect(_reverbSendGains[tr]);
@@ -1686,7 +1727,7 @@ function _rawSynthConnectNode(tr) {
     split.connect(baseNode);
     if (!_reverbSendGains[tr]) {
       _reverbSendGains[tr] = ctx.createGain();
-      _reverbSendGains[tr].gain.value = tr === 0 ? 0.175 : 0.35; // TEXTURE halved
+      _reverbSendGains[tr].gain.value = 0.35; // no longer special-cased for track 0
       _reverbSendGains[tr].connect(window._reverbSendBus);
     }
     split.connect(_reverbSendGains[tr]);
@@ -1724,7 +1765,7 @@ function _rawSynthConnectNode(tr) {
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
-  if (key === 'amlgm' || key === 'drone')  {
+  if (key === 'amlgm')  {
     triggerFxEnvelope(tr, time);
     let dur = stepDuration();
     if (!trackChop[tr] && trackLegatoLen[tr] && trackLegatoLen[tr][stepIdx]) {
@@ -1788,7 +1829,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (tr !== undefined && trackDelay[tr] && ctx && window._reverbSendBus) {
     if (!_reverbSendGains[tr]) {
       _reverbSendGains[tr] = ctx.createGain();
-      _reverbSendGains[tr].gain.value = tr === 0 ? 0.175 : 0.35; // TEXTURE halved
+      _reverbSendGains[tr].gain.value = 0.35; // no longer special-cased for track 0
       _reverbSendGains[tr].connect(window._reverbSendBus);
     }
     instrumentGain.connect(_reverbSendGains[tr]);
@@ -1849,7 +1890,6 @@ function updateVolFillDisplay(tr) {
   if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr]) * 100) + '%';
 }
 const trackFx = Array.from({length: NUM_TRACKS}, () => ({ x: 0, y: 0 }));
-trackFx[0] = { x: 0.5, y: 0.5 }; // Track 1 is always TEXTURE — FX stays engaged on it by default
 const trackDelay = new Array(NUM_TRACKS).fill(false);
 // Pump/sustain/crunch — repurposed offset ("<") button. Chain order per
 // track: sidechain pump (ducks with BEAT's kick+snare) -> sustain boost
@@ -2042,7 +2082,7 @@ function scheduler() {
         if (snap.trackChop)  trackChop[tr]  = snap.trackChop[tr]  || false;
         if (snap.trackRLevel) trackRLevel[tr] = snap.trackRLevel[tr] ?? 0;
         if (snap.trackAutoRand) {
-          const isAuto = !!snap.trackAutoRand[tr] && !(tr === 0 && trackInstruments[0] === 'drone'); // ATMOS never gets auto-rand, even if a restored snapshot says it should
+          const isAuto = !!snap.trackAutoRand[tr]; // no longer special-cased — ATMOS behaves like any other tonal track now
           const lane = document.getElementById(`lane-${tr}`);
           const rb = document.getElementById(`randbtn-${tr}`);
           if (isAuto) {
@@ -2134,7 +2174,7 @@ function fireStepAudio(step, t) {
         if (document.body.classList.contains('track-pulse-d')) _flashTrackButtonNow(tr, t);
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
-        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening') {
+        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
           const scale = trackBassScale[tr] || [110];
           const noteIdx = gs % scale.length;
           const freq = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale[noteIdx];
@@ -2189,6 +2229,7 @@ function fireStepAudio(step, t) {
           if (key === 'yamask')  playYamask(freq, dur, val === 2, t, tr, _yamaskPhraseTick(tr));
           if (key === 'dulc')    playBooboo(freq, dur, val === 2, t, tr);
           if (key === 'opening') playOpening(freq, dur, val === 2, t, tr);
+          if (key === 'drone')   playAtmos(freq, dur, val === 2, t, tr);
           if (key === 'fflute')  {
             playGlassBell(freq, dur, val === 2, t, tr);
           }
@@ -2277,11 +2318,9 @@ function fireStepAudio(step, t) {
             if (key === 'boog')    playPrimePiano(freq2, dur2, false, t2, tr);
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
             if (key === 'blunt')   playBlunt(freq2, dur2, false, t2, tr);
-          } else if (key === 'amlgm' || key === 'drone') {
-            // Now reachable — TEXTURE/ATMOS can get 32nd-note splits too.
-            // Mirrors the primary hit's own dispatch (playBuffer routes
-            // amlgm/drone to playAmalgamStep), just fired again at the
-            // offset split timing.
+            if (key === 'drone')   playAtmos(freq2, dur2, false, t2, tr);
+          } else if (key === 'amlgm') {
+            // TEXTURE keeps its own amalgam-echo sound for the 32nd split too.
             const dur2amlgm = stepDuration() * 0.5;
             if (!trackChop[tr]) triggerFxEnvelope(tr, t2);
             playAmalgamStep(false, t2, tr, dur2amlgm);
@@ -2766,7 +2805,7 @@ const trackBassScale = {}; // tr -> [freq, ...]
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
-const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening']);
+const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone']);
 
 function buildScaleFromRoot(root, scaleOverride) {
   const scaleArr = scaleOverride || PENTA_MINOR;
@@ -2788,7 +2827,7 @@ function getRangeRoots(key) {
   if (key === 'blunt') return MID_ROOTS;
   if (key === 'chug') return CHUG_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
-  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening' || key === 'spiano' || key === 'dulc') return MELODY_ROOTS;
+  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening' || key === 'spiano' || key === 'dulc' || key === 'drone') return MELODY_ROOTS;
   return BASS_ROOTS;
 }
 
@@ -2911,6 +2950,7 @@ function randomizeBassTrack(tr, level) {
     damask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // DAMASK — sparse, spacious, plaintive phrases
     yamask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // YAMASK — same sparse, spacious character as DAMASK
     dulc:    [[1,3,0.20],[2,4,0.35],[3,6,0.50]],   // BOOBOO — fewer notes now, legato phrases fill in the rest instead of density
+    drone:   [[2,5,0.25],[4,7,0.40],[6,10,0.55]],  // ATMOS — a normal tonal instrument now, same rules as any other
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
     jcmgtr:  [[3,6,0.20],[5,9,0.35],[8,13,0.50]],   // JINX — busier now, filling a lot more of the 16th-note grid (was a deliberately calm [1,3]/[2,4]/[3,6])
   };
@@ -6025,8 +6065,15 @@ function openSoundPicker(tr) {
     opt.textContent = INSTRUMENTS[k].name;
     // Keep the currently-selected instrument's option pulsing along with
     // the track's own note markers while this menu is open, the same way
-    // its name button pulses in the main grid.
-    if (trackInstruments[tr] === k) opt.classList.toggle('has-notes-playing', playing && grid[tr].some(v => v > 0));
+    // its name button pulses in the main grid — a permanent marker on the
+    // TRUE current instrument, not the hover-preview class below (which
+    // moves around as the finger drags across other options and would
+    // otherwise both mislabel whatever's hovered as "selected" and kill
+    // the real instrument's pulse the moment the finger moved off it).
+    if (trackInstruments[tr] === k) {
+      opt.classList.add('current-instrument');
+      opt.classList.toggle('has-notes-playing', playing && grid[tr].some(v => v > 0));
+    }
     opt.addEventListener('mouseenter', () => {
       list.querySelectorAll('.sound-option').forEach(o => o.classList.toggle('active', o.dataset.key === k));
     });
@@ -6379,6 +6426,7 @@ function previewNote(tr, isAccent) {
     else if (key === 'yamask')  playYamask(freq, dur, isAccent, t, tr);
     else if (key === 'dulc')    playBooboo(freq, dur, isAccent, t, tr);
     else if (key === 'opening') playOpening(freq, dur, isAccent, t, tr);
+    else if (key === 'drone')   playAtmos(freq, dur, isAccent, t, tr);
     else if (key === 'fflute')  playGlassBell(freq, dur, isAccent, t, tr);
     else if (key === 'blunt')   playBlunt(freq, dur, isAccent, t, tr);
   } else if (key === 'ngate') {
@@ -7197,6 +7245,11 @@ function setTrackPulseMode(mode) {
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
   for (let tr = 0; tr < NUM_TRACKS; tr++) setTrackNameColor(tr, trackInstruments[tr]);
+}
+function setTrackNameFontScale(pct) {
+  document.documentElement.style.setProperty('--track-name-font-scale', (pct / 100));
+  const readout = document.getElementById('trackNameSizeReadout');
+  if (readout) readout.textContent = pct + '%';
 }
 function _tapePayloadForCurrent() {
   return {
@@ -8219,7 +8272,7 @@ function fullClear() {
     trackMuted[tr] = false; trackSweep[tr] = 0; trackChop[tr] = false;
     trackRLevel[tr] = 0;
     trackVolume[tr] = tr === 0 ? 0.0501 : (tr === 1 ? 0.505 : 0.8);
-    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (TEXTURE) always keeps FX engaged
+    trackFx[tr] = { x: 0, y: 0 }; // no longer forced on for track 0 — same default as everyone else now
     trackFxMode[tr] = 0;
     trackInstruments[tr] = defaultInstruments[tr] || 'tamb';
     if (ctx) {
@@ -8228,7 +8281,7 @@ function fullClear() {
     }
     const tb = document.getElementById(`tbtn-${tr}`);
     if (tb) { tb.textContent = INSTRUMENTS[trackInstruments[tr]]?.name||(tr+1); tb.classList.remove('muted','has-notes','shifting'); setTrackNameColor(tr, trackInstruments[tr]); }
-    const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.toggle('on', tr === 0);
+    const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
     const sb = document.getElementById(`swpbtn-${tr}`);
     if (sb) { sb.textContent = 'L'; sb.classList.remove('sweep-on'); }
     const rb = document.getElementById(`randbtn-${tr}`); if (rb) rb.classList.remove('pulsing');
@@ -8237,10 +8290,8 @@ function fullClear() {
     if (vb) { vb.classList.remove('muted'); const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
     redrawTrackCells(tr);
   }
-  // Track 1 is always TEXTURE — its Auto-Random loop was just stopped along
-  // with everything else above; re-engage it since Track 1 always keeps it
-  // running. ATMOS doesn't get this — just a one-time note pick instead.
-  _engageOrPickTrack0();
+  // Track 1 is no longer special — cleared the same as every other track
+  // by the loop above, no special auto-refill exception anymore.
   markModified();
 }
 // Track 1's own note-writer — a small, self-contained duplicate of the
@@ -8392,7 +8443,7 @@ function randAll(mode, opts) {
   // auto-rand loop (like everything else about them) should be completely
   // untouched by RAND.
   Object.keys(autoShiftStops).forEach(tr => {
-    if (trackSweep[+tr] || +tr === 0) return;
+    if (trackSweep[+tr]) return;
     autoShiftStops[tr]();
   });
   // A fresh pattern should always start with every track active — mute is a
@@ -8401,48 +8452,9 @@ function randAll(mode, opts) {
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (trackMuted[tr]) { trackMuted[tr] = false; updateTrackMute(tr); }
   }
-  // TEXTURE/ATMOS share track 0, but that choice previously only ever got
-  // made once — at page load or a full reset — since RAND otherwise never
-  // touches track 0 at all. That meant ATMOS effectively could never come
-  // up during ordinary RAND use, only by luck of which one the page
-  // happened to start on. Re-rolling the same 50/50 here, every RAND press
-  // (still skipped if track 0 is locked, same as everywhere else).
-  // Deliberately NOT calling randomizeTrack(0) after a swap — that runs
-  // track 0 through a note-generation path it was never previously
-  // exercised through (RAND has always skipped track 0 completely up to
-  // now), and a hard freeze showed up immediately after this was added,
-  // with AUTO RAND running and re-rolling every few bars. Suspect but not
-  // confirmed — pulling it out until there's a safer way to regenerate
-  // track 0's pattern. The instrument swap itself (cheap, well-established
-  // code) stays; a freshly-swapped ATMOS will keep whatever pattern was
-  // already there until something else regenerates it.
-  if (!trackSweep[0]) {
-    const _newSlot0 = Math.random() < 0.5 ? 'drone' : 'amlgm';
-    if (_newSlot0 !== trackInstruments[0]) {
-      trackInstruments[0] = _newSlot0;
-      const tb0 = document.getElementById('tbtn-0'); if (tb0) tb0.textContent = INSTRUMENTS[_newSlot0]?.name || _newSlot0;
-      setTrackNameColor(0, _newSlot0);
-      // If TEXTURE had its auto-loop running and this swap just changed
-      // track 1 to ATMOS, that loop was about to keep going and just apply
-      // to ATMOS instead — nothing was stopping it. ATMOS never gets
-      // auto-rand, so kill it here the moment the swap actually happens.
-      if (_newSlot0 === 'drone' && autoShiftStops[0]) {
-        autoShiftStops[0]();
-        const rb0Swap = document.getElementById('randbtn-0');
-        if (rb0Swap) { rb0Swap.classList.remove('rand-auto'); _setRandBtnLabel(rb0Swap, false); }
-        const lane0Swap = document.getElementById('lane-0');
-        if (lane0Swap) lane0Swap.style.removeProperty('--track-color');
-      }
-    }
-    // Reverb chance for track 1 (TEXTURE or ATMOS, either one) — rolled
-    // fresh on every RAND press, not just when the instrument actually
-    // swaps. This used to only live inside _writeTrack0Pattern and the
-    // manual single-tap branch, neither of which the main RAND button ever
-    // actually calls for track 0 — so it never had a chance to fire during
-    // ordinary RAND use at all. Fixed here, in the one place every RAND
-    // press genuinely does run.
-    trackDelay[0] = Math.random() < 0.5;
-  }
+  // Track 1 is no longer special — ATMOS and TEXTURE are now normal,
+  // independently-selectable tonal/percussion instruments respectively,
+  // picked or not picked by the same pool logic as every other track.
   // Pick a fresh random scale and root for this randomize pass
   const scaleNames = Object.keys(SCALES);
   currentScaleName = scaleNames[Math.floor(Math.random() * scaleNames.length)];
@@ -8463,7 +8475,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'amlgm' && k !== 'drone' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k));
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
@@ -8472,14 +8484,12 @@ function randAll(mode, opts) {
     ? tonalKeysAll.filter(k => !lockedInstruments.has(k))
     : tonalKeysAll;
   const allKeys = Object.keys(INSTRUMENTS);
-  // Track 1 is permanently reserved for TEXTURE, so only 5 tracks actually
-  // get an instrument from RAND — every pool from here on is sized for that,
-  // not all 6, so nothing gets wasted on a slot nobody uses.
-  const REAL_TRACK_COUNT = NUM_TRACKS - 1;
+  // All 6 tracks are now equally poolable — track 1 is no longer reserved.
+  const REAL_TRACK_COUNT = NUM_TRACKS;
 
   function buildPool(keys) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5);
-    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false; let jinxClashUsed = false; let padUsed = padKeys.has(trackInstruments[0]); // ATMOS/TEXTURE aren't in padKeys, so this only actually triggers for a locked track
+    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false; let jinxClashUsed = false; let padUsed = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && padKeys.has(trackInstruments[tr])); // only actually triggers for a locked track now — track 0 isn't special-cased anymore
     // Bass is always included when available, rather than leaving it to
     // shuffle luck — with ~20 tonal options and only 5 basses, a plain
     // shuffle rarely happened to draw one.
@@ -8515,22 +8525,17 @@ function randAll(mode, opts) {
   } else if (mode === 'tonal') {
     pool = buildPool(tonalKeys);
   } else {
-    // Equal chance: pick 3 tonal and 3 perc, then shuffle
-    // With Track 1 permanently on TEXTURE, there are only 5 real tracks —
-    // always 3 tonal (including bass) + 2 non-tonal. No more occasional
-    // tonal-heavy bump at level 4 — 2 non-tonal tracks are now guaranteed.
-    const tonalTarget = 3;
-    // Track 1 (TEXTURE/ATMOS) is genuinely tonal and counts toward this
-    // target too — it just doesn't go through this pool since it's never
-    // reassigned here. Counting it means tracks 2-6 only need to supply 2
-    // more tonal instruments, not 3, since track 1 already provides one.
-    const track0IsTonal = INSTRUMENTS[trackInstruments[0]]?.group === 'tonal'; // always true — TEXTURE/ATMOS are both tonal
+    // Equal chance: pick tonal and perc, then shuffle. Roughly the same
+    // 60/40 split as before, scaled up now that all 6 tracks participate
+    // (was 3-of-5 when track 1 was reserved) — 4 tonal (including bass) +
+    // 2 non-tonal.
+    const tonalTarget = 4;
     // Count how many of each are already locked in
-    const lockedTonal = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr])).length + (track0IsTonal ? 1 : 0);
+    const lockedTonal = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr])).length;
     const lockedPerc = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && !TONAL_KEYS.has(trackInstruments[tr])).length;
     // Remaining slots needed to fill out the split — perc absorbs whatever
     // tonal doesn't need, rather than using a fixed target, so the two
-    // always add up to the 5 real tracks regardless of track 1's status.
+    // always add up to the 6 real tracks.
     const tonalSlots = Math.max(0, tonalTarget - lockedTonal);
     const percSlots = Math.max(0, REAL_TRACK_COUNT - tonalSlots - lockedPerc);
 
@@ -8570,7 +8575,7 @@ function randAll(mode, opts) {
     let soloUniqueUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloUniqueKeys.has(trackInstruments[tr]));
     let soloRareLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloRareLeadKeys.has(trackInstruments[tr]));
     let jinxClashUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && jinxClashKeys.has(trackInstruments[tr]));
-    let padUsed2 = padKeys.has(trackInstruments[0]) || [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && padKeys.has(trackInstruments[tr]));
+    let padUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && padKeys.has(trackInstruments[tr]));
     const nonBassShuffle = [];
     for (const k of nonBassShuffled) {
       if (soloLeadKeys.has(k)) { if (soloLeadUsed2) continue; soloLeadUsed2 = true; }
@@ -8652,7 +8657,6 @@ function randAll(mode, opts) {
       const fb3 = document.getElementById(`fxbtn-${tr}`); if (fb3) { fb3.classList.remove('on'); fb3.classList.remove('blast-on'); }
       continue;
     }
-    if (tr === 0) continue; // Track 1 (TEXTURE) — RAND never touches it; pool is sized for the 5 real tracks only, nothing wasted here
     if (trackSweep[tr]) continue; // L button locked — skip, without consuming a pool slot
     const k = pool[poolIdx++] || pool[pool.length - 1];
     if (trackInstruments[tr] === 'ngate' && k !== 'ngate' && typeof _noiseGateNodes !== 'undefined' && _noiseGateNodes[tr]) {
@@ -8862,7 +8866,7 @@ function randAll(mode, opts) {
   // Randomize FX for tonal instruments (35% chance, higher for synth/punk bass)
   // setFxActive handles both gain node and vol bar correctly
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (TEXTURE)
+    if (trackSweep[tr]) continue; // locked
     if (TONAL_KEYS.has(trackInstruments[tr]) || trackInstruments[tr] === 'ride') {
       const isBass = (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass4');
       const isClap = trackInstruments[tr] === 'clap';
@@ -8938,7 +8942,7 @@ function randAll(mode, opts) {
   // Randomise delay for all tracks
   const _noDelayKeys = new Set(['tamb', 'skick', 'shak', 'sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'guiro', 'clap', 'shihat']); // HIHAT added — never gets reverb through RAND either
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackSweep[tr] || tr === 0) continue; // locked, or Track 1 (TEXTURE)
+    if (trackSweep[tr]) continue; // locked
     if (_noDelayKeys.has(trackInstruments[tr])) {
       trackDelay[tr] = false;
       const db0 = document.getElementById(`delaybtn-${tr}`);
@@ -8959,7 +8963,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5)); // base +15%, then +25% more, then +50% more; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; JINX/RIDE/BOOBOO fixed at 50%; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; JINX/RIDE/BOOBOO fixed at 50%; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -9186,7 +9190,7 @@ function restoreState(snap) {
   // Restore auto-rand lane colors and R button state
   if (snap.trackAutoRand) {
     snap.trackAutoRand.forEach((isAutoRaw, tr) => {
-      const isAuto = isAutoRaw && !(tr === 0 && trackInstruments[0] === 'drone'); // ATMOS never gets auto-rand, even if a restored snapshot says it should
+      const isAuto = isAutoRaw; // no longer special-cased — ATMOS behaves like any other tonal track now
       const lane = document.getElementById(`lane-${tr}`);
       const rb = document.getElementById(`randbtn-${tr}`);
       if (isAuto) {
@@ -9475,73 +9479,14 @@ function randomizeTrack(tr) {
     return;
   }
 
-  // TEXTURE (and DRONE — same routine, shared 50/50 into this same slot) has
-  // no pitch/scale of its own — it echoes whatever chord the other tracks
-  // capture — so it can't be routed through randomizeBassTrack (that would
-  // risk it picking a fresh root and setting it as the whole song's scale
-  // root before any real tonal track has). But its trigger pattern should be
-  // populated the same way ARBY's is: ARBY has no custom density
-  // table, so it just uses the generic tonal default — replicated here
-  // directly, plus the same "never more than 3 in a row" cap.
-  if (trackInstruments[tr] === 'amlgm' || trackInstruments[tr] === 'drone') {
-    const isDrone = trackInstruments[tr] === 'drone';
-    // ATMOS gets noticeably more notes than TEXTURE — a higher density
-    // table, and a shorter minimum gap between hits (TEXTURE's 4-step
-    // floor effectively caps it at ~4 notes regardless of the table, so
-    // that had to loosen too for a higher note count to actually show up).
-    const [minN, maxN0, accentRatio] = (isDrone ? [
-      [5, 10, 0.25],
-      [9, 15, 0.45],
-      [13, 18, 0.65],
-    ] : [
-      [2, 6,  0.20],
-      [5, 9,  0.40],
-      [8, 14, 0.60],
-    ])[Math.min(level, 2)];
-    const minGap = isDrone ? 2 : 4;
-    const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor()));
-    const _cap = window._randNoteMax || maxN;
-    window._lastNoteMaxUsed = _cap;
-    const noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
-    placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
-    let run = 0;
-    for (let s = 0; s < NUM_STEPS * 2; s++) {
-      const idx = s % NUM_STEPS;
-      if (grid[tr][idx] > 0) { run++; if (run > 3) { grid[tr][idx] = 0; run = 0; } }
-      else run = 0;
-    }
-    // TEXTURE notes are always separated by at least a quarter note — no
-    // two hits closer than 4 steps apart. ATMOS only needs an 8th note gap.
-    const _echoOnsets = [];
-    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) _echoOnsets.push(s);
-    for (let i = 1; i < _echoOnsets.length; i++) {
-      if (_echoOnsets[i] - _echoOnsets[i - 1] < minGap) { grid[tr][_echoOnsets[i]] = 0; _echoOnsets.splice(i, 1); i--; }
-    }
-    if (_echoOnsets.length > 1 && (_echoOnsets[0] + NUM_STEPS - _echoOnsets[_echoOnsets.length - 1]) < minGap) {
-      grid[tr][_echoOnsets[_echoOnsets.length - 1]] = 0; _echoOnsets.pop();
-    }
-    // TEXTURE/ATMOS get 32nd-note splits often now too — the same idea as
-    // HIHAT: some onsets subdivide into a quick 32nd-note burst instead of
-    // a single hit. Done before the legato pass below, since a split note
-    // and a held legato note don't make sense on the same onset — legato
-    // skips anything already marked here.
-    const _split32Onsets = new Set();
-    _echoOnsets.forEach(s => {
-      if (Math.random() < 0.4) { grid[tr][s] = 3; _split32Onsets.add(s); }
-    });
-    // And each note actually sustains for that full quarter note, rather
-    // than just being spaced apart while still playing as a quick blip.
-    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
-    _echoOnsets.forEach(s => {
-      if (_split32Onsets.has(s)) return;
-      const maxLen = _legatoMaxLen(tr, s);
-      trackLegatoLen[tr][s] = Math.min(4, maxLen);
-    });
-    trackDelay[0] = Math.random() < 0.5; // ATMOS or TEXTURE — reverb about half the time either way
-    redrawTrackCells(tr); markModified(); return;
-  }
+  // TEXTURE keeps its own amalgam-echo SOUND (it has no pitch of its own —
+  // it echoes whatever chord other tracks capture), but is now placed
+  // using the standard percussion rules below, not a special branch — it
+  // falls through to the generic percussion path further down like any
+  // other kit/perc instrument. ATMOS is now a normal tonal instrument,
+  // dispatched through randomizeBassTrack just below like any other lead.
 
-  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening') {
+  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening' || trackInstruments[tr] === 'drone') {
     randomizeBassTrack(tr, level); return;
   }
 
@@ -9952,9 +9897,8 @@ setTrackPulseMode('a');
 // startup RAND call below doesn't either).
 document.getElementById('beatBtn')?.classList.toggle('active', beatPlaying);
 updateBeatPulse();
-// Track 1 always starts with either TEXTURE's Auto-Random engaged, or
-// ATMOS getting a one-time note pick.
-_engageOrPickTrack0();
+// Track 1 is no longer special — the deferred startup RAND call below
+// handles it the same as every other track now.
 // Load with something already on the deck rather than a blank grid — same
 // call the RAND button itself makes. Deferred (and wrapped) so nothing in
 // here can ever delay or interfere with the tap-to-load screen's own
@@ -10258,6 +10202,12 @@ function _leftSpoolEngage() {
   // requirement. The stop/restart transport behavior below is separate and
   // still gated on actually playing.
   if (window._sweepSwitchDirection) window._sweepSwitchDirection('down');
+  // The left spool's own sound cue — the Stop sample, reversed, rather
+  // than played forward like it used to be.
+  if (ctx && window._uiSoundBufs) {
+    _getReversedUiSound('Stop'); // ensures window._uiSoundBufs['StopReversed'] is cached
+    playUiSound('StopReversed');
+  }
   if (!playing || !ctx || window._tempoBraking) return;
   window._tempoBraking = true;
   clearInterval(scheduleInterval); scheduleInterval = null;
@@ -10412,6 +10362,13 @@ function _getDroneAirNoiseBuffer() {
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   _droneAirNoiseBuffer = buf;
   return _droneAirNoiseBuffer;
+}
+// Adapter matching the standard (freq, dur, isAccent, time, tr) call
+// signature every other instrument uses in fireStepAudio's dispatch —
+// _playDronePhantomNote's own signature is (tr, freq, isAccent, t, dest,
+// durSec), since it originated from the track-0-only echo system.
+function playAtmos(freq, dur, isAccent, time, tr) {
+  _playDronePhantomNote(tr, freq, isAccent, time, getSynthConnectNode(tr), dur);
 }
 function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   if (!ctx) return;
@@ -10839,7 +10796,7 @@ function fullReset() {
     trackChop[tr] = false;
     trackVolume[tr] = defaultVolumes[tr];
     trackInstruments[tr] = defaultInstruments[tr];
-    trackFx[tr] = tr === 0 ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 }; // Track 1 (TEXTURE) always keeps FX engaged
+    trackFx[tr] = { x: 0, y: 0 }; // no longer forced on for track 0 — same default as everyone else now
     trackDelay[tr] = false;
     trackPump[tr] = false;
     trackFxMode[tr] = 0;
@@ -10889,16 +10846,8 @@ function fullReset() {
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
-  // Track 1: TEXTURE re-applies its always-on FX and Auto-Random now that
-  // buildUI() just recreated the button elements fresh; ATMOS just gets a
-  // one-time note pick instead. Deferred a tick to rule out any DOM/closure
-  // timing race right after a full rebuild.
-  if (ctx && trackFxNodes[0]) setFxActive(0, trackFx[0]);
-  setTimeout(() => {
-    if (!autoShiftStops[0]) _engageOrPickTrack0();
-    const fb0 = document.getElementById('fxbtn-0');
-    if (fb0) fb0.classList.toggle('on', true);
-  }, 50);
+  // Track 1 is no longer special — no forced FX or auto-rand re-engagement
+  // after a reset, same as every other track.
   updateSlotButtons();
   updateMasterVolCells();
   updateSwingReadout();
@@ -11238,7 +11187,10 @@ async function initAudio() {
     const _uiSoundBufs = {};
     window._uiSoundBufs = _uiSoundBufs;
     ['click','play','rewind','rewind2','clickoff','Stop','Cymbal','Rand'].forEach(name => {
-      fetch(resolveSampleUrl(`Sounds/${name}.wav`)).then(r => r.arrayBuffer()).then(buf => ctx.decodeAudioData(buf, decoded => { _uiSoundBufs[name] = decoded; })).catch(()=>{});
+      fetch(resolveSampleUrl(`Sounds/${name}.wav`)).then(r => r.arrayBuffer()).then(buf => ctx.decodeAudioData(buf, decoded => {
+        _uiSoundBufs[name] = decoded;
+        if (name === 'Stop') { try { _getReversedUiSound('Stop'); } catch(e) {} } // pre-warm the left spool's reversed cue right after Stop itself finishes decoding
+      })).catch(()=>{});
     });
 window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = window.masterLimiter;
     masterLimiter.threshold.value = -3;
@@ -11423,7 +11375,35 @@ async function hardResetAudioEngine() {
     // modulation on top of SWEEP's own ducking below.
     noise.connect(bp); bp.connect(baseGain); baseGain.connect(duckGain); duckGain.connect(masterGain);
     noise.start(t);
-    sweepNodes = { noise, bp, gain: baseGain, duckGain };
+
+    // Mix in TEXTURE's own amalgam-echo tone alongside the noise sweep —
+    // a soft sustained layer built from whatever the pattern's current
+    // tonal chord actually is, ramping in from silent up to half the
+    // sweep's own peak level over the same rise time, rather than just
+    // being noise/filter movement on its own.
+    let amalgamOscs = [];
+    let amalgamGain = null;
+    try {
+      if (typeof _regenerateAmalgamChord === 'function') _regenerateAmalgamChord();
+      const chord = (typeof _amalgamChord !== 'undefined' && _amalgamChord && _amalgamChord.length) ? _amalgamChord : [{ freq: 220 }];
+      amalgamGain = ctx.createGain();
+      amalgamGain.gain.setValueAtTime(0, t);
+      amalgamGain.gain.linearRampToValueAtTime(0.2145 * 0.5, t + riseDur); // 0 to 50% of baseGain's own peak
+      amalgamGain.connect(duckGain);
+      const chordNorm = 1 / Math.sqrt(chord.length);
+      chord.forEach(n => {
+        const freq = n.freq || 220;
+        const o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = freq;
+        const o2 = ctx.createOscillator(); o2.type = 'triangle'; o2.frequency.value = freq * 2;
+        const noteGain = ctx.createGain(); noteGain.gain.value = chordNorm;
+        o1.connect(noteGain); o2.connect(noteGain); noteGain.connect(amalgamGain);
+        o1.start(t); o2.start(t);
+        o1.stop(t + bufDur); o2.stop(t + bufDur);
+        amalgamOscs.push(o1, o2);
+      });
+    } catch (e) {}
+
+    sweepNodes = { noise, bp, gain: baseGain, duckGain, amalgamOscs, amalgamGain };
     btn.classList.add('active');
 
     // Continuously sample master output level and duck the sweep inversely.
@@ -11462,7 +11442,7 @@ async function hardResetAudioEngine() {
   function stopSweep(isSwitch) {
     if (!sweepNodes || !ctx) return;
     if (!isSwitch) playUiSound('Cymbal'); // same cue the left tape spool plays on release — skipped mid-drag direction switches, only plays on a genuine release
-    const { bp, gain, noise, duckGain } = sweepNodes;
+    const { bp, gain, noise, duckGain, amalgamOscs, amalgamGain } = sweepNodes;
     // Capture wherever the pitch actually is right now — this is what lets
     // the next engagement (SWEEP or the left spool) continue from here
     // instead of resetting. Read before cancelScheduledValues touches it.
@@ -11489,6 +11469,18 @@ async function hardResetAudioEngine() {
     gain.gain.setValueAtTime(gain.gain.value * 0.355, t); // -9dB total on the release tail (-5dB then another -4dB)
     gain.gain.linearRampToValueAtTime(0, t + quarterNote);
     setTimeout(() => { try { noise.stop(); noise.disconnect(); } catch(e) {} }, quarterNote * 1000 + 100);
+    // Fade and stop the amalgam mix-in layer alongside everything else.
+    if (amalgamGain) {
+      amalgamGain.gain.cancelScheduledValues(t);
+      amalgamGain.gain.setValueAtTime(amalgamGain.gain.value, t);
+      amalgamGain.gain.linearRampToValueAtTime(0, t + quarterNote);
+    }
+    if (amalgamOscs && amalgamOscs.length) {
+      setTimeout(() => {
+        amalgamOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
+        try { amalgamGain.disconnect(); } catch(e) {}
+      }, quarterNote * 1000 + 100);
+    }
   }
   window._sweepEngageUp = () => startSweep('up');
   window._sweepEngageDown = () => startSweep('down');
