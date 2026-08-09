@@ -658,7 +658,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 23:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 23:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2092,7 +2092,7 @@ function scheduler() {
       if (_autoRandPending) {
         _autoRandPending = false;
         const rbClear = document.getElementById('randBtn'); if (rbClear) rbClear.classList.remove('rand-pending-fast');
-        _recallSnapB = snapshotState(); // save current as previous before change
+        _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // save current as previous before change, and keep the passive rolling-updater in sync so it can't later overwrite this with a stale value
         randAll(_autoRandMode); _autoRandMode = undefined;
         clearBtnBlueHeld('randBtn');
         playRandReleaseSweep(t);
@@ -2120,7 +2120,7 @@ function scheduler() {
           _autoRandBarCount++;
           if (_autoRandBarCount >= 4) {
             _autoRandBarCount = 0;
-            _recallSnapB = snapshotState();
+            _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // keep the passive rolling-updater in sync — see the queueRand() site for why
             const _savedSlot2 = activeSlot;
             randAll(undefined);
             activeSlot = _savedSlot2; // automatic evolution isn't a manual edit — don't invalidate the slot match
@@ -2135,7 +2135,7 @@ function scheduler() {
     if ((step === 0 || step === 4 || step === 8 || step === 12) && _pendingSlot >= 0) {
       const pi = _pendingSlot; _pendingSlot = -1;
       const snap = slots[pi];
-      _recallSnapB = snapshotState(); // capture what's about to be replaced, so RECALL can revert to it
+      _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // capture what's about to be replaced, so RECALL can revert to it; kept in sync with the passive rolling-updater too
       const now = ctx.currentTime;
       // Brief master gain dip to mask FX node reconnection clicks
       if (masterGain) {
@@ -7398,7 +7398,13 @@ function buildTapeLink() {
 }
 async function shareTapeLink() {
   const link = buildTapeLink();
-  const shareData = { title: 'Si•Fi tape', text: _currentSpecies || 'Si•Fi tape', url: link };
+  // Deliberately no separate `text` field — many share targets (Messages,
+  // WhatsApp, etc.) render `text` and `url` as two visible lines in the
+  // message body rather than a single clean link/preview card, which is
+  // exactly the "raw text plus a separate link" behavior being reported.
+  // `title` alone is generally treated as metadata rather than inserted
+  // into the visible message, so the species name goes there instead.
+  const shareData = { title: _currentSpecies || 'Si•Fi tape', url: link };
   if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
     try { await navigator.share(shareData); return; }
     catch (e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to clipboard', e); }
@@ -7729,7 +7735,7 @@ let _autoRandLoopActive = false; // RAND button press-and-hold auto-mode
 let _autoRandBarCount = 0;       // counts real bar-starts toward the next 4-bar regenerate
 
 function queueRand(mode) {
-  _recallSnapB = snapshotState(); // save current as previous before change
+  _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // save current as previous before change. Also syncing the passive rolling-updater (window._rollingBarSnap) to the same value right here — that updater runs independently at bar boundaries, and without this it can end up reverting _recallSnapB to a stale, unrelated pattern between this tap and whichever bar boundary actually processes it, especially with RAND pressed more than once in quick succession.
   if (playing) {
     _autoRandPending = true;
     _autoRandMode = mode;
@@ -9438,7 +9444,7 @@ function slotPress(i) {
   } else if (!playing) {
     // Not playing — switch immediately
     _pendingSlot = -1;
-    _recallSnapB = snapshotState(); // capture what's about to be replaced, so RECALL can revert to it
+    _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // capture what's about to be replaced, so RECALL can revert to it; kept in sync with the passive rolling-updater too
     restoreState(slots[i]);
     activeSlot = i;
     updateSlotButtons();
