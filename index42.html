@@ -623,7 +623,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 18:38</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 18:56</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -712,7 +712,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:48px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
-<div class="slot-bar" id="slotBar"></div>
 
 
 
@@ -927,6 +926,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 <!-- Sequencer grid -->
 <div class="seq-wrap" id="seqWrap" style="position:relative;"></div>
 
+<div class="slot-bar" id="slotBar"></div>
 
 <div class="footer">
   <button class="ghost-btn" onclick="randomize()">+</button>
@@ -9928,25 +9928,24 @@ setTimeout(() => {
   // overwrites the random starter pattern above if the user says yes.
   try { _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
   // Pre-fill all 6 save slots with distinct patterns right away instead of
-  // starting empty — slot 1 keeps whatever's already loaded above (the
-  // random starter, or the tape link if one was just loaded), slots 2-6
-  // each get their own freshly randomized pattern. Same tempo across all
-  // six, so browsing between them doesn't jump speed each time. Ends by
-  // restoring slot 1 so what's actually loaded matches what's on screen.
+  // starting empty. Ends by restoring slot 1 so what's actually loaded
+  // matches what's on screen.
   //
   // randAll() doesn't finish its own work synchronously — the actual
   // per-track note-writing (randomizeTrack) runs inside a setTimeout,
   // staggered 30ms per track, plus a further-delayed bass safety-net check
-  // on top. A plain synchronous loop calling randAll() six times in a row
-  // would queue all of that staggered work and then snapshot before any of
-  // it had actually run — capturing six copies of essentially the same
-  // stale grid. Waiting between each call and its snapshot is required.
+  // on top. That means the very first randAll() call above (used only for
+  // immediate on-screen content while this all runs) is ALSO not actually
+  // finished by the time this code reaches it — so slot 1 can't just grab
+  // a snapshot right away either, the same staleness that affected slots
+  // 2-6 in the first version of this. Every slot, including slot 1, now
+  // goes through its own randAll-then-wait-then-snapshot cycle — 6 full
+  // cycles total, none of them reusing that first throwaway call.
   const _slotFillDelayMs = 500; // comfortably past the ~150ms track stagger and the bass safety-net's own delay on top of that
   (async () => {
     try {
-      slots[0] = snapshotState();
-      for (let i = 1; i < NUM_SLOTS; i++) {
-        randAll(undefined, { skipTempo: true });
+      for (let i = 0; i < NUM_SLOTS; i++) {
+        randAll(undefined, { skipTempo: i > 0 });
         await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
         slots[i] = snapshotState();
       }
