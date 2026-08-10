@@ -547,10 +547,7 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform.note-flas
 }
 .step-cell.soft::after { background: var(--track-color, var(--text)); opacity: 0.4; }
 .step-cell.on::after   { background: var(--track-color, var(--text)); opacity: 1; }
-.step-lane.lane-muted .step-cell.soft::after,
-.step-lane.lane-muted .step-cell.on::after,
-.step-lane.lane-muted .step-cell.split32::after,
-.step-lane.lane-muted .step-cell.legato-tail::after { opacity: 0.075 !important; filter: grayscale(1); }
+.step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
 body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.15; }
@@ -658,7 +655,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 01:56</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 02:01</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
