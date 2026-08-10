@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:39</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -5911,19 +5911,19 @@ function playDmxSnare(t) {
   const body = ctx.createOscillator(), bodyGain = ctx.createGain();
   body.type = 'triangle';
   body.frequency.setValueAtTime(280, t); body.frequency.exponentialRampToValueAtTime(120, t + 0.045);
-  bodyGain.gain.setValueAtTime(0.2017, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -4dB total now (was 0.32, then 0.254)
+  bodyGain.gain.setValueAtTime(0.1602, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -6dB total now (was 0.32, then 0.254, then 0.2017) — affects all four patterns using this shared function (BLAP, SPLIM, SAMBA, DOUBLEDOWN)
   body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.06);
   body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
 
   src.buffer = buf; src.connect(bitcrush); bitcrush.connect(hp); hp.connect(presence); presence.connect(g); g.connect(snDest);
-  g.gain.setValueAtTime(0.3912, t); // -4dB total now (was 0.62, then 0.4925)
+  g.gain.setValueAtTime(0.3108, t); // -6dB total now (was 0.62, then 0.4925, then 0.3912)
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   src.start(t);
   src.onended = () => { try { bitcrush.disconnect(); hp.disconnect(); presence.disconnect(); g.disconnect(); } catch(e) {} };
 
   // A sharper, tighter click than the standard snare's own — the DMX's
   // crack is more transient-forward than a typical analog snare's.
-  _addSnareClick(t, snDest, 0.1009); // -4dB total now (was 0.16, then 0.127)
+  _addSnareClick(t, snDest, 0.0801); // -6dB total now (was 0.16, then 0.127, then 0.1009)
 }
 function setBeatVol(v) {
   if (window._beatGain && ctx) window._beatGain.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
