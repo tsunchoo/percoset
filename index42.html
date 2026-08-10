@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 04:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 04:37</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2518,7 +2518,7 @@ function fireStepAudio(step, t) {
           if (_beatType === 'reggae2') fireBeatSidestick(t); // ONE DROP — ties to its kicks on beats 2 & 4
         }
         if (_beatType === 'reggae' && (bstep === 4 || bstep === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
-        if (doSnare) { if (_beatType === 'blap' || _beatType === 'splim') playDmxSnare(t); else if (_beatType === 'disco' || _beatType === 'halftime') playDmxSnareLow(t); else playSnare(t); }
+        if (doSnare) { if (_beatType === 'blap' || _beatType === 'splim') playDmxSnare(t); else if (_beatType === 'halftime') playDmxSnareLow(t); else playSnare(t); }
         if (doHat) playSynthHihat(false, t, -1);
       }
     }
@@ -2552,7 +2552,7 @@ function fireStepAudio(step, t) {
         if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) playDmxSnare(t);
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
-        if (bstep === 4 || bstep === 12) playDmxSnareLow(t);     // snare lands exactly on 2 & 4
+        if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
       } else if (_beatType === 'cumbia') {
         if (bstep === 2 || bstep === 3 || bstep === 6 || bstep === 7 || bstep === 10 || bstep === 11 || bstep === 14 || bstep === 15) playSynthHihat(false, t, -1);
       } else if (_beatType === 'afrobeat') {
@@ -5911,19 +5911,19 @@ function playDmxSnare(t) {
   const body = ctx.createOscillator(), bodyGain = ctx.createGain();
   body.type = 'triangle';
   body.frequency.setValueAtTime(280, t); body.frequency.exponentialRampToValueAtTime(120, t + 0.045);
-  bodyGain.gain.setValueAtTime(0.1271, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -8dB total now (was 0.32, then 0.254, 0.2017, 0.1602, 0.1427) — affects all four patterns using this shared function (BLAP, SPLIM, SAMBA, DOUBLEDOWN)
+  bodyGain.gain.setValueAtTime(0.1009, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -10dB total now (was 0.32, then 0.254, 0.2017, 0.1602, 0.1427, 0.1271) — affects BLAP, SPLIM, SAMBA, DOUBLEDOWN
   body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.06);
   body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
 
   src.buffer = buf; src.connect(bitcrush); bitcrush.connect(hp); hp.connect(presence); presence.connect(g); g.connect(snDest);
-  g.gain.setValueAtTime(0.2467, t); // -8dB total now (was 0.62, then 0.4925, 0.3912, 0.3108, 0.2769)
+  g.gain.setValueAtTime(0.1960, t); // -10dB total now (was 0.62, then 0.4925, 0.3912, 0.3108, 0.2769, 0.2467)
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   src.start(t);
   src.onended = () => { try { bitcrush.disconnect(); hp.disconnect(); presence.disconnect(); g.disconnect(); } catch(e) {} };
 
   // A sharper, tighter click than the standard snare's own — the DMX's
   // crack is more transient-forward than a typical analog snare's.
-  _addSnareClick(t, snDest, 0.0636); // -8dB total now (was 0.16, then 0.127, 0.1009, 0.0801, 0.0714)
+  _addSnareClick(t, snDest, 0.0505); // -10dB total now (was 0.16, then 0.127, 0.1009, 0.0801, 0.0714, 0.0636)
 }
 // Lower-toned DMX-style snare — same core character (bitcrushed sample,
 // short/tight decay, DMX-style crack) as playDmxSnare above, but retuned
@@ -8070,7 +8070,7 @@ function getSpeciesName() {
   // appears as part of the word, since those are meant to read as separate
   // words even though they're stored compound.
   let split = celestial;
-  ['major', 'minor', 'dwarf'].forEach(word => {
+  ['major', 'minor', 'dwarf', 'galaxy'].forEach(word => {
     const idx = split.indexOf(word);
     if (idx > 0) split = split.slice(0, idx) + ' ' + split.slice(idx);
   });
