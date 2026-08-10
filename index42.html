@@ -655,7 +655,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 02:29</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 02:34</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6228,7 +6228,7 @@ function selectSound(tr, k) {
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.add('on');
   }
   if (ctx && trackFx[tr]) setFxActive(tr, trackFx[tr]);
-  const btn = document.getElementById(`tbtn-${tr}`); if (btn) btn.textContent = grid[tr].some(v => v > 0) ? INSTRUMENTS[k].name : '';
+  const btn = document.getElementById(`tbtn-${tr}`); if (btn) btn.textContent = grid[tr].some(v => v > 0) ? INSTRUMENTS[k].name : 'EMPTY';
   setTrackNameColor(tr, k);
   const sb = document.getElementById(`swpbtn-${tr}`);
   if (sb) {
@@ -6320,7 +6320,7 @@ function buildUI() {
     // Name button (click=mute, hold=sound picker)
     const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
     nameBtn.dataset.tr = tr;
-    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : '';
+    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
     setTrackNameColor(tr, trackInstruments[tr]);
     nameBtn.classList.toggle('muted', trackMuted[tr]);
     ctrlRow.appendChild(nameBtn);
@@ -6503,7 +6503,7 @@ function redrawTrackCells(tr) {
     // than showing an instrument name for a track that isn't actually
     // doing anything — recomputed from trackInstruments each time so it
     // comes back correctly the moment notes are added again.
-    tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : '';
+    tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : 'EMPTY';
   }
 }
 function previewNote(tr, isAccent) {
@@ -6561,7 +6561,7 @@ function tapStep(tr, s, cell) {
   const hasNotes = grid[tr].some(v => v > 0);
   if (tbtn) {
     tbtn.classList.toggle('has-notes', hasNotes);
-    tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : '';
+    tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : 'EMPTY';
   }
   if (val > 0 && ctx) previewNote(tr, val === 2);
   markModified();
@@ -8466,7 +8466,7 @@ function fullClear() {
       if (trackGainNodes[tr]) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr], ctx.currentTime, 0.01);
     }
     const tb = document.getElementById(`tbtn-${tr}`);
-    if (tb) { tb.textContent = ''; tb.classList.remove('muted','has-notes','shifting'); setTrackNameColor(tr, trackInstruments[tr]); }
+    if (tb) { tb.textContent = 'EMPTY'; tb.classList.remove('muted','has-notes','shifting'); setTrackNameColor(tr, trackInstruments[tr]); }
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
     const sb = document.getElementById(`swpbtn-${tr}`);
     if (sb) { sb.textContent = 'L'; sb.classList.remove('sweep-on'); }
@@ -9389,7 +9389,7 @@ function restoreState(snap) {
     if (sb) { sb.textContent = 'L'; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
     const tb=document.getElementById(`tbtn-${tr}`);
     if(tb) {
-      tb.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name||(tr+1)) : '';
+      tb.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name||(tr+1)) : 'EMPTY';
       tb.classList.toggle('muted', trackMuted[tr]);
       setTrackNameColor(tr, trackInstruments[tr]);
     }
