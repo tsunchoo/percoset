@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 04:37</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 04:43</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1773,7 +1773,7 @@ const _sourceSoftClips = {};
 function _makeSoftClipCurve() {
   const n = 2048;
   const curve = new Float32Array(n);
-  const threshold = 0.85; // fully transparent up to here
+  const threshold = 0.6; // more aggressive — was 0.85, engages much earlier now
   for (let i = 0; i < n; i++) {
     const x = (i / (n - 1)) * 2 - 1; // -1 to 1
     if (Math.abs(x) <= threshold) {
@@ -1781,7 +1781,7 @@ function _makeSoftClipCurve() {
     } else {
       const sign = x < 0 ? -1 : 1;
       const excess = (Math.abs(x) - threshold) / (1 - threshold);
-      curve[i] = sign * (threshold + (1 - threshold) * Math.tanh(excess));
+      curve[i] = sign * (threshold + (1 - threshold) * Math.tanh(excess * 1.8)); // steeper tanh response — saturates harder/faster toward the ceiling, not just a gentler curve starting earlier
     }
   }
   return curve;
