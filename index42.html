@@ -550,7 +550,7 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform.note-flas
 .step-lane.lane-muted .step-cell.soft::after,
 .step-lane.lane-muted .step-cell.on::after,
 .step-lane.lane-muted .step-cell.split32::after,
-.step-lane.lane-muted .step-cell.legato-tail::after { opacity: 0.15 !important; filter: grayscale(1); }
+.step-lane.lane-muted .step-cell.legato-tail::after { opacity: 0.075 !important; filter: grayscale(1); }
 body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.15; }
@@ -658,7 +658,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 00:18</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 01:56</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -827,6 +827,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
+          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
           <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
@@ -3649,7 +3650,8 @@ function playMotownBass(freq, durSec, isAccent, time, tr) {
   const saw2 = ctx.createOscillator(); saw2.type = 'sawtooth'; saw2.frequency.value = f; saw2.detune.value = 3;
   const sub  = ctx.createOscillator(); sub.type  = 'sine';   sub.frequency.value  = f * 0.5;
 
-  const mix = ctx.createGain(); mix.gain.value = vel * 0.55; // scaled by vel
+  const _blastAtten = trackPump[tr] ? 0.7943 : 1; // -2dB when BLAST is on this track — had no BLAST-specific attenuation at all before, same idea as PUNK BASS's own fix
+  const mix = ctx.createGain(); mix.gain.value = vel * 0.55 * _blastAtten; // scaled by vel
 
   // Tight lowpass — closed, punchy, no bloom
   const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 0.8;
@@ -7383,6 +7385,62 @@ function exportTape() {
   shareOrDownload([file]);
 }
 // A tape as a clickable LINK, not a file — sent in a message, tapped, and
+// the app opens straight into that pattern with no manual save/import step.
+// The whole tape lives in the URL's hash fragment: hashes are never sent
+// over the network even on a static host like this one, so the link works
+// standalone with nothing to host or store server-side. Unlike a shared
+// file (which some platforms preview in a sandboxed viewer rather than
+// actually opening — see the removed shareTapeAsHtml), a link always opens
+// in a real, fully-functional browser tab regardless of platform.
+//
+// The JSON gets gzip-compressed (native CompressionStream, no library)
+// before base64 — pattern data is highly repetitive (lots of the same
+// small set of keys/values across 6 tracks), so this compresses well and
+// meaningfully shortens the link. A long enough link was landing as
+// unrecognized raw text rather than an actual clickable URL in at least
+// one messaging app, so link length isn't just cosmetic here.
+async function _compressToBase64(str) {
+  const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
+  const buf = await new Response(stream).arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+async function _decompressFromBase64(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(stream).text();
+}
+async function buildTapeLink() {
+  const payload = _tapePayloadForCurrent();
+  const json = JSON.stringify(payload); // minified — no pretty-print, keeps the link shorter
+  const b64 = await _compressToBase64(json);
+  const url = new URL(location.href);
+  url.hash = 'tapez=' + b64; // "tapez" (not "tape") — a different key so an old, uncompressed link still parses correctly against the legacy path below instead of failing to decompress
+  return url.toString();
+}
+async function shareTapeLink() {
+  const link = await buildTapeLink();
+  // Deliberately no separate `text` field — many share targets (Messages,
+  // WhatsApp, etc.) render `text` and `url` as two visible lines in the
+  // message body rather than a single clean link/preview card. `title`
+  // alone is generally treated as metadata rather than inserted into the
+  // visible message, so the species name goes there instead.
+  const shareData = { title: _currentSpecies || 'Si•Fi tape', url: link };
+  if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+    try { await navigator.share(shareData); return; }
+    catch (e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to clipboard', e); }
+  }
+  try {
+    await navigator.clipboard.writeText(link);
+    alert('Tape link copied — paste it into a message.');
+  } catch (e) {
+    prompt('Copy this tape link:', link);
+  }
+}
 // Shared by both the URL-hash tape loader and the embedded-file tape
 // loader below — given a parsed tape payload, confirms with the user and
 // restores it, replacing whatever's currently on the deck.
@@ -7401,16 +7459,21 @@ function _offerToLoadTapePayload(payload) {
 // Runs once at page load. If the URL carries a tape in its hash, offers to
 // load it (replacing whatever's currently on the deck), then clears the
 // hash so refreshing the page doesn't keep re-triggering the same prompt.
-// (Only the loading/receiving side remains — the corresponding "send" UI
-// was removed for not working reliably enough across share targets, but
-// links shared before that removal should still open correctly here.)
-function _tryLoadTapeFromHash() {
+// Handles both the current compressed format ("tapez=") and the older
+// uncompressed one ("tape=", from links sent before compression was
+// added), so nothing already shared stops working.
+async function _tryLoadTapeFromHash() {
   const h = location.hash;
-  const idx = h.indexOf('tape=');
-  if (idx === -1) return;
+  const zIdx = h.indexOf('tapez=');
+  const legacyIdx = zIdx === -1 ? h.indexOf('tape=') : -1;
+  if (zIdx === -1 && legacyIdx === -1) return;
   try {
-    const b64 = h.slice(idx + 5);
-    const json = decodeURIComponent(escape(atob(b64)));
+    let json;
+    if (zIdx !== -1) {
+      json = await _decompressFromBase64(h.slice(zIdx + 6));
+    } else {
+      json = decodeURIComponent(escape(atob(h.slice(legacyIdx + 5))));
+    }
     const payload = JSON.parse(json);
     _offerToLoadTapePayload(payload);
   } catch (e) {
@@ -8990,6 +9053,14 @@ function randAll(mode, opts) {
 
   // Randomize FX for tonal instruments (35% chance, higher for synth/punk bass)
   // setFxActive handles both gain node and vol bar correctly
+  // JINX gets a single linked roll shared between this loop and the
+  // reverb loop below, rather than each rolling independently — the
+  // intent is specifically "reverb AND FX/BLAST together, 50% of the
+  // time", not two separate 50% chances that may or may not line up.
+  const _jinxComboRoll = {};
+  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    if (trackInstruments[tr] === 'jcmgtr') _jinxComboRoll[tr] = Math.random() < 0.5;
+  }
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (trackSweep[tr]) continue; // locked
     if (TONAL_KEYS.has(trackInstruments[tr]) || trackInstruments[tr] === 'ride') {
@@ -9002,8 +9073,9 @@ function randAll(mode, opts) {
       const isRytmGtr = trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp';
       const isChug = trackInstruments[tr] === 'chug';
       const isRide = trackInstruments[tr] === 'ride';
+      const isJinx = trackInstruments[tr] === 'jcmgtr';
       const fxBoost = level >= 4 ? 0.845 : (level === 3 ? 0.585 : 0); // +30% over previous 0.65/0.45
-      const fxOn = isRide ? Math.random() < 0.5 : isSlay ? false : isChug ? true : isClap ? true : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(0.9, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG always on — comes with FX as standard; RIDE ~50%
+      const fxOn = isJinx ? _jinxComboRoll[tr] : isRide ? Math.random() < 0.5 : isSlay ? false : isChug ? true : isClap ? true : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(0.9, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG always on — comes with FX as standard; RIDE ~50%; JINX linked to its own reverb roll above
       const newFxVal = fxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
       trackFx[tr] = newFxVal;
       if (ctx) setFxActive(tr, newFxVal);
@@ -9019,7 +9091,7 @@ function randAll(mode, opts) {
       // Never on a track with no actual notes in it.
       const hasNotes = grid[tr].some(v => v > 0);
       const blastChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
-      const blastOn = fxOn && hasNotes && Math.random() < blastChance; // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle
+      const blastOn = isJinx ? (fxOn && hasNotes) : (fxOn && hasNotes && Math.random() < blastChance); // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle. JINX: no separate roll — BLAST just follows its own linked FX roll directly
       trackPump[tr] = blastOn;
       if (fb) fb.classList.toggle('blast-on', blastOn);
     } else if (!trackSweep[tr]) {
@@ -9088,7 +9160,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; JINX/RIDE/BOOBOO fixed at 50%; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -9442,6 +9514,17 @@ function slotPress(i) {
     _pendingSlot = i;
     activeSlot = i;
     updateSlotButtons();
+  }
+}
+// The track-name swipe-right gesture — advance to the next save slot, or
+// if there isn't one (already on the last slot, or nothing currently
+// active beyond the end), create a fresh pattern with RAND instead.
+function _slotAdvanceOrRand() {
+  const nextIdx = activeSlot + 1; // -1 + 1 = 0 when nothing's currently active
+  if (nextIdx >= 0 && nextIdx < NUM_SLOTS) {
+    slotPress(nextIdx);
+  } else {
+    queueRand();
   }
 }
 function updateSlotButtons() {
@@ -10055,11 +10138,15 @@ updateBeatPulse();
 // call the RAND button itself makes. Deferred (and wrapped) so nothing in
 // here can ever delay or interfere with the tap-to-load screen's own
 // critical first paint — that screen must appear immediately, full stop.
-setTimeout(() => {
+setTimeout(async () => {
   try { randAll(undefined, { skipTempo: false }); } catch (e) { console.error('Startup RAND failed', e); }
   // If this page was opened from a shared tape link, offer to load it —
   // overwrites the random starter pattern above if the user says yes.
-  try { _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
+  // Awaited — the slot-fill sequence right below needs this (and the
+  // confirm() dialog inside it, if a tape link is present) to have fully
+  // resolved first, otherwise it could start snapshotting/overwriting
+  // state before the tape load has actually applied.
+  try { await _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
   // Same idea, but for a tape shared as a standalone HTML file rather than
   // a link (loading side only now — the corresponding "send" functions
   // were removed, this just still opens files shared before that).
@@ -10766,7 +10853,7 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   let notes = _amalgamChord;
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
   const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
-  const vol = 0.1256 * chordNormFactor * (isAccent ? 1.3 : 1); // -12dB total (was -8dB) — fills in quieter bits, shouldn't be heard over everything
+  const vol = 0.0561 * chordNormFactor * (isAccent ? 1.3 : 1); // -19dB total now (was -14dB, -5dB more) — fills in quieter bits, shouldn't be heard over everything
   const droneAtten = (trackInstruments[tr] === 'drone') ? 0.1996 : 1; // -14dB total now (was -10dB, +4dB more), DRONE only — TEXTURE unaffected
   _amalgamVolOverride = trackPump[tr] ? vol * droneAtten * 0.5623 : vol * droneAtten; // -5dB when BLAST is on this track
   const dest = getSynthConnectNode(tr); // one resolution — Delay/FX/BLAST all behave like any other instrument now
@@ -11045,6 +11132,7 @@ function fullReset() {
 (function() {
   let _dragActive = false, _dragVisited = new Set(), _dragTargetState = null, _isDragging = false;
   let _nameHoldTimer = null, _nameHoldTr = -1;
+  let _swipeStartX = 0, _swipeStartY = 0, _swipeHandled = false;
 
   document.addEventListener('touchstart', e => {
     const touch = e.touches[0];
@@ -11054,6 +11142,7 @@ function fullReset() {
     if (!nameEl) return;
     _nameHoldTr = +nameEl.dataset.tr;
     _isDragging = false;
+    _swipeStartX = touch.clientX; _swipeStartY = touch.clientY; _swipeHandled = false;
     _nameHoldTimer = setTimeout(() => {
       _nameHoldTimer = null;
       if (!_isDragging) {
@@ -11065,10 +11154,27 @@ function fullReset() {
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
-    if (!_dragActive) return;
+    if (!_dragActive || _swipeHandled) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
     if (!_isDragging) {
+      // A clear, primarily-horizontal swipe in either direction — measured
+      // from the original touch-down point, so it accumulates correctly
+      // across several small touchmove events rather than only checking
+      // the very first one. Right: advance to the next save slot, or RAND
+      // if there isn't one. Left: RECALL, back to the previously-playing
+      // pattern. Anything that doesn't clearly qualify (too short, too
+      // vertical) falls straight through to the existing mute-drag
+      // behavior below, unchanged.
+      const dx = touch ? touch.clientX - _swipeStartX : 0;
+      const dy = touch ? touch.clientY - _swipeStartY : 0;
+      if (Math.abs(dx) > 40 && Math.abs(dy) < Math.abs(dx) * 0.6) {
+        _swipeHandled = true;
+        _dragActive = false;
+        if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; }
+        if (dx > 0) _slotAdvanceOrRand(); else if (window._doRecall) window._doRecall();
+        return;
+      }
       // First movement — this is a drag, not a stationary hold. Cancel the
       // picker timer and commit to the mute-drag behavior instead.
       _isDragging = true;
@@ -11605,7 +11711,6 @@ async function hardResetAudioEngine() {
 
   function stopSweep(isSwitch) {
     if (!sweepNodes || !ctx) return;
-    if (!isSwitch) playUiSound('Cymbal'); // same cue the left tape spool plays on release — skipped mid-drag direction switches, only plays on a genuine release
     const { bp, gain, noise, duckGain, amalgamOscs, amalgamGain } = sweepNodes;
     // Capture wherever the pitch actually is right now — this is what lets
     // the next engagement (SWEEP or the left spool) continue from here
@@ -11615,6 +11720,26 @@ async function hardResetAudioEngine() {
     if (_sweepDuckLoop) cancelAnimationFrame(_sweepDuckLoop); _sweepDuckLoop = null;
     btn.classList.remove('active');
     const t = ctx.currentTime;
+
+    if (isSwitch) {
+      // Mid-drag direction switch — a new layer starts immediately after
+      // this returns, so a gradual fade-out here would leave the old layer
+      // still audibly playing (and its duck-loop still running) at the
+      // same moment the new one starts — genuine overlap, not a crossfade.
+      // That's what was producing the sudden loud stacked chunk, and
+      // likely contributing to the "stuck on" behavior too (two
+      // independent duck-loops and node sets running at once, each unaware
+      // of the other). Cut cleanly instead — no audible tail at all here.
+      try { noise.stop(); noise.disconnect(); } catch(e) {}
+      try { bp.disconnect(); } catch(e) {}
+      try { gain.disconnect(); } catch(e) {}
+      try { duckGain.disconnect(); } catch(e) {}
+      if (amalgamOscs) amalgamOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
+      if (amalgamGain) { try { amalgamGain.disconnect(); } catch(e) {} }
+      return;
+    }
+
+    playUiSound('Cymbal'); // same cue the left tape spool plays on release
     const quarterNote = stepDuration() * 4; // fade-out length — longer now so it stays a bit before fading
     // Ramp duckGain back to 1 smoothly rather than snapping it instantly —
     // an instant jump from wherever it was (potentially deep in a duck dip,
@@ -11705,7 +11830,20 @@ async function hardResetAudioEngine() {
   // Also fire on document touchmove so drag works even if touchstart hit the loading overlay
   const sweepMoveHandler = e => {
     const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
+    // The entire gesture is "claimed" by SWEEP the moment it's actually
+    // engaged (sweepNodes is set synchronously by startSweep, so this is a
+    // reliable "is a sweep currently being held" check) — prevent default
+    // unconditionally for every touchmove for its whole duration, not just
+    // while positioned over specific recognized elements. Without this, a
+    // finger passing over PLAY (adjacent to SWEEP, directly on the path to
+    // the left spool) wasn't blocked from the browser's own touch-to-click
+    // synthesis, and a lingering or near-release touch there could
+    // genuinely trigger togglePlay() mid-sweep — playback stopping/
+    // restarting mid-hold, with the sidechain ducking and scheduler state
+    // changing out from under the sweep, was very likely the actual source
+    // of the "sudden loud chunk" being reported, not the sweep code itself.
+    if (sweepNodes && e.cancelable) e.preventDefault();
     if (!el) return;
     const onLeftSpool = !!el.closest('#leftReelWrap');
     if (onLeftSpool && !window._sweepOnSpool) {
@@ -11733,7 +11871,6 @@ async function hardResetAudioEngine() {
     const onSweep = el.closest('#clearBtn');
     const target = el.closest('#randBtn, #scratchBtn');
     if (!onSweep && !target && !onLeftSpool && !onBeatArea) return;
-    if (e.cancelable) e.preventDefault();
     if (target && !target.dataset.sweepTriggered) {
       target.dataset.sweepTriggered = '1';
       if (target.id === 'randBtn') { setBtnBlueHeld('randBtn'); queueRand(); }
@@ -11853,6 +11990,7 @@ function stopRecallLoop() {
   btn.addEventListener('click', doRecall);
   btn.addEventListener('touchstart', e => { e.preventDefault(); doRecall(); }, { passive: false });
   btn.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
+  window._doRecall = doRecall; // exposed for the track-name swipe-left gesture
 })();
 
 // Key display tap — cycle through notes and scales
