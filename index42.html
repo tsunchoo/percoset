@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:27</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2546,10 +2546,10 @@ function fireStepAudio(step, t) {
         if (bstep === 3 || bstep === 7 || bstep === 10 || bstep === 15) fireBeatKick(t); // a-of-1, a-of-2, &-of-3, a-of-4
       } else if (_beatType === 'doubledown') {
         if (bstep === 3 || bstep === 11) fireBeatKick(t); // 16th immediately before each snare
-        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playDmxSnare(t); // restored original off-beat snare — double-time feel; now DMX-style
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) playSnare(t);
+        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) playDmxSnare(t);
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -5911,19 +5911,19 @@ function playDmxSnare(t) {
   const body = ctx.createOscillator(), bodyGain = ctx.createGain();
   body.type = 'triangle';
   body.frequency.setValueAtTime(280, t); body.frequency.exponentialRampToValueAtTime(120, t + 0.045);
-  bodyGain.gain.setValueAtTime(0.254, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -2dB (was 0.32)
+  bodyGain.gain.setValueAtTime(0.2017, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -4dB total now (was 0.32, then 0.254)
   body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.06);
   body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
 
   src.buffer = buf; src.connect(bitcrush); bitcrush.connect(hp); hp.connect(presence); presence.connect(g); g.connect(snDest);
-  g.gain.setValueAtTime(0.4925, t); // -2dB (was 0.62)
+  g.gain.setValueAtTime(0.3912, t); // -4dB total now (was 0.62, then 0.4925)
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   src.start(t);
   src.onended = () => { try { bitcrush.disconnect(); hp.disconnect(); presence.disconnect(); g.disconnect(); } catch(e) {} };
 
   // A sharper, tighter click than the standard snare's own — the DMX's
   // crack is more transient-forward than a typical analog snare's.
-  _addSnareClick(t, snDest, 0.127); // -2dB (was 0.16)
+  _addSnareClick(t, snDest, 0.1009); // -4dB total now (was 0.16, then 0.127)
 }
 function setBeatVol(v) {
   if (window._beatGain && ctx) window._beatGain.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
