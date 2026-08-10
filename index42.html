@@ -295,6 +295,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 }
 .shift-btn:active { opacity: 0.4; }
 .shift-btn.on { background: #f17d21; color: #fff; }
+.shift-btn.right.on { background: #0081FE; color: #fff; }
 /* The "<" offset button specifically (not the "R" reverb toggle, which
    also uses .shift-btn but always carries .right) — bigger text, same
    button size. */
@@ -655,7 +656,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 02:34</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:12</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -739,6 +740,8 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div class="beat-type-item" data-beat="cumbia">CUMBIA</div>
       <div class="beat-type-item" data-beat="afrobeat">AFROBEAT</div>
       <div class="beat-type-item" data-beat="boogie">SHUFFLE</div>
+      <div class="beat-type-item" data-beat="blap">BLAP</div>
+      <div class="beat-type-item" data-beat="splim">SPLIM</div>
     </div>
   </div>
 </div>
@@ -2447,11 +2450,19 @@ function fireStepAudio(step, t) {
           // Kick on 1 (2&+3& handled below), snare on 2+4
           doKick  = (bstep === 0);
           doSnare = (bstep === 4 || bstep === 12);
+        } else if (_beatType === 'blap') {
+          // BLAP — identical to BOUNCE, but with the DMX-style snare
+          doKick  = (bstep === 0);
+          doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'reggae2') {
           // ONE DROP — kick+sidestick on beats 2 & 4; hihat is upbeat-only (handled below)
           doKick = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'drive') {
           // DRIVE — kicks on 1 & 3, snares on 2 & 4 (syncopated a's handled below)
+          doKick  = (bstep === 0 || bstep === 8);
+          doSnare = (bstep === 4 || bstep === 12);
+        } else if (_beatType === 'splim') {
+          // SPLIM — identical to DRIVE ("SWING"), but with the DMX-style snare
           doKick  = (bstep === 0 || bstep === 8);
           doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'rock') {
@@ -2500,7 +2511,7 @@ function fireStepAudio(step, t) {
           if (_beatType === 'reggae2') fireBeatSidestick(t); // ONE DROP — ties to its kicks on beats 2 & 4
         }
         if (_beatType === 'reggae' && (bstep === 4 || bstep === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
-        if (doSnare) playSnare(t);
+        if (doSnare) { if (_beatType === 'blap' || _beatType === 'splim') playDmxSnare(t); else playSnare(t); }
         if (doHat) playSynthHihat(false, t, -1);
       }
     }
@@ -2512,13 +2523,16 @@ function fireStepAudio(step, t) {
       } else if (_beatType === 'breaks') {
         if (bstep === 6) fireBeatKick(t);   // 2&
         if (bstep === 10) playSnare(t);     // 3&
-      } else if (_beatType === 'bounce') {
+      } else if (_beatType === 'bounce' || _beatType === 'blap') {
         if (bstep === 6 || bstep === 10) fireBeatKick(t); // 2&, 3&
       } else if (_beatType === 'reggae2') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1); // upbeat skank — same as ROCKERS
       } else if (_beatType === 'drive') {
         if (bstep === 3 || bstep === 11) fireBeatKick(t); // a-of-1, a-of-3
         if (bstep === 7) playSnare(t);                    // a-of-2
+      } else if (_beatType === 'splim') {
+        if (bstep === 3 || bstep === 11) fireBeatKick(t); // a-of-1, a-of-3
+        if (bstep === 7) playDmxSnare(t);                 // a-of-2 — DMX-style snare
       } else if (_beatType === 'rock') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) fireBeatKick(t); // 1&, 2&, 3&, 4&
       } else if (_beatType === 'rollin') {
@@ -5848,6 +5862,62 @@ function playSnare(t) {
   const _isReggaeFamily = (_beatType === 'reggae' || _beatType === 'reggae2');
   _addSnareClick(t, snDest, _isReggaeFamily ? 0.045 : 0.13); // halved for reggae-family (already has a real sidestick), boosted elsewhere
 }
+// Oberheim DMX-style snare — the DMX (1981) was one of the earliest drum
+// machines to use sampled, rather than purely synthesized, sounds, at 8-bit
+// resolution, played back through analog circuitry. That combination is
+// exactly what gives it its character: a short, tight crack with a bright,
+// snappy top end and not much sustained ring — it snaps off fast instead of
+// decaying smoothly — plus a gritty, slightly crunchy texture from the low
+// bit depth, with some analog warmth from the circuitry underneath.
+// Deliberately distinct from the standard snare above, which is
+// smoother/rounder and rings longer.
+function playDmxSnare(t) {
+  duckPumpTracks(t);
+  if (!_renderTapBeat) return;
+  const dur = 0.13; // tighter than the standard snare's 0.22 — cracks and stops, doesn't ring
+  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) {
+    const env = Math.pow(1 - i / d.length, 2.2); // steeper decay than the standard snare — snaps off fast
+    d[i] = (Math.random() * 2 - 1) * env;
+  }
+  const src = ctx.createBufferSource();
+  // Quantizes the signal into a small number of discrete steps — a rough
+  // approximation of 8-bit sample resolution, the actual technical source
+  // of the DMX's gritty texture.
+  const bitcrush = ctx.createWaveShaper();
+  const steps = 24;
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i / 255) * 2 - 1;
+    curve[i] = Math.round(x * steps) / steps;
+  }
+  bitcrush.curve = curve; bitcrush.oversample = 'none';
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900; // brighter/snappier focus than the standard snare's 500Hz
+  const presence = ctx.createBiquadFilter(); presence.type = 'peaking'; presence.frequency.value = 3200; presence.Q.value = 1.4; presence.gain.value = 6; // the snappy top-end crack
+  const g = ctx.createGain();
+  const snDest = window._beatGain || masterGain;
+
+  // Short, punchy body tone — tighter and a touch higher than the standard
+  // snare's, for a more clipped, "digital" thump rather than a rounder,
+  // acoustic-feeling one.
+  const body = ctx.createOscillator(), bodyGain = ctx.createGain();
+  body.type = 'triangle';
+  body.frequency.setValueAtTime(280, t); body.frequency.exponentialRampToValueAtTime(120, t + 0.045);
+  bodyGain.gain.setValueAtTime(0.32, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+  body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.06);
+  body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
+
+  src.buffer = buf; src.connect(bitcrush); bitcrush.connect(hp); hp.connect(presence); presence.connect(g); g.connect(snDest);
+  g.gain.setValueAtTime(0.62, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.start(t);
+  src.onended = () => { try { bitcrush.disconnect(); hp.disconnect(); presence.disconnect(); g.disconnect(); } catch(e) {} };
+
+  // A sharper, tighter click than the standard snare's own — the DMX's
+  // crack is more transient-forward than a typical analog snare's.
+  _addSnareClick(t, snDest, 0.16);
+}
 function setBeatVol(v) {
   if (window._beatGain && ctx) window._beatGain.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
 }
@@ -8618,7 +8688,7 @@ function randAll(mode, opts) {
   if (!_beatTypeLocked) {
     const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown' || _beatType === 'boogie');
     if (!onHalfFeel) {
-      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie'];
+      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'splim'];
       if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie');
       setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
     }
@@ -9733,9 +9803,42 @@ function randomizeTrack(tr) {
     randomizeBassTrack(tr, level); return;
   }
 
-  // HIHAT / SHAKER / RIDE: uniform regular-beat rule — pick a straight
-  // subdivision (quarters, 8ths, or 16ths) at each instrument's own rate,
-  // quarter-note positions always accented regardless of which subdivision.
+  // HIHAT / SHAKER / RIDE / TAMB: uniform regular-beat rule — pick a
+  // straight subdivision (quarters, 8ths, or 16ths) at each instrument's
+  // own rate, quarter-note positions always accented regardless of which
+  // subdivision. TAMB was missing from this entirely before — it fell
+  // through to whatever generic handling came after instead of getting
+  // this treatment at all.
+  //
+  // On top of that: when triggered by a genuine manual tap on this
+  // track's own N button (not the main RAND button), every 3rd tap forces
+  // a regular quarter/8th-note pattern, and the tap immediately after that
+  // forces a 16th-note pattern accented specifically on beats 2 & 4 — a
+  // deliberate two-step cycle layered on top of the normal probabilistic
+  // behavior, which still applies on every other tap.
+  const _uniformKeys = new Set(['shihat', 'shak', 'ride', 'tamb']);
+  if (_uniformKeys.has(key)) {
+    const _clickCount = window._nButtonClickCount && window._nButtonClickCount[tr];
+    const _cyclePos = _clickCount ? ((_clickCount - 1) % 3) : -1; // 0,1,2 repeating — -1 if not a manual N-button tap at all
+    if (_cyclePos === 2) {
+      // Every 3rd manual tap — force a regular quarter or 8th-note pattern
+      const subdivStep = Math.random() < 0.5 ? 4 : 2;
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % subdivStep === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
+      }
+      redrawTrackCells(tr); markModified(); return;
+    }
+    if (_cyclePos === 0 && _clickCount > 1) {
+      // The tap right after one of the above — force a 16th-note pattern,
+      // accented specifically on beats 2 & 4
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s === 4 || s === 12) ? 2 : 1;
+      }
+      redrawTrackCells(tr); markModified(); return;
+    }
+  }
   const uniformChance = { shihat: 0.5, shak: 0.5, ride: 1 / 3 }[key];
   if (uniformChance !== undefined && Math.random() < uniformChance) {
     const roll = Math.random();
@@ -10083,6 +10186,15 @@ function wireRandomizeButton(btn, tr) {
   const doSingleTap = () => {
     if (autoInterval) { stopAuto(); return; }
     unmuteIfNeeded();
+    // Tracks the manual N-button click count per track, specifically for
+    // the HIHAT/RIDE/SHAKER/TAMB cycling rule inside randomizeTrack below
+    // — every 3rd click forces a regular quarter/8th pattern, and the
+    // click right after that forces a 16th-note pattern accented on 2 & 4.
+    // Only incremented here (the genuine manual single-tap path), not by
+    // the main RAND button's own per-track assignment, so that cycle is
+    // specific to deliberately pressing this button repeatedly.
+    if (!window._nButtonClickCount) window._nButtonClickCount = {};
+    window._nButtonClickCount[tr] = (window._nButtonClickCount[tr] || 0) + 1;
     doRand();
     btn.style.background = 'var(--playhead)';
     btn.style.color = '#fff';
