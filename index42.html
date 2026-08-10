@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 04:13</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2518,7 +2518,7 @@ function fireStepAudio(step, t) {
           if (_beatType === 'reggae2') fireBeatSidestick(t); // ONE DROP — ties to its kicks on beats 2 & 4
         }
         if (_beatType === 'reggae' && (bstep === 4 || bstep === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
-        if (doSnare) { if (_beatType === 'blap' || _beatType === 'splim') playDmxSnare(t); else playSnare(t); }
+        if (doSnare) { if (_beatType === 'blap' || _beatType === 'splim') playDmxSnare(t); else if (_beatType === 'disco' || _beatType === 'halftime') playDmxSnareLow(t); else playSnare(t); }
         if (doHat) playSynthHihat(false, t, -1);
       }
     }
@@ -2552,7 +2552,7 @@ function fireStepAudio(step, t) {
         if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) playDmxSnare(t);
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
-        if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
+        if (bstep === 4 || bstep === 12) playDmxSnareLow(t);     // snare lands exactly on 2 & 4
       } else if (_beatType === 'cumbia') {
         if (bstep === 2 || bstep === 3 || bstep === 6 || bstep === 7 || bstep === 10 || bstep === 11 || bstep === 14 || bstep === 15) playSynthHihat(false, t, -1);
       } else if (_beatType === 'afrobeat') {
@@ -5911,19 +5911,70 @@ function playDmxSnare(t) {
   const body = ctx.createOscillator(), bodyGain = ctx.createGain();
   body.type = 'triangle';
   body.frequency.setValueAtTime(280, t); body.frequency.exponentialRampToValueAtTime(120, t + 0.045);
-  bodyGain.gain.setValueAtTime(0.1427, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -7dB total now (was 0.32, then 0.254, 0.2017, 0.1602) — affects all four patterns using this shared function (BLAP, SPLIM, SAMBA, DOUBLEDOWN)
+  bodyGain.gain.setValueAtTime(0.1271, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -8dB total now (was 0.32, then 0.254, 0.2017, 0.1602, 0.1427) — affects all four patterns using this shared function (BLAP, SPLIM, SAMBA, DOUBLEDOWN)
   body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.06);
   body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
 
   src.buffer = buf; src.connect(bitcrush); bitcrush.connect(hp); hp.connect(presence); presence.connect(g); g.connect(snDest);
-  g.gain.setValueAtTime(0.2769, t); // -7dB total now (was 0.62, then 0.4925, 0.3912, 0.3108)
+  g.gain.setValueAtTime(0.2467, t); // -8dB total now (was 0.62, then 0.4925, 0.3912, 0.3108, 0.2769)
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   src.start(t);
   src.onended = () => { try { bitcrush.disconnect(); hp.disconnect(); presence.disconnect(); g.disconnect(); } catch(e) {} };
 
   // A sharper, tighter click than the standard snare's own — the DMX's
   // crack is more transient-forward than a typical analog snare's.
-  _addSnareClick(t, snDest, 0.0714); // -7dB total now (was 0.16, then 0.127, 0.1009, 0.0801)
+  _addSnareClick(t, snDest, 0.0636); // -8dB total now (was 0.16, then 0.127, 0.1009, 0.0801, 0.0714)
+}
+// Lower-toned DMX-style snare — same core character (bitcrushed sample,
+// short/tight decay, DMX-style crack) as playDmxSnare above, but retuned
+// substantially darker: much lower highpass/presence focus and a
+// significantly lower body-tone pitch, closer to some of the deeper-tuned
+// voices the real DMX shipped with, rather than the bright/snappy one
+// used elsewhere.
+function playDmxSnareLow(t) {
+  duckPumpTracks(t);
+  if (!_renderTapBeat) return;
+  const dur = 0.16; // a touch longer than the bright version — gives the lower pitch time to actually register
+  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) {
+    const env = Math.pow(1 - i / d.length, 2.0); // slightly gentler than the bright version's 2.2 — a touch more body in the tail
+    d[i] = (Math.random() * 2 - 1) * env;
+  }
+  const src = ctx.createBufferSource();
+  // Same bitcrush grit as the bright version — the actual technical source
+  // of the DMX character, independent of tone/pitch.
+  const bitcrush = ctx.createWaveShaper();
+  const steps = 24;
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i / 255) * 2 - 1;
+    curve[i] = Math.round(x * steps) / steps;
+  }
+  bitcrush.curve = curve; bitcrush.oversample = 'none';
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 350; // much lower than the bright version's 900Hz — lets the body through
+  const presence = ctx.createBiquadFilter(); presence.type = 'peaking'; presence.frequency.value = 1500; presence.Q.value = 1.2; presence.gain.value = 4; // darker, less prominent crack than the bright version's 3200Hz/+6dB
+  const g = ctx.createGain();
+  const snDest = window._beatGain || masterGain;
+
+  // Substantially lower body pitch than the bright version (150→65Hz vs
+  // 280→120Hz) — this is the main source of the "lower toned" character.
+  const body = ctx.createOscillator(), bodyGain = ctx.createGain();
+  body.type = 'triangle';
+  body.frequency.setValueAtTime(150, t); body.frequency.exponentialRampToValueAtTime(65, t + 0.06);
+  bodyGain.gain.setValueAtTime(0.1427, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.08);
+  body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
+
+  src.buffer = buf; src.connect(bitcrush); bitcrush.connect(hp); hp.connect(presence); presence.connect(g); g.connect(snDest);
+  g.gain.setValueAtTime(0.2769, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.start(t);
+  src.onended = () => { try { bitcrush.disconnect(); hp.disconnect(); presence.disconnect(); g.disconnect(); } catch(e) {} };
+
+  // Quieter click than the bright version — a lower-tuned snare still has
+  // some transient snap, just less of it relative to the body.
+  _addSnareClick(t, snDest, 0.04);
 }
 function setBeatVol(v) {
   if (window._beatGain && ctx) window._beatGain.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
