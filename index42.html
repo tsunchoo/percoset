@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:39</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 03:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1048,7 +1048,7 @@ const INSTRUMENTS = {
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
   amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'perc' },
-  drone:  { name: 'ATMOS',       soft: null, accent: null, group: 'tonal' },
+  drone:  { name: 'STRINGS',     soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
@@ -2170,7 +2170,7 @@ function scheduler() {
         if (snap.trackChop)  trackChop[tr]  = snap.trackChop[tr]  || false;
         if (snap.trackRLevel) trackRLevel[tr] = snap.trackRLevel[tr] ?? 0;
         if (snap.trackAutoRand) {
-          const isAuto = !!snap.trackAutoRand[tr]; // no longer special-cased — ATMOS behaves like any other tonal track now
+          const isAuto = !!snap.trackAutoRand[tr]; // no longer special-cased — STRINGS behaves like any other tonal track now
           const lane = document.getElementById(`lane-${tr}`);
           const rb = document.getElementById(`randbtn-${tr}`);
           if (isAuto) {
@@ -3061,7 +3061,7 @@ function randomizeBassTrack(tr, level) {
     damask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // DAMASK — sparse, spacious, plaintive phrases
     yamask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // YAMASK — same sparse, spacious character as DAMASK
     dulc:    [[1,3,0.20],[2,4,0.35],[3,6,0.50]],   // BOOBOO — fewer notes now, legato phrases fill in the rest instead of density
-    drone:   [[2,5,0.25],[4,7,0.40],[6,10,0.55]],  // ATMOS — a normal tonal instrument now, same rules as any other
+    drone:   [[2,5,0.25],[4,7,0.40],[6,10,0.55]],  // STRINGS — a normal tonal instrument now, same rules as any other
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
     jcmgtr:  [[3,6,0.20],[5,9,0.35],[8,13,0.50]],   // JINX — busier now, filling a lot more of the 16th-note grid (was a deliberately calm [1,3]/[2,4]/[3,6])
   };
@@ -5713,7 +5713,7 @@ function duckEchoTrack(t) {
   const g = _sidechainDuckGains[0].gain.gain;
   g.cancelScheduledValues(t);
   if (trackInstruments[0] === 'drone') {
-    // ATMOS — heavily gated, but not so hard it clips/clicks at the bottom
+    // STRINGS — heavily gated, but not so hard it clips/clicks at the bottom
     // of the dip. Slightly shallower floor and a touch more time on both
     // the attack and release than the original, still snappy and obviously
     // rhythmic, just not harsh.
@@ -5911,19 +5911,19 @@ function playDmxSnare(t) {
   const body = ctx.createOscillator(), bodyGain = ctx.createGain();
   body.type = 'triangle';
   body.frequency.setValueAtTime(280, t); body.frequency.exponentialRampToValueAtTime(120, t + 0.045);
-  bodyGain.gain.setValueAtTime(0.1602, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -6dB total now (was 0.32, then 0.254, then 0.2017) — affects all four patterns using this shared function (BLAP, SPLIM, SAMBA, DOUBLEDOWN)
+  bodyGain.gain.setValueAtTime(0.1427, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -7dB total now (was 0.32, then 0.254, 0.2017, 0.1602) — affects all four patterns using this shared function (BLAP, SPLIM, SAMBA, DOUBLEDOWN)
   body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.06);
   body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
 
   src.buffer = buf; src.connect(bitcrush); bitcrush.connect(hp); hp.connect(presence); presence.connect(g); g.connect(snDest);
-  g.gain.setValueAtTime(0.3108, t); // -6dB total now (was 0.62, then 0.4925, then 0.3912)
+  g.gain.setValueAtTime(0.2769, t); // -7dB total now (was 0.62, then 0.4925, 0.3912, 0.3108)
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   src.start(t);
   src.onended = () => { try { bitcrush.disconnect(); hp.disconnect(); presence.disconnect(); g.disconnect(); } catch(e) {} };
 
   // A sharper, tighter click than the standard snare's own — the DMX's
   // crack is more transient-forward than a typical analog snare's.
-  _addSnareClick(t, snDest, 0.0801); // -6dB total now (was 0.16, then 0.127, then 0.1009)
+  _addSnareClick(t, snDest, 0.0714); // -7dB total now (was 0.16, then 0.127, 0.1009, 0.0801)
 }
 function setBeatVol(v) {
   if (window._beatGain && ctx) window._beatGain.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
@@ -8563,7 +8563,7 @@ function fullClear() {
 // implicated in an earlier crash, and it turns out its side-effect of
 // writing track 1's notes (via the auto-loop's own internal doRand() call)
 // wasn't reliably happening at page load either way — track 1 was ending
-// up genuinely empty for both TEXTURE and ATMOS. This writes real notes
+// up genuinely empty for both TEXTURE and STRINGS. This writes real notes
 // directly and safely, with no dependency on that larger function at all.
 function _writeTrack0Pattern() {
   const tr = 0;
@@ -8599,11 +8599,11 @@ function _writeTrack0Pattern() {
     if (split32Onsets.has(s)) return;
     const maxLen = _legatoMaxLen(tr, s); trackLegatoLen[tr][s] = Math.min(4, maxLen);
   });
-  trackDelay[0] = Math.random() < 0.5; // ATMOS or TEXTURE — reverb about half the time either way
+  trackDelay[0] = Math.random() < 0.5; // STRINGS or TEXTURE — reverb about half the time either way
   redrawTrackCells(tr);
 }
 // TEXTURE always starts with Auto-Random engaged too (on top of the
-// guaranteed note-write above); ATMOS just gets the one-time write and
+// guaranteed note-write above); STRINGS just gets the one-time write and
 // stops there — no auto-loop for it.
 function _engageOrPickTrack0() {
   _writeTrack0Pattern();
@@ -8715,7 +8715,7 @@ function randAll(mode, opts) {
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (trackMuted[tr]) { trackMuted[tr] = false; updateTrackMute(tr); }
   }
-  // Track 1 is no longer special — ATMOS and TEXTURE are now normal,
+  // Track 1 is no longer special — STRINGS and TEXTURE are now normal,
   // independently-selectable tonal/percussion instruments respectively,
   // picked or not picked by the same pool logic as every other track.
   // Pick a fresh random scale and root for this randomize pass
@@ -8731,7 +8731,7 @@ function randAll(mode, opts) {
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
   const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/BOOBOO
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
-  const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone']); // max one PAD-classified instrument per pattern — HASSELL/ATMOS/etc. never together
+  const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone']); // max one PAD-classified instrument per pattern — HASSELL/STRINGS/etc. never together
   // Exclude instruments already locked on other tracks
   const lockedInstruments = new Set();
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
@@ -9499,7 +9499,7 @@ function restoreState(snap) {
   // Restore auto-rand lane colors and R button state
   if (snap.trackAutoRand) {
     snap.trackAutoRand.forEach((isAutoRaw, tr) => {
-      const isAuto = isAutoRaw; // no longer special-cased — ATMOS behaves like any other tonal track now
+      const isAuto = isAutoRaw; // no longer special-cased — STRINGS behaves like any other tonal track now
       const lane = document.getElementById(`lane-${tr}`);
       const rb = document.getElementById(`randbtn-${tr}`);
       if (isAuto) {
@@ -9803,7 +9803,7 @@ function randomizeTrack(tr) {
   // it echoes whatever chord other tracks capture), but is now placed
   // using the standard percussion rules below, not a special branch — it
   // falls through to the generic percussion path further down like any
-  // other kit/perc instrument. ATMOS is now a normal tonal instrument,
+  // other kit/perc instrument. STRINGS is now a normal tonal instrument,
   // dispatched through randomizeBassTrack just below like any other lead.
 
   if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening' || trackInstruments[tr] === 'drone') {
@@ -10718,7 +10718,7 @@ function _getAmalgamBaseBuffer() {
 let _droneActiveFilters = [];
 // Cached, pre-rendered once — same idea as _getAmalgamBaseBuffer above.
 // This used to get rebuilt from scratch on every single note, sized to
-// match that note's full sustain length — for ATMOS's longer,
+// match that note's full sustain length — for STRINGS's longer,
 // legato-connected notes that's tens of thousands of samples generated via
 // a JS loop, per note, on top of everything else already happening. A
 // fixed-length buffer with looping enabled covers any note length just as
@@ -10745,12 +10745,12 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   if (!ctx) return;
   // Self-contained attenuation applied regardless of caller — this used to
   // only get its quiet level from _amalgamVolOverride, set by the old
-  // amalgam-chord dispatch path. Now that ATMOS is a normal instrument
+  // amalgam-chord dispatch path. Now that STRINGS is a normal instrument
   // dispatched directly (via playAtmos), that override is never set on
   // that path, so this had been playing at its bare, much louder default
   // with no attenuation at all. -14dB (its original level) plus another
   // -4dB now, applied on top of whatever vel comes out of either path.
-  const droneAtten = 0.1259; // -18dB total (0.1996 * 0.631)
+  const droneAtten = 0.1334; // -17.5dB total now (+0.5dB from -18dB)
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1) * droneAtten;
   const sustain = Math.max(durSec || 0.35, 0.35);
   const bodyTail = 0.45; // a little more sustain — compensates for the airier/thinner EQ below
@@ -11603,7 +11603,7 @@ async function initAudio() {
     attachCtxStateWatch();
     masterGain = ctx.createGain(); masterGain.gain.value = masterVol;
     try { _getAmalgamBaseBuffer(); } catch(e) {} // pre-warm the amalgam echo's cached buffer up front
-    try { _getDroneAirNoiseBuffer(); } catch(e) {} // same for ATMOS's air-noise buffer
+    try { _getDroneAirNoiseBuffer(); } catch(e) {} // same for STRINGS's air-noise buffer
     // Single source of truth for the base output boost — the turbo toggle
     // below derives its own value from this instead of a hardcoded number,
     // so future changes here don't get silently undone by toggling turbo.
