@@ -658,7 +658,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">06Aug26 23:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 00:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -827,8 +827,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
-          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
-          <button id="shareTapeHtmlBtn" class="rec-mode-btn" onclick="shareTapeAsHtml()">SEND TAPE FILE</button>
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
           <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
@@ -4054,7 +4052,7 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
   // harmonics the waveshaper generates, the main thing that actually reads
   // as "warmer" rather than just "quieter."
   const warmthLP = ctx.createBiquadFilter(); warmthLP.type = 'lowpass'; warmthLP.frequency.value = 3800; warmthLP.Q.value = 0.6;
-  const outGain = ctx.createGain(); outGain.gain.value = 0.0398; // -28dB total (was -26dB) — output level only, doesn't touch the distortion drive
+  const outGain = ctx.createGain(); outGain.gain.value = 0.0398 * 1.3335; // -28dB total, then +2.5dB (was -26dB before that) — output level only, doesn't touch the distortion drive
 
   osc1.connect(env); osc2.connect(env);
   env.connect(ws); ws.connect(warmthLP); warmthLP.connect(outGain); outGain.connect(dest);
@@ -7385,38 +7383,6 @@ function exportTape() {
   shareOrDownload([file]);
 }
 // A tape as a clickable LINK, not a file — sent in a message, tapped, and
-// the app opens straight into that pattern with no manual save/import step.
-// The whole tape lives in the URL's hash fragment: hashes are never sent
-// over the network even on a static host like this one, so the link works
-// standalone with nothing to host or store server-side.
-function buildTapeLink() {
-  const payload = _tapePayloadForCurrent();
-  const json = JSON.stringify(payload); // minified — no pretty-print, keeps the link shorter
-  const b64 = btoa(unescape(encodeURIComponent(json))); // UTF-8-safe base64
-  const url = new URL(location.href);
-  url.hash = 'tape=' + b64;
-  return url.toString();
-}
-async function shareTapeLink() {
-  const link = buildTapeLink();
-  // Deliberately no separate `text` field — many share targets (Messages,
-  // WhatsApp, etc.) render `text` and `url` as two visible lines in the
-  // message body rather than a single clean link/preview card, which is
-  // exactly the "raw text plus a separate link" behavior being reported.
-  // `title` alone is generally treated as metadata rather than inserted
-  // into the visible message, so the species name goes there instead.
-  const shareData = { title: _currentSpecies || 'Si•Fi tape', url: link };
-  if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
-    try { await navigator.share(shareData); return; }
-    catch (e) { if (e.name === 'AbortError') return; console.error('Share failed, falling back to clipboard', e); }
-  }
-  try {
-    await navigator.clipboard.writeText(link);
-    alert('Tape link copied — paste it into a message.');
-  } catch (e) {
-    prompt('Copy this tape link:', link);
-  }
-}
 // Shared by both the URL-hash tape loader and the embedded-file tape
 // loader below — given a parsed tape payload, confirms with the user and
 // restores it, replacing whatever's currently on the deck.
@@ -7435,6 +7401,9 @@ function _offerToLoadTapePayload(payload) {
 // Runs once at page load. If the URL carries a tape in its hash, offers to
 // load it (replacing whatever's currently on the deck), then clears the
 // hash so refreshing the page doesn't keep re-triggering the same prompt.
+// (Only the loading/receiving side remains — the corresponding "send" UI
+// was removed for not working reliably enough across share targets, but
+// links shared before that removal should still open correctly here.)
 function _tryLoadTapeFromHash() {
   const h = location.hash;
   const idx = h.indexOf('tape=');
@@ -7450,10 +7419,11 @@ function _tryLoadTapeFromHash() {
     history.replaceState(null, '', location.pathname + location.search);
   }
 }
-// Runs once at page load too. A tape shared as a standalone HTML file (see
-// shareTapeAsHtml below) carries its payload as an embedded variable
-// rather than a URL hash — this is what a copy of the app opened directly
-// from that file checks for.
+// Runs once at page load too. A tape shared as a standalone HTML file
+// carries its payload as an embedded variable rather than a URL hash —
+// this is what a copy of the app opened directly from that file checks
+// for. (Same as above — loading side only; the "send as file" UI was
+// removed, but a previously-shared file should still open correctly.)
 function _tryLoadEmbeddedTape() {
   if (typeof window.__embeddedTapePayload === 'undefined') return;
   try {
@@ -7461,34 +7431,6 @@ function _tryLoadEmbeddedTape() {
   } catch (e) {
     console.error('Embedded tape load failed', e);
   }
-}
-// A tape as a genuinely standalone, self-contained HTML file — a full copy
-// of this app with the pattern already baked in, rather than a link whose
-// entire payload lives in the URL (which some share targets render as raw
-// text alongside the link instead of a clean preview, especially once the
-// URL gets long). Opening the file directly plays the tape immediately,
-// no separate import step, and shares as a genuine file attachment rather
-// than a text+link combination.
-async function shareTapeAsHtml() {
-  let html;
-  try {
-    const res = await fetch(location.href, { cache: 'no-store' });
-    html = await res.text();
-  } catch (e) {
-    console.error('Could not fetch own source for tape file', e);
-    alert('Could not build the tape file — try SEND TAPE LINK instead.');
-    return;
-  }
-  const payload = _tapePayloadForCurrent();
-  const embed = `<script>window.__embeddedTapePayload = ${JSON.stringify(payload)};</` + `script>\n`;
-  // Right after <head> — early enough that _tryLoadEmbeddedTape() (called
-  // during normal startup, alongside the existing hash-based check) always
-  // finds it already defined by the time it runs.
-  const headIdx = html.indexOf('<head>');
-  html = headIdx === -1 ? (embed + html) : (html.slice(0, headIdx + 6) + '\n' + embed + html.slice(headIdx + 6));
-  const safeName = (payload.name || 'tape').replace(/[^a-z0-9]+/gi, ' ').replace(/^\s+|\s+$/g, '') || 'tape';
-  const file = new File([html], `${safeName}.html`, { type: 'text/html' });
-  shareOrDownload([file]);
 }
 async function importTapeFile(file) {
   const inp = document.getElementById('tapeFileInput');
@@ -8640,7 +8582,7 @@ function randAll(mode, opts) {
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
   const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/BOOBOO
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
-  const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening']); // max one PAD-classified instrument per pattern — HASSELL/etc. never together. ATMOS is NOT in this group — it's a middle-tier tonal instrument, not lead and not pad
+  const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone']); // max one PAD-classified instrument per pattern — HASSELL/ATMOS/etc. never together
   // Exclude instruments already locked on other tracks
   const lockedInstruments = new Set();
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
@@ -10119,7 +10061,8 @@ setTimeout(() => {
   // overwrites the random starter pattern above if the user says yes.
   try { _tryLoadTapeFromHash(); } catch (e) { console.error('Tape link check failed', e); }
   // Same idea, but for a tape shared as a standalone HTML file rather than
-  // a link — see shareTapeAsHtml/embed comment above.
+  // a link (loading side only now — the corresponding "send" functions
+  // were removed, this just still opens files shared before that).
   try { _tryLoadEmbeddedTape(); } catch (e) { console.error('Embedded tape check failed', e); }
   // Pre-fill all 6 save slots with distinct patterns right away instead of
   // starting empty — each with its own independently randomized tempo, not
@@ -11102,7 +11045,6 @@ function fullReset() {
 (function() {
   let _dragActive = false, _dragVisited = new Set(), _dragTargetState = null, _isDragging = false;
   let _nameHoldTimer = null, _nameHoldTr = -1;
-  let _swipeStartX = 0, _swipeStartY = 0, _swipeHandled = false;
 
   document.addEventListener('touchstart', e => {
     const touch = e.touches[0];
@@ -11112,7 +11054,6 @@ function fullReset() {
     if (!nameEl) return;
     _nameHoldTr = +nameEl.dataset.tr;
     _isDragging = false;
-    _swipeStartX = touch.clientX; _swipeStartY = touch.clientY; _swipeHandled = false;
     _nameHoldTimer = setTimeout(() => {
       _nameHoldTimer = null;
       if (!_isDragging) {
@@ -11124,26 +11065,10 @@ function fullReset() {
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
-    if (!_dragActive || _swipeHandled) return;
+    if (!_dragActive) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
     if (!_isDragging) {
-      // A clear, primarily-horizontal rightward swipe — measured from the
-      // original touch-down point, so it accumulates correctly across
-      // several small touchmove events rather than only checking the very
-      // first one. Goes straight to the tape share sheet instead of the
-      // usual mute-drag. Anything that doesn't clearly qualify (too short,
-      // too vertical, or moving left) falls straight through to the
-      // existing mute-drag behavior below, unchanged.
-      const dx = touch ? touch.clientX - _swipeStartX : 0;
-      const dy = touch ? touch.clientY - _swipeStartY : 0;
-      if (dx > 40 && Math.abs(dy) < dx * 0.6) {
-        _swipeHandled = true;
-        _dragActive = false;
-        if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; }
-        shareTapeLink();
-        return;
-      }
       // First movement — this is a drag, not a stationary hold. Cancel the
       // picker timer and commit to the mute-drag behavior instead.
       _isDragging = true;
