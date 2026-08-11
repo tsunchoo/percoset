@@ -277,7 +277,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite, rand-auto-color-cycle 1.2s ease-in-out infinite alternate; }
+@keyframes rand-auto-color-cycle { from { background: #f71aff; } to { background: var(--playhead-color, #f8ff00); } }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: #f71aff !important; }
 #randBtn.pulsing { background: #f71aff; color: #fff; }
@@ -663,7 +664,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 06:24</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 06:54</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2546,7 +2547,7 @@ function fireStepAudio(step, t) {
         if (bstep === 3 || bstep === 7 || bstep === 10 || bstep === 15) fireBeatKick(t); // a-of-1, a-of-2, &-of-3, a-of-4
       } else if (_beatType === 'doubledown') {
         if (bstep === 3 || bstep === 11) fireBeatKick(t); // 16th immediately before each snare
-        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playDmxSnare(t); // restored original off-beat snare — double-time feel; now DMX-style
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
         if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) playDmxSnare(t);
@@ -9906,13 +9907,34 @@ function randomizeTrack(tr) {
       redrawTrackCells(tr); markModified(); return;
     }
   }
-  const uniformChance = { shihat: 0.5, shak: 0.5, ride: 1 / 3 }[key];
-  if (uniformChance !== undefined && Math.random() < uniformChance) {
-    const roll = Math.random();
-    const subdivStep = roll < 1 / 3 ? 4 : (roll < 2 / 3 ? 2 : 1); // quarters : 8ths : 16ths
-    for (let s = 0; s < NUM_STEPS; s++) {
-      const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-      grid[tr][gs] = (s % subdivStep === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
+  // NOISE / HIHAT / SHAKER / RIDE / TAMB: 50% organic (genuinely random
+  // placement), 50% a regular straight subdivision (quarters, 8ths, or
+  // 16ths, quarter-note positions always accented). Whenever a regular
+  // pattern gets picked, the very next time this same track gets
+  // randomized it's forced regular again too (a genuine pair, not just a
+  // fresh 50/50 roll that happens to land there twice) — after that pair
+  // completes, it's back to a normal fresh roll. TAMB and NOISE weren't
+  // part of this shared rule before (TAMB fell through to unrelated
+  // generic handling, NOISE had its own separate, differently-weighted
+  // logic) — now all five instruments share exactly the same behavior.
+  const _regularPatternKeys = new Set(['shihat', 'shak', 'ride', 'tamb', 'ngate']);
+  if (_regularPatternKeys.has(key)) {
+    if (!window._lastWasRegularPattern) window._lastWasRegularPattern = {};
+    const forceRegularAgain = !!window._lastWasRegularPattern[tr];
+    const goRegular = forceRegularAgain || Math.random() < 0.5;
+    // Only arm the "force next one too" flag on a fresh regular choice —
+    // the forced repeat itself always clears it, so this is a pair, not
+    // an indefinite streak.
+    window._lastWasRegularPattern[tr] = goRegular && !forceRegularAgain;
+    if (goRegular) {
+      const roll = Math.random();
+      const subdivStep = roll < 1 / 3 ? 4 : (roll < 2 / 3 ? 2 : 1); // quarters : 8ths : 16ths
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % subdivStep === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
+      }
+    } else {
+      placeNotes(tr, 6 + Math.floor(Math.random() * 7), 0.3, level); // genuinely organic — same generous note range NOISE used to use on its own
     }
     redrawTrackCells(tr); markModified(); return;
   }
@@ -9940,24 +9962,6 @@ function randomizeTrack(tr) {
         ? (s % 4 === 2)
         : (s % step === 0);
       grid[tr][gs] = hits ? (s === 0 || s === 8 ? 2 : 1) : 0;
-    }
-    redrawTrackCells(tr); markModified(); return;
-  }
-
-  // NOISE: mostly random placement now — regular straight down/upbeat
-  // patterns were showing up far too often, even at 65%. Pushed further:
-  // random the vast majority of the time now, and more notes within that
-  // random placement too (was 4-8, now 6-12).
-  if (key === 'ngate') {
-    if (Math.random() < 0.9) {
-      placeNotes(tr, 6 + Math.floor(Math.random() * 7), 0.3, level);
-    } else {
-      const isUpbeat = Math.random() < 0.5;
-      for (let s = 0; s < NUM_STEPS; s++) {
-        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-        const hits = isUpbeat ? (s % 4 === 2) : (s % 4 === 0);
-        grid[tr][gs] = hits ? (s === 0 ? 2 : 1) : 0;
-      }
     }
     redrawTrackCells(tr); markModified(); return;
   }
@@ -10263,7 +10267,7 @@ function wireRandomizeButton(btn, tr) {
     if (!window._nButtonClickCount) window._nButtonClickCount = {};
     window._nButtonClickCount[tr] = (window._nButtonClickCount[tr] || 0) + 1;
     doRand();
-    btn.style.background = 'var(--playhead)';
+    btn.style.background = '#f71aff'; // same fuchsia as RAND's own auto-mode color, not the red playhead color
     btn.style.color = '#fff';
     setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
   };
