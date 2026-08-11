@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 04:43</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 05:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -10355,6 +10355,20 @@ setTimeout(async () => {
         await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
         slots[i] = snapshotState();
       }
+      // _pendingRandTimeouts never self-cleans as individual timeouts fire —
+      // it only gets cleared when the *next* randAll() call starts. Under
+      // real device load, the last slot's own deferred work (staggered
+      // per-track writes, the bass safety-net check on top) can still be
+      // pending after this loop's fixed wait, even though it normally
+      // finishes well within it. If it fires late — after restoreState
+      // below has already swapped the live state over to slot 1 — it
+      // operates on whatever's currently live, not what it was originally
+      // scheduled for, and can silently corrupt slot 1 with a leftover
+      // mutation meant for slot 6's generation (observed as slot 6 and
+      // slot 1 ending up identical). Explicitly cancelling here, right
+      // before the final restore, removes that window entirely.
+      _pendingRandTimeouts.forEach(id => clearTimeout(id));
+      _pendingRandTimeouts = [];
       restoreState(slots[0]);
       activeSlot = 0;
       updateSlotButtons();
@@ -12038,21 +12052,32 @@ async function hardResetAudioEngine() {
   // as long as the finger stays over it (matches the direct hold gesture).
   // Also fire on document touchmove so drag works even if touchstart hit the loading overlay
   const sweepMoveHandler = e => {
+    // This is a document-level listener — it fires for every touchmove on
+    // the page, not just ones that started on SWEEP. Without this guard,
+    // it was processing its full beat-menu-tracking logic (open/close,
+    // window._sweepOpenedBeatMenu) for ANY touch that happened to pass
+    // over the beat area, including a genuine, independent hold-and-drag
+    // directly on BEAT itself that never involved SWEEP at all — causing
+    // it to prematurely close the menu mid-gesture, since it was
+    // incorrectly tracking that drag as if it were a sweep-onto-beat
+    // interaction. sweepNodes is set synchronously by startSweep, so this
+    // is a reliable "is a sweep currently actually being held" check —
+    // nothing below should run at all otherwise.
+    if (!sweepNodes) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
     // The entire gesture is "claimed" by SWEEP the moment it's actually
-    // engaged (sweepNodes is set synchronously by startSweep, so this is a
-    // reliable "is a sweep currently being held" check) — prevent default
-    // unconditionally for every touchmove for its whole duration, not just
-    // while positioned over specific recognized elements. Without this, a
-    // finger passing over PLAY (adjacent to SWEEP, directly on the path to
-    // the left spool) wasn't blocked from the browser's own touch-to-click
-    // synthesis, and a lingering or near-release touch there could
-    // genuinely trigger togglePlay() mid-sweep — playback stopping/
-    // restarting mid-hold, with the sidechain ducking and scheduler state
-    // changing out from under the sweep, was very likely the actual source
-    // of the "sudden loud chunk" being reported, not the sweep code itself.
-    if (sweepNodes && e.cancelable) e.preventDefault();
+    // engaged — prevent default unconditionally for every touchmove for
+    // its whole duration, not just while positioned over specific
+    // recognized elements. Without this, a finger passing over PLAY
+    // (adjacent to SWEEP, directly on the path to the left spool) wasn't
+    // blocked from the browser's own touch-to-click synthesis, and a
+    // lingering or near-release touch there could genuinely trigger
+    // togglePlay() mid-sweep — playback stopping/restarting mid-hold,
+    // with the sidechain ducking and scheduler state changing out from
+    // under the sweep, was very likely the actual source of the "sudden
+    // loud chunk" being reported, not the sweep code itself.
+    if (e.cancelable) e.preventDefault();
     if (!el) return;
     const onLeftSpool = !!el.closest('#leftReelWrap');
     if (onLeftSpool && !window._sweepOnSpool) {
