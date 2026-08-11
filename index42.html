@@ -332,7 +332,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .shift-btn .glyph { display: inline-block; transform: translateY(-1px); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: #555; border: 3px solid var(--vol-border, #b0b0b0);
+  background: var(--neutral-top, #555); border: 3px solid var(--vol-border, #b0b0b0);
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
@@ -685,7 +685,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 21:55</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 21:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -914,7 +914,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">BUTTON COLORS</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">
-            NEUTRAL (TOP ROW)
+            TOP ROW
             <input type="color" id="neutralTopColorPicker" value="#555555" oninput="document.documentElement.style.setProperty('--neutral-top', this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:auto;">
             <style>#neutralTopColorPicker::-webkit-color-swatch-wrapper{padding:0;}#neutralTopColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#neutralTopColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </label>
@@ -9317,29 +9317,9 @@ function randAll(mode, opts) {
           updateTrackMute(tr);
         }
       }
-      // Reverb minimum guarantee — moved here from immediately after the
-      // main per-track delay pass, so it only runs once every track's
-      // actual final notes (and the density-based stripping that follows
-      // them) have already settled. Picking only from what's genuinely
-      // still eligible at this point means there's nothing left to undo
-      // it — no more on-then-off flicker for whichever track got picked.
-      {
-        const eligible = [];
-        let reverbCount = 0;
-        for (let tr = 0; tr < NUM_TRACKS; tr++) {
-          if (trackSweep[tr] || _noDelayKeys.has(trackInstruments[tr])) continue;
-          if (trackDelay[tr]) reverbCount++;
-          else eligible.push(tr);
-        }
-        while (reverbCount < 3 && eligible.length > 0) {
-          const idx = Math.floor(Math.random() * eligible.length);
-          const tr = eligible.splice(idx, 1)[0];
-          trackDelay[tr] = true;
-          const db = document.getElementById(`delaybtn-${tr}`);
-          if (db) db.classList.toggle('on', true);
-          reverbCount++;
-        }
-      }
+      // Reverb minimum guarantee removed — Simon wants the full range
+      // reachable, from zero tracks with reverb up to every eligible
+      // track, so nothing here forces a floor anymore.
     }, REAL_TRACK_COUNT * 30 + 60);
     _pendingRandTimeouts.push(_bassCheckTid);
   }
@@ -9390,7 +9370,7 @@ function randAll(mode, opts) {
       const isRide = trackInstruments[tr] === 'ride';
       const isJinx = trackInstruments[tr] === 'jcmgtr';
       const fxBoost = level >= 4 ? 0.845 : (level === 3 ? 0.585 : 0); // +30% over previous 0.65/0.45
-      const fxOn = isJinx ? _jinxComboRoll[tr] : isRide ? Math.random() < 0.5 : isSlay ? false : isChug ? true : isClap ? true : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(0.9, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG always on — comes with FX as standard; RIDE ~50%; JINX linked to its own reverb roll above
+      const fxOn = isJinx ? _jinxComboRoll[tr] : isRide ? Math.random() < 0.5 : isSlay ? Math.random() < 0.08 : isChug ? Math.random() < 0.95 : isClap ? Math.random() < 0.95 : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(1, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG/CLAP almost always on but no longer absolute, so "every track" and "no tracks" both stay reachable; RIDE ~50%; JINX linked to its own reverb roll above
       const newFxVal = fxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
       trackFx[tr] = newFxVal;
       if (ctx) setFxActive(tr, newFxVal);
@@ -9451,16 +9431,14 @@ function randAll(mode, opts) {
   const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = (_currentSpecies || '');
   const kd = document.getElementById('keyDisplay');
   if (kd) { const kn = getKeyName(); kd.textContent = (kn || '').replace(/-/g, ' '); }
-  // Randomise delay for all tracks
-  const _noDelayKeys = new Set(['tamb', 'skick', 'shak', 'sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'guiro', 'clap', 'shihat']); // HIHAT added — never gets reverb through RAND either
+  // Randomise delay for all tracks. Every instrument now keeps at least a
+  // small nonzero chance (and every "always on" case stays just short of
+  // 100%) so the full range — every eligible track with reverb, down to
+  // none at all — stays reachable, instead of some instruments being
+  // permanently locked out or locked in.
+  const _noDelayKeys = new Set(['tamb', 'skick', 'shak', 'sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'guiro', 'clap', 'shihat']); // rarely wants reverb through RAND, but no longer a hard never
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (trackSweep[tr]) continue; // locked
-    if (_noDelayKeys.has(trackInstruments[tr])) {
-      trackDelay[tr] = false;
-      const db0 = document.getElementById(`delaybtn-${tr}`);
-      if (db0) db0.classList.toggle('on', false);
-      continue;
-    }
     // Don't add delay if the track has more than 3 contiguous notes, or any
     // gap between notes is less than 4 steps
     const _g = grid[tr];
@@ -9475,7 +9453,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(0.9, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
