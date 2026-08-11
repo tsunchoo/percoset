@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 05:34 DIAG</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 05:49 DIAG</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -753,6 +753,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   </div>
 </div>
 
+<div id="_debugOverlay" style="position:fixed;bottom:0;left:0;right:0;max-height:35vh;overflow-y:auto;background:rgba(0,0,0,0.92);color:#0f0;font-family:monospace;font-size:10px;line-height:1.4;padding:8px;z-index:99999;white-space:pre-wrap;word-break:break-all;"></div>
 <div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:48px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 
@@ -1008,6 +1009,19 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <script>
+// Temporary on-screen debug overlay — logs to both console and a visible
+// box at the bottom of the screen, since there's no Mac/Web Inspector
+// available to read the console directly. Remove once the slot-fill
+// investigation is done.
+function _debugLog(...args) {
+  const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+  console.log(msg);
+  const el = document.getElementById('_debugOverlay');
+  if (el) {
+    el.textContent += msg + '\n\n';
+    el.scrollTop = el.scrollHeight;
+  }
+}
 let _bgPulseEnabled = false, _bgStaticEnabled = false, _bgPulseSteps = 4, _bgPulseCounter = 0;
 const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
@@ -9625,7 +9639,7 @@ function markModified() {
 }
 let _pendingSlot = -1;
 function slotPress(i) {
-  console.log(`[slotPress] called for slot ${i} at`, performance.now(), 'ms since load, stack:', new Error().stack);
+  _debugLog(`[slotPress] called for slot ${i} at`, performance.now(), 'ms since load');
   // Choosing a saved pattern is a deliberate override — AUTO RAND (top bar)
   // shouldn't keep evolving on top of whatever the user just explicitly picked.
   if (_autoRandLoopActive) {
@@ -10319,6 +10333,7 @@ updateBeatPulse();
 // here can ever delay or interfere with the tap-to-load screen's own
 // critical first paint — that screen must appear immediately, full stop.
 setTimeout(async () => {
+  _debugLog('=== FRESH PAGE LOAD — diagnostic run starting ===');
   try { randAll(undefined, { skipTempo: false }); } catch (e) { console.error('Startup RAND failed', e); }
   // If this page was opened from a shared tape link, offer to load it —
   // overwrites the random starter pattern above if the user says yes.
@@ -10355,7 +10370,7 @@ setTimeout(async () => {
         randAll(undefined, { skipTempo: false }); // each slot gets its own independently randomized tempo
         await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
         slots[i] = snapshotState();
-        console.log(`[slot-fill] captured slot ${i}:`, JSON.stringify(slots[i].grid), slots[i].trackInstruments, slots[i].speciesName);
+        _debugLog(`[slot-fill] captured slot ${i}: grid=` + JSON.stringify(slots[i].grid) + ' instruments=' + JSON.stringify(slots[i].trackInstruments) + ' name=' + slots[i].speciesName);
       }
       // _pendingRandTimeouts never self-cleans as individual timeouts fire —
       // it only gets cleared when the *next* randAll() call starts. Under
@@ -10371,14 +10386,14 @@ setTimeout(async () => {
       // before the final restore, removes that window entirely.
       _pendingRandTimeouts.forEach(id => clearTimeout(id));
       _pendingRandTimeouts = [];
-      console.log('[slot-fill] slot 0 just before restore:', JSON.stringify(slots[0].grid), slots[0].speciesName);
-      console.log('[slot-fill] slot 5 just before restore:', JSON.stringify(slots[5].grid), slots[5].speciesName);
+      _debugLog('[slot-fill] slot 0 just before restore: grid=' + JSON.stringify(slots[0].grid) + ' name=' + slots[0].speciesName);
+      _debugLog('[slot-fill] slot 5 just before restore: grid=' + JSON.stringify(slots[5].grid) + ' name=' + slots[5].speciesName);
       restoreState(slots[0]);
       activeSlot = 0;
       updateSlotButtons();
-      console.log('[slot-fill] slot 5 immediately AFTER restore:', JSON.stringify(slots[5].grid), slots[5].speciesName);
+      _debugLog('[slot-fill] slot 5 immediately AFTER restore: grid=' + JSON.stringify(slots[5].grid) + ' name=' + slots[5].speciesName);
       setTimeout(() => {
-        console.log('[slot-fill] slot 5, 2s after restore (checking for late mutation):', JSON.stringify(slots[5].grid), slots[5].speciesName);
+        _debugLog('[slot-fill] slot 5, 2s after restore: grid=' + JSON.stringify(slots[5].grid) + ' name=' + slots[5].speciesName);
       }, 2000);
     } catch (e) { console.error('Slot pre-fill failed', e); }
     // Seed RECALL with this startup pattern right away — otherwise it isn't
