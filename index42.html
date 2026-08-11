@@ -283,7 +283,18 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #randBtn.pulsing { background: #f71aff; color: #fff; }
 @keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
-#beatBtn.beat-auto-active { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
+/* BEAT's own auto-mode color cycle — deliberately a SEPARATE, color-only
+   keyframe (never touches transform at all), so it genuinely cannot
+   conflict with the existing per-beat scale-pulse (#beatBtn.btn-beat-pulse
+   -> slot-pulse, transform-only, completely untouched, exactly as asked).
+   The two are then explicitly combined via a single, more specific rule
+   for whenever both classes are present together — the CSS animation
+   shorthand replaces its whole animation list per rule, it doesn't merge
+   across separate rules, so without this explicit combined rule whichever
+   one happened to win the cascade would silently drop the other. */
+@keyframes beat-auto-color-only { from { background: #f71aff; } to { background: var(--playhead-color, #f8ff00); } }
+#beatBtn.beat-auto-active { animation: beat-auto-color-only 1.2s ease-in-out infinite alternate; }
+#beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 1.2s ease-in-out infinite alternate; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
 @keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
@@ -670,7 +681,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 08:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 08:29</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2054,19 +2065,13 @@ function scheduler() {
         rb8.classList.remove('rand-color-pulse'); void rb8.offsetWidth; rb8.classList.add('rand-color-pulse');
       }
     }
-    // BEAT's own auto-random-beat-type mode gets the identical color-cycle
-    // treatment as RAND's auto mode above — same keyframe, same retrigger
-    // pattern (twice a bar, at step 0 and step 8) — just applied to
-    // #beatBtn instead. Its existing scale/pulse behavior from
-    // updateBeatPulse() is untouched; this only adds the color cycling on
-    // top of it.
-    if (step === 8 && _beatAutoRandActive) {
-      const bb8 = document.getElementById('beatBtn');
-      if (bb8) {
-        bb8.style.animationDuration = ((60 / bpm) * 2) + 's';
-        bb8.classList.remove('beat-auto-active'); void bb8.offsetWidth; bb8.classList.add('beat-auto-active');
-      }
-    }
+    // BEAT's own auto-random-beat-type mode uses a genuinely continuous,
+    // self-looping CSS color cycle (infinite alternate) — no JS retrigger
+    // needed or wanted here, since setting animationDuration via JS would
+    // apply to the ENTIRE animation list on this element once combined
+    // with the existing per-beat scale-pulse (slot-pulse), including that
+    // pulse's own fixed 0.44s timing — exactly the kind of interference
+    // that must not happen to it.
     // Fire pending auto-rand on downbeat
     if (step === 0) {
       // RECALL should always be able to revert to whatever was actually
@@ -2098,15 +2103,6 @@ function scheduler() {
         if (rb) {
           rb.style.animationDuration = ((60 / bpm) * 2) + 's'; // twice as fast — half a measure instead of a full one
           rb.classList.remove('rand-color-pulse'); void rb.offsetWidth; rb.classList.add('rand-color-pulse');
-        }
-      }
-      // Same retrigger for BEAT's own auto mode — see the matching step-8
-      // half-bar retrigger above for the full explanation.
-      if (_beatAutoRandActive) {
-        const bb = document.getElementById('beatBtn');
-        if (bb) {
-          bb.style.animationDuration = ((60 / bpm) * 2) + 's';
-          bb.classList.remove('beat-auto-active'); void bb.offsetWidth; bb.classList.add('beat-auto-active');
         }
       }
       // Flip reels forward when recalled pattern starts playing
@@ -8020,6 +8016,15 @@ function queueRand(mode) {
       const stepsRemaining = (NUM_STEPS - currentStep) % NUM_STEPS || NUM_STEPS;
       const timeRemaining = stepsRemaining * stepDuration();
       rbP.classList.remove('rand-pending-fast');
+      // btn-flash-blue (added by setBtnBlueHeld right before this call, on
+      // every tap) sets background with !important — that unconditionally
+      // overrides the gradual transition below for as long as it's
+      // present, which is the entire wait until clearBtnBlueHeld runs at
+      // pattern-load time. The button was just snapping instantly to solid
+      // fuchsia and masking the build-up completely, not actually
+      // transitioning at all. This transition replaces that class's job
+      // for this specific case, so it needs to be out of the way.
+      rbP.classList.remove('btn-flash-blue');
       rbP.style.transition = `background ${timeRemaining}s ease-in, transform ${timeRemaining}s ease-in`;
       rbP.style.background = '#f71aff';
       rbP.style.transform = 'scale(1.1)';
@@ -12564,6 +12569,8 @@ function updateBeatCtrlRow() {
   if (fBtn) { fBtn.classList.toggle('on', _beatFx); fBtn.classList.toggle('blast-on', _beatPump); }
   const rBtn = document.getElementById('beatCtrlRand');
   if (rBtn) { rBtn.classList.toggle('rand-auto', _beatAutoRandActive); rBtn.textContent = _beatAutoRandActive ? 'A' : 'N'; }
+  const bb = document.getElementById('beatBtn');
+  if (bb) bb.classList.toggle('beat-auto-active', _beatAutoRandActive);
 }
 
 // L — same lock, exposed on the ctrl row too
