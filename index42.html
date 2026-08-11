@@ -278,10 +278,14 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--playhead-color, #f71aff) !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
-.track-auto-rand { --track-color: #f71aff !important; }
-#randBtn.pulsing { background: #f71aff; color: #fff; }
+.track-auto-rand { --track-color: var(--playhead-color, #f71aff) !important; }
+#randBtn.pulsing { background: var(--playhead-color, #f71aff); color: #fff; }
+/* rand-pulse and beat-auto-color-only (below) deliberately keep #f71aff
+   hardcoded as one of their two alternating stops — the other stop is
+   already var(--playhead-color); making both stops the same variable
+   would flatten these into a single flat color with no visible pulse. */
 @keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
 /* BEAT's own auto-mode color cycle — deliberately a SEPARATE, color-only
@@ -298,9 +302,9 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; color: #000; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
-@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
+@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--playhead-color, #f71aff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
-#randBtn.btn-flash-blue { background: #f71aff !important; color: #fff !important; }
+#randBtn.btn-flash-blue { background: var(--playhead-color, #f71aff) !important; color: #fff !important; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
 #scratchBtn.active { background: #111 !important; color: #adff00 !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
@@ -681,7 +685,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 21:42</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 21:55</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1165,6 +1169,16 @@ function updateBgPulseSpeedReadout() {
   else if (s === 16) label = 'every measure';
   else label = (s / 16) + ' measures';
   readout.textContent = label;
+}
+// Single source of truth for the "purple/magenta" highlight used across
+// RAND/AUTO, BEAT auto, and per-track auto-rand states — reads the same
+// --playhead-color custom property the HIGHLIGHT picker in settings
+// drives, so all of it moves together when that picker changes. Function
+// declaration (not const), so it's hoisted and safely callable from
+// anywhere in the script regardless of source order.
+function _highlightColor() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--playhead-color').trim();
+  return v || '#f71aff';
 }
 (function() {
   const playheadColorPicker = document.getElementById('playheadColorPicker');
@@ -2015,12 +2029,24 @@ function volGainToPos(gain) {
 }
 // Sets a track's vol-bar fill width from its current (gain-space) volume,
 // via the same taper, so what you see always matches where you'd need to
-// drag to get back to that level.
+// drag to get back to that level. Also color-codes the fill red (max) to
+// blue (min) in realtime, based on that same position.
+function _volFillColorForPct(pct) {
+  const p = Math.max(0, Math.min(1, pct));
+  const r = Math.round(p * 255);
+  const b = Math.round((1 - p) * 255);
+  return `rgb(${r},0,${b})`;
+}
+function _setVolFillPct(el, pct) {
+  if (!el) return;
+  el.style.width = Math.round(pct * 100) + '%';
+  el.style.background = _volFillColorForPct(pct);
+}
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
   if (!vb) return;
   const f = vb.querySelector('.track-vol-fill');
-  if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr]) * 100) + '%';
+  _setVolFillPct(f, volGainToPos(trackVolume[tr]));
 }
 const trackFx = Array.from({length: NUM_TRACKS}, () => ({ x: 0, y: 0 }));
 const trackDelay = new Array(NUM_TRACKS).fill(false);
@@ -2229,7 +2255,7 @@ function scheduler() {
           const lane = document.getElementById(`lane-${tr}`);
           const rb = document.getElementById(`randbtn-${tr}`);
           if (isAuto) {
-            if (lane) lane.style.setProperty('--track-color', '#f71aff');
+            if (lane) lane.style.setProperty('--track-color', _highlightColor());
             if (rb) { rb.classList.add('rand-auto'); _setRandBtnLabel(rb, true); }
             if (!autoShiftStops[tr] && rb && rb._restartAuto) rb._restartAuto();
           } else {
@@ -2261,7 +2287,7 @@ function scheduler() {
           const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.toggle('on', trackFx[tr].x > 0 || trackFx[tr].y > 0);
           const row = document.getElementById(`ctrlrow-${tr}`); if (row) row.classList.toggle('row-muted', trackMuted[tr]);
           const lm = document.getElementById(`lane-${tr}`); if (lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
-          const vb = document.getElementById(`vbar-${tr}`); if (vb) { vb.classList.toggle('muted', trackMuted[tr]); const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
+          const vb = document.getElementById(`vbar-${tr}`); if (vb) { vb.classList.toggle('muted', trackMuted[tr]); const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
         }
         document.getElementById('bpmSlider').value = bpm;
         syncSettingsPanel();
@@ -6640,7 +6666,7 @@ function buildUI() {
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
-    volFill.style.width = Math.round(volGainToPos(trackVolume[tr]) * 100) + '%';
+    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
     volBar.appendChild(volFill);
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
@@ -8053,7 +8079,7 @@ function queueRand(mode) {
       // for this specific case, so it needs to be out of the way.
       rbP.classList.remove('btn-flash-blue');
       rbP.style.transition = `background ${timeRemaining}s ease-in, transform ${timeRemaining}s ease-in`;
-      rbP.style.background = '#f71aff';
+      rbP.style.background = _highlightColor();
       rbP.style.transform = 'scale(1.1)';
       rbP.style.color = '#fff';
     }
@@ -8730,7 +8756,7 @@ function fullClear() {
     const rb = document.getElementById(`randbtn-${tr}`); if (rb) rb.classList.remove('pulsing');
     const cr = document.getElementById(`ctrlrow-${tr}`); if (cr) cr.classList.remove('row-muted');
     const vb = document.getElementById(`vbar-${tr}`);
-    if (vb) { vb.classList.remove('muted'); const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
+    if (vb) { vb.classList.remove('muted'); const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
     redrawTrackCells(tr);
   }
   // Track 1 is no longer special — cleared the same as every other track
@@ -9193,13 +9219,13 @@ function randAll(mode, opts) {
       if (_volReduction > 0) {
         trackVolume[_tr] = Math.max(0.05, trackVolume[_tr] * (1 - _volReduction));
         if (ctx && trackGainNodes[_tr]) trackGainNodes[_tr].gain.setTargetAtTime(trackVolume[_tr], ctx.currentTime, 0.05);
-        const vb3 = document.getElementById(`vbar-${_tr}`); if (vb3) { const f3 = vb3.querySelector('.track-vol-fill'); if (f3) f3.style.width = Math.round(volGainToPos(trackVolume[_tr])*100)+'%'; }
+        const vb3 = document.getElementById(`vbar-${_tr}`); if (vb3) { const f3 = vb3.querySelector('.track-vol-fill'); _setVolFillPct(f3, volGainToPos(trackVolume[_tr])); }
       }
     }, _tr * 30); // stagger 30ms per track
     _pendingRandTimeouts.push(_tid);
     trackVolume[tr] = 0.30;
     if (ctx && trackGainNodes[tr]) trackGainNodes[tr].gain.setValueAtTime(trackVolume[tr], ctx.currentTime);
-    const vb = document.getElementById(`vbar-${tr}`); if (vb) { const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
+    const vb = document.getElementById(`vbar-${tr}`); if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
     // Reset FX to off first — setFxActive will apply -6dB if FX gets turned on
     trackFx[tr] = { x: 0, y: 0 };
     if (ctx && trackFxNodes[tr]) setFxActive(tr, { x: 0, y: 0 });
@@ -9371,7 +9397,7 @@ function randAll(mode, opts) {
       else {
         // No ctx yet — just set vol bar
         const vb = document.getElementById(`vbar-${tr}`);
-        if (vb) { const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = fxOn ? '25%' : '50%'; }
+        if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, fxOn ? 0.25 : 0.5); }
       }
       const fb = document.getElementById(`fxbtn-${tr}`);
       if (fb) fb.classList.toggle('on', fxOn);
@@ -9391,7 +9417,7 @@ function randAll(mode, opts) {
       trackPump[tr] = false;
       const fb2 = document.getElementById(`fxbtn-${tr}`); if (fb2) fb2.classList.remove('blast-on');
       const vb = document.getElementById(`vbar-${tr}`);
-      if (vb) { const f = vb.querySelector('.track-vol-fill'); if (f) f.style.width = '50%'; }
+      if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, 0.5); }
       if (trackGainNodes[tr] && ctx) trackGainNodes[tr].gain.setValueAtTime(0.5, ctx.currentTime);
     }
   }
@@ -9663,7 +9689,7 @@ function restoreState(snap) {
     }
     const row=document.getElementById(`ctrlrow-${tr}`); if(row) row.classList.toggle('row-muted', trackMuted[tr]);
     const lm=document.getElementById(`lane-${tr}`); if(lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
-    const vb=document.getElementById(`vbar-${tr}`); if(vb) { vb.classList.toggle('muted', trackMuted[tr]); const f=vb.querySelector('.track-vol-fill'); if(f) f.style.width=Math.round(volGainToPos(trackVolume[tr])*100)+'%'; }
+    const vb=document.getElementById(`vbar-${tr}`); if(vb) { vb.classList.toggle('muted', trackMuted[tr]); const f=vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
     redrawTrackCells(tr);
   }
   bpm=snap.bpm;
@@ -9694,7 +9720,7 @@ function restoreState(snap) {
       const lane = document.getElementById(`lane-${tr}`);
       const rb = document.getElementById(`randbtn-${tr}`);
       if (isAuto) {
-        if (lane) lane.style.setProperty('--track-color', '#f71aff');
+        if (lane) lane.style.setProperty('--track-color', _highlightColor());
         if (rb) { rb.classList.add('rand-auto'); _setRandBtnLabel(rb, true); }
         // Restart auto interval if it's not already running
         if (!autoShiftStops[tr]) {
@@ -10406,7 +10432,7 @@ function wireRandomizeButton(btn, tr) {
     if (!window._nButtonClickCount) window._nButtonClickCount = {};
     window._nButtonClickCount[tr] = (window._nButtonClickCount[tr] || 0) + 1;
     doRand();
-    btn.style.background = '#f71aff';
+    btn.style.background = _highlightColor();
     btn.style.color = '#fff';
     setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
   };
@@ -10420,7 +10446,7 @@ function wireRandomizeButton(btn, tr) {
     _setRandBtnLabel(btn, true);
     _startRandAutoBreathe(tr);
     const _lane = document.getElementById(`lane-${tr}`);
-    if (_lane) _lane.style.setProperty('--track-color', '#f71aff');
+    if (_lane) _lane.style.setProperty('--track-color', _highlightColor());
     window._isAutoBarRand = true;
     unmuteIfNeeded();
     doRand();
