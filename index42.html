@@ -381,6 +381,11 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #soundPickerList {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
 }
+.sound-group-divider {
+  grid-column: 1 / -1;
+  height: 1px; background: var(--neutral-track, #b0b0b0); opacity: 0.5;
+  margin: 4px 0;
+}
 .sound-option {
   padding: 10px 8px; font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase;
   cursor: pointer; color: var(--text); text-align: center;
@@ -692,7 +697,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 23:24</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 23:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6497,7 +6502,19 @@ function openSoundPicker(tr) {
   ];
   const ordered = [];
   GROUPS.forEach(match => { INSTRUMENT_KEYS.filter(match).forEach(k => ordered.push(k)); });
+  // Explicit divider between category groups — a flat grid with zero
+  // visual boundary between them was how an instrument near the end of
+  // one group (e.g. BOOBOO, last-ish in LEAD) could read as belonging to
+  // the next group over (BASS) despite being correctly categorized.
+  let _lastGroupIdx = -1;
   ordered.forEach(k => {
+    const groupIdx = GROUPS.findIndex(match => match(k));
+    if (_lastGroupIdx !== -1 && groupIdx !== _lastGroupIdx) {
+      const divider = document.createElement('div');
+      divider.className = 'sound-group-divider';
+      list.appendChild(divider);
+    }
+    _lastGroupIdx = groupIdx;
     const opt = document.createElement('div');
     opt.className = 'sound-option inst-' + (INSTRUMENTS[k].group||'perc') + (_isBass(k) ? ' inst-bass' : '') + (_isPad(k) ? ' inst-pad' : '');
     opt.dataset.key = k;
@@ -10876,9 +10893,11 @@ function _leftSpoolEngage() {
   // requirement. The stop/restart transport behavior below is separate and
   // still gated on actually playing.
   if (window._sweepSwitchDirection) window._sweepSwitchDirection('down');
-  // The left spool's own sound cue — the Stop sample, reversed, rather
-  // than played forward like it used to be.
-  if (ctx && window._uiSoundBufs) {
+  // The left spool's own sound cue — the Stop sample, reversed. Only for
+  // a direct hold on the spool itself; dragging onto it from a held SWEEP
+  // no longer plays this, since SWEEP has its own identity/feedback and
+  // shouldn't also carry the spool's own Stop cue.
+  if (ctx && window._uiSoundBufs && !window._sweepGestureActive) {
     _getReversedUiSound('Stop'); // ensures window._uiSoundBufs['StopReversed'] is cached
     playUiSound('StopReversed');
   }
@@ -12113,6 +12132,13 @@ async function hardResetAudioEngine() {
   // one left off, rather than each resetting to its own fixed start point.
   window._sweepSharedFreq = window._sweepSharedFreq || 200;
   const SWEEP_FLOOR = 200, SWEEP_CEIL = 4000;
+  // How far down the screen the finger has dragged since this hold began,
+  // 0 (no drag) to 1 (fully maxed out at SWEEP_DRAG_MAX_PX). Persists
+  // across a mid-hold direction switch (stopSweep(true)/startSweep) since
+  // that's a continuation of the same physical hold, not a fresh press.
+  let _sweepDragIntensity = 0, _sweepDragStartY = null;
+  const SWEEP_DRAG_MAX_PX = 260; // distance for full intensity
+  const SWEEP_DRAG_MAX_BOOST = 0.85; // +0.85x gain (~+5.3dB) at full drag
   function startSweep(direction) {
     if (!ctx || sweepNodes) return;
     ctx.resume();
@@ -12121,6 +12147,9 @@ async function hardResetAudioEngine() {
     window._sweepDirection = direction || 'up';
     const bufDur = 12; // generous buffer length so long holds never run out
     const riseDur = 2.5; // time to reach the capped peak/floor frequency while held (was 3.5s — quicker now)
+    // Reverse (down — engaged by dragging SWEEP onto the left tape spool)
+    // sweeps twice as fast as the forward/up direction.
+    const freqRiseDur = (direction === 'down') ? riseDur / 2 : riseDur;
     const t = ctx.currentTime;
     const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * bufDur), ctx.sampleRate);
     const d = buf.getChannelData(0);
@@ -12130,7 +12159,7 @@ async function hardResetAudioEngine() {
     const startFreq = Math.min(SWEEP_CEIL, Math.max(SWEEP_FLOOR, window._sweepSharedFreq));
     const targetFreq = window._sweepDirection === 'down' ? SWEEP_FLOOR : SWEEP_CEIL;
     bp.frequency.setValueAtTime(startFreq, t);
-    bp.frequency.exponentialRampToValueAtTime(targetFreq, t + riseDur); // only moves while held — release is what stops it wherever it is
+    bp.frequency.exponentialRampToValueAtTime(targetFreq, t + freqRiseDur); // only moves while held — release is what stops it wherever it is
 
     // baseGain holds the "intended" envelope level; duckGain applies sidechain ducking on top
     const baseGain = ctx.createGain();
@@ -12139,12 +12168,17 @@ async function hardResetAudioEngine() {
     baseGain.gain.linearRampToValueAtTime(0.2145, t + attackDur); // -2dB more (was 0.27)
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
+    // Drag-down intensity boost — starts wherever the finger's current
+    // drag position already has it (not reset to 1), so switching
+    // direction mid-hold doesn't undo a boost already dialed in.
+    const dragGain = ctx.createGain();
+    dragGain.gain.value = 1 + _sweepDragIntensity * SWEEP_DRAG_MAX_BOOST;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
 
     // Back through masterGain (and its kick-triggered sidechain duck stage),
     // not straight to the limiter — reintroducing the full mix-reactive
     // modulation on top of SWEEP's own ducking below.
-    noise.connect(bp); bp.connect(baseGain); baseGain.connect(duckGain); duckGain.connect(masterGain);
+    noise.connect(bp); bp.connect(baseGain); baseGain.connect(duckGain); duckGain.connect(dragGain); dragGain.connect(masterGain);
     noise.start(t);
 
     // Mix in TEXTURE's own amalgam-echo tone alongside the noise sweep —
@@ -12174,7 +12208,7 @@ async function hardResetAudioEngine() {
       });
     } catch (e) {}
 
-    sweepNodes = { noise, bp, gain: baseGain, duckGain, amalgamOscs, amalgamGain };
+    sweepNodes = { noise, bp, gain: baseGain, duckGain, dragGain, amalgamOscs, amalgamGain };
     btn.classList.add('active');
 
     // Continuously sample master output level and duck the sweep inversely.
@@ -12212,7 +12246,7 @@ async function hardResetAudioEngine() {
 
   function stopSweep(isSwitch) {
     if (!sweepNodes || !ctx) return;
-    const { bp, gain, noise, duckGain, amalgamOscs, amalgamGain } = sweepNodes;
+    const { bp, gain, noise, duckGain, dragGain, amalgamOscs, amalgamGain } = sweepNodes;
     // Capture wherever the pitch actually is right now — this is what lets
     // the next engagement (SWEEP or the left spool) continue from here
     // instead of resetting. Read before cancelScheduledValues touches it.
@@ -12235,13 +12269,14 @@ async function hardResetAudioEngine() {
       try { bp.disconnect(); } catch(e) {}
       try { gain.disconnect(); } catch(e) {}
       try { duckGain.disconnect(); } catch(e) {}
+      try { dragGain.disconnect(); } catch(e) {}
       if (amalgamOscs) amalgamOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
       if (amalgamGain) { try { amalgamGain.disconnect(); } catch(e) {} }
       return;
     }
 
     playUiSound('Cymbal'); // same cue the left tape spool plays on release
-    const quarterNote = stepDuration() * 4; // fade-out length — longer now so it stays a bit before fading
+    const releaseFade = 2.0; // fixed 2s graceful die-away on release, no longer tempo-relative
     // Ramp duckGain back to 1 smoothly rather than snapping it instantly —
     // an instant jump from wherever it was (potentially deep in a duck dip,
     // near-silent) straight up to 1, at the same moment the boosted presence
@@ -12249,28 +12284,37 @@ async function hardResetAudioEngine() {
     duckGain.gain.cancelScheduledValues(t);
     duckGain.gain.setValueAtTime(duckGain.gain.value, t);
     duckGain.gain.linearRampToValueAtTime(1, t + 0.08);
+    // Drag-boost gain eases back down to 1 over the same release window,
+    // rather than just sitting at whatever level it was dragged to while
+    // everything else fades out underneath it.
+    dragGain.gain.cancelScheduledValues(t);
+    dragGain.gain.setValueAtTime(dragGain.gain.value, t);
+    dragGain.gain.linearRampToValueAtTime(1, t + releaseFade);
     bp.frequency.cancelScheduledValues(t);
     // The audible fade-out tail settles toward the floor regardless of
     // direction — it's fading to silence anyway (gain below), so this is
     // just how the tail sounds, not the logical position that persists
     // (that's window._sweepSharedFreq, captured above).
-    bp.frequency.exponentialRampToValueAtTime(SWEEP_FLOOR, t + quarterNote);
+    bp.frequency.exponentialRampToValueAtTime(SWEEP_FLOOR, t + releaseFade);
     gain.gain.cancelScheduledValues(t);
     gain.gain.setValueAtTime(gain.gain.value * 0.355, t); // -9dB total on the release tail (-5dB then another -4dB)
-    gain.gain.linearRampToValueAtTime(0, t + quarterNote);
-    setTimeout(() => { try { noise.stop(); noise.disconnect(); } catch(e) {} }, quarterNote * 1000 + 100);
+    gain.gain.linearRampToValueAtTime(0, t + releaseFade);
+    setTimeout(() => { try { noise.stop(); noise.disconnect(); } catch(e) {} try { dragGain.disconnect(); } catch(e) {} }, releaseFade * 1000 + 100);
     // Fade and stop the amalgam mix-in layer alongside everything else.
     if (amalgamGain) {
       amalgamGain.gain.cancelScheduledValues(t);
       amalgamGain.gain.setValueAtTime(amalgamGain.gain.value, t);
-      amalgamGain.gain.linearRampToValueAtTime(0, t + quarterNote);
+      amalgamGain.gain.linearRampToValueAtTime(0, t + releaseFade);
     }
     if (amalgamOscs && amalgamOscs.length) {
       setTimeout(() => {
         amalgamOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
         try { amalgamGain.disconnect(); } catch(e) {}
-      }, quarterNote * 1000 + 100);
+      }, releaseFade * 1000 + 100);
     }
+    // Reset the drag-intensity tracker for next time — a genuine release
+    // (not a mid-hold direction switch) ends the physical gesture.
+    _sweepDragIntensity = 0; _sweepDragStartY = null;
   }
   window._sweepEngageUp = () => startSweep('up');
   window._sweepEngageDown = () => startSweep('down');
@@ -12316,15 +12360,23 @@ async function hardResetAudioEngine() {
     stopSweep(); // released early — cuts off right where the ramps currently are
   };
 
-  btn.addEventListener('touchstart', e => { e.preventDefault(); beginPress(); }, { passive: false });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); _sweepDragStartY = e.touches[0] ? e.touches[0].clientY : null; beginPress(); }, { passive: false });
   btn.addEventListener('touchend', e => { e.preventDefault(); endPress(); }, { passive: false });
   btn.addEventListener('touchcancel', endPress);
-  btn.addEventListener('mousedown', beginPress);
+  btn.addEventListener('mousedown', e => { _sweepDragStartY = e.clientY; beginPress(); });
   // Document-wide, not button-only — the pointer rolling off the button
   // while still held should NOT stop the effect, and a mouseup bound only
   // to the button would miss the release entirely if the pointer had
   // drifted away by the time it's released, leaving it stuck on.
   document.addEventListener('mouseup', endPress);
+  document.addEventListener('mousemove', e => {
+    if (!window._sweepGestureActive || _sweepDragStartY === null) return;
+    const downPx = Math.max(0, e.clientY - _sweepDragStartY);
+    _sweepDragIntensity = Math.min(1, downPx / SWEEP_DRAG_MAX_PX);
+    if (sweepNodes && sweepNodes.dragGain && ctx) {
+      sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_MAX_BOOST, ctx.currentTime, 0.08);
+    }
+  });
 
   // Drag from SWEEP onto BEAT or RAND to trigger them simultaneously.
   // Dragging onto the left spool instead engages its soft decay-stop for
@@ -12349,6 +12401,17 @@ async function hardResetAudioEngine() {
     if (!window._sweepGestureActive) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
+    // How far the finger has dragged DOWN the screen from where the hold
+    // started drives the drag-intensity boost on the sweep/amalgam gain
+    // (see dragGain in startSweep) — upward movement or staying put keeps
+    // it at 0, only downward travel builds intensity.
+    if (touch && _sweepDragStartY !== null) {
+      const downPx = Math.max(0, touch.clientY - _sweepDragStartY);
+      _sweepDragIntensity = Math.min(1, downPx / SWEEP_DRAG_MAX_PX);
+      if (sweepNodes && sweepNodes.dragGain && ctx) {
+        sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_MAX_BOOST, ctx.currentTime, 0.08);
+      }
+    }
     // The entire gesture is "claimed" by SWEEP the moment it's actually
     // engaged — prevent default unconditionally for every touchmove for
     // its whole duration, not just while positioned over specific
