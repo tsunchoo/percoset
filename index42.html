@@ -277,12 +277,11 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite, rand-auto-color-cycle 1.2s ease-in-out infinite alternate; }
-@keyframes rand-auto-color-cycle { from { background: #f71aff; } to { background: var(--playhead-color, #f8ff00); } }
+.rand-btn.rand-auto { background: #f71aff !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: #f71aff !important; }
 #randBtn.pulsing { background: #f71aff; color: #fff; }
-@keyframes rand-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: #555; transform: scale(1); } }
+@keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
@@ -664,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 06:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 07:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9163,6 +9162,29 @@ function randAll(mode, opts) {
           updateTrackMute(tr);
         }
       }
+      // Reverb minimum guarantee — moved here from immediately after the
+      // main per-track delay pass, so it only runs once every track's
+      // actual final notes (and the density-based stripping that follows
+      // them) have already settled. Picking only from what's genuinely
+      // still eligible at this point means there's nothing left to undo
+      // it — no more on-then-off flicker for whichever track got picked.
+      {
+        const eligible = [];
+        let reverbCount = 0;
+        for (let tr = 0; tr < NUM_TRACKS; tr++) {
+          if (trackSweep[tr] || _noDelayKeys.has(trackInstruments[tr])) continue;
+          if (trackDelay[tr]) reverbCount++;
+          else eligible.push(tr);
+        }
+        while (reverbCount < 2 && eligible.length > 0) {
+          const idx = Math.floor(Math.random() * eligible.length);
+          const tr = eligible.splice(idx, 1)[0];
+          trackDelay[tr] = true;
+          const db = document.getElementById(`delaybtn-${tr}`);
+          if (db) db.classList.toggle('on', true);
+          reverbCount++;
+        }
+      }
     }, REAL_TRACK_COUNT * 30 + 60);
     _pendingRandTimeouts.push(_bassCheckTid);
   }
@@ -9306,32 +9328,19 @@ function randAll(mode, opts) {
     // Track delay state — shared node stays alive, individual sends controlled in playback routing
     // (no per-track node to mute — delay on/off handled at note scheduling time)
   }
-  // Reverb minimum guarantee — independent of the density/tier gates
-  // above (_tooDense, _isFull16th, level) entirely. Those exist to keep
-  // reverb tasteful on a per-track basis, but they can end up zeroing out
-  // every single track's chance in an unlucky pattern, leaving nothing wet
-  // at all. At least 2 of the 6 tracks should always end up with reverb,
-  // forced on here if the normal pass came up short — still respecting
-  // locked tracks and the fundamental _noDelayKeys exclusions (kick, hihat,
-  // bass, etc. — a sound-design choice, not a quota or tier), just
-  // bypassing density/tier reasoning specifically.
-  {
-    const eligible = [];
-    let reverbCount = 0;
-    for (let tr = 0; tr < NUM_TRACKS; tr++) {
-      if (trackSweep[tr] || _noDelayKeys.has(trackInstruments[tr])) continue;
-      if (trackDelay[tr]) reverbCount++;
-      else eligible.push(tr);
-    }
-    while (reverbCount < 2 && eligible.length > 0) {
-      const idx = Math.floor(Math.random() * eligible.length);
-      const tr = eligible.splice(idx, 1)[0];
-      trackDelay[tr] = true;
-      const db = document.getElementById(`delaybtn-${tr}`);
-      if (db) db.classList.toggle('on', true);
-      reverbCount++;
-    }
-  }
+  // Reverb minimum guarantee moved to the delayed post-settlement check
+  // below (alongside the bass-safety-net check) — it used to run here,
+  // immediately after this per-track pass, but that's before any track's
+  // actual final notes exist yet (they're generated in staggered async
+  // callbacks below). A later density-based re-check strips delay back
+  // off any track that ends up too dense (full 16th/8th patterns) once
+  // its real notes are in — if this early guarantee happened to pick one
+  // of those tracks, the two decisions would visibly disagree: reverb
+  // turning on here, then straight back off moments later once that
+  // track's notes settled. Running the guarantee after everything has
+  // settled instead means it only ever picks from tracks that are
+  // actually still eligible at that point, so there's nothing left to
+  // undo it.
   // Never let two tracks both end up playing straight 16th notes for the
   // whole measure — thin any extras beyond the first back down to 8ths.
   const full16thTracks = [];
@@ -9907,7 +9916,7 @@ function randomizeTrack(tr) {
       redrawTrackCells(tr); markModified(); return;
     }
   }
-  // NOISE / HIHAT / SHAKER / RIDE / TAMB: 50% organic (genuinely random
+  // NOISE / HIHAT / SHAKER / RIDE / TAMB: 65% organic (genuinely random
   // placement), 50% a regular straight subdivision (quarters, 8ths, or
   // 16ths, quarter-note positions always accented). Whenever a regular
   // pattern gets picked, the very next time this same track gets
@@ -9921,7 +9930,7 @@ function randomizeTrack(tr) {
   if (_regularPatternKeys.has(key)) {
     if (!window._lastWasRegularPattern) window._lastWasRegularPattern = {};
     const forceRegularAgain = !!window._lastWasRegularPattern[tr];
-    const goRegular = forceRegularAgain || Math.random() < 0.5;
+    const goRegular = forceRegularAgain || Math.random() < 0.35; // 65% organic / 35% regular (was 50/50)
     // Only arm the "force next one too" flag on a fresh regular choice —
     // the forced repeat itself always clears it, so this is a pair, not
     // an indefinite streak.
@@ -10267,7 +10276,7 @@ function wireRandomizeButton(btn, tr) {
     if (!window._nButtonClickCount) window._nButtonClickCount = {};
     window._nButtonClickCount[tr] = (window._nButtonClickCount[tr] || 0) + 1;
     doRand();
-    btn.style.background = '#f71aff'; // same fuchsia as RAND's own auto-mode color, not the red playhead color
+    btn.style.background = 'var(--playhead)';
     btn.style.color = '#fff';
     setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
   };
