@@ -663,7 +663,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 06:02 DIAG</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 06:24</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -753,10 +753,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   </div>
 </div>
 
-<div id="_debugOverlayWrap" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;">
-  <button id="_debugCopyBtn" onclick="(function(){const t=document.getElementById('_debugOverlay').textContent;navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById('_debugCopyBtn');const orig=b.textContent;b.textContent='COPIED!';setTimeout(()=>{b.textContent=orig;},1200);}).catch(()=>{prompt('Copy this log:', t);});})()" style="display:block;width:100%;padding:10px;background:#0f0;color:#000;font-family:monospace;font-weight:bold;font-size:13px;border:none;">COPY LOG</button>
-  <div id="_debugOverlay" style="max-height:35vh;overflow-y:auto;background:rgba(0,0,0,0.92);color:#0f0;font-family:monospace;font-size:10px;line-height:1.4;padding:8px;white-space:pre-wrap;word-break:break-all;"></div>
-</div>
 <div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:48px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 
@@ -1012,19 +1008,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <script>
-// Temporary on-screen debug overlay — logs to both console and a visible
-// box at the bottom of the screen, since there's no Mac/Web Inspector
-// available to read the console directly. Remove once the slot-fill
-// investigation is done.
-function _debugLog(...args) {
-  const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
-  console.log(msg);
-  const el = document.getElementById('_debugOverlay');
-  if (el) {
-    el.textContent += msg + '\n\n';
-    el.scrollTop = el.scrollHeight;
-  }
-}
 let _bgPulseEnabled = false, _bgStaticEnabled = false, _bgPulseSteps = 4, _bgPulseCounter = 0;
 const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
@@ -9642,7 +9625,6 @@ function markModified() {
 }
 let _pendingSlot = -1;
 function slotPress(i) {
-  _debugLog(`[slotPress] called for slot ${i} at`, performance.now(), 'ms since load');
   // Choosing a saved pattern is a deliberate override — AUTO RAND (top bar)
   // shouldn't keep evolving on top of whatever the user just explicitly picked.
   if (_autoRandLoopActive) {
@@ -9717,6 +9699,15 @@ function updateSlotButtons() {
 // touched. If every slot is currently a manual save, there's nowhere safe
 // to put the new pattern, so it's simply not auto-saved that time.
 function autoSaveRandToSlot() {
+  // Suppressed during the startup slot-fill sequence — that sequence
+  // already explicitly manages all 6 slots itself via its own controlled
+  // loop, and this auto-save mechanism firing independently on every one
+  // of its randAll() calls was racing against those explicit assignments.
+  // Once all 6 filled up, its own eviction fallback (oldest auto-saved
+  // slot gets overwritten) would kick in and silently overwrite slot 0
+  // with whatever pattern happened to be live at that later point —
+  // observed as slot 0 ending up identical to slot 5's pattern.
+  if (window._suppressAutoSaveToSlot) return;
   const snap = snapshotState();
   let idx = slots.findIndex(s => s === null);
   if (idx === -1) {
@@ -10336,7 +10327,6 @@ updateBeatPulse();
 // here can ever delay or interfere with the tap-to-load screen's own
 // critical first paint — that screen must appear immediately, full stop.
 setTimeout(async () => {
-  _debugLog('=== FRESH PAGE LOAD — diagnostic run starting ===');
   try { randAll(undefined, { skipTempo: false }); } catch (e) { console.error('Startup RAND failed', e); }
   // If this page was opened from a shared tape link, offer to load it —
   // overwrites the random starter pattern above if the user says yes.
@@ -10364,6 +10354,15 @@ setTimeout(async () => {
   // 2-6 in the first version of this. Every slot, including slot 1, now
   // goes through its own randAll-then-wait-then-snapshot cycle — 6 full
   // cycles total, none of them reusing that first throwaway call.
+  //
+  // autoSaveRandToSlot() (triggered internally by every randAll() call)
+  // is explicitly suppressed for the duration of this sequence — it was
+  // racing against this loop's own explicit slot assignments, and once
+  // all 6 slots filled up, its own oldest-slot-eviction fallback would
+  // silently overwrite slot 0 with whatever pattern was live at that
+  // later point (this was the actual cause of slot 0 and slot 6 turning
+  // up identical after a fresh load).
+  window._suppressAutoSaveToSlot = true;
   const _slotFillDelayMs = 500; // comfortably past the ~150ms track stagger and the bass safety-net's own delay on top of that
   const _slotSettleMs = 200; // extra pause right before each subsequent randAll() call — the sequencer is genuinely playing live through all of this, so each call abruptly changes whatever's currently ringing with no settle time at all; this gives it a moment of quiet first, instead of an instant hard cut
   (async () => {
@@ -10373,7 +10372,6 @@ setTimeout(async () => {
         randAll(undefined, { skipTempo: false }); // each slot gets its own independently randomized tempo
         await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
         slots[i] = snapshotState();
-        _debugLog(`[slot-fill] captured slot ${i}: grid=` + JSON.stringify(slots[i].grid) + ' instruments=' + JSON.stringify(slots[i].trackInstruments) + ' name=' + slots[i].speciesName);
       }
       // _pendingRandTimeouts never self-cleans as individual timeouts fire —
       // it only gets cleared when the *next* randAll() call starts. Under
@@ -10383,22 +10381,15 @@ setTimeout(async () => {
       // finishes well within it. If it fires late — after restoreState
       // below has already swapped the live state over to slot 1 — it
       // operates on whatever's currently live, not what it was originally
-      // scheduled for, and can silently corrupt slot 1 with a leftover
-      // mutation meant for slot 6's generation (observed as slot 6 and
-      // slot 1 ending up identical). Explicitly cancelling here, right
-      // before the final restore, removes that window entirely.
+      // scheduled for. Explicitly cancelling here, right before the final
+      // restore, removes that window entirely.
       _pendingRandTimeouts.forEach(id => clearTimeout(id));
       _pendingRandTimeouts = [];
-      _debugLog('[slot-fill] slot 0 just before restore: grid=' + JSON.stringify(slots[0].grid) + ' name=' + slots[0].speciesName);
-      _debugLog('[slot-fill] slot 5 just before restore: grid=' + JSON.stringify(slots[5].grid) + ' name=' + slots[5].speciesName);
       restoreState(slots[0]);
       activeSlot = 0;
       updateSlotButtons();
-      _debugLog('[slot-fill] slot 5 immediately AFTER restore: grid=' + JSON.stringify(slots[5].grid) + ' name=' + slots[5].speciesName);
-      setTimeout(() => {
-        _debugLog('[slot-fill] slot 5, 2s after restore: grid=' + JSON.stringify(slots[5].grid) + ' name=' + slots[5].speciesName);
-      }, 2000);
-    } catch (e) { console.error('Slot pre-fill failed', e); }
+      window._suppressAutoSaveToSlot = false; // normal RAND presses after startup should auto-save as usual again
+    } catch (e) { console.error('Slot pre-fill failed', e); window._suppressAutoSaveToSlot = false; }
     // Seed RECALL with this startup pattern right away — otherwise it isn't
     // reachable via RECALL until playback has actually run for a bar (the
     // rolling snapshot only advances during live playback), so an edit made
