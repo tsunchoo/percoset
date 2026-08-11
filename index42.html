@@ -20,7 +20,7 @@
   --playhead: #ff2200; --muted-bg: #ff2200;
   --slot-saved: #f17d21; --slot-loaded: #f17d21;
   --vol-fill: #f17d21;
-  --neutral-top: #555; --neutral-track: #b0b0b0;
+  --neutral-top: #555; --neutral-track: #b0b0b0; --vol-border: #b0b0b0;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior-y: contain; }
@@ -294,8 +294,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    across separate rules, so without this explicit combined rule whichever
    one happened to win the cascade would silently drop the other. */
 @keyframes beat-auto-color-only { from { background: #f71aff; } to { background: var(--playhead-color, #f8ff00); } }
-#beatBtn.beat-auto-active { animation: beat-auto-color-only 1.2s ease-in-out infinite alternate; }
-#beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 1.2s ease-in-out infinite alternate; }
+#beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; color: #000; }
+#beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; color: #000; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
 @keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
@@ -325,14 +325,13 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    button's box/layout/position is completely untouched.
    */
 .shift-btn:not(.right) { font-size: calc(1rem + 0.5em); }
-.shift-btn .glyph { display: inline-block; transform: translateY(-4px); }
+.shift-btn .glyph { display: inline-block; transform: translateY(-1px); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: #555; border: 3px solid var(--neutral-track, #b0b0b0);
+  background: #555; border: 3px solid var(--vol-border, #b0b0b0);
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
-  border-bottom: 10px solid var(--bg);
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
@@ -682,7 +681,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 08:29</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 21:42</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -919,6 +918,11 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             NEUTRAL (TRACK)
             <input type="color" id="neutralTrackColorPicker" value="#b0b0b0" oninput="document.documentElement.style.setProperty('--neutral-track', this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:auto;">
             <style>#neutralTrackColorPicker::-webkit-color-swatch-wrapper{padding:0;}#neutralTrackColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#neutralTrackColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">
+            VOL SLIDER BORDER
+            <input type="color" id="volBorderColorPicker" value="#b0b0b0" oninput="document.documentElement.style.setProperty('--vol-border', this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:auto;">
+            <style>#volBorderColorPicker::-webkit-color-swatch-wrapper{padding:0;}#volBorderColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#volBorderColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </label>
           <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">
             HIGHLIGHT
@@ -11967,10 +11971,10 @@ async function hardResetAudioEngine() {
     _holdTimer = setTimeout(() => { _longPressFired = true; hardResetAudioEngine(); }, 1800);
   };
   const disarmHold = () => { clearTimeout(_holdTimer); _holdTimer = null; };
-  btn.addEventListener('touchstart', e => { e.preventDefault(); armHold(); }, { passive: false });
-  btn.addEventListener('touchend', e => { e.preventDefault(); disarmHold(); if (!_longPressFired) onTap(); }, { passive: false });
-  btn.addEventListener('mousedown', armHold);
-  btn.addEventListener('click', () => { disarmHold(); if (!_longPressFired) onTap(); });
+  btn.addEventListener('touchstart', e => { if (window._sweepGestureActive) return; e.preventDefault(); armHold(); }, { passive: false });
+  btn.addEventListener('touchend', e => { if (window._sweepGestureActive) { disarmHold(); return; } e.preventDefault(); disarmHold(); if (!_longPressFired) onTap(); }, { passive: false });
+  btn.addEventListener('mousedown', e => { if (window._sweepGestureActive) return; armHold(); });
+  btn.addEventListener('click', () => { if (window._sweepGestureActive) return; disarmHold(); if (!_longPressFired) onTap(); });
   btn.addEventListener('mouseup', () => { if (!ctx) initAudio(); else ctx.resume().catch(()=>{}); });
 })();
 
@@ -12594,6 +12598,8 @@ function updateBeatCtrlRow() {
   if (rBtn) { rBtn.classList.toggle('rand-auto', _beatAutoRandActive); rBtn.textContent = _beatAutoRandActive ? 'A' : 'N'; }
   const bb = document.getElementById('beatBtn');
   if (bb) bb.classList.toggle('beat-auto-active', _beatAutoRandActive);
+  const bbText = document.getElementById('beatBtnText');
+  if (bbText) bbText.textContent = _beatAutoRandActive ? 'AUTO' : 'BEAT';
 }
 
 // L — same lock, exposed on the ctrl row too
