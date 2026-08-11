@@ -283,6 +283,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 #randBtn.pulsing { background: #f71aff; color: #fff; }
 @keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
+#beatBtn.beat-auto-active { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
 @keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: #f71aff; transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
@@ -663,7 +664,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 07:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 07:48</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2031,17 +2032,11 @@ function scheduler() {
       t = nextStepTime + _boogieOffsets[beatPos];
     }
     // Single-tap RAND, while playing, waits for the next bar boundary
-    // before actually applying (_autoRandPending) — pulse on every 8th
-    // note during that wait so it's clear something's about to happen,
-    // stopping the instant the new pattern actually lands (see the
-    // _autoRandPending consumer below, which removes this class).
-    if (_autoRandPending && step % 2 === 0) {
-      const rbP = document.getElementById('randBtn');
-      if (rbP) {
-        rbP.style.setProperty('--rand-pending-dur', (stepDuration() * 2 * 0.92) + 's');
-        rbP.classList.remove('rand-pending-fast'); void rbP.offsetWidth; rbP.classList.add('rand-pending-fast');
-      }
-    }
+    // before actually applying (_autoRandPending). The button's own
+    // single gradual build-up (a CSS transition set up in queueRand
+    // itself, timed to exactly however much of the measure remained at
+    // the moment of the tap) handles the visual feedback for this wait —
+    // nothing needed here on every 8th note anymore.
     // AUTO RAND's color pulse also retriggers halfway through the bar (step
     // 8), not just at bar-start — twice as often as before, with the cycle
     // duration matching that interval exactly so one pulse finishes right
@@ -2051,6 +2046,19 @@ function scheduler() {
       if (rb8) {
         rb8.style.animationDuration = ((60 / bpm) * 2) + 's';
         rb8.classList.remove('rand-color-pulse'); void rb8.offsetWidth; rb8.classList.add('rand-color-pulse');
+      }
+    }
+    // BEAT's own auto-random-beat-type mode gets the identical color-cycle
+    // treatment as RAND's auto mode above — same keyframe, same retrigger
+    // pattern (twice a bar, at step 0 and step 8) — just applied to
+    // #beatBtn instead. Its existing scale/pulse behavior from
+    // updateBeatPulse() is untouched; this only adds the color cycling on
+    // top of it.
+    if (step === 8 && _beatAutoRandActive) {
+      const bb8 = document.getElementById('beatBtn');
+      if (bb8) {
+        bb8.style.animationDuration = ((60 / bpm) * 2) + 's';
+        bb8.classList.remove('beat-auto-active'); void bb8.offsetWidth; bb8.classList.add('beat-auto-active');
       }
     }
     // Fire pending auto-rand on downbeat
@@ -2086,6 +2094,15 @@ function scheduler() {
           rb.classList.remove('rand-color-pulse'); void rb.offsetWidth; rb.classList.add('rand-color-pulse');
         }
       }
+      // Same retrigger for BEAT's own auto mode — see the matching step-8
+      // half-bar retrigger above for the full explanation.
+      if (_beatAutoRandActive) {
+        const bb = document.getElementById('beatBtn');
+        if (bb) {
+          bb.style.animationDuration = ((60 / bpm) * 2) + 's';
+          bb.classList.remove('beat-auto-active'); void bb.offsetWidth; bb.classList.add('beat-auto-active');
+        }
+      }
       // Flip reels forward when recalled pattern starts playing
       if (window._reelReversePending) {
         window._reelReversePending = false;
@@ -2098,7 +2115,16 @@ function scheduler() {
       }
       if (_autoRandPending) {
         _autoRandPending = false;
-        const rbClear = document.getElementById('randBtn'); if (rbClear) rbClear.classList.remove('rand-pending-fast');
+        const rbClear = document.getElementById('randBtn');
+        if (rbClear) {
+          // Snap straight back to normal right as the new pattern actually
+          // lands — no transition here, that build-up already did its job
+          // culminating at exactly this moment.
+          rbClear.style.transition = '';
+          rbClear.style.background = '';
+          rbClear.style.transform = '';
+          rbClear.style.color = '';
+        }
         _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // save current as previous before change, and keep the passive rolling-updater in sync so it can't later overwrite this with a stale value
         randAll(_autoRandMode); _autoRandMode = undefined;
         clearBtnBlueHeld('randBtn');
@@ -6064,6 +6090,7 @@ function refreshBeatMenuHighlight() {
   });
 }
 let _beatMenuOpen = false;
+let _beatCtrlRandHoldTimer = null, _beatCtrlRandHoldTarget = null, _beatCtrlRandHeldTriggered = false;
 function beatMenuHighlightUnder(clientX, clientY) {
   const menu = document.getElementById('beatTypeMenu');
   if (!menu) return null;
@@ -6071,6 +6098,28 @@ function beatMenuHighlightUnder(clientX, clientY) {
   menu.querySelectorAll('.beat-type-item, .beat-ctrl-row button').forEach(it => it.classList.remove('drag-hover'));
   const item = el && el.closest ? el.closest('.beat-type-item, .beat-ctrl-row button') : null;
   if (item) item.classList.add('drag-hover');
+  // beatCtrlRand specifically: entering auto-random-beat mode is a HOLD
+  // now, not a double-tap — tracks how long the finger has stayed on this
+  // one button during the drag-hover, separate from the release-triggered
+  // single-randomize/turn-off action in onBeatCtrlRandTap below.
+  if (item && item.id === 'beatCtrlRand') {
+    if (_beatCtrlRandHoldTarget !== item) {
+      _beatCtrlRandHoldTarget = item;
+      clearTimeout(_beatCtrlRandHoldTimer);
+      _beatCtrlRandHoldTimer = setTimeout(() => {
+        if (_beatCtrlRandHoldTarget === item && !_beatAutoRandActive) {
+          _beatAutoRandActive = true;
+          _beatAutoRandBarCount = 0;
+          if (!_tempoLocked) { _tempoLocked = true; _syncTempoLockUI(); }
+          updateBeatCtrlRow();
+          _beatCtrlRandHeldTriggered = true; // so the eventual release doesn't also fire a plain tap action
+        }
+      }, 400);
+    }
+  } else {
+    _beatCtrlRandHoldTarget = null;
+    clearTimeout(_beatCtrlRandHoldTimer);
+  }
   return item;
 }
 function openBeatMenu() {
@@ -6186,6 +6235,32 @@ function commitBeatMenuSelection(item) {
   const menu = document.getElementById('beatTypeMenu');
   if (!menu) return;
   menu.querySelectorAll('.beat-type-item, .beat-ctrl-row button').forEach(item => {
+    if (item.id === 'beatCtrlRand') {
+      // Same hold-to-enter-auto-mode behavior as the drag path above,
+      // but for this separate "menu already open, tap an item directly"
+      // path — a plain touchend listener here wouldn't otherwise know
+      // how long the finger was actually down before releasing.
+      let _directHoldTimer = null;
+      item.addEventListener('touchstart', e => {
+        clearTimeout(_directHoldTimer);
+        _directHoldTimer = setTimeout(() => {
+          if (!_beatAutoRandActive) {
+            _beatAutoRandActive = true;
+            _beatAutoRandBarCount = 0;
+            if (!_tempoLocked) { _tempoLocked = true; _syncTempoLockUI(); }
+            updateBeatCtrlRow();
+            _beatCtrlRandHeldTriggered = true;
+          }
+        }, 400);
+      }, { passive: true });
+      item.addEventListener('touchend', e => {
+        e.preventDefault(); e.stopPropagation();
+        clearTimeout(_directHoldTimer);
+        commitBeatMenuSelection(item);
+      }, { passive: false });
+      item.addEventListener('touchcancel', () => clearTimeout(_directHoldTimer));
+      return;
+    }
     item.addEventListener('touchend', e => {
       e.preventDefault(); e.stopPropagation();
       commitBeatMenuSelection(item);
@@ -7928,6 +8003,22 @@ function queueRand(mode) {
   if (playing) {
     _autoRandPending = true;
     _autoRandMode = mode;
+    // A single, gradual build-up timed to culminate exactly when the new
+    // pattern actually loads (the next bar boundary) — a real CSS
+    // transition, not a repeating keyframe pulse, so its duration can be
+    // set to precisely match however much of the current measure is
+    // actually left, rather than hitting the highlight color repeatedly
+    // along the way.
+    const rbP = document.getElementById('randBtn');
+    if (rbP) {
+      const stepsRemaining = (NUM_STEPS - currentStep) % NUM_STEPS || NUM_STEPS;
+      const timeRemaining = stepsRemaining * stepDuration();
+      rbP.classList.remove('rand-pending-fast');
+      rbP.style.transition = `background ${timeRemaining}s ease-in, transform ${timeRemaining}s ease-in`;
+      rbP.style.background = '#f71aff';
+      rbP.style.transform = 'scale(1.1)';
+      rbP.style.color = '#fff';
+    }
   } else {
     playUiSound('Rand');
     scheduleRandTransition();
@@ -9401,6 +9492,7 @@ function stopAllAutoRand() {
   if (_beatAutoRandActive) {
     _beatAutoRandActive = false;
     _beatAutoRandBarCount = 0;
+    const _bbStop = document.getElementById('beatBtn'); if (_bbStop) _bbStop.classList.remove('beat-auto-active');
     updateBeatCtrlRow();
   }
 }
@@ -11274,7 +11366,11 @@ function fullReset() {
   window._rollingBarSnap = null; _recallSnapB = null; window._patternDirtySinceSnap = true;
   setTrackPulseMode('a');
   const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="a"]'); if (_tpmRadio) _tpmRadio.checked = true;
-  const _rbReset = document.getElementById('randBtn'); if (_rbReset) _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
+  const _rbReset = document.getElementById('randBtn');
+  if (_rbReset) {
+    _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
+    _rbReset.style.transition = ''; _rbReset.style.background = ''; _rbReset.style.transform = ''; _rbReset.style.color = '';
+  }
   beatPlaying = false; _beatPending = false;
   const bb = document.getElementById('beatBtn');
   if (bb) { bb.classList.remove('active'); }
@@ -11318,6 +11414,7 @@ function fullReset() {
   _tempoLocked = false; _beatTypeLocked = false; _beatType = 'disco';
   _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.24; _beatFx = false; _beatPump = false;
   _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
+  const _bbFullReset = document.getElementById('beatBtn'); if (_bbFullReset) _bbFullReset.classList.remove('beat-auto-active');
   if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setValueAtTime(_beatReverbGainForMix(_beatReverbMix), ctx.currentTime); // on by default now, not silenced
   if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setValueAtTime(0, ctx.currentTime);
   updateBeatCtrlRow();
@@ -12510,29 +12607,23 @@ function randomizeBeatType() {
   setBeatType(pick);
   refreshBeatMenuHighlight();
 }
-let _beatCtrlRandLastTap = 0;
 function onBeatCtrlRandTap() {
-  const now = Date.now();
+  if (_beatCtrlRandHeldTriggered) {
+    // The hold already activated auto mode above — this release is just
+    // the tail end of that same gesture, not a separate action.
+    _beatCtrlRandHeldTriggered = false;
+    updateBeatCtrlRow();
+    return;
+  }
   if (_beatAutoRandActive) {
-    // Turning it off is a single tap, no double-tap timing required — once
-    // already active there's nothing else a tap here could ambiguously
-    // mean, unlike turning it on (which has to stay distinguishable from a
-    // plain single-tap randomize). Requiring the same tight double-tap
-    // window to escape as to enter was why this could feel impossible to
-    // turn back off.
+    // Turning it off is a single tap, no hold required — once already
+    // active there's nothing else a tap here could ambiguously mean.
     _beatAutoRandActive = false;
     _beatAutoRandBarCount = 0;
-  } else if (now - _beatCtrlRandLastTap < 400) {
-    _beatAutoRandActive = true;
-    _beatAutoRandBarCount = 0;
-    // BEAT auto-rand also locks the tempo against RAND — made explicit and
-    // visible here (same indicator as the manual tempo-lock button) rather
-    // than just an implicit side effect.
-    if (!_tempoLocked) { _tempoLocked = true; _syncTempoLockUI(); }
+    const _bbOff = document.getElementById('beatBtn'); if (_bbOff) _bbOff.classList.remove('beat-auto-active');
   } else {
-    randomizeBeatType();
+    randomizeBeatType(); // plain tap — entering auto mode is a hold now, handled in beatMenuHighlightUnder
   }
-  _beatCtrlRandLastTap = now;
   updateBeatCtrlRow();
 }
 
