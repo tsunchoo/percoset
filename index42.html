@@ -19,8 +19,7 @@
   --text: #1e1e1e; --dim: #808080; --soft: #666;
   --playhead: #ff2200; --muted-bg: #ff2200;
   --slot-saved: #f17d21; --slot-loaded: #f17d21;
-  --vol-fill: #f17d21;
-  --neutral-top: #555; --neutral-track: #b0b0b0; --vol-border: #b0b0b0;
+  --neutral-top: #555; --neutral-track: #b0b0b0;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior-y: contain; }
@@ -150,7 +149,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   touch-action: none;
 }
 .btn {
-  background: var(--neutral-top, #555); border: none; color: #fff;
+  background: var(--neutral-top, #555); border: none; color: var(--neutral-top-text, #fff);
   font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700;
   letter-spacing: 0.5px; padding: 0 10px; cursor: pointer; text-transform: uppercase;
   transition: background 0.1s, color 0.1s; height: 54px; flex-shrink: 0; white-space: nowrap;
@@ -178,7 +177,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 }
 .beat-type-menu.visible { display: flex; }
 .beat-type-menu-inner {
-  background: var(--bg); padding: 24px;
+  background: #f5f0e8; padding: 24px;
   min-width: min(340px, 90vw);
   display: flex; flex-direction: column; gap: 0;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
@@ -245,7 +244,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 }
 .track-name-btn {
   font-size: calc(clamp(0.64rem, 2.3vw, 0.86rem) * var(--track-name-font-scale, 1)); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
-  cursor: pointer; background: var(--neutral-track, #b0b0b0); color: var(--text);
+  cursor: pointer; background: var(--neutral-track, #b0b0b0); color: var(--neutral-track-text, var(--text));
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
   font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: clamp(78px, 22vw, 106px);
   display: flex; align-items: center;
@@ -258,7 +257,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-name-btn.shifting { background: var(--playhead) !important; color: #fff !important; animation: pulse 0.5s infinite alternate; }
 .track-ctrl-icon-btn {
   width: 32px; flex-shrink: 0;
-  background: var(--neutral-track, #b0b0b0); border: none; color: var(--text);
+  background: var(--neutral-track, #b0b0b0); border: none; color: var(--neutral-track-text, var(--text));
   font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
   letter-spacing: 0; text-transform: uppercase; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -278,10 +277,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--playhead-color, #f71aff) !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--playhead-color, #f71aff) !important; color: var(--highlight-text, #fff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--playhead-color, #f71aff) !important; }
-#randBtn.pulsing { background: var(--playhead-color, #f71aff); color: #fff; }
+#randBtn.pulsing { background: var(--playhead-color, #f71aff); color: var(--highlight-text, #fff); }
 /* rand-pulse and beat-auto-color-only (below) deliberately keep #f71aff
    hardcoded as one of their two alternating stops — the other stop is
    already var(--playhead-color); making both stops the same variable
@@ -298,8 +297,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    across separate rules, so without this explicit combined rule whichever
    one happened to win the cascade would silently drop the other. */
 @keyframes beat-auto-color-only { from { background: #f71aff; } to { background: var(--playhead-color, #f8ff00); } }
-#beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; color: #000; }
-#beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; color: #000; }
+#beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; color: var(--highlight-text, #000); }
+#beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; color: var(--highlight-text, #000); }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
 @keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--playhead-color, #f71aff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
@@ -312,7 +311,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .shift-btn {
   width: 32px; flex-shrink: 0; background: var(--neutral-track, #b0b0b0);
   border: none;
-  color: var(--text); font-family: 'DM Sans', sans-serif;
+  color: var(--neutral-track-text, var(--text)); font-family: 'DM Sans', sans-serif;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   font-size: 1rem; font-weight: 700; transition: opacity 0.1s; padding: 0;
   touch-action: manipulation;
@@ -332,14 +331,14 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .shift-btn .glyph { display: inline-block; transform: translateY(-3px); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: var(--neutral-top, #555); border: 3px solid var(--vol-border, #b0b0b0);
+  background: var(--neutral-top, #555); border: 3px solid var(--neutral-top, #b0b0b0);
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
-  background: var(--vol-fill); pointer-events: none; transition: width 0.05s;
+  background: var(--playhead-color, #f8ff00); pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
@@ -359,7 +358,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 }
 #soundPicker.visible { display: flex; }
 .sound-picker-inner {
-  background: var(--bg); border: none;
+  background: #f5f0e8; border: none;
   min-width: 320px; padding: 16px 16px 30px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   position: relative; max-height: calc(80vh + 40px); overflow-y: auto;
@@ -389,7 +388,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   transition: background 0.05s, color 0.05s; touch-action: manipulation;
   user-select: none;
 }
-.sound-option:hover { background: var(--text); color: var(--bg); }
+.sound-option:hover { background: var(--text); color: #f5f0e8; }
 /* Current instrument (the one actually assigned to this track) — no gold
    override anymore, it just shows its own normal group color. A subtle
    border marks it when idle; the real indicator is the pulse below, in
@@ -514,7 +513,7 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform.note-flas
 #volOverlay.visible { display: flex; }
 .vol-overlay-inner {
   display: flex; flex-direction: column; align-items: center; gap: 16px;
-  padding: 24px 36px; border: none; background: var(--bg);
+  padding: 24px 36px; border: none; background: #f5f0e8;
   pointer-events: none;
 }
 .vol-overlay-label { font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
@@ -623,7 +622,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 }
 .slot-btn.saved  { color: #ffe033 !important; border: none; }
 .slot-btn.pending { animation: slot-pending 0.4s infinite alternate; color: #fff; }
-@keyframes slot-pending { from { background: var(--slot-saved); } to { background: var(--bg); } }
+@keyframes slot-pending { from { background: var(--slot-saved); } to { background: #f5f0e8; } }
 .slot-btn.loaded { color: #ffe033 !important; border: none; }
 .slot-btn.beat-pulse { animation: slot-pulse 0.22s ease-out; }
 @keyframes slot-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
@@ -685,7 +684,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 21:59</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 22:23</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -781,7 +780,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <!-- Settings window — appears on reel hold -->
 <div id="instructionsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:20px 24px 16px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px 16px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;">
     <div id="instructionsLockBtn" style="display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;letter-spacing:1px;color:var(--dim);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 14px;text-transform:uppercase;pointer-events:none;transition:background 0.12s, color 0.12s, transform 0.12s;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAADwCAYAAACg7+4yAAAD3ElEQVR4nO3bUW7bSBBAQTnI/a/s/QgS7GZtQBQpsh+n6gAKp+epTRvI4wEAAAAAAAAc7+PqBxjq8+oH+Ib7+suqA5ka6F7L3edKB75rtN9Z4m7vfsjVov3Obe/5rgcT7tdud993O5Bwn3Obe7/LQYT7mvz91w8g3GNkO/hx9QPsIN7jZGdZ/OZlhx2Q66H2wOI9R6aL0iuEeM+TmXUl4MxAbyQx80LAiUHe1PjZTw94/AAXMPoOJgc8enCLGXsXUwMeO7CFjbyTiQGPHBSPx2Pg3UwLeNyA+J9RdzQp4FGDoWFSwHSMWTZTAh4zEJ424s4mBDxiELzk8rubEDC87OqAL/8Gs9uld3hlwOJlt6s3MPdw2TK6KmDbl0PYwBzlkqUkYNKuCNjrA4exgTnS6cvp59n/YMi0/5nrJ9cXzr6k6ZcwLdrvTJ7jqTMU8C+VcP+2/DxXf4Wohvvb7+efGvLbnflL3LQh1+P9tzudZZNV/wpxxwufdKbTltWKAU+66KPd+WxfWi3gFS54hTP+sVrA3MxZAU/4BW6lzbTMWW1g3uWUpSVg0gRM2ioBL/NOuJpVAl7REl9aAZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkfRz8eZ8Hfx73dUh7R3yIaNljV4N7XyHEy167Gnq1fuHyDpt7fGUDi5d32dzW1oDFyyj+jMY0m5bkloBtX8axgZno6WUpYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImbUvAH297Cvivp1uzgUnbGrAtzLttaswGZpLNC/KVgG1hxnh1A4uYo73U1BEhfh7wGaxrV4NHb1Ix8ww/wQEAAAAAAGC0fwDhV0KVLoch3gAAAABJRU5ErkJggg==" style="width:12px;height:auto;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" alt="">Screen Lock</div>
     <div style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;text-align:center;width:100%;">How To Use</div>
     <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;align-items:stretch;gap:2px;font-size:0.76rem;color:var(--text);line-height:1.15;text-align:left;width:100%;">
@@ -808,7 +807,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <div id="settingsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);" id="settingsBg">
-  <div id="settingsPanel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:24px;min-width:min(340px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;max-height:85vh;overflow-y:auto;">
+  <div id="settingsPanel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:24px;min-width:min(340px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;max-height:85vh;overflow-y:auto;">
 
     <!-- Song name on its own line, scale + tempo on the line below -->
     <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:12px;border-bottom:1px solid #ddd;">
@@ -910,50 +909,44 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <input type="range" id="trackNameSizeBar" min="70" max="150" value="100" class="master-vol-slider" style="width:100%;" oninput="setTrackNameFontScale(+this.value)">
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">BUTTON COLORS</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">
-            TOP ROW
-            <input type="color" id="neutralTopColorPicker" value="#555555" oninput="document.documentElement.style.setProperty('--neutral-top', this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:auto;">
-            <style>#neutralTopColorPicker::-webkit-color-swatch-wrapper{padding:0;}#neutralTopColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#neutralTopColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">
-            NEUTRAL (TRACK)
-            <input type="color" id="neutralTrackColorPicker" value="#b0b0b0" oninput="document.documentElement.style.setProperty('--neutral-track', this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:auto;">
-            <style>#neutralTrackColorPicker::-webkit-color-swatch-wrapper{padding:0;}#neutralTrackColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#neutralTrackColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">
-            VOL SLIDER BORDER
-            <input type="color" id="volBorderColorPicker" value="#b0b0b0" oninput="document.documentElement.style.setProperty('--vol-border', this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:auto;">
-            <style>#volBorderColorPicker::-webkit-color-swatch-wrapper{padding:0;}#volBorderColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#volBorderColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">
-            HIGHLIGHT
-            <input type="color" id="highlightColorPicker" value="#f8ff00" oninput="document.documentElement.style.setProperty('--playhead-color', this.value); const pp=document.getElementById('playheadColorPicker'); if (pp) pp.value = this.value;" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:auto;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLORS</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW</div>
+              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Top row buttons, plus the volume slider background and border</div>
+            </div>
+            <input type="color" id="topColorPicker" value="#555555" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+            <style>#topColorPicker::-webkit-color-swatch-wrapper{padding:0;}#topColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#topColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS</div>
+              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Default state of the track buttons</div>
+            </div>
+            <input type="color" id="trackColorPicker" value="#b0b0b0" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+            <style>#trackColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT</div>
+              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Track name pulse, the note marker sweeping through the lines, and the volume slider fill</div>
+            </div>
+            <input type="color" id="highlightColorPicker" value="#f8ff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
             <style>#highlightColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlightColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlightColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </label>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">BACKGROUND</div>
+              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">The page background only — menus keep their own color</div>
+            </div>
+            <input type="color" id="bgColorPicker" value="#f5f0e8" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+            <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          </div>
+          <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
         </div>
       </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">NOTE PULSE</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="playheadColorPicker" value="#f8ff00" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          <style>#playheadColorPicker::-webkit-color-swatch-wrapper{padding:0;}#playheadColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#playheadColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          <input type="color" id="bgColorPicker" value="#2a2a2a" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOLUME SLIDER</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <input type="color" id="volFillColorPicker" value="#f17d21" oninput="document.documentElement.style.setProperty('--vol-fill', this.value)" style="width:32px;height:32px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          <style>#volFillColorPicker::-webkit-color-swatch-wrapper{padding:0;}#volFillColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#volFillColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-        </div>
-      </div>
-
 
     </div>
 
@@ -974,7 +967,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <!-- BPM overlay -->
 <div id="bpmOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
-  <div id="bpmOverlayInner" style="background:var(--bg);border:none;padding:32px 40px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+  <div id="bpmOverlayInner" style="background:#f5f0e8;border:none;padding:32px 40px;display:flex;flex-direction:column;align-items:center;gap:20px;">
     <div style="display:flex;align-items:center;justify-content:center;height:65vh;width:64px;position:relative;">
       <input type="range" id="bpmSlider" min="40" max="200" value="110"
         style="position:absolute;width:65vh;height:3px;background:var(--text);outline:none;transform:rotate(-90deg);left:calc(50% - 32.5vh);top:calc(50% - 1.5px);-webkit-appearance:none;appearance:none;"
@@ -986,7 +979,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <!-- Tempo screen: syncs live with playback, does not touch the audio graph on open/close -->
 <div id="tempoScreenOverlay" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(30,30,30,0.55);align-items:center;justify-content:center;padding:24px 20px;font-family:'DM Sans',sans-serif;">
-  <div id="tempoScreenCard" style="background:var(--bg);padding:28px 24px;min-width:min(340px,90vw);box-shadow:0 8px 30px rgba(0,0,0,0.4);display:flex;flex-direction:column;align-items:center;gap:22px;">
+  <div id="tempoScreenCard" style="background:#f5f0e8;padding:28px 24px;min-width:min(340px,90vw);box-shadow:0 8px 30px rgba(0,0,0,0.4);display:flex;flex-direction:column;align-items:center;gap:22px;">
 
     <div style="display:flex;align-items:center;gap:12px;">
       <div id="tempoScreenBpm" style="font-size:min(22vw,120px);font-weight:700;letter-spacing:1px;color:#111;line-height:1;font-variant-numeric:tabular-nums;">110</div>
@@ -995,7 +988,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
     <div style="width:min(347px,80vw);display:flex;flex-direction:column;gap:20px;">
       <div style="font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;text-align:center;">NUDGE</div>
-      <div id="tempoNudgeTrack" style="position:relative;width:100%;height:64px;background-color:var(--bg);overflow:hidden;touch-action:none;">
+      <div id="tempoNudgeTrack" style="position:relative;width:100%;height:64px;background-color:#f5f0e8;overflow:hidden;touch-action:none;">
       <div style="position:absolute;left:0;right:0;top:50%;height:3px;background:#111;transform:translateY(-50%);pointer-events:none;"></div>
       <div style="position:absolute;left:0.0000%;top:50%;width:3px;height:26px;background:#111;transform:translate(-50%,-50%);pointer-events:none;"></div>
       <div style="position:absolute;left:12.5000%;top:50%;width:2px;height:14px;background:#111;transform:translate(-50%,-50%);pointer-events:none;"></div>
@@ -1010,7 +1003,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       </div>
 
       <div style="font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;text-align:center;margin-top:4px;">TEMPO</div>
-      <div id="tempoRestTrack" style="position:relative;width:100%;height:64px;background-color:var(--bg);overflow:hidden;touch-action:none;">
+      <div id="tempoRestTrack" style="position:relative;width:100%;height:64px;background-color:#f5f0e8;overflow:hidden;touch-action:none;">
       <div style="position:absolute;left:0;right:0;top:50%;height:3px;background:#111;transform:translateY(-50%);pointer-events:none;"></div>
       <div style="position:absolute;left:0.0000%;top:50%;width:3px;height:26px;background:#111;transform:translate(-50%,-50%);pointer-events:none;"></div>
       <div style="position:absolute;left:12.5000%;top:50%;width:2px;height:14px;background:#111;transform:translate(-50%,-50%);pointer-events:none;"></div>
@@ -1034,7 +1027,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <div id="beatVolOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
-  <div style="background:var(--bg);border:none;padding:32px 40px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+  <div style="background:#f5f0e8;border:none;padding:32px 40px;display:flex;flex-direction:column;align-items:center;gap:20px;">
     <div style="display:flex;align-items:center;justify-content:center;height:65vh;width:64px;position:relative;">
       <input type="range" id="beatVolSlider" min="0" max="100" value="75"
         style="position:absolute;width:65vh;height:3px;background:var(--text);outline:none;transform:rotate(-90deg);left:calc(50% - 32.5vh);top:calc(50% - 1.5px);-webkit-appearance:none;appearance:none;"
@@ -1180,22 +1173,80 @@ function _highlightColor() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--playhead-color').trim();
   return v || '#f71aff';
 }
+// ── Shared color helpers for the consolidated COLORS settings section ──
+function _relLuminance(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+function _contrastText(hex) { return _relLuminance(hex) < 0.5 ? '#ffffff' : '#111111'; }
+function _hslToHex(h, s, l) {
+  h = ((h % 360) + 360) % 360 / 360;
+  s = Math.max(0, Math.min(1, s)); l = Math.max(0, Math.min(1, l));
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3);
+  }
+  const toHex = v => Math.round(v * 255).toString(16).padStart(2, '0');
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+// Applies each color plus a paired, luminance-based text color so whatever
+// sits on top (button labels, the beat-auto flash text, etc.) stays legible
+// no matter how dark or light the chosen color is — used both when a
+// picker is dragged by hand and when RANDOMIZE COLORS fires.
+function _applyTopColor(hex) {
+  document.documentElement.style.setProperty('--neutral-top', hex);
+  document.documentElement.style.setProperty('--neutral-top-text', _contrastText(hex));
+  const el = document.getElementById('topColorPicker'); if (el) el.value = hex;
+}
+function _applyTrackColor(hex) {
+  document.documentElement.style.setProperty('--neutral-track', hex);
+  document.documentElement.style.setProperty('--neutral-track-text', _contrastText(hex));
+  const el = document.getElementById('trackColorPicker'); if (el) el.value = hex;
+}
+function _applyHighlightColor(hex) {
+  document.documentElement.style.setProperty('--playhead-color', hex);
+  document.documentElement.style.setProperty('--highlight-text', _contrastText(hex));
+  const el = document.getElementById('highlightColorPicker'); if (el) el.value = hex;
+}
+function _applyBgColor(hex) {
+  document.documentElement.style.setProperty('--bg', hex);
+  const el = document.getElementById('bgColorPicker'); if (el) el.value = hex;
+}
+function randomizeAppColors() {
+  // Lightness ranges are constrained per-role only for TOP ROW / TRACK
+  // BUTTONS, since those two use a fixed label-text color elsewhere too
+  // (e.g. has-notes states) that isn't repainted here — keeping them in a
+  // safe range means every other place that assumes "dark-ish" or
+  // "light-ish" still reads fine. HIGHLIGHT and BACKGROUND get their own
+  // contrast-safe text color computed fresh, so they're free to roam the
+  // full range.
+  _applyTopColor(_hslToHex(Math.random() * 360, 0.5 + Math.random() * 0.3, 0.22 + Math.random() * 0.18));
+  _applyTrackColor(_hslToHex(Math.random() * 360, 0.35 + Math.random() * 0.3, 0.62 + Math.random() * 0.2));
+  _applyHighlightColor(_hslToHex(Math.random() * 360, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
+  _applyBgColor(_hslToHex(Math.random() * 360, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
+}
 (function() {
-  const playheadColorPicker = document.getElementById('playheadColorPicker');
-  if (playheadColorPicker) {
-    playheadColorPicker.addEventListener('input', () => {
-      document.documentElement.style.setProperty('--playhead-color', playheadColorPicker.value);
-      const hp = document.getElementById('highlightColorPicker'); if (hp) hp.value = playheadColorPicker.value;
-    });
-  }
-  // Simple, direct background color picker — no separate enable toggle,
-  // picking a color just applies it straight away.
-  const bgColorPickerSimple = document.getElementById('bgColorPicker');
-  if (bgColorPickerSimple) {
-    bgColorPickerSimple.addEventListener('input', () => {
-      document.documentElement.style.setProperty('--bg', bgColorPickerSimple.value);
-    });
-  }
+  const topPicker = document.getElementById('topColorPicker');
+  if (topPicker) topPicker.addEventListener('input', () => _applyTopColor(topPicker.value));
+  const trackPicker = document.getElementById('trackColorPicker');
+  if (trackPicker) trackPicker.addEventListener('input', () => _applyTrackColor(trackPicker.value));
+  const highlightPicker = document.getElementById('highlightColorPicker');
+  if (highlightPicker) highlightPicker.addEventListener('input', () => _applyHighlightColor(highlightPicker.value));
+  const bgPicker = document.getElementById('bgColorPicker');
+  if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
+  const randomizeBtn = document.getElementById('randomizeColorsBtn');
+  if (randomizeBtn) randomizeBtn.addEventListener('click', randomizeAppColors);
 })();
 (function() {
   function hexToRgb(hex) {
@@ -2029,18 +2080,12 @@ function volGainToPos(gain) {
 }
 // Sets a track's vol-bar fill width from its current (gain-space) volume,
 // via the same taper, so what you see always matches where you'd need to
-// drag to get back to that level. Also color-codes the fill red (max) to
-// blue (min) in realtime, based on that same position.
-function _volFillColorForPct(pct) {
-  const p = Math.max(0, Math.min(1, pct));
-  const r = Math.round(p * 255);
-  const b = Math.round((1 - p) * 255);
-  return `rgb(${r},0,${b})`;
-}
+// drag to get back to that level. Fill color itself is plain CSS now
+// (var(--playhead-color), same as the HIGHLIGHT setting) — no more
+// per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
   el.style.width = Math.round(pct * 100) + '%';
-  el.style.background = _volFillColorForPct(pct);
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
@@ -6057,9 +6102,8 @@ function playDmxSnareLow(t) {
   // some transient snap, just less of it relative to the body.
   _addSnareClick(t, snDest, 0.04);
 }
-function setBeatVol(v) {
-  if (window._beatGain && ctx) window._beatGain.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
-}
+// setBeatVol lives further down, alongside the rest of the BEAT ctrl-row
+// state (_beatFx/_beatPump), since it now needs to duck against those.
 
 // Header layout is flex (title / tape / tempo). On top of that, a
 // measure-and-correct pass: three different pure-layout centering
@@ -6186,7 +6230,7 @@ function openBeatMenu() {
   updateBeatLockVisual();
   updateBeatCtrlRow();
   const volBar = document.getElementById('beatVolBar');
-  if (volBar && window._beatGain) volBar.value = Math.round(window._beatGain.gain.value * 100);
+  if (volBar) volBar.value = Math.round(_beatVolRaw * 100);
   const revBar = document.getElementById('beatReverbMixBar');
   if (revBar) {
     revBar.value = Math.round(_beatReverbMix * 100);
@@ -11456,6 +11500,7 @@ function fullReset() {
   _tempoLocked = false; _beatTypeLocked = false; _beatType = 'disco';
   _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.24; _beatFx = false; _beatPump = false;
   _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
+  _beatVolRaw = 0.4283; _applyBeatVolWithDuck();
   const _bbFullReset = document.getElementById('beatBtn'); if (_bbFullReset) _bbFullReset.classList.remove('beat-auto-active');
   if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setValueAtTime(_beatReverbGainForMix(_beatReverbMix), ctx.currentTime); // on by default now, not silenced
   if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setValueAtTime(0, ctx.currentTime);
@@ -12535,8 +12580,21 @@ function startHiss() {
 
 
 
+// BEAT VOL — _beatVolRaw tracks the slider's own intended position;
+// the gain actually applied to the node also folds in a -1.5dB duck
+// whenever FX or BLAST is engaged on BEAT, so the dial itself always
+// reflects what the user set rather than the post-duck level.
+let _beatVolRaw = 0.4283;
+function _applyBeatVolWithDuck() {
+  if (!window._beatGain) return;
+  const duck = (_beatFx || _beatPump) ? Math.pow(10, -1.5 / 20) : 1;
+  const target = _beatVolRaw * duck;
+  if (ctx) window._beatGain.gain.setTargetAtTime(target, ctx.currentTime, 0.01);
+  else window._beatGain.gain.value = target;
+}
 function setBeatVol(v) {
-  if (window._beatGain) window._beatGain.gain.value = v;
+  _beatVolRaw = v;
+  _applyBeatVolWithDuck();
 }
 
 // ── BEAT control row: L / < / R / FX / R(rand) — mirrors the per-track
@@ -12645,6 +12703,7 @@ function beatCtrlCycleFx() {
     _beatFx = false; _beatPump = false;
   }
   if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setTargetAtTime(_beatFx ? 0.5 : 0, ctx.currentTime, 0.02);
+  _applyBeatVolWithDuck();
   updateBeatCtrlRow();
   markModified();
 }
@@ -12659,6 +12718,12 @@ function randomizeBeatType() {
   refreshBeatMenuHighlight();
 }
 function onBeatCtrlRandTap() {
+  const _rBtn = document.getElementById('beatCtrlRand');
+  if (_rBtn) {
+    _rBtn.style.background = _highlightColor();
+    _rBtn.style.color = '#fff';
+    setTimeout(() => { _rBtn.style.background = ''; _rBtn.style.color = ''; }, 300);
+  }
   if (_beatCtrlRandHeldTriggered) {
     // The hold already activated auto mode above — this release is just
     // the tail end of that same gesture, not a separate action.
