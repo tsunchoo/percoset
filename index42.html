@@ -306,8 +306,14 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .shift-btn.right.on { background: #0081FE; color: #fff; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* The "<" offset button specifically (not the "R" reverb toggle, which
    also uses .shift-btn but always carries .right) — bigger text, same
-   button size. */
-.shift-btn:not(.right) { font-size: calc(1rem + 0.5em); }
+   button size. The larger size exaggerates how low the glyph sits within
+   its own line-height box (flex centering centers that box, not the
+   character's actual visual weight) — a transform shifts this without
+   touching the button's actual box/layout at all (unlike padding, which
+   risks growing its height and disrupting the row if that height isn't
+   otherwise fixed).
+   */
+.shift-btn:not(.right) { font-size: calc(1rem + 0.5em); transform: translateY(-4px); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   background: #555; border: none;
@@ -664,7 +670,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 07:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">07Aug26 08:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12158,8 +12164,9 @@ async function hardResetAudioEngine() {
     }, measure * 1000);
   }
 
-  const beginPress = () => { _pressPulse('clearBtn'); window._sweepSwitchDirection('up'); startSweepTakeover(); };
+  const beginPress = () => { window._sweepGestureActive = true; _pressPulse('clearBtn'); window._sweepSwitchDirection('up'); startSweepTakeover(); };
   const endPress = () => {
+    window._sweepGestureActive = false;
     if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
     stopSweep(); // released early — cuts off right where the ramps currently are
   };
@@ -12187,10 +12194,14 @@ async function hardResetAudioEngine() {
     // directly on BEAT itself that never involved SWEEP at all — causing
     // it to prematurely close the menu mid-gesture, since it was
     // incorrectly tracking that drag as if it were a sweep-onto-beat
-    // interaction. sweepNodes is set synchronously by startSweep, so this
-    // is a reliable "is a sweep currently actually being held" check —
-    // nothing below should run at all otherwise.
-    if (!sweepNodes) return;
+    // interaction. Checking a dedicated gesture flag (set for the whole
+    // duration of the touch, from beginPress to endPress) rather than
+    // sweepNodes itself — the full-measure takeover can end the sweep's
+    // actual audio automatically while the finger is still down, and
+    // checking sweepNodes directly broke the sweep-to-spool interaction
+    // for exactly that case: the same physical gesture continuing after
+    // the takeover had already stopped the audio.
+    if (!window._sweepGestureActive) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
     // The entire gesture is "claimed" by SWEEP the moment it's actually
