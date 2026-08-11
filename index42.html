@@ -205,6 +205,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 @keyframes boost-red { from { background: #e0142c; color: #fff; } to { background: #7a0016; color: #ffb3bb; } }
 #saveBtn.rec-active { background: #111; }
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
+#randomizeColorsBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
 @keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #saveBtn.rec-active img { animation: rec-icon-pulse 0.5s infinite alternate; }
 #saveBtn.rec-beat-pulse { animation: rec-pump 0.44s ease-out; }
@@ -277,15 +278,14 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--playhead-color, #f71aff) !important; color: var(--highlight-text, #fff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--highlight2-color, #0078ff) !important; color: var(--highlight2-text, #fff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
-.track-auto-rand { --track-color: var(--playhead-color, #f71aff) !important; }
-#randBtn.pulsing { background: var(--playhead-color, #f71aff); color: var(--highlight-text, #fff); }
-/* rand-pulse and beat-auto-color-only (below) deliberately keep #f71aff
-   hardcoded as one of their two alternating stops — the other stop is
-   already var(--playhead-color); making both stops the same variable
-   would flatten these into a single flat color with no visible pulse. */
-@keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); transform: scale(1); } 50% { background: #f71aff; transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); transform: scale(1); } }
+.track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
+#randBtn.pulsing { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); }
+/* rand-pulse and beat-auto-color-only alternate between HIGHLIGHT and
+   HIGHLIGHT 2 — the two intentionally stay separate variables so this
+   two-color flash keeps working; unifying them would flatten it. */
+@keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); transform: scale(1); } }
 #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
 /* BEAT's own auto-mode color cycle — deliberately a SEPARATE, color-only
    keyframe (never touches transform at all), so it genuinely cannot
@@ -296,14 +296,14 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    shorthand replaces its whole animation list per rule, it doesn't merge
    across separate rules, so without this explicit combined rule whichever
    one happened to win the cascade would silently drop the other. */
-@keyframes beat-auto-color-only { from { background: #f71aff; } to { background: var(--playhead-color, #f8ff00); } }
-#beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; color: var(--highlight-text, #000); }
-#beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; color: var(--highlight-text, #000); }
+@keyframes beat-auto-color-only { from { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); } to { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); } }
+#beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; }
+#beatBtn.btn-beat-pulse.beat-auto-active { animation: slot-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
-@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--playhead-color, #f71aff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
+@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
-#randBtn.btn-flash-blue { background: var(--playhead-color, #f71aff) !important; color: #fff !important; }
+#randBtn.btn-flash-blue { background: var(--highlight2-color, #0078ff) !important; color: #fff !important; }
 #clearBtn.active { background: #111 !important; color: #adff00 !important; }
 #scratchBtn.active { background: #111 !important; color: #adff00 !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
@@ -328,7 +328,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    button's box/layout/position is completely untouched.
    */
 .shift-btn:not(.right) { font-size: calc(1rem + 0.5em); }
-.shift-btn .glyph { display: inline-block; transform: translateY(-3px); }
+.shift-btn .glyph { display: inline-block; transform: translateY(-2px); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   background: var(--neutral-top, #555); border: 3px solid var(--neutral-top, #b0b0b0);
@@ -388,7 +388,15 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   transition: background 0.05s, color 0.05s; touch-action: manipulation;
   user-select: none;
 }
-.sound-option:hover { background: var(--text); color: #f5f0e8; }
+/* Real :hover only — on touch devices this used to fire the moment the
+   picker rendered, since the finger from the long-press that opened it
+   was still resting on whatever option happened to end up underneath.
+   That's not a deliberate hover, so it shouldn't look like one; the
+   touch-driven equivalent is the explicit .hover-preview class below,
+   which only lights up once the finger actually drags across an option. */
+@media (hover: hover) and (pointer: fine) {
+  .sound-option:hover { background: var(--text); color: #f5f0e8; }
+}
 /* Current instrument (the one actually assigned to this track) — no gold
    override anymore, it just shows its own normal group color. A subtle
    border marks it when idle; the real indicator is the pulse below, in
@@ -684,7 +692,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 22:23</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 22:43</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -882,13 +890,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             <input type="radio" name="trackPulseMode" value="a" checked onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="b" onchange="setTrackPulseMode('b')" style="width:15px;height:15px;cursor:pointer;">SUBTLE FADE
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="c" onchange="setTrackPulseMode('c')" style="width:15px;height:15px;cursor:pointer;">SUBTLER STILL
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="d" onchange="setTrackPulseMode('d')" style="width:15px;height:15px;cursor:pointer;">CHROME YELLOW
+            <input type="radio" name="trackPulseMode" value="d" onchange="setTrackPulseMode('d')" style="width:15px;height:15px;cursor:pointer;">FLASH
           </label>
         </div>
       </div>
@@ -899,14 +901,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
         </div>
         <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAME SIZE</div>
-          <div id="trackNameSizeReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">100%</div>
-        </div>
-        <input type="range" id="trackNameSizeBar" min="70" max="150" value="100" class="master-vol-slider" style="width:100%;" oninput="setTrackNameFontScale(+this.value)">
       </div>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
@@ -935,6 +929,14 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             </div>
             <input type="color" id="highlightColorPicker" value="#f8ff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
             <style>#highlightColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlightColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlightColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 2</div>
+              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">NEW/AUTO's pulse, BEAT in auto mode, the N track buttons in auto mode, and the N buttons' single-click flash</div>
+            </div>
+            <input type="color" id="highlight2ColorPicker" value="#0078ff" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+            <style>#highlight2ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight2ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight2ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="flex:1;min-width:0;">
@@ -1173,6 +1175,14 @@ function _highlightColor() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--playhead-color').trim();
   return v || '#f71aff';
 }
+// Same idea, second slot — HIGHLIGHT 2 (default blue) replaces what used
+// to be the hardcoded "fuchsia" (#f71aff) across NEW/AUTO's pulse, BEAT's
+// auto-mode flash, the N track buttons in auto mode, and the N buttons'
+// single-click flash.
+function _highlight2Color() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--highlight2-color').trim();
+  return v || '#0078ff';
+}
 // ── Shared color helpers for the consolidated COLORS settings section ──
 function _relLuminance(hex) {
   const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -1219,6 +1229,11 @@ function _applyHighlightColor(hex) {
   document.documentElement.style.setProperty('--highlight-text', _contrastText(hex));
   const el = document.getElementById('highlightColorPicker'); if (el) el.value = hex;
 }
+function _applyHighlight2Color(hex) {
+  document.documentElement.style.setProperty('--highlight2-color', hex);
+  document.documentElement.style.setProperty('--highlight2-text', _contrastText(hex));
+  const el = document.getElementById('highlight2ColorPicker'); if (el) el.value = hex;
+}
 function _applyBgColor(hex) {
   document.documentElement.style.setProperty('--bg', hex);
   const el = document.getElementById('bgColorPicker'); if (el) el.value = hex;
@@ -1234,6 +1249,7 @@ function randomizeAppColors() {
   _applyTopColor(_hslToHex(Math.random() * 360, 0.5 + Math.random() * 0.3, 0.22 + Math.random() * 0.18));
   _applyTrackColor(_hslToHex(Math.random() * 360, 0.35 + Math.random() * 0.3, 0.62 + Math.random() * 0.2));
   _applyHighlightColor(_hslToHex(Math.random() * 360, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
+  _applyHighlight2Color(_hslToHex(Math.random() * 360, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
   _applyBgColor(_hslToHex(Math.random() * 360, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
 }
 (function() {
@@ -1243,10 +1259,12 @@ function randomizeAppColors() {
   if (trackPicker) trackPicker.addEventListener('input', () => _applyTrackColor(trackPicker.value));
   const highlightPicker = document.getElementById('highlightColorPicker');
   if (highlightPicker) highlightPicker.addEventListener('input', () => _applyHighlightColor(highlightPicker.value));
+  const highlight2Picker = document.getElementById('highlight2ColorPicker');
+  if (highlight2Picker) highlight2Picker.addEventListener('input', () => _applyHighlight2Color(highlight2Picker.value));
   const bgPicker = document.getElementById('bgColorPicker');
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
-  if (randomizeBtn) randomizeBtn.addEventListener('click', randomizeAppColors);
+  if (randomizeBtn) randomizeBtn.addEventListener('click', () => { _pressPulse('randomizeColorsBtn'); randomizeAppColors(); });
 })();
 (function() {
   function hexToRgb(hex) {
@@ -2300,7 +2318,7 @@ function scheduler() {
           const lane = document.getElementById(`lane-${tr}`);
           const rb = document.getElementById(`randbtn-${tr}`);
           if (isAuto) {
-            if (lane) lane.style.setProperty('--track-color', _highlightColor());
+            if (lane) lane.style.setProperty('--track-color', _highlight2Color());
             if (rb) { rb.classList.add('rand-auto'); _setRandBtnLabel(rb, true); }
             if (!autoShiftStops[tr] && rb && rb._restartAuto) rb._restartAuto();
           } else {
@@ -8123,7 +8141,7 @@ function queueRand(mode) {
       // for this specific case, so it needs to be out of the way.
       rbP.classList.remove('btn-flash-blue');
       rbP.style.transition = `background ${timeRemaining}s ease-in, transform ${timeRemaining}s ease-in`;
-      rbP.style.background = _highlightColor();
+      rbP.style.background = _highlight2Color();
       rbP.style.transform = 'scale(1.1)';
       rbP.style.color = '#fff';
     }
@@ -9742,7 +9760,7 @@ function restoreState(snap) {
       const lane = document.getElementById(`lane-${tr}`);
       const rb = document.getElementById(`randbtn-${tr}`);
       if (isAuto) {
-        if (lane) lane.style.setProperty('--track-color', _highlightColor());
+        if (lane) lane.style.setProperty('--track-color', _highlight2Color());
         if (rb) { rb.classList.add('rand-auto'); _setRandBtnLabel(rb, true); }
         // Restart auto interval if it's not already running
         if (!autoShiftStops[tr]) {
@@ -10454,7 +10472,7 @@ function wireRandomizeButton(btn, tr) {
     if (!window._nButtonClickCount) window._nButtonClickCount = {};
     window._nButtonClickCount[tr] = (window._nButtonClickCount[tr] || 0) + 1;
     doRand();
-    btn.style.background = _highlightColor();
+    btn.style.background = _highlight2Color();
     btn.style.color = '#fff';
     setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
   };
@@ -10468,7 +10486,7 @@ function wireRandomizeButton(btn, tr) {
     _setRandBtnLabel(btn, true);
     _startRandAutoBreathe(tr);
     const _lane = document.getElementById(`lane-${tr}`);
-    if (_lane) _lane.style.setProperty('--track-color', _highlightColor());
+    if (_lane) _lane.style.setProperty('--track-color', _highlight2Color());
     window._isAutoBarRand = true;
     unmuteIfNeeded();
     doRand();
@@ -10852,8 +10870,14 @@ function _leftSpoolEngage() {
     _getReversedUiSound('Stop'); // ensures window._uiSoundBufs['StopReversed'] is cached
     playUiSound('StopReversed');
   }
-  if (!playing || !ctx || window._tempoBraking) return;
-  window._tempoBraking = true;
+  // Own dedicated flag (_spoolBraking), separate from the tempo screen's
+  // Brake button (_tempoBraking) — the two used to share one flag, which
+  // meant either system's release could silently no-op the other's engage
+  // if call order ever got scrambled (e.g. this spool held while some
+  // other gesture also touched the brake state). Splitting them removes
+  // that cross-contamination entirely.
+  if (!playing || !ctx || window._spoolBraking) return;
+  window._spoolBraking = true;
   clearInterval(scheduleInterval); scheduleInterval = null;
   // Deliberately no gain ramp here — letting notes ring out is the point.
   window._spoolHeldReverse = [];
@@ -10866,8 +10890,8 @@ function _leftSpoolRelease() {
   // Mirrors the engage above — always try to switch SWEEP back upward,
   // independent of playback state.
   if (window._sweepSwitchDirection) window._sweepSwitchDirection('up');
-  if (!window._tempoBraking || !ctx) return;
-  window._tempoBraking = false;
+  if (!window._spoolBraking || !ctx) return;
+  window._spoolBraking = false;
   playUiSound('Cymbal');
   document.querySelectorAll('.reel-wrap').forEach((r, i) => {
     const wasReverse = window._spoolHeldReverse && window._spoolHeldReverse[i];
@@ -10911,7 +10935,34 @@ function _leftSpoolRelease() {
   }
   if (playing) scheduleInterval = setInterval(scheduler, SCHEDULE_MS);
 }
-// Right spool: hold and release to make "right now" the new downbeat (the
+// Failsafe: the spool can be engaged from two independent gesture paths
+// (dragging onto it from SWEEP, or holding it directly), and either one
+// ending in an unexpected way — a stray touchcancel, the OS intercepting
+// the gesture mid-hold, anything not explicitly anticipated above — could
+// in theory leave _spoolBraking stuck true with nothing left listening to
+// release it. This is a global backstop, not a replacement for the real
+// release paths: any touch/pointer ending ANYWHERE on the page checks,
+// after a short grace period, whether the spool still thinks it's held
+// down with nothing actually touching it, and force-releases if so.
+// _leftSpoolRelease() is already idempotent (guarded on _spoolBraking),
+// so this is safe to call speculatively.
+function _spoolBrakeWatchdog() {
+  if (!window._spoolBraking) return;
+  setTimeout(() => {
+    if (window._spoolBraking && !window._sweepGestureActive && !window._spoolPointerHeld) {
+      _leftSpoolRelease();
+    }
+  }, 400);
+}
+document.addEventListener('touchend', _spoolBrakeWatchdog, { passive: true });
+document.addEventListener('touchcancel', _spoolBrakeWatchdog, { passive: true });
+document.addEventListener('pointerup', _spoolBrakeWatchdog, { passive: true });
+document.addEventListener('pointercancel', _spoolBrakeWatchdog, { passive: true });
+// Also catches the OS pulling focus away entirely mid-hold (app switch,
+// notification, control center) — nothing on the page gets a touchend at
+// all in that case.
+document.addEventListener('visibilitychange', () => { if (document.hidden) _spoolBrakeWatchdog(); });
+window.addEventListener('blur', _spoolBrakeWatchdog);
 // "1"). Rotates every track's grid data so the note pattern keeps its shape
 // relative to the new downbeat, then restarts the step counter there. The
 // live beat-type engine (kick/snare patterns) needs no separate handling —
@@ -11308,9 +11359,10 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   wrap.addEventListener('pointerdown', e => {
     e.preventDefault();
     try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    window._spoolPointerHeld = true;
     _leftSpoolEngage();
   });
-  const release = e => { _leftSpoolRelease(); try { wrap.releasePointerCapture(e.pointerId); } catch(err) {} };
+  const release = e => { window._spoolPointerHeld = false; _leftSpoolRelease(); try { wrap.releasePointerCapture(e.pointerId); } catch(err) {} };
   wrap.addEventListener('pointerup', release);
   wrap.addEventListener('pointercancel', release);
 })();
@@ -12720,7 +12772,7 @@ function randomizeBeatType() {
 function onBeatCtrlRandTap() {
   const _rBtn = document.getElementById('beatCtrlRand');
   if (_rBtn) {
-    _rBtn.style.background = _highlightColor();
+    _rBtn.style.background = _highlight2Color();
     _rBtn.style.color = '#fff';
     setTimeout(() => { _rBtn.style.background = ''; _rBtn.style.color = ''; }, 300);
   }
