@@ -692,7 +692,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 23:16</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 23:24</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1246,8 +1246,14 @@ function randomizeAppColors() {
   // "light-ish" still reads fine. HIGHLIGHT and BACKGROUND get their own
   // contrast-safe text color computed fresh, so they're free to roam the
   // full range.
-  _applyTopColor(_hslToHex(Math.random() * 360, 0.5 + Math.random() * 0.3, 0.22 + Math.random() * 0.18));
-  _applyTrackColor(_hslToHex(Math.random() * 360, 0.35 + Math.random() * 0.3, 0.62 + Math.random() * 0.2));
+  // TRACK BUTTONS is no longer an independent roll — it's TOP ROW's own
+  // hue/saturation with lightness pushed up, same relationship as the
+  // two default greys (#555555 at ~33% lightness, #b0b0b0 at ~69%: a
+  // ~0.357 delta), so the pair always reads as "the same color, lighter"
+  // rather than two unrelated colors that happen to coexist.
+  const _topH = Math.random() * 360, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
+  _applyTopColor(_hslToHex(_topH, _topS, _topL));
+  _applyTrackColor(_hslToHex(_topH, _topS, Math.min(0.95, _topL + 0.357)));
   // HIGHLIGHT 2 isn't independently random — it's HIGHLIGHT's complement
   // (hue + 180°), same saturation/lightness recipe, so the two always
   // read as a deliberate pair rather than a coin-flip clash.
