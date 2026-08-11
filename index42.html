@@ -692,7 +692,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 22:43</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 23:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1248,8 +1248,14 @@ function randomizeAppColors() {
   // full range.
   _applyTopColor(_hslToHex(Math.random() * 360, 0.5 + Math.random() * 0.3, 0.22 + Math.random() * 0.18));
   _applyTrackColor(_hslToHex(Math.random() * 360, 0.35 + Math.random() * 0.3, 0.62 + Math.random() * 0.2));
-  _applyHighlightColor(_hslToHex(Math.random() * 360, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
-  _applyHighlight2Color(_hslToHex(Math.random() * 360, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
+  // HIGHLIGHT 2 isn't independently random — it's HIGHLIGHT's complement
+  // (hue + 180°), same saturation/lightness recipe, so the two always
+  // read as a deliberate pair rather than a coin-flip clash.
+  const highlightHue = Math.random() * 360;
+  const highlightSat = 0.6 + Math.random() * 0.35;
+  const highlightLight = 0.35 + Math.random() * 0.4;
+  _applyHighlightColor(_hslToHex(highlightHue, highlightSat, highlightLight));
+  _applyHighlight2Color(_hslToHex(highlightHue + 180, highlightSat, highlightLight));
   _applyBgColor(_hslToHex(Math.random() * 360, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
 }
 (function() {
