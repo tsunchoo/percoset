@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 20:49</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 21:07</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2387,12 +2387,16 @@ function scheduler() {
       // reasoning as restoreState()'s equivalent cleanup: this is a
       // completely separate, partial state-copy path (built for
       // glitch-free mid-playback slot swaps), so it needs its own copy of
-      // that fix too, not just restoreState()'s.
-      for (let _gtr = 0; _gtr < NUM_TRACKS; _gtr++) {
-        delete _bassGlideState[_gtr]; delete _sparkleGlideState[_gtr]; delete _motownGlide[_gtr];
-        delete _slegGlide[_gtr]; delete _rhodesGlide[_gtr]; delete _jcmGlide[_gtr]; delete _clarGlide[_gtr];
-        delete _plunkGlide[_gtr]; delete _dbassGlide[_gtr]; delete _ffluteGlide[_gtr]; delete _boogGlide[_gtr];
-      }
+      // that fix too, not just restoreState()'s. Wrapped defensively —
+      // this runs inside the scheduler, so a throw here must not be
+      // allowed to break playback.
+      try {
+        for (let _gtr = 0; _gtr < NUM_TRACKS; _gtr++) {
+          delete _bassGlideState[_gtr]; delete _sparkleGlideState[_gtr]; delete _motownGlide[_gtr];
+          delete _slegGlide[_gtr]; delete _rhodesGlide[_gtr]; delete _jcmGlide[_gtr]; delete _clarGlide[_gtr];
+          delete _plunkGlide[_gtr]; delete _dbassGlide[_gtr]; delete _ffluteGlide[_gtr]; delete _boogGlide[_gtr];
+        }
+      } catch (err) { console.error('scheduler: glide-state clear failed', err); }
       // Audio-critical state only — no DOM work here
       for (let tr = 0; tr < NUM_TRACKS; tr++) {
         grid[tr] = [...snap.grid[tr]];
@@ -9914,22 +9918,29 @@ function restoreState(snap) {
   // here means every restore starts clean, same as the first time that
   // pattern ever plays from silence.
   for (let _gtr = 0; _gtr < NUM_TRACKS; _gtr++) {
-    delete _bassGlideState[_gtr]; delete _sparkleGlideState[_gtr]; delete _motownGlide[_gtr];
-    delete _slegGlide[_gtr]; delete _rhodesGlide[_gtr]; delete _jcmGlide[_gtr]; delete _clarGlide[_gtr];
-    delete _plunkGlide[_gtr]; delete _dbassGlide[_gtr]; delete _ffluteGlide[_gtr]; delete _boogGlide[_gtr];
+    try {
+      delete _bassGlideState[_gtr]; delete _sparkleGlideState[_gtr]; delete _motownGlide[_gtr];
+      delete _slegGlide[_gtr]; delete _rhodesGlide[_gtr]; delete _jcmGlide[_gtr]; delete _clarGlide[_gtr];
+      delete _plunkGlide[_gtr]; delete _dbassGlide[_gtr]; delete _ffluteGlide[_gtr]; delete _boogGlide[_gtr];
+    } catch (err) { console.error('restoreState: glide-state clear failed', err); }
   }
   // Restore the color palette right along with everything else — older
   // saves/tapes made before this existed just won't have a colors block,
   // so the current on-screen palette is left alone in that case rather
-  // than being reset to some hardcoded default.
-  if (snap.colors) {
-    if (snap.colors.top) _applyTopColor(snap.colors.top);
-    if (snap.colors.track) _applyTrackColor(snap.colors.track);
-    if (snap.colors.highlight) _applyHighlightColor(snap.colors.highlight);
-    if (snap.colors.highlight2) _applyHighlight2Color(snap.colors.highlight2);
-    if (snap.colors.highlight3) _applyHighlight3Color(snap.colors.highlight3);
-    if (snap.colors.bg) _applyBgColor(snap.colors.bg);
-  }
+  // than being reset to some hardcoded default. Wrapped defensively so a
+  // problem here can't take down the rest of the restore (grid, notes,
+  // instruments) along with it — colors are cosmetic, the pattern itself
+  // is not.
+  try {
+    if (snap.colors) {
+      if (snap.colors.top) _applyTopColor(snap.colors.top);
+      if (snap.colors.track) _applyTrackColor(snap.colors.track);
+      if (snap.colors.highlight) _applyHighlightColor(snap.colors.highlight);
+      if (snap.colors.highlight2) _applyHighlight2Color(snap.colors.highlight2);
+      if (snap.colors.highlight3) _applyHighlight3Color(snap.colors.highlight3);
+      if (snap.colors.bg) _applyBgColor(snap.colors.bg);
+    }
+  } catch (err) { console.error('restoreState: color palette restore failed', err); }
   for (let tr=0; tr<NUM_TRACKS; tr++) {
     grid[tr]=[...snap.grid[tr]]; trackOffset[tr]=snap.trackOffset[tr];
     const snapInst = snap.trackInstruments[tr];
@@ -9943,10 +9954,12 @@ function restoreState(snap) {
     // positions but potentially the wrong exact pitch (trackPitchOverride)
     // or wrong sustain length (trackLegatoLen), silently carried over
     // from whatever was on that track before the restore.
-    if (snap.trackPitchOverride?.[tr]) trackPitchOverride[tr] = {...snap.trackPitchOverride[tr]};
-    else delete trackPitchOverride[tr];
-    if (snap.trackLegatoLen?.[tr]) trackLegatoLen[tr] = {...snap.trackLegatoLen[tr]};
-    else delete trackLegatoLen[tr];
+    try {
+      if (snap.trackPitchOverride?.[tr]) trackPitchOverride[tr] = {...snap.trackPitchOverride[tr]};
+      else delete trackPitchOverride[tr];
+      if (snap.trackLegatoLen?.[tr]) trackLegatoLen[tr] = {...snap.trackLegatoLen[tr]};
+      else delete trackLegatoLen[tr];
+    } catch (err) { console.error('restoreState: pitch/legato restore failed for track', tr, err); }
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
     if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) fb2.classList.toggle('blast-on', trackPump[tr]); }
@@ -12561,15 +12574,25 @@ function stopRecallLoop() {
       masterGain.gain.setTargetAtTime(masterVol, t + rewindDur, 0.04); // restore after rewind
     }
     playUiSound(rewindName);
-    const current = snapshotState();
-    document.querySelectorAll('.reel-wrap').forEach(r => {
-      r.classList.remove('spinning');
-      r.classList.add('spinning-reverse');
-    });
-    restoreState(_recallSnapB);
-    flashBtnOrange('scratchBtn');
-    window._reelReversePending = true;
-    _recallSnapB = current;
+    // Wrapped defensively — this is the actual pattern swap, and a thrown
+    // error here (e.g. from a malformed snapshot) used to abort silently
+    // right in the middle: the rewind sound and reel spin would already
+    // have fired above, looking like RECALL "did something", but the
+    // pattern itself would never actually change since restoreState()
+    // never got reached. Logging now instead of failing silently.
+    try {
+      const current = snapshotState();
+      document.querySelectorAll('.reel-wrap').forEach(r => {
+        r.classList.remove('spinning');
+        r.classList.add('spinning-reverse');
+      });
+      restoreState(_recallSnapB);
+      flashBtnOrange('scratchBtn');
+      window._reelReversePending = true;
+      _recallSnapB = current;
+    } catch (err) {
+      console.error('RECALL failed partway through:', err);
+    }
     // While stopped, the scheduler (which normally flips the reels back to
     // forward-spinning once the recalled pattern starts playing) never runs
     // — so without this, the reels would spin backwards indefinitely. Stop
