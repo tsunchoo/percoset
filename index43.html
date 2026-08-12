@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 20:03</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -951,7 +951,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
             <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
             <label class="wild-toggle">
-              <input type="checkbox" id="wildColorsToggle">
+              <input type="checkbox" id="wildColorsToggle" checked>
               <span class="wild-toggle-slider"></span>
             </label>
           </div>
@@ -1105,7 +1105,8 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <script>
 let _bgPulseEnabled = false, _bgStaticEnabled = false, _bgPulseSteps = 4, _bgPulseCounter = 0;
-window._wildColorsEnabled = false; // WILD toggle in settings — randomizes app colors alongside every new whole-pattern RAND
+window._wildColorsEnabled = true; // WILD toggle in settings — randomizes app colors alongside every new whole-pattern RAND, on by default
+window._wildColorsSkipNext = true; // don't apply WILD to the initial startup pattern — the first + press or auto-rand cycle after that is where it actually starts
 const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
   ssnare: { name: 'SNARE',       soft: 'Sounds/Snare50.wav', accent: 'Sounds/Snare100.wav', group: 'kit' },
@@ -1330,6 +1331,16 @@ function _applyBgColor(hex) {
   const el = document.getElementById('bgColorPicker'); if (el) el.value = hex;
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 }
+// The six default colors the app ships with — used to restore the
+// palette when WILD gets switched off.
+function _resetAppColorsToDefault() {
+  _applyTopColor('#555555');
+  _applyTrackColor('#b0b0b0');
+  _applyHighlightColor('#f8ff00');
+  _applyHighlight2Color('#0078ff');
+  _applyHighlight3Color('#adff00');
+  _applyBgColor('#f5f0e8');
+}
 function randomizeAppColors() {
   // Lightness ranges are constrained per-role only for TOP ROW / TRACK
   // BUTTONS, since those two use a fixed label-text color elsewhere too
@@ -1376,7 +1387,10 @@ function randomizeAppColors() {
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => { _pressPulse('randomizeColorsBtn'); randomizeAppColors(); });
   const wildToggle = document.getElementById('wildColorsToggle');
-  if (wildToggle) wildToggle.addEventListener('change', () => { window._wildColorsEnabled = wildToggle.checked; });
+  if (wildToggle) wildToggle.addEventListener('change', () => {
+    window._wildColorsEnabled = wildToggle.checked;
+    if (!wildToggle.checked) _resetAppColorsToDefault();
+  });
 })();
 (function() {
   function hexToRgb(hex) {
@@ -9066,8 +9080,15 @@ function randAll(mode, opts) {
   opts = opts || {};
   // WILD mode — colors randomize right along with the pattern every time
   // a whole new one gets generated via this function (the top-row + button,
-  // both a single press and its held auto-mode loop).
-  if (window._wildColorsEnabled) randomizeAppColors();
+  // both a single press and its held auto-mode loop). Skipped exactly once
+  // for the very first call — the initial startup pattern — so the
+  // default palette is what's actually visible when the app first loads,
+  // even with WILD on by default; the first real + press or auto-rand
+  // cycle after that is where WILD actually starts taking effect.
+  if (window._wildColorsEnabled) {
+    if (window._wildColorsSkipNext) window._wildColorsSkipNext = false;
+    else randomizeAppColors();
+  }
   _split32CycleCount = 0;
   mode = mode || 'all';
   const level = Math.floor(Math.random() * 5); // random pick every press, not a 1-5 cycle
@@ -11757,8 +11778,10 @@ function fullReset() {
   const pulseCb = document.getElementById('bgPulseEnable'); if (pulseCb) pulseCb.checked = false;
   const staticCb = document.getElementById('bgStaticEnable'); if (staticCb) staticCb.checked = false;
   const grayCb = document.getElementById('notesGrayscaleEnable'); if (grayCb) grayCb.checked = false;
-  window._wildColorsEnabled = false;
-  const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = false;
+  window._wildColorsEnabled = true;
+  window._wildColorsSkipNext = true; // same as a fresh page load — colors stay default until the first + press or auto-rand after this
+  const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = true;
+  _resetAppColorsToDefault();
   const speedWrap = document.getElementById('bgPulseSpeedWrap'); if (speedWrap) speedWrap.style.display = 'none';
   // Note marker color is tinted against whatever background is currently
   // in effect — re-sync it now that CUSTOM bg is back off, otherwise it'd
