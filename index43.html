@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:21</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:36</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9806,7 +9806,21 @@ function snapshotState() {
     trackDelay: [...trackDelay],
     trackPump: [...trackPump],
     trackAutoRand: [...Array(NUM_TRACKS)].map((_, tr) => !!autoShiftStops[tr]),
-    activeSlot: activeSlot
+    activeSlot: activeSlot,
+    // Full color palette — TOP ROW, TRACK BUTTONS, HIGHLIGHT, HIGHLIGHT 2,
+    // HIGHLIGHT 3, BACKGROUND — read straight off the live CSS custom
+    // properties, so this always reflects whatever's actually on screen
+    // right now, however it got there (manual pickers or RANDOMIZE COLORS/
+    // WILD). Saved and restored right alongside everything else — a slot,
+    // a saved tape, or a tape link now brings its colors back with it too.
+    colors: {
+      top: getComputedStyle(document.documentElement).getPropertyValue('--neutral-top').trim() || '#555555',
+      track: getComputedStyle(document.documentElement).getPropertyValue('--neutral-track').trim() || '#b0b0b0',
+      highlight: getComputedStyle(document.documentElement).getPropertyValue('--playhead-color').trim() || '#f8ff00',
+      highlight2: getComputedStyle(document.documentElement).getPropertyValue('--highlight2-color').trim() || '#0078ff',
+      highlight3: getComputedStyle(document.documentElement).getPropertyValue('--highlight3-color').trim() || '#adff00',
+      bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f5f0e8',
+    }
   };
 }
 function restoreState(snap) {
@@ -9827,6 +9841,18 @@ function restoreState(snap) {
     delete _bassGlideState[_gtr]; delete _sparkleGlideState[_gtr]; delete _motownGlide[_gtr];
     delete _slegGlide[_gtr]; delete _rhodesGlide[_gtr]; delete _jcmGlide[_gtr]; delete _clarGlide[_gtr];
     delete _plunkGlide[_gtr]; delete _dbassGlide[_gtr]; delete _ffluteGlide[_gtr]; delete _boogGlide[_gtr];
+  }
+  // Restore the color palette right along with everything else — older
+  // saves/tapes made before this existed just won't have a colors block,
+  // so the current on-screen palette is left alone in that case rather
+  // than being reset to some hardcoded default.
+  if (snap.colors) {
+    if (snap.colors.top) _applyTopColor(snap.colors.top);
+    if (snap.colors.track) _applyTrackColor(snap.colors.track);
+    if (snap.colors.highlight) _applyHighlightColor(snap.colors.highlight);
+    if (snap.colors.highlight2) _applyHighlight2Color(snap.colors.highlight2);
+    if (snap.colors.highlight3) _applyHighlight3Color(snap.colors.highlight3);
+    if (snap.colors.bg) _applyBgColor(snap.colors.bg);
   }
   for (let tr=0; tr<NUM_TRACKS; tr++) {
     grid[tr]=[...snap.grid[tr]]; trackOffset[tr]=snap.trackOffset[tr];
@@ -10956,17 +10982,20 @@ function _tempoBrakeRelease() {
 // matching exactly how the STOP button halts them: by removing the
 // spin classes outright (the reliable path) rather than pausing the
 // animation, which the per-beat pulse effect can knock loose.
-function _leftSpoolEngage() {
+function _leftSpoolEngage(viaSweep) {
   // Sweeps down from wherever SWEEP (or a previous hold of this) left the
-  // pitch — independent of playback state, since SWEEP itself has no such
-  // requirement. The stop/restart transport behavior below is separate and
-  // still gated on actually playing.
-  if (window._sweepSwitchDirection) window._sweepSwitchDirection('down');
+  // pitch — but only when this engage is actually part of a SWEEP-drag-
+  // onto-the-spool interaction (viaSweep passed explicitly by that call
+  // site below). Calling this unconditionally was the bug:
+  // _sweepSwitchDirection() unconditionally starts a fresh SWEEP sound, so
+  // a plain standalone press of the spool — nothing to do with SWEEP at
+  // all — was itself triggering SWEEP every time.
+  if (viaSweep && window._sweepSwitchDirection) window._sweepSwitchDirection('down');
   // The left spool's own sound cue — the Stop sample, reversed. Only for
   // a direct hold on the spool itself; dragging onto it from a held SWEEP
   // no longer plays this, since SWEEP has its own identity/feedback and
   // shouldn't also carry the spool's own Stop cue.
-  if (ctx && window._uiSoundBufs && !window._sweepGestureActive) {
+  if (ctx && window._uiSoundBufs && !viaSweep) {
     _getReversedUiSound('Stop'); // ensures window._uiSoundBufs['StopReversed'] is cached
     playUiSound('StopReversed');
   }
@@ -10986,10 +11015,11 @@ function _leftSpoolEngage() {
     r.classList.remove('spinning', 'spinning-reverse');
   });
 }
-function _leftSpoolRelease() {
-  // Mirrors the engage above — always try to switch SWEEP back upward,
-  // independent of playback state.
-  if (window._sweepSwitchDirection) window._sweepSwitchDirection('up');
+function _leftSpoolRelease(viaSweep) {
+  // Mirrors the engage above — only switch SWEEP back upward if this
+  // release is actually part of a SWEEP-drag interaction, not on a plain
+  // standalone release of the spool.
+  if (viaSweep && window._sweepSwitchDirection) window._sweepSwitchDirection('up');
   if (!window._spoolBraking || !ctx) return;
   window._spoolBraking = false;
   playUiSound('Cymbal');
@@ -12517,10 +12547,10 @@ async function hardResetAudioEngine() {
     const onLeftSpool = !!el.closest('#leftReelWrap');
     if (onLeftSpool && !window._sweepOnSpool) {
       window._sweepOnSpool = true;
-      _leftSpoolEngage();
+      _leftSpoolEngage(true);
     } else if (!onLeftSpool && window._sweepOnSpool) {
       window._sweepOnSpool = false;
-      _leftSpoolRelease();
+      _leftSpoolRelease(true);
     }
     // Dragging onto BEAT (or into its open dropdown) drives the same
     // drag-to-select menu as holding BEAT directly, instead of an instant toggle.
@@ -12550,7 +12580,7 @@ async function hardResetAudioEngine() {
   document.addEventListener('touchmove', sweepMoveHandler, { passive: false });
   const sweepEndCleanup = e => {
     document.querySelectorAll('[data-sweep-triggered]').forEach(el => delete el.dataset.sweepTriggered);
-    if (window._sweepOnSpool) { window._sweepOnSpool = false; _leftSpoolRelease(); }
+    if (window._sweepOnSpool) { window._sweepOnSpool = false; _leftSpoolRelease(true); }
     if (window._sweepOpenedBeatMenu) {
       window._sweepOpenedBeatMenu = false;
       if (_beatMenuOpen) {
