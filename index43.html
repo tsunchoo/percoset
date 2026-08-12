@@ -361,7 +361,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    button's box/layout/position is completely untouched.
    */
 .shift-btn:not(.right) { font-size: calc(1rem + 0.5em); }
-.shift-btn .glyph { display: inline-block; transform: translateY(-2px); }
+.shift-btn .glyph { display: inline-block; transform: translateY(-1px); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   background: var(--neutral-top, #555); border: 3px solid var(--neutral-top, #b0b0b0);
@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 20:03</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 20:24</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2319,6 +2319,7 @@ function scheduler() {
       }
       if (_autoRandPending) {
         _autoRandPending = false;
+        if (_randFlashTid) { clearTimeout(_randFlashTid); _randFlashTid = null; } // cancel any not-yet-fired flash-hold timeout so it can't apply its styling after this reset
         const rbClear = document.getElementById('randBtn');
         if (rbClear) {
           // Snap straight back to normal right as the new pattern actually
@@ -2931,6 +2932,7 @@ function togglePlay() {
     // a bar-start that's never coming now.
     if (_autoRandPending) {
       _autoRandPending = false; _autoRandMode = undefined;
+      if (_randFlashTid) { clearTimeout(_randFlashTid); _randFlashTid = null; } // same reason as the bar-boundary reset above — don't let a stale flash-hold timeout fire after this
       const rbStop = document.getElementById('randBtn');
       if (rbStop) {
         rbStop.style.transition = ''; rbStop.style.background = '';
@@ -8223,6 +8225,7 @@ async function saveAllCombined() {
 
 // ── Live recording via MediaRecorder ──
 let _autoRandPending = false;
+let _randFlashTid = null; // pending "hold the HIGHLIGHT flash, then hand off to the gradual buildup" timeout — see queueRand()
 let _randTransitionWindow = null; // { start, end } in ctx.currentTime units while a RAND flourish is muting normal playback
 
 // Play through every track's current instrument once, back-to-back with no
@@ -8287,7 +8290,9 @@ function queueRand(mode) {
       // gradual build-up for whatever time is left before the pattern
       // loads.
       const _flashHoldS = 0.12;
-      setTimeout(() => {
+      if (_randFlashTid) clearTimeout(_randFlashTid); // a repeat tap before the previous one's timeout fired used to leave that stale one free to apply its styling later, after this newer tap (or the bar boundary) had already moved on — the actual source of the "stuck scaled-up blue" button.
+      _randFlashTid = setTimeout(() => {
+        _randFlashTid = null;
         rbP.classList.remove('btn-flash-blue');
         const _remaining = Math.max(timeRemaining - _flashHoldS, 0.05);
         rbP.style.transition = `background ${_remaining}s ease-in, transform ${_remaining}s ease-in`;
@@ -9737,7 +9742,7 @@ function playRandReleaseSweep(time) {
   bp.frequency.setValueAtTime(5200, time);
   bp.frequency.exponentialRampToValueAtTime(140, time + dur);
   const g = ctx.createGain();
-  g.gain.setValueAtTime(0.1558, time); // -3dB from previous 0.22
+  g.gain.setValueAtTime(0.0779, time); // -50% (was 0.1558) — the noise-sweep cue that plays whenever a new pattern actually lands, especially noticeable mid-playback
   g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
   src.connect(bp); bp.connect(g); g.connect(masterGain);
   src.start(time);
@@ -10325,6 +10330,18 @@ function randomizeTrack(tr) {
   // forces a 16th-note pattern accented specifically on beats 2 & 4 — a
   // deliberate two-step cycle layered on top of the normal probabilistic
   // behavior, which still applies on every other tap.
+  // Upbeat hihat hitting all four &s of the bar (steps 2/6/10/14) — a
+  // specific, recognizable "skank" pattern — comes up about 1 in 4 times
+  // a HIHAT track gets (re)randomized via + (per-track, the top-row
+  // button, or its held auto mode), ahead of the general regular/organic
+  // split below.
+  if (key === 'shihat' && Math.random() < 0.25) {
+    for (let s = 0; s < NUM_STEPS; s++) {
+      const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+      grid[tr][gs] = (s === 2 || s === 6 || s === 10 || s === 14) ? 1 : 0;
+    }
+    redrawTrackCells(tr); markModified(); return;
+  }
   const _uniformKeys = new Set(['shihat', 'shak', 'ride', 'tamb']);
   if (_uniformKeys.has(key)) {
     const _clickCount = window._nButtonClickCount && window._nButtonClickCount[tr];
@@ -11058,32 +11075,15 @@ function _tempoBrakeRelease() {
 // matching exactly how the STOP button halts them: by removing the
 // spin classes outright (the reliable path) rather than pausing the
 // animation, which the per-beat pulse effect can knock loose.
-function _leftSpoolEngage(viaSweep) {
-  // Sweeps down from wherever SWEEP (or a previous hold of this) left the
-  // pitch — but only when this engage is actually part of a SWEEP-drag-
-  // onto-the-spool interaction (viaSweep passed explicitly by that call
-  // site below). Calling this unconditionally was the bug:
-  // _sweepSwitchDirection() unconditionally starts a fresh SWEEP sound, so
-  // a plain standalone press of the spool — nothing to do with SWEEP at
-  // all — was itself triggering SWEEP every time.
-  if (viaSweep && window._sweepSwitchDirection) window._sweepSwitchDirection('down');
-  // The left spool's own sound cue — the Stop sample, reversed. Only for
-  // a direct hold on the spool itself; dragging onto it from a held SWEEP
-  // no longer plays this, since SWEEP has its own identity/feedback and
-  // shouldn't also carry the spool's own Stop cue.
-  if (ctx && window._uiSoundBufs && !viaSweep) {
-    _getReversedUiSound('Stop'); // ensures window._uiSoundBufs['StopReversed'] is cached
-    playUiSound('StopReversed');
-  }
-  // Own dedicated flag (_spoolBraking), separate from the tempo screen's
-  // Brake button (_tempoBraking) — the two used to share one flag, which
-  // meant either system's release could silently no-op the other's engage
-  // if call order ever got scrambled (e.g. this spool held while some
-  // other gesture also touched the brake state). Splitting them removes
-  // that cross-contamination entirely.
+function _leftSpoolEngage() {
+  // Reverted to the earlier, simpler behavior: the spool just does its own
+  // thing — plays Stop and brakes — with no coordination with SWEEP's
+  // pitch/direction at all, whether pressed directly or dragged onto from
+  // a held SWEEP.
   if (!playing || !ctx || window._spoolBraking) return;
   window._spoolBraking = true;
   clearInterval(scheduleInterval); scheduleInterval = null;
+  playUiSound('Stop');
   // Deliberately no gain ramp here — letting notes ring out is the point.
   window._spoolHeldReverse = [];
   document.querySelectorAll('.reel-wrap').forEach((r, i) => {
@@ -11091,11 +11091,7 @@ function _leftSpoolEngage(viaSweep) {
     r.classList.remove('spinning', 'spinning-reverse');
   });
 }
-function _leftSpoolRelease(viaSweep) {
-  // Mirrors the engage above — only switch SWEEP back upward if this
-  // release is actually part of a SWEEP-drag interaction, not on a plain
-  // standalone release of the spool.
-  if (viaSweep && window._sweepSwitchDirection) window._sweepSwitchDirection('up');
+function _leftSpoolRelease() {
   if (!window._spoolBraking || !ctx) return;
   window._spoolBraking = false;
   playUiSound('Cymbal');
@@ -12161,7 +12157,6 @@ async function initAudio() {
     ['click','play','rewind','rewind2','clickoff','Stop','Cymbal','Rand'].forEach(name => {
       fetch(resolveSampleUrl(`Sounds/${name}.wav`)).then(r => r.arrayBuffer()).then(buf => ctx.decodeAudioData(buf, decoded => {
         _uiSoundBufs[name] = decoded;
-        if (name === 'Stop') { try { _getReversedUiSound('Stop'); } catch(e) {} } // pre-warm the left spool's reversed cue right after Stop itself finishes decoding
       })).catch(()=>{});
     });
 window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = window.masterLimiter;
@@ -12309,83 +12304,37 @@ async function hardResetAudioEngine() {
     _sweepAnalyserData = new Uint8Array(_sweepAnalyser.frequencyBinCount);
   }
 
-  // Shared pitch position between SWEEP (up) and the right tape spool
-  // (down) — whichever one fires next continues from wherever the other
-  // one left off, rather than each resetting to its own fixed start point.
-  window._sweepSharedFreq = window._sweepSharedFreq || 200;
-  const SWEEP_FLOOR = 200, SWEEP_CEIL = 4000;
-  // Rapid re-triggering (release, immediately press again before the
-  // previous release-fade finished) used to let multiple sweep layers
-  // overlap — sweepNodes gets reassigned to the new instance right away,
-  // but the OLD instance's fade-out was still running independently in
-  // the background, its own nodes orphaned from anything that could stop
-  // them. Several of those stacking up is very likely what "gets out of
-  // control" fast. Tracking the fading-out set explicitly and hard-killing
-  // it (no fade, just silence) the moment a new press starts guarantees
-  // at most one sweep layer is ever actually audible.
-  let _fadingSweepNodes = null;
-  function _hardKillFadingSweep() {
-    if (!_fadingSweepNodes) return;
-    const { noise, bp, gain, duckGain, dragGain } = _fadingSweepNodes;
-    [noise, bp, gain, duckGain, dragGain].forEach(n => { try { n.disconnect(); } catch(e) {} });
-    try { noise.stop(); } catch(e) {}
-    _fadingSweepNodes = null;
-  }
-  // How far down the screen the finger has dragged since this hold began,
-  // 0 (no drag) to 1 (fully maxed out at SWEEP_DRAG_MAX_PX). Persists
-  // across a mid-hold direction switch (stopSweep(true)/startSweep) since
-  // that's a continuation of the same physical hold, not a fresh press.
-  let _sweepDragIntensity = 0, _sweepDragStartY = null;
-  const SWEEP_DRAG_MAX_PX = 130; // distance for full intensity, either direction
-  const SWEEP_DRAG_RANGE = 0.4; // ±0.4x gain (down = louder up to 1.4x, up = quieter down to 0.6x) — reduced from the old one-way +0.85x, which combined with the takeover ramp was a big part of getting too loud
-  const SWEEP_LEVEL_TRIM = Math.pow(10, -1 / 20); // -1dB, applied to the sweep's peak level
-  function startSweep(direction) {
+  function startSweep() {
     if (!ctx || sweepNodes) return;
-    _hardKillFadingSweep(); // cut any still-fading previous instance dead before starting a new one
     ctx.resume();
     ensureSweepAnalyser();
     window._sweepStartMs = Date.now();
-    window._sweepDirection = direction || 'up';
     const bufDur = 12; // generous buffer length so long holds never run out
-    const riseDur = 2.5; // time to reach the capped peak/floor frequency while held (was 3.5s — quicker now)
-    // Reverse (down — engaged by dragging SWEEP onto the left tape spool)
-    // sweeps twice as fast as the forward/up direction.
-    const freqRiseDur = (direction === 'down') ? riseDur / 2 : riseDur;
+    const riseDur = 2.5; // time to reach the capped peak frequency while held (was 3.5s — quicker now)
+    const capFreq = 4000; // reasonable ceiling — never rises past this no matter how long it's held
     const t = ctx.currentTime;
     const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * bufDur), ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < buf.length; i++) d[i] = Math.random() * 2 - 1;
     const noise = ctx.createBufferSource(); noise.buffer = buf;
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3;
-    const startFreq = Math.min(SWEEP_CEIL, Math.max(SWEEP_FLOOR, window._sweepSharedFreq));
-    const targetFreq = window._sweepDirection === 'down' ? SWEEP_FLOOR : SWEEP_CEIL;
-    bp.frequency.setValueAtTime(startFreq, t);
-    bp.frequency.exponentialRampToValueAtTime(targetFreq, t + freqRiseDur); // only moves while held — release is what stops it wherever it is
+    bp.frequency.setValueAtTime(200, t);
+    bp.frequency.exponentialRampToValueAtTime(capFreq, t + riseDur); // only rises while held — release is what makes it descend
 
     // baseGain holds the "intended" envelope level; duckGain applies sidechain ducking on top
     const baseGain = ctx.createGain();
-    const attackDur = stepDuration() * 4; // fades in from silence over a quarter note, instead of snapping on
     baseGain.gain.setValueAtTime(0, t);
-    baseGain.gain.linearRampToValueAtTime(0.2145 * SWEEP_LEVEL_TRIM, t + attackDur); // -2dB more (was 0.27), now -1dB more on top
+    baseGain.gain.linearRampToValueAtTime(0.34, t + 0.008); // -2dB
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
-    // Drag-down intensity boost — starts wherever the finger's current
-    // drag position already has it (not reset to 1), so switching
-    // direction mid-hold doesn't undo a boost already dialed in.
-    const dragGain = ctx.createGain();
-    dragGain.gain.value = 1 + _sweepDragIntensity * SWEEP_DRAG_RANGE;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
 
     // Back through masterGain (and its kick-triggered sidechain duck stage),
     // not straight to the limiter — reintroducing the full mix-reactive
     // modulation on top of SWEEP's own ducking below.
-    noise.connect(bp); bp.connect(baseGain); baseGain.connect(duckGain); duckGain.connect(dragGain); dragGain.connect(masterGain);
+    noise.connect(bp); bp.connect(baseGain); baseGain.connect(duckGain); duckGain.connect(masterGain);
     noise.start(t);
-
-    // Amalgam tone removed — was contributing to SWEEP getting loud/
-    // unpredictable fast; concentrating on getting the core sweep+drag
-    // behavior solid first.
-    sweepNodes = { noise, bp, gain: baseGain, duckGain, dragGain };
+    sweepNodes = { noise, bp, gain: baseGain, duckGain };
     btn.classList.add('active');
 
     // Continuously sample master output level and duck the sweep inversely.
@@ -12421,37 +12370,14 @@ async function hardResetAudioEngine() {
     duckLoop();
   }
 
-  function stopSweep(isSwitch) {
+  function stopSweep() {
     if (!sweepNodes || !ctx) return;
-    const { bp, gain, noise, duckGain, dragGain } = sweepNodes;
-    // Capture wherever the pitch actually is right now — this is what lets
-    // the next engagement (SWEEP or the left spool) continue from here
-    // instead of resetting. Read before cancelScheduledValues touches it.
-    window._sweepSharedFreq = bp.frequency.value;
+    const { bp, gain, noise, duckGain } = sweepNodes;
     sweepNodes = null;
     if (_sweepDuckLoop) cancelAnimationFrame(_sweepDuckLoop); _sweepDuckLoop = null;
     btn.classList.remove('active');
     const t = ctx.currentTime;
-
-    if (isSwitch) {
-      // Mid-drag direction switch — a new layer starts immediately after
-      // this returns, so a gradual fade-out here would leave the old layer
-      // still audibly playing (and its duck-loop still running) at the
-      // same moment the new one starts — genuine overlap, not a crossfade.
-      // That's what was producing the sudden loud stacked chunk, and
-      // likely contributing to the "stuck on" behavior too (two
-      // independent duck-loops and node sets running at once, each unaware
-      // of the other). Cut cleanly instead — no audible tail at all here.
-      try { noise.stop(); noise.disconnect(); } catch(e) {}
-      try { bp.disconnect(); } catch(e) {}
-      try { gain.disconnect(); } catch(e) {}
-      try { duckGain.disconnect(); } catch(e) {}
-      try { dragGain.disconnect(); } catch(e) {}
-      return;
-    }
-
-    playUiSound('Cymbal'); // same cue the left tape spool plays on release
-    const releaseFade = 1.0; // fixed 1s graceful die-away on release — twice as fast as before, no longer tempo-relative
+    const quarterNote = stepDuration() * 4; // fade-out length — longer now so it stays a bit before fading
     // Ramp duckGain back to 1 smoothly rather than snapping it instantly —
     // an instant jump from wherever it was (potentially deep in a duck dip,
     // near-silent) straight up to 1, at the same moment the boosted presence
@@ -12459,47 +12385,13 @@ async function hardResetAudioEngine() {
     duckGain.gain.cancelScheduledValues(t);
     duckGain.gain.setValueAtTime(duckGain.gain.value, t);
     duckGain.gain.linearRampToValueAtTime(1, t + 0.08);
-    // Drag-boost gain eases back down to 1 over the same release window,
-    // rather than just sitting at whatever level it was dragged to while
-    // everything else fades out underneath it.
-    dragGain.gain.cancelScheduledValues(t);
-    dragGain.gain.setValueAtTime(dragGain.gain.value, t);
-    dragGain.gain.linearRampToValueAtTime(1, t + releaseFade);
     bp.frequency.cancelScheduledValues(t);
-    // The audible fade-out tail settles toward the floor regardless of
-    // direction — it's fading to silence anyway (gain below), so this is
-    // just how the tail sounds, not the logical position that persists
-    // (that's window._sweepSharedFreq, captured above).
-    bp.frequency.exponentialRampToValueAtTime(SWEEP_FLOOR, t + releaseFade);
+    bp.frequency.exponentialRampToValueAtTime(200, t + quarterNote);
     gain.gain.cancelScheduledValues(t);
     gain.gain.setValueAtTime(gain.gain.value * 0.355, t); // -9dB total on the release tail (-5dB then another -4dB)
-    gain.gain.linearRampToValueAtTime(0, t + releaseFade);
-    // Tracked separately from sweepNodes (already null by this point) so a
-    // rapid re-press during this fade can hard-kill it instead of letting
-    // it overlap with the new instance.
-    _hardKillFadingSweep();
-    _fadingSweepNodes = { noise, bp, gain, duckGain, dragGain };
-    setTimeout(() => {
-      try { noise.stop(); noise.disconnect(); } catch(e) {}
-      try { dragGain.disconnect(); } catch(e) {}
-      _fadingSweepNodes = null;
-    }, releaseFade * 1000 + 100);
-    // Reset the drag-intensity tracker for next time — a genuine release
-    // (not a mid-hold direction switch) ends the physical gesture.
-    _sweepDragIntensity = 0; _sweepDragStartY = null;
+    gain.gain.linearRampToValueAtTime(0, t + quarterNote);
+    setTimeout(() => { try { noise.stop(); noise.disconnect(); } catch(e) {} }, quarterNote * 1000 + 100);
   }
-  window._sweepEngageUp = () => startSweep('up');
-  window._sweepEngageDown = () => startSweep('down');
-  window._sweepRelease = stopSweep;
-  // Switches direction mid-hold — stops whichever sweep is currently
-  // running (capturing its position into the shared frequency, same as a
-  // normal release) and immediately starts the other direction from there.
-  // Needed because startSweep()'s own guard silently no-ops if a sweep is
-  // already active, which is exactly the case every time this fires.
-  window._sweepSwitchDirection = (newDir) => {
-    if (sweepNodes) stopSweep(true); // true = mid-drag switch, not a genuine release — skip the release sound
-    startSweep(newDir);
-  };
 
   // The hold itself is now a full-measure crossfade takeover: SWEEP's
   // presence rises while the normal mix fades out under it, for as long as
@@ -12514,121 +12406,47 @@ async function hardResetAudioEngine() {
     const { gain } = sweepNodes;
     const t = ctx.currentTime;
     const measure = stepDuration() * 20; // one full bar plus one more quarter note, so it never ends early
-    const attackDur = stepDuration() * 4; // matches startSweep's own fade-in — let it actually finish before taking over, instead of cancelling it out from under itself
-    // Don't touch anything before the fade-in completes — cancelling here
-    // used to wipe out the quarter-note attack before it ever had a chance
-    // to run, since both functions fire in the same instant on press.
-    // Reduced from 1.5145 — that combined with the drag-boost gain on top
-    // was almost certainly the dominant source of SWEEP getting way too
-    // loud, fast. Still a real rise from the 0.2145 attack level, just not
-    // one that can stack with drag into something out of control.
-    gain.gain.linearRampToValueAtTime(0.85, t + measure);
+    gain.gain.cancelScheduledValues(t);
+    gain.gain.setValueAtTime(gain.gain.value, t);
+    gain.gain.linearRampToValueAtTime(2.4, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
-      // This used to call stopSweep() unconditionally here — which fires
-      // even while the button is still physically held, killing the sound
-      // (with its own release "Cymbal" cue), and critically, resetting
-      // _sweepDragStartY to null. Any further drag from a still-held
-      // finger after that point silently stopped affecting the level at
-      // all, since the drag handlers require a non-null start position —
-      // this was the actual cause of hold-and-drag-for-level appearing to
-      // do nothing much of the time. Only auto-release here if the finger
-      // has genuinely already lifted (gesture no longer active); if still
-      // held, just stay at the taken-over level and keep responding to
-      // drag — the real release happens whenever they actually let go.
-      if (!window._sweepGestureActive) { stopSweep(); return; }
-      gain.gain.setTargetAtTime(0.85, ctx.currentTime, 0.05); // hold steady at the taken-over level rather than re-ramping
+      stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
     }, measure * 1000);
   }
 
-  const beginPress = () => { window._sweepGestureActive = true; _pressPulse('clearBtn'); window._sweepSwitchDirection('up'); startSweepTakeover(); };
+  const beginPress = () => { window._sweepGestureActive = true; startSweep(); startSweepTakeover(); };
   const endPress = () => {
     window._sweepGestureActive = false;
     if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
     stopSweep(); // released early — cuts off right where the ramps currently are
   };
 
-  btn.addEventListener('touchstart', e => { e.preventDefault(); _sweepDragStartY = e.touches[0] ? e.touches[0].clientY : null; beginPress(); }, { passive: false });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); beginPress(); }, { passive: false });
   btn.addEventListener('touchend', e => { e.preventDefault(); endPress(); }, { passive: false });
   btn.addEventListener('touchcancel', endPress);
-  btn.addEventListener('mousedown', e => { _sweepDragStartY = e.clientY; beginPress(); });
+  btn.addEventListener('mousedown', beginPress);
   // Document-wide, not button-only — the pointer rolling off the button
   // while still held should NOT stop the effect, and a mouseup bound only
   // to the button would miss the release entirely if the pointer had
   // drifted away by the time it's released, leaving it stuck on.
   document.addEventListener('mouseup', endPress);
-  document.addEventListener('mousemove', e => {
-    if (!window._sweepGestureActive || _sweepDragStartY === null) return;
-    const dy = e.clientY - _sweepDragStartY; // signed — down positive (louder), up negative (quieter)
-    // Pushed past the max-intensity point in either direction — auto-
-    // release rather than just sitting pinned at the extreme, so
-    // overshooting the gesture doesn't feel like it silently stopped
-    // responding.
-    if (Math.abs(dy) > SWEEP_DRAG_MAX_PX) { endPress(); return; }
-    _sweepDragIntensity = Math.max(-1, Math.min(1, dy / SWEEP_DRAG_MAX_PX));
-    if (sweepNodes && sweepNodes.dragGain && ctx) {
-      sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_RANGE, ctx.currentTime, 0.08);
-    }
-  });
 
   // Drag from SWEEP onto BEAT or RAND to trigger them simultaneously.
   // Dragging onto the left spool instead engages its soft decay-stop for
   // as long as the finger stays over it (matches the direct hold gesture).
   // Also fire on document touchmove so drag works even if touchstart hit the loading overlay
   const sweepMoveHandler = e => {
-    // This is a document-level listener — it fires for every touchmove on
-    // the page, not just ones that started on SWEEP. Without this guard,
-    // it was processing its full beat-menu-tracking logic (open/close,
-    // window._sweepOpenedBeatMenu) for ANY touch that happened to pass
-    // over the beat area, including a genuine, independent hold-and-drag
-    // directly on BEAT itself that never involved SWEEP at all — causing
-    // it to prematurely close the menu mid-gesture, since it was
-    // incorrectly tracking that drag as if it were a sweep-onto-beat
-    // interaction. Checking a dedicated gesture flag (set for the whole
-    // duration of the touch, from beginPress to endPress) rather than
-    // sweepNodes itself — the full-measure takeover can end the sweep's
-    // actual audio automatically while the finger is still down, and
-    // checking sweepNodes directly broke the sweep-to-spool interaction
-    // for exactly that case: the same physical gesture continuing after
-    // the takeover had already stopped the audio.
-    if (!window._sweepGestureActive) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
-    // How far the finger has dragged from where the hold started drives
-    // the drag-intensity on the sweep gain (see dragGain in startSweep) —
-    // down is louder, up is quieter, symmetric around the press point.
-    if (touch && _sweepDragStartY !== null) {
-      const dy = touch.clientY - _sweepDragStartY; // signed
-      // Pushed past the max-intensity point in either direction —
-      // auto-release rather than just sitting pinned at the extreme, so
-      // overshooting the gesture doesn't feel like it silently stopped
-      // responding.
-      if (Math.abs(dy) > SWEEP_DRAG_MAX_PX) { endPress(); return; }
-      _sweepDragIntensity = Math.max(-1, Math.min(1, dy / SWEEP_DRAG_MAX_PX));
-      if (sweepNodes && sweepNodes.dragGain && ctx) {
-        sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_RANGE, ctx.currentTime, 0.08);
-      }
-    }
-    // The entire gesture is "claimed" by SWEEP the moment it's actually
-    // engaged — prevent default unconditionally for every touchmove for
-    // its whole duration, not just while positioned over specific
-    // recognized elements. Without this, a finger passing over PLAY
-    // (adjacent to SWEEP, directly on the path to the left spool) wasn't
-    // blocked from the browser's own touch-to-click synthesis, and a
-    // lingering or near-release touch there could genuinely trigger
-    // togglePlay() mid-sweep — playback stopping/restarting mid-hold,
-    // with the sidechain ducking and scheduler state changing out from
-    // under the sweep, was very likely the actual source of the "sudden
-    // loud chunk" being reported, not the sweep code itself.
-    if (e.cancelable) e.preventDefault();
     if (!el) return;
     const onLeftSpool = !!el.closest('#leftReelWrap');
     if (onLeftSpool && !window._sweepOnSpool) {
       window._sweepOnSpool = true;
-      _leftSpoolEngage(true);
+      _leftSpoolEngage();
     } else if (!onLeftSpool && window._sweepOnSpool) {
       window._sweepOnSpool = false;
-      _leftSpoolRelease(true);
+      _leftSpoolRelease();
     }
     // Dragging onto BEAT (or into its open dropdown) drives the same
     // drag-to-select menu as holding BEAT directly, instead of an instant toggle.
@@ -12648,31 +12466,26 @@ async function hardResetAudioEngine() {
     const onSweep = el.closest('#clearBtn');
     const target = el.closest('#randBtn, #scratchBtn');
     if (!onSweep && !target && !onLeftSpool && !onBeatArea) return;
+    if (e.cancelable) e.preventDefault();
     if (target && !target.dataset.sweepTriggered) {
       target.dataset.sweepTriggered = '1';
       if (target.id === 'randBtn') { setBtnBlueHeld('randBtn'); queueRand(); }
-      if (target.id === 'scratchBtn') { if (_recallSnapB) { stopAllAutoRand(); const _cur = snapshotState(); restoreState(_recallSnapB); flashBtnOrange('scratchBtn'); window._reelReversePending = true; _recallSnapB = _cur; playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
+      if (target.id === 'scratchBtn') { if (_recallSnapB) { const _cur = snapshotState(); restoreState(_recallSnapB); flashBtnOrange('scratchBtn'); window._reelReversePending = true; _recallSnapB = _cur; playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
     }
   };
   btn.addEventListener('touchmove', sweepMoveHandler, { passive: false });
   document.addEventListener('touchmove', sweepMoveHandler, { passive: false });
   const sweepEndCleanup = e => {
     document.querySelectorAll('[data-sweep-triggered]').forEach(el => delete el.dataset.sweepTriggered);
-    if (window._sweepOnSpool) { window._sweepOnSpool = false; _leftSpoolRelease(true); }
+    if (window._sweepOnSpool) { window._sweepOnSpool = false; _leftSpoolRelease(); }
     if (window._sweepOpenedBeatMenu) {
       window._sweepOpenedBeatMenu = false;
       if (_beatMenuOpen) {
         const t = e.changedTouches && e.changedTouches[0];
         const item = t ? beatMenuHighlightUnder(t.clientX, t.clientY) : null;
-        if (item) {
-          commitBeatMenuSelection(item);
-          if (item.classList.contains('beat-type-item')) {
-            closeBeatMenu();
-            if (!beatPlaying && !_beatPending) toggleBeat();
-          }
-        } else {
-          closeBeatMenu(); // dragged from SWEEP and let go over nothing — bail out cleanly
-        }
+        commitBeatMenuSelection(item);
+        closeBeatMenu();
+        if (!beatPlaying && !_beatPending) toggleBeat();
       }
     }
   };
