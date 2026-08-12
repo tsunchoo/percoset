@@ -162,7 +162,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    to have. Button box itself is untouched: width comes from flex:1 on
    .transport .btn and height is the fixed 54px above, neither keyed off
    text content, so this is purely a glyph-size change. */
-#randBtn { font-size: 2.8875rem; font-weight: 900; position: relative; top: -5px; }
+#randBtn { font-size: 2.8875rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
@@ -173,6 +173,12 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #playBtn.playing.btn-beat-pulse { animation: play-pulse 0.44s ease-out; }
 @keyframes play-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .btn:active { opacity: 0.7; transform: scale(0.88); }
+/* The flash-to-a-solid-color mechanic (RAND's HIGHLIGHT flash, etc.) sets
+   background/color with !important — dimming that via the opacity above
+   while still held made the flash read as an off, muddied color instead
+   of the actual solid HIGHLIGHT it's supposed to be. Keep the press
+   scale-pulse but skip the dimming specifically for these. */
+.btn.btn-flash-blue:active { opacity: 1; }
 
 #beatBtn.active:not(.beat-auto-active) { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
@@ -209,6 +215,12 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #turboBtn.boost-on { animation: boost-red 0.5s infinite alternate; }
 .rec-mode-btn { width:100%; background:#ddd; color:#111; border:none; font-family:'DM Sans',sans-serif; font-size:0.68rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:12px 0; cursor:pointer; }
 .rec-mode-btn.on { background:#111; color:#fff; }
+/* TAPES buttons only (not RECORDING or RANDOMIZE COLORS, which share the
+   same .rec-mode-btn class) — a basic press rollover so tapping SAVE
+   TAPE / SEND TAPE LINK / LOAD TAPE visibly registers, matching the same
+   dark/light swap .rec-mode-btn.on already uses elsewhere. */
+#exportTapeBtn, #shareTapeLinkBtn, #importTapeBtn { transition: background 0.1s, color 0.1s; }
+#exportTapeBtn:active, #shareTapeLinkBtn:active, #importTapeBtn:active { background:#111; color:#fff; }
 @keyframes boost-red { from { background: #e0142c; color: #fff; } to { background: #7a0016; color: #ffb3bb; } }
 #saveBtn.rec-active { background: #111; }
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
@@ -276,7 +288,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    excludes #beatCtrlRand (the BEAT menu's own N/A, a different concept:
    new BEAT type, not new notes) even though it shares the .rand-btn
    class. Fixed 32px width/height box above is untouched either way. */
-.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.7875rem; font-weight: 900; position: relative; top: -5px; }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.7875rem; font-weight: 900; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: #555; color: #fff; }
@@ -709,7 +721,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:18</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:28</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -847,6 +859,14 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     <div style="display:flex;flex-direction:column;gap:24px;">
 
       <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;justify-content:space-between;">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
+          <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
+        </div>
+        <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
         <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
       </div>
@@ -866,40 +886,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">CUSTOM
-            <input type="color" id="trackNamesCustomColorPicker" value="#555555" oninput="setTrackNamesCustomColor(this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:4px;">
-            <style>#trackNamesCustomColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackNamesCustomColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackNamesCustomColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="a" checked onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="d" onchange="setTrackPulseMode('d')" style="width:15px;height:15px;cursor:pointer;">FLASH
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
-          <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
-        </div>
-        <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
-      </div>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLORS</div>
@@ -953,6 +939,32 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </div>
           <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">CUSTOM
+            <input type="color" id="trackNamesCustomColorPicker" value="#555555" oninput="setTrackNamesCustomColor(this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:4px;">
+            <style>#trackNamesCustomColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackNamesCustomColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackNamesCustomColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackPulseMode" value="a" checked onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackPulseMode" value="d" onchange="setTrackPulseMode('d')" style="width:15px;height:15px;cursor:pointer;">FLASH
+          </label>
         </div>
       </div>
 
@@ -8181,18 +8193,23 @@ function queueRand(mode) {
       const timeRemaining = stepsRemaining * stepDuration();
       rbP.classList.remove('rand-pending-fast');
       // btn-flash-blue (added by setBtnBlueHeld right before this call, on
-      // every tap) sets background with !important — that unconditionally
-      // overrides the gradual transition below for as long as it's
-      // present, which is the entire wait until clearBtnBlueHeld runs at
-      // pattern-load time. The button was just snapping instantly to solid
-      // fuchsia and masking the build-up completely, not actually
-      // transitioning at all. This transition replaces that class's job
-      // for this specific case, so it needs to be out of the way.
-      rbP.classList.remove('btn-flash-blue');
-      rbP.style.transition = `background ${timeRemaining}s ease-in, transform ${timeRemaining}s ease-in`;
-      rbP.style.background = _highlight2Color();
-      rbP.style.transform = 'scale(1.1)';
-      rbP.style.color = '#fff';
+      // every tap) sets background with !important, which would otherwise
+      // override the gradual transition below for as long as it's
+      // present. It used to get removed in this same synchronous tick —
+      // before the browser ever painted it — so the tap's HIGHLIGHT flash
+      // never actually became visible during playback at all. Now it's
+      // given a brief moment to actually show, then handed off to the
+      // gradual build-up for whatever time is left before the pattern
+      // loads.
+      const _flashHoldS = 0.12;
+      setTimeout(() => {
+        rbP.classList.remove('btn-flash-blue');
+        const _remaining = Math.max(timeRemaining - _flashHoldS, 0.05);
+        rbP.style.transition = `background ${_remaining}s ease-in, transform ${_remaining}s ease-in`;
+        rbP.style.background = _highlight2Color();
+        rbP.style.transform = 'scale(1.1)';
+        rbP.style.color = '#fff';
+      }, _flashHoldS * 1000);
     }
   } else {
     playUiSound('Rand');
@@ -9924,14 +9941,34 @@ function _slotAdvanceOrRand() {
 // Double-clicking/double-tapping a track name saves the current pattern
 // to the next empty slot — the only way anything ends up in the slot bar
 // now that nothing gets auto-saved there anymore. Silently does nothing
-// if every slot is already full (a manual save always wins, so nothing
-// gets evicted to make room).
+// to the slot bar if every slot is already full (a manual save always
+// wins, so nothing gets evicted to make room) — but the track name still
+// flashes either way (see _flashTrackNameHighlight below), so a "flash
+// but no slot fills in" result is a visible signal that slots are full,
+// not that the double-tap itself failed to register.
 function _saveCurrentPatternToNextSlot() {
   const idx = slots.findIndex(s => s === null);
   if (idx === -1) return;
   slots[idx] = snapshotState();
   activeSlot = idx;
   updateSlotButtons();
+}
+// Track name background eases to HIGHLIGHT over 0.5s then back to normal
+// — fires on every recognized double-click/double-tap regardless of
+// whether a slot was actually available, so the gesture itself is always
+// visibly confirmed. Uses a plain inline style (not a class), so it can't
+// conflict with the instrument-group background classes (.inst-kit etc.)
+// — removing the inline style afterward just lets that class-based
+// background show through again underneath, unchanged.
+function _flashTrackNameHighlight(tr) {
+  const btn = document.getElementById(`tbtn-${tr}`);
+  if (!btn) return;
+  btn.style.transition = 'background 0.5s ease-out';
+  btn.style.background = _highlightColor();
+  setTimeout(() => {
+    btn.style.background = '';
+    setTimeout(() => { btn.style.transition = ''; }, 550);
+  }, 550);
 }
 function updateSlotButtons() {
   for (let i=0;i<NUM_SLOTS;i++) {
@@ -11675,7 +11712,7 @@ function fullReset() {
       // Genuine quick tap, no drag — toggle just this one track.
       clearTimeout(_nameHoldTimer); _nameHoldTimer = null;
       const _now = Date.now();
-      const _isDoubleTap = (_nameHoldTr === _lastNameTapTr) && (_now - _lastNameTapTime < 350);
+      const _isDoubleTap = (_nameHoldTr === _lastNameTapTr) && (_now - _lastNameTapTime < 500);
       trackMuted[_nameHoldTr] = !trackMuted[_nameHoldTr];
       updateTrackMute(_nameHoldTr);
       markModified();
@@ -11687,6 +11724,7 @@ function fullReset() {
         trackMuted[_nameHoldTr] = !trackMuted[_nameHoldTr];
         updateTrackMute(_nameHoldTr);
         markModified();
+        _flashTrackNameHighlight(_nameHoldTr);
         _saveCurrentPatternToNextSlot();
         _lastNameTapTr = -1;
       } else {
@@ -11731,6 +11769,7 @@ function fullReset() {
     if (Date.now() - _lastRealTouchTime < 500) return;
     const btn = e.target.closest && e.target.closest('.track-name-btn');
     if (!btn) return;
+    _flashTrackNameHighlight(+btn.dataset.tr);
     _saveCurrentPatternToNextSlot();
   });
 })();
