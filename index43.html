@@ -460,20 +460,20 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .inst-tonal:hover { background: #fd475d; color: #fff; }
 /* Basses and pads get their own colors within the tonal group */
 .sound-option.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
-.sound-option.inst-tonal.inst-pad  { background: #76f898; color: #111; }
+.sound-option.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
 /* Track name buttons inherit group color */
 .track-name-btn.inst-kit   { background: #0b5394; color: #fff; }
 .track-name-btn.inst-perc  { background: #7baa17; color: #fff; }
 .track-name-btn.inst-tonal { background: #fd475d; color: #fff; }
 .track-name-btn.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
-.track-name-btn.inst-tonal.inst-pad  { background: #76f898; color: #111; }
+.track-name-btn.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
 .track-name-btn.names-uniform { background: var(--track-names-custom-color, #555); color: #fff; }
 
 @keyframes pulse-kit   { from { background: #0b5394; } to { background: #4a8ac4; } }
 @keyframes pulse-perc  { from { background: #7baa17; } to { background: #4a6b0e; } }
 @keyframes pulse-tonal { from { background: #fd475d; } to { background: #b02040; } }
 @keyframes pulse-bass  { from { background: #8d3ba8; } to { background: #5e2670; } }
-@keyframes pulse-pad   { from { background: #3a9c5a; } to { background: #76f898; } }
+@keyframes pulse-pad   { from { background: #3a9c5a; } to { background: #FFFF39; } }
 .track-name-btn.has-notes.inst-kit,
 .track-name-btn.has-notes.inst-perc,
 .track-name-btn.has-notes.inst-tonal { animation: none; }
@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6594,7 +6594,7 @@ function setTrackNameColor(tr, key) {
   const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone'].includes(key);
   let laneColor = _laneColors[g] || 'var(--text)';
   if (isBass) laneColor = '#8d3ba8';
-  else if (isPad) laneColor = '#76f898';
+  else if (isPad) laneColor = '#FFFF39';
   const lane = document.getElementById(`lane-${tr}`);
   if (lane) lane.style.setProperty('--track-color', laneColor);
   // TRACK NAMES setting: skip the instrument-group color classes entirely
@@ -7246,6 +7246,7 @@ function clearAll() {
     trackRLevel[tr] = 0;
     grid[tr].fill(0); trackOffset[tr] = 0; trackPatternState[tr] = 0;
     delete _bassGlideState[tr]; delete _sparkleGlideState[tr]; delete _motownGlide[tr]; delete _slegGlide[tr]; delete _rhodesGlide[tr]; delete _jcmGlide[tr]; delete _clarGlide[tr];
+    delete _plunkGlide[tr]; delete _dbassGlide[tr]; delete _ffluteGlide[tr]; delete _boogGlide[tr];
     delete trackBassScale[tr]; redrawTrackCells(tr);
   }
 }
@@ -9796,6 +9797,21 @@ function restoreState(snap) {
   globalScaleRoot = snap.globalScaleRoot ?? null;
   if (snap.currentScaleName) { currentScaleName = snap.currentScaleName; PENTA_MINOR = SCALES[currentScaleName] || PENTA_MINOR; }
   if (snap.currentScaleName) { currentScaleName = snap.currentScaleName; PENTA_MINOR = SCALES[currentScaleName] || PENTA_MINOR; }
+  // Glide/portamento state for every legato-capable voice (SYNTH BASS,
+  // JAMES BASS, SPARKLE, SLEG, RHODES, JINX, CLARINET) is per-track runtime
+  // memory of whatever frequency that track's last note actually was —
+  // it's never part of the saved snapshot. Left alone, a note right after
+  // a RECALL/slot-load glides in FROM whatever pitch happened to be
+  // playing before the swap, not from anything in the pattern being
+  // restored — so the same "good" pattern can sound different every time
+  // depending on what was playing right before it loaded. Clearing these
+  // here means every restore starts clean, same as the first time that
+  // pattern ever plays from silence.
+  for (let _gtr = 0; _gtr < NUM_TRACKS; _gtr++) {
+    delete _bassGlideState[_gtr]; delete _sparkleGlideState[_gtr]; delete _motownGlide[_gtr];
+    delete _slegGlide[_gtr]; delete _rhodesGlide[_gtr]; delete _jcmGlide[_gtr]; delete _clarGlide[_gtr];
+    delete _plunkGlide[_gtr]; delete _dbassGlide[_gtr]; delete _ffluteGlide[_gtr]; delete _boogGlide[_gtr];
+  }
   for (let tr=0; tr<NUM_TRACKS; tr++) {
     grid[tr]=[...snap.grid[tr]]; trackOffset[tr]=snap.trackOffset[tr];
     const snapInst = snap.trackInstruments[tr];
