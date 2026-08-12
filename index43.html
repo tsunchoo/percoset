@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 21:07</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 22:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -948,6 +948,9 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </div>
           <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
+          <button id="savePaletteBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE PALETTE</button>
+          <button id="loadPaletteBtn" class="rec-mode-btn" onclick="document.getElementById('paletteFileInput').click()">LOAD PALETTE</button>
+          <input type="file" id="paletteFileInput" accept=".SiFiPalette,.json,application/json" style="display:none;" onchange="importPaletteFile(this.files[0])">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
             <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
             <label class="wild-toggle">
@@ -1341,6 +1344,61 @@ function _resetAppColorsToDefault() {
   _applyHighlight3Color('#adff00');
   _applyBgColor('#f5f0e8');
 }
+// Save/load just the color palette as its own small file, independent of
+// a full tape — SAVE PALETTE captures whatever's currently on screen
+// (however it got there: manual pickers, RANDOMIZE COLORS, or WILD), and
+// LOAD PALETTE applies a previously-saved one, both immediately and
+// automatically from then on whenever that file is loaded again.
+function _currentColorPalette() {
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    top: cs.getPropertyValue('--neutral-top').trim() || '#555555',
+    track: cs.getPropertyValue('--neutral-track').trim() || '#b0b0b0',
+    highlight: cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
+    highlight2: cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
+    highlight3: cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
+    bg: cs.getPropertyValue('--bg').trim() || '#f5f0e8',
+  };
+}
+function _applyColorPalette(colors) {
+  if (!colors) return;
+  if (colors.top) _applyTopColor(colors.top);
+  if (colors.track) _applyTrackColor(colors.track);
+  if (colors.highlight) _applyHighlightColor(colors.highlight);
+  if (colors.highlight2) _applyHighlight2Color(colors.highlight2);
+  if (colors.highlight3) _applyHighlight3Color(colors.highlight3);
+  if (colors.bg) _applyBgColor(colors.bg);
+}
+function savePalette() {
+  const payload = { format: 'sifi-palette', version: 1, colors: _currentColorPalette() };
+  const json = JSON.stringify(payload, null, 2);
+  const file = new File([json], 'palette.SiFiPalette.json', { type: 'application/json' });
+  shareOrDownload([file]);
+}
+async function importPaletteFile(file) {
+  const inp = document.getElementById('paletteFileInput');
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    if (!payload || payload.format !== 'sifi-palette' || !payload.colors) {
+      alert("That doesn't look like a valid palette file.");
+      if (inp) inp.value = '';
+      return;
+    }
+    _applyColorPalette(payload.colors);
+    // WILD would just randomize right over this on the very next new
+    // pattern otherwise — loading a specific saved palette means the
+    // person wants exactly this, not a random one a moment later.
+    window._wildColorsEnabled = false;
+    const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = false;
+  } catch (err) {
+    console.error('importPaletteFile failed:', err);
+    alert("Couldn't read that palette file.");
+  } finally {
+    if (inp) inp.value = '';
+  }
+}
 function randomizeAppColors() {
   // Lightness ranges are constrained per-role only for TOP ROW / TRACK
   // BUTTONS, since those two use a fixed label-text color elsewhere too
@@ -1386,6 +1444,8 @@ function randomizeAppColors() {
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => { _pressPulse('randomizeColorsBtn'); randomizeAppColors(); });
+  const savePaletteBtn = document.getElementById('savePaletteBtn');
+  if (savePaletteBtn) savePaletteBtn.addEventListener('click', savePalette);
   const wildToggle = document.getElementById('wildColorsToggle');
   if (wildToggle) wildToggle.addEventListener('change', () => {
     window._wildColorsEnabled = wildToggle.checked;
@@ -12342,7 +12402,7 @@ async function hardResetAudioEngine() {
     const baseGain = ctx.createGain();
     const attackDur = stepDuration() * 4; // fades in from silence over a quarter note, instead of snapping on
     baseGain.gain.setValueAtTime(0, t);
-    baseGain.gain.linearRampToValueAtTime(0.2145, t + attackDur); // -6dB total (was -2dB, now another -4dB on top)
+    baseGain.gain.linearRampToValueAtTime(0.27, t + attackDur); // -4dB total (was -6dB, now +2dB)
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
@@ -12428,7 +12488,7 @@ async function hardResetAudioEngine() {
     // Don't touch anything before the fade-in completes — cancelling here
     // used to wipe out the quarter-note attack before it ever had a chance
     // to run, since both functions fire in the same instant on press.
-    gain.gain.linearRampToValueAtTime(1.5144, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; -4dB overall from the previous 2.4 peak
+    gain.gain.linearRampToValueAtTime(1.9065, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; -2dB overall from the previous 2.4 peak (was -4dB)
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
       stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
