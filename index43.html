@@ -233,7 +233,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn.rec-active { background: #111; }
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
 #randomizeColorsBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
-@keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.85); } 100% { transform: scale(1); } }
 #saveBtn.rec-active img { animation: rec-icon-pulse 0.5s infinite alternate; }
 #saveBtn.rec-beat-pulse { animation: rec-pump 0.44s ease-out; }
 @keyframes rec-pump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:21</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2873,6 +2873,22 @@ function togglePlay() {
     if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = 'paused'; } catch (e) {} }
     clearInterval(scheduleInterval); scheduleInterval = null;
     btn.classList.remove('playing');
+    // If a + press was mid-buildup toward the next bar (the gradual
+    // HIGHLIGHT-2 color/scale transition queueRand starts while playing),
+    // stopping here means the scheduler that would have applied it and
+    // reset these styles never runs again — the button was getting stuck
+    // permanently mid-transition. Same cleanup the scheduler's own
+    // bar-boundary code does, just run immediately instead of waiting for
+    // a bar-start that's never coming now.
+    if (_autoRandPending) {
+      _autoRandPending = false; _autoRandMode = undefined;
+      const rbStop = document.getElementById('randBtn');
+      if (rbStop) {
+        rbStop.style.transition = ''; rbStop.style.background = '';
+        rbStop.style.transform = ''; rbStop.style.color = '';
+      }
+      clearBtnBlueHeld('randBtn');
+    }
     updateBeatPulse();
     document.querySelectorAll('.reel-wrap').forEach(r => { r.classList.remove('spinning'); r.classList.remove('spinning-reverse'); });
     window._reelReversePending = false;
