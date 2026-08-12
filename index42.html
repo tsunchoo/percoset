@@ -152,7 +152,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   background: var(--neutral-top, #555); border: none; color: var(--neutral-top-text, #fff);
   font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700;
   letter-spacing: 0.5px; padding: 0 10px; cursor: pointer; text-transform: uppercase;
-  transition: background 0.1s, color 0.1s; height: 54px; flex-shrink: 0; white-space: nowrap;
+  transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: 54px; flex-shrink: 0; white-space: nowrap;
   touch-action: manipulation;
 }
 .btn.active { background: #111; color: #fff; }
@@ -172,7 +172,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 @keyframes play-green-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
 #playBtn.playing.btn-beat-pulse { animation: play-pulse 0.44s ease-out; }
 @keyframes play-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
-.btn:active { opacity: 0.7; }
+.btn:active { opacity: 0.7; transform: scale(0.88); }
 
 #beatBtn.active:not(.beat-auto-active) { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
@@ -709,7 +709,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 02:50</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:08</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9605,7 +9605,9 @@ function randAll(mode, opts) {
   // per track), so markModified()'s legato-visual refresh just now ran
   // before most tracks' legato data even exists yet. One final guaranteed
   // pass once all of those have genuinely completed.
-  setTimeout(() => { updateLegatoVisuals(); autoSaveRandToSlot(); }, NUM_TRACKS * 30 + 50);
+  // No longer auto-saving to a slot here — double-clicking a track name is
+  // now the only way a pattern gets into the slot bar.
+  setTimeout(() => { updateLegatoVisuals(); }, NUM_TRACKS * 30 + 50);
 }
 
 // Little downward sweep when a new RAND pattern actually starts playing —
@@ -9919,6 +9921,18 @@ function _slotAdvanceOrRand() {
     queueRand();
   }
 }
+// Double-clicking/double-tapping a track name saves the current pattern
+// to the next empty slot — the only way anything ends up in the slot bar
+// now that nothing gets auto-saved there anymore. Silently does nothing
+// if every slot is already full (a manual save always wins, so nothing
+// gets evicted to make room).
+function _saveCurrentPatternToNextSlot() {
+  const idx = slots.findIndex(s => s === null);
+  if (idx === -1) return;
+  slots[idx] = snapshotState();
+  activeSlot = idx;
+  updateSlotButtons();
+}
 function updateSlotButtons() {
   for (let i=0;i<NUM_SLOTS;i++) {
     const btn=document.getElementById(`slot-${i}`); if (!btn) continue;
@@ -9947,33 +9961,11 @@ function updateSlotButtons() {
     }
   }
 }
-// Every freshly-generated RAND pattern gets auto-saved into the slot bar so
-// nothing good is ever lost to the next RAND press. Fills the first empty
-// slot; once there are no empty slots left, it evicts the oldest slot IT
-// auto-saved (not necessarily slot 0) so a manually-saved slot is never
-// touched. If every slot is currently a manual save, there's nowhere safe
-// to put the new pattern, so it's simply not auto-saved that time.
-function autoSaveRandToSlot() {
-  // Suppressed during the startup slot-fill sequence — that sequence
-  // already explicitly manages all 6 slots itself via its own controlled
-  // loop, and this auto-save mechanism firing independently on every one
-  // of its randAll() calls was racing against those explicit assignments.
-  // Once all 6 filled up, its own eviction fallback (oldest auto-saved
-  // slot gets overwritten) would kick in and silently overwrite slot 0
-  // with whatever pattern happened to be live at that later point —
-  // observed as slot 0 ending up identical to slot 5's pattern.
-  if (window._suppressAutoSaveToSlot) return;
-  const snap = snapshotState();
-  let idx = slots.findIndex(s => s === null);
-  if (idx === -1) {
-    if (_autoSlotQueue.length === 0) return; // every slot is a manual save — leave them alone
-    idx = _autoSlotQueue.shift();
-  }
-  slots[idx] = snap;
-  activeSlot = idx;
-  _autoSlotQueue.push(idx);
-  updateSlotButtons();
-}
+// RAND no longer auto-saves into the slot bar — double-clicking a track
+// name (see _saveCurrentPatternToNextSlot above) is the only way a
+// pattern gets into a slot now. _autoSlotQueue stays declared (still
+// referenced by the slot-clear logic below) but nothing populates it
+// anymore, so it's permanently empty.
 function buildSlotBar() {
   const bar=document.getElementById('slotBar'); bar.innerHTML='';
   for (let i=0;i<NUM_SLOTS;i++) {
@@ -10597,60 +10589,21 @@ setTimeout(async () => {
   // a link (loading side only now — the corresponding "send" functions
   // were removed, this just still opens files shared before that).
   try { _tryLoadEmbeddedTape(); } catch (e) { console.error('Embedded tape check failed', e); }
-  // Pre-fill all 6 save slots with distinct patterns right away instead of
-  // starting empty — each with its own independently randomized tempo, not
-  // sharing one across all six. Ends by restoring slot 1 so what's
-  // actually loaded matches what's on screen.
-  //
-  // randAll() doesn't finish its own work synchronously — the actual
-  // per-track note-writing (randomizeTrack) runs inside a setTimeout,
-  // staggered 30ms per track, plus a further-delayed bass safety-net check
-  // on top. That means the very first randAll() call above (used only for
-  // immediate on-screen content while this all runs) is ALSO not actually
-  // finished by the time this code reaches it — so slot 1 can't just grab
-  // a snapshot right away either, the same staleness that affected slots
-  // 2-6 in the first version of this. Every slot, including slot 1, now
-  // goes through its own randAll-then-wait-then-snapshot cycle — 6 full
-  // cycles total, none of them reusing that first throwaway call.
-  //
-  // autoSaveRandToSlot() (triggered internally by every randAll() call)
-  // is explicitly suppressed for the duration of this sequence — it was
-  // racing against this loop's own explicit slot assignments, and once
-  // all 6 slots filled up, its own oldest-slot-eviction fallback would
-  // silently overwrite slot 0 with whatever pattern was live at that
-  // later point (this was the actual cause of slot 0 and slot 6 turning
-  // up identical after a fresh load).
-  // Only one pattern on startup now — the initial randAll() call above
-  // already put it on screen and is still finishing its own deferred
-  // per-track writes (staggered ~30ms apart, plus the bass safety-net
-  // check on top). Just wait for that to settle, then snapshot it into
-  // slot 0. Slots 1-5 start empty instead of being pre-filled with five
-  // more random patterns nobody asked for.
-  //
-  // autoSaveRandToSlot() (triggered internally by every randAll() call)
-  // is explicitly suppressed here so it can't race this block's own
-  // explicit slot-0 assignment.
-  window._suppressAutoSaveToSlot = true;
+  // Slots start completely empty on load now — nothing gets auto-saved
+  // into them anymore, not even slot 0. Double-clicking a track name is
+  // the only way a pattern ends up in the slot bar. The pattern that's
+  // already on screen from the initial randAll() call above stays live;
+  // it's just not written into any slot unless the person actually saves it.
   const _slotFillDelayMs = 500; // comfortably past the ~150ms track stagger and the bass safety-net's own delay on top of that
   (async () => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
-      slots[0] = snapshotState();
-      // _pendingRandTimeouts never self-cleans as individual timeouts fire —
-      // it only gets cleared when the *next* randAll() call starts. Under
-      // real device load, the startup randAll's own deferred work can
-      // still be pending after this fixed wait, even though it normally
-      // finishes well within it. If it fires late — after restoreState
-      // below has already run — it operates on whatever's currently live,
-      // not what it was originally scheduled for. Explicitly cancelling
-      // here, right before the restore, removes that window entirely.
-      _pendingRandTimeouts.forEach(id => clearTimeout(id));
-      _pendingRandTimeouts = [];
-      restoreState(slots[0]);
-      activeSlot = 0;
-      updateSlotButtons();
-      window._suppressAutoSaveToSlot = false; // normal RAND presses after startup should auto-save as usual again
-    } catch (e) { console.error('Startup slot save failed', e); window._suppressAutoSaveToSlot = false; }
+    await new Promise(resolve => setTimeout(resolve, _slotFillDelayMs));
+    // _pendingRandTimeouts never self-cleans as individual timeouts fire —
+    // it only gets cleared when the *next* randAll() call starts. Under
+    // real device load, the startup randAll's own deferred work can still
+    // be pending after this fixed wait, even though it normally finishes
+    // well within it. Explicitly cancelling here removes that window.
+    _pendingRandTimeouts.forEach(id => clearTimeout(id));
+    _pendingRandTimeouts = [];
     // Seed RECALL with this startup pattern right away — otherwise it isn't
     // reachable via RECALL until playback has actually run for a bar (the
     // rolling snapshot only advances during live playback), so an edit made
@@ -11676,6 +11629,7 @@ function fullReset() {
   let _dragActive = false, _dragVisited = new Set(), _dragTargetState = null, _isDragging = false;
   let _nameHoldTimer = null, _nameHoldTr = -1;
   let _swipeStartX = 0, _swipeStartY = 0, _swipeHandled = false;
+  let _lastNameTapTr = -1, _lastNameTapTime = 0; // double-tap-on-the-same-name detection, for save-to-slot
 
   document.addEventListener('touchstart', e => {
     const touch = e.touches[0];
@@ -11742,9 +11696,25 @@ function fullReset() {
     if (!_isDragging && _nameHoldTimer) {
       // Genuine quick tap, no drag — toggle just this one track.
       clearTimeout(_nameHoldTimer); _nameHoldTimer = null;
+      const _now = Date.now();
+      const _isDoubleTap = (_nameHoldTr === _lastNameTapTr) && (_now - _lastNameTapTime < 350);
       trackMuted[_nameHoldTr] = !trackMuted[_nameHoldTr];
       updateTrackMute(_nameHoldTr);
       markModified();
+      if (_isDoubleTap) {
+        // Second tap of a genuine double-tap on the same name — undo this
+        // tap's own mute toggle (a double-tap shouldn't leave the track
+        // re-muted/re-unmuted as a side effect of detecting it) and save
+        // the current pattern to the next empty slot instead.
+        trackMuted[_nameHoldTr] = !trackMuted[_nameHoldTr];
+        updateTrackMute(_nameHoldTr);
+        markModified();
+        _saveCurrentPatternToNextSlot();
+        _lastNameTapTr = -1;
+      } else {
+        _lastNameTapTr = _nameHoldTr;
+        _lastNameTapTime = _now;
+      }
     }
     _dragActive = false; _isDragging = false; _dragVisited = new Set();
   };
@@ -11775,6 +11745,15 @@ function fullReset() {
     const tr = +btn.dataset.tr;
     clearTimeout(_mouseHoldTimer); _mouseHoldTimer = null;
     trackMuted[tr] = !trackMuted[tr]; updateTrackMute(tr); markModified();
+  });
+  // Desktop double-click — the browser already fires two mouseup mute-
+  // toggles for this (canceling out to no net change), so this just adds
+  // the save-to-slot on top, same as the touch double-tap path above.
+  document.addEventListener('dblclick', e => {
+    if (Date.now() - _lastRealTouchTime < 500) return;
+    const btn = e.target.closest && e.target.closest('.track-name-btn');
+    if (!btn) return;
+    _saveCurrentPatternToNextSlot();
   });
 })();
 // (Name bar's amalgam-sound trigger removed — it was firing alongside the
