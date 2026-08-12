@@ -156,6 +156,13 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   touch-action: manipulation;
 }
 .btn.active { background: #111; color: #fff; }
+/* NEW/AUTO's label is now a single "+" for both states (color/pulse
+   already carries the on/off distinction) — sized up well past the base
+   .btn font-size so it reads with the same visual weight the word used
+   to have. Button box itself is untouched: width comes from flex:1 on
+   .transport .btn and height is the fixed 54px above, neither keyed off
+   text content, so this is purely a glyph-size change. */
+#randBtn { font-size: 2.1rem; font-weight: 900; }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
@@ -265,6 +272,11 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   touch-action: none; transition: background 0.1s;
 }
 .track-ctrl-icon-btn.on { background: var(--playhead); color: #fff; }
+/* Per-track N/A label, same "+" treatment as #randBtn above — deliberately
+   excludes #beatCtrlRand (the BEAT menu's own N/A, a different concept:
+   new BEAT type, not new notes) even though it shares the .rand-btn
+   class. Fixed 32px width/height box above is untouched either way. */
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.3rem; font-weight: 900; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: #555; color: #fff; }
@@ -697,7 +709,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">11Aug26 23:56</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 00:03</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -739,7 +751,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </header>
 
 <div class="transport">
-  <button class="btn" id="randBtn">NEW</button>
+  <button class="btn" id="randBtn">+</button>
   <button class="btn" id="clearBtn">SWEEP</button>
   <button class="btn" id="playBtn" onclick="togglePlay()" style="padding:0;display:flex;align-items:center;justify-content:center;position:relative;"><img id="playBtnImg" src="data:image/png;base64,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" style="height:36px;width:36px;object-fit:contain;"><span id="playBtnMask"></span></button>
   <button class="btn" id="beatBtn"><span id="beatBtnText">BEAT</span></button>
@@ -6748,7 +6760,7 @@ function buildUI() {
 
     // R button — randomize notes across the track, regenerating every 4 bars while held
     const randBtn = document.createElement('button'); randBtn.className = 'track-ctrl-icon-btn rand-btn'; randBtn.id = `randbtn-${tr}`;
-    randBtn.textContent = 'R';
+    randBtn.textContent = '+';
     wireRandomizeButton(randBtn, tr);
     ctrlRow.appendChild(randBtn);
 
@@ -9619,7 +9631,7 @@ function stopAllAutoRand() {
     _autoRandLoopActive = false;
     _autoRandBarCount = 0;
     const mainRandBtn = document.getElementById('randBtn');
-    if (mainRandBtn) { mainRandBtn.classList.remove('pulsing', 'rand-color-pulse'); mainRandBtn.textContent = 'NEW'; }
+    if (mainRandBtn) { mainRandBtn.classList.remove('pulsing', 'rand-color-pulse'); mainRandBtn.textContent = '+'; }
   }
   Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
   if (_beatAutoRandActive) {
@@ -9643,14 +9655,14 @@ function stopAllAutoRand() {
       _autoRandLoopActive = false;
       _autoRandBarCount = 0;
       btn.classList.remove('pulsing', 'rand-color-pulse');
-      btn.textContent = 'NEW';
+      btn.textContent = '+';
     }
   };
 
   const startAuto = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // holding again while already in auto stops it
     btn.classList.add('pulsing');
-    btn.textContent = 'AUTO';
+    btn.textContent = '+';
     _autoRandLoopActive = true;
     _autoRandBarCount = 0; // whatever's already playing gets its full 4 bars before the first change
   };
@@ -9866,7 +9878,7 @@ function slotPress(i) {
     _autoRandLoopActive = false;
     _autoRandBarCount = 0;
     const _mainRandBtnSlot = document.getElementById('randBtn');
-    if (_mainRandBtnSlot) { _mainRandBtnSlot.classList.remove('pulsing', 'rand-color-pulse'); _mainRandBtnSlot.textContent = 'NEW'; }
+    if (_mainRandBtnSlot) { _mainRandBtnSlot.classList.remove('pulsing', 'rand-color-pulse'); _mainRandBtnSlot.textContent = '+'; }
   }
   if (slots[i] === null) {
     // Empty slot — save current state immediately
@@ -10458,7 +10470,7 @@ function _stopRandAutoBreathe(tr) {
 }
 function _setRandBtnLabel(rb, isAuto) {
   if (!rb) return;
-  rb.textContent = isAuto ? 'A' : 'N';
+  rb.textContent = '+';
 }
 function wireRandomizeButton(btn, tr) {
   let autoInterval = null, pendingTimeout = null;
@@ -11555,7 +11567,7 @@ function fullReset() {
     rb.classList.remove('rand-auto', 'rand-pending', 'pulsing'); _setRandBtnLabel(rb, false);
   });
   const _mainRandBtn = document.getElementById('randBtn');
-  if (_mainRandBtn) { _mainRandBtn.classList.remove('pulsing'); _mainRandBtn.textContent = 'NEW'; }
+  if (_mainRandBtn) { _mainRandBtn.classList.remove('pulsing'); _mainRandBtn.textContent = '+'; }
 
   // Per-track state back to first-load defaults
   const defaultInstruments = [(Math.random() < 0.5 ? 'drone' : 'amlgm'), 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo']; // DRONE/TEXTURE share slot 0, 50/50
@@ -12059,7 +12071,7 @@ async function hardResetAudioEngine() {
     Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
     _autoRandLoopActive = false; _autoRandPending = false;
     const _mainRandBtn2 = document.getElementById('randBtn');
-    if (_mainRandBtn2) { _mainRandBtn2.classList.remove('pulsing'); _mainRandBtn2.textContent = 'NEW'; }
+    if (_mainRandBtn2) { _mainRandBtn2.classList.remove('pulsing'); _mainRandBtn2.textContent = '+'; }
     document.getElementById('clearBtn')?.classList.remove('active'); // sweep button visual, in case it was stuck lit
 
     // Drop any cached buffers/refs tied to the old context so nothing holds
