@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 22:41</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 23:50</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -948,9 +948,9 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </div>
           <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
-          <button id="savePaletteBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE PALETTE</button>
-          <button id="loadPaletteBtn" class="rec-mode-btn" onclick="document.getElementById('paletteFileInput').click()">LOAD PALETTE</button>
-          <input type="file" id="paletteFileInput" accept=".SiFiPalette,.json,application/json" style="display:none;" onchange="importPaletteFile(this.files[0])">
+          <button id="saveThemeBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE THEME</button>
+          <button id="loadThemeBtn" class="rec-mode-btn" onclick="document.getElementById('themeFileInput').click()">LOAD THEME</button>
+          <input type="file" id="themeFileInput" accept=".SiFiTheme,.json,application/json" style="display:none;" onchange="importThemeFile(this.files[0])">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
             <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
             <label class="wild-toggle">
@@ -1344,12 +1344,12 @@ function _resetAppColorsToDefault() {
   _applyHighlight3Color('#adff00');
   _applyBgColor('#f5f0e8');
 }
-// Save/load just the color palette as its own small file, independent of
-// a full tape — SAVE PALETTE captures whatever's currently on screen
+// Save/load just the color theme as its own small file, independent of
+// a full tape — SAVE THEME captures whatever's currently on screen
 // (however it got there: manual pickers, RANDOMIZE COLORS, or WILD), and
-// LOAD PALETTE applies a previously-saved one, both immediately and
+// LOAD THEME applies a previously-saved one, both immediately and
 // automatically from then on whenever that file is loaded again.
-function _currentColorPalette() {
+function _currentColorTheme() {
   const cs = getComputedStyle(document.documentElement);
   return {
     top: cs.getPropertyValue('--neutral-top').trim() || '#555555',
@@ -1360,7 +1360,7 @@ function _currentColorPalette() {
     bg: cs.getPropertyValue('--bg').trim() || '#f5f0e8',
   };
 }
-function _applyColorPalette(colors) {
+function _applyColorTheme(colors) {
   if (!colors) return;
   if (colors.top) _applyTopColor(colors.top);
   if (colors.track) _applyTrackColor(colors.track);
@@ -1369,32 +1369,32 @@ function _applyColorPalette(colors) {
   if (colors.highlight3) _applyHighlight3Color(colors.highlight3);
   if (colors.bg) _applyBgColor(colors.bg);
 }
-function savePalette() {
-  const payload = { format: 'sifi-palette', version: 1, colors: _currentColorPalette() };
+function saveTheme() {
+  const payload = { format: 'sifi-theme', version: 1, colors: _currentColorTheme() };
   const json = JSON.stringify(payload, null, 2);
-  const file = new File([json], 'palette.SiFiPalette.json', { type: 'application/json' });
+  const file = new File([json], 'theme.SiFiTheme.json', { type: 'application/json' });
   shareOrDownload([file]);
 }
-async function importPaletteFile(file) {
-  const inp = document.getElementById('paletteFileInput');
+async function importThemeFile(file) {
+  const inp = document.getElementById('themeFileInput');
   if (!file) return;
   try {
     const text = await file.text();
     const payload = JSON.parse(text);
-    if (!payload || payload.format !== 'sifi-palette' || !payload.colors) {
-      alert("That doesn't look like a valid palette file.");
+    if (!payload || payload.format !== 'sifi-theme' || !payload.colors) {
+      alert("That doesn't look like a valid theme file.");
       if (inp) inp.value = '';
       return;
     }
-    _applyColorPalette(payload.colors);
+    _applyColorTheme(payload.colors);
     // WILD would just randomize right over this on the very next new
-    // pattern otherwise — loading a specific saved palette means the
+    // pattern otherwise — loading a specific saved theme means the
     // person wants exactly this, not a random one a moment later.
     window._wildColorsEnabled = false;
     const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = false;
   } catch (err) {
-    console.error('importPaletteFile failed:', err);
-    alert("Couldn't read that palette file.");
+    console.error('importThemeFile failed:', err);
+    alert("Couldn't read that theme file.");
   } finally {
     if (inp) inp.value = '';
   }
@@ -1444,8 +1444,8 @@ function randomizeAppColors() {
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => { _pressPulse('randomizeColorsBtn'); randomizeAppColors(); });
-  const savePaletteBtn = document.getElementById('savePaletteBtn');
-  if (savePaletteBtn) savePaletteBtn.addEventListener('click', savePalette);
+  const saveThemeBtn = document.getElementById('saveThemeBtn');
+  if (saveThemeBtn) saveThemeBtn.addEventListener('click', saveTheme);
   const wildToggle = document.getElementById('wildColorsToggle');
   if (wildToggle) wildToggle.addEventListener('change', () => {
     window._wildColorsEnabled = wildToggle.checked;
