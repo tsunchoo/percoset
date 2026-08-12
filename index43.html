@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 23:50</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 23:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8492,6 +8492,18 @@ function applyBarColor(color) {
   if (barEl) { barEl.style.background = color; barEl.style.color = barTextColor(color); }
   document.documentElement.style.setProperty('--bar-color', color);
 }
+// The name bar's own background (and, since it gets captured into
+// snap.barColor, every slot's color from then on too) now follows
+// HIGHLIGHT rather than a fixed hand-picked palette — an analogous hue,
+// offset 20-45° either side of HIGHLIGHT's current hue, at the same
+// saturation/lightness, so it always reads as "part of the same family"
+// as whatever HIGHLIGHT currently is instead of an unrelated color.
+function _analogousToHighlightColor() {
+  const hlHex = getComputedStyle(document.documentElement).getPropertyValue('--playhead-color').trim() || '#f8ff00';
+  const [h, s, l] = _hexToHsl(hlHex);
+  const offset = (20 + Math.random() * 25) * (Math.random() < 0.5 ? -1 : 1);
+  return _hslToHex(h + offset, s, l);
+}
 
 document.documentElement.style.setProperty('--bar-color', _currentBarColor);
 // 80s sci-fi movie character names (not actors) — a database roughly matching the scale of the celestial objects list above (~240 entries), drawn from Star Wars, Blade Runner, Aliens, The Terminator, Back to the Future, RoboCop, Predator, The Thing, Tron, Flash Gordon, Dune, Star Trek II-IV, and many more.
@@ -9723,7 +9735,7 @@ function randAll(mode, opts) {
   }
 
   _currentSpecies = getSpeciesName();
-  applyBarColor(BAR_COLORS[Math.floor(Math.random() * BAR_COLORS.length)]);
+  applyBarColor(_analogousToHighlightColor());
   // Update key/scale display
   const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = (_currentSpecies || '');
   const kd = document.getElementById('keyDisplay');
