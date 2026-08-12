@@ -163,6 +163,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    .transport .btn and height is the fixed 54px above, neither keyed off
    text content, so this is purely a glyph-size change. */
 #randBtn { font-size: 2.8875rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+#randBtn .glyph { display: inline-block; transform: translateY(-1px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
@@ -288,7 +289,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    excludes #beatCtrlRand (the BEAT menu's own N/A, a different concept:
    new BEAT type, not new notes) even though it shares the .rand-btn
    class. Fixed 32px width/height box above is untouched either way. */
-.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.7875rem; font-weight: 900; }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.7875rem; font-weight: 400; }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-1px); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: #555; color: #fff; }
@@ -721,7 +723,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:34</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 18:59</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -763,7 +765,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </header>
 
 <div class="transport">
-  <button class="btn" id="randBtn">+</button>
+  <button class="btn" id="randBtn"><span class="glyph">+</span></button>
   <button class="btn" id="clearBtn">SWEEP</button>
   <button class="btn" id="playBtn" onclick="togglePlay()" style="padding:0;display:flex;align-items:center;justify-content:center;position:relative;"><img id="playBtnImg" src="data:image/png;base64,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" style="height:36px;width:36px;object-fit:contain;"><span id="playBtnMask"></span></button>
   <button class="btn" id="beatBtn"><span id="beatBtnText">BEAT</span></button>
@@ -6775,7 +6777,7 @@ function buildUI() {
 
     // R button — randomize notes across the track, regenerating every 4 bars while held
     const randBtn = document.createElement('button'); randBtn.className = 'track-ctrl-icon-btn rand-btn'; randBtn.id = `randbtn-${tr}`;
-    randBtn.textContent = '+';
+    randBtn.innerHTML = '<span class="glyph">+</span>';
     wireRandomizeButton(randBtn, tr);
     ctrlRow.appendChild(randBtn);
 
@@ -9658,7 +9660,7 @@ function stopAllAutoRand() {
     _autoRandLoopActive = false;
     _autoRandBarCount = 0;
     const mainRandBtn = document.getElementById('randBtn');
-    if (mainRandBtn) { mainRandBtn.classList.remove('pulsing', 'rand-color-pulse'); mainRandBtn.textContent = '+'; }
+    if (mainRandBtn) { mainRandBtn.classList.remove('pulsing', 'rand-color-pulse'); mainRandBtn.innerHTML = '<span class="glyph">+</span>'; }
   }
   Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
   if (_beatAutoRandActive) {
@@ -9682,14 +9684,14 @@ function stopAllAutoRand() {
       _autoRandLoopActive = false;
       _autoRandBarCount = 0;
       btn.classList.remove('pulsing', 'rand-color-pulse');
-      btn.textContent = '+';
+      btn.innerHTML = '<span class="glyph">+</span>';
     }
   };
 
   const startAuto = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // holding again while already in auto stops it
     btn.classList.add('pulsing');
-    btn.textContent = '+';
+    btn.innerHTML = '<span class="glyph">+</span>';
     _autoRandLoopActive = true;
     _autoRandBarCount = 0; // whatever's already playing gets its full 4 bars before the first change
   };
@@ -9905,7 +9907,7 @@ function slotPress(i) {
     _autoRandLoopActive = false;
     _autoRandBarCount = 0;
     const _mainRandBtnSlot = document.getElementById('randBtn');
-    if (_mainRandBtnSlot) { _mainRandBtnSlot.classList.remove('pulsing', 'rand-color-pulse'); _mainRandBtnSlot.textContent = '+'; }
+    if (_mainRandBtnSlot) { _mainRandBtnSlot.classList.remove('pulsing', 'rand-color-pulse'); _mainRandBtnSlot.innerHTML = '<span class="glyph">+</span>'; }
   }
   if (slots[i] === null) {
     // Empty slot — save current state immediately
@@ -9938,12 +9940,12 @@ function _slotAdvanceOrRand() {
     queueRand();
   }
 }
-// Double-clicking/double-tapping a track name saves the current pattern
+// Double-clicking/double-tapping the name bar saves the current pattern
 // to the next empty slot — the only way anything ends up in the slot bar
 // now that nothing gets auto-saved there anymore. Silently does nothing
 // to the slot bar if every slot is already full (a manual save always
-// wins, so nothing gets evicted to make room) — but the track name still
-// flashes either way (see _flashTrackNameHighlight below), so a "flash
+// wins, so nothing gets evicted to make room) — but the name bar still
+// flashes either way (see _flashNameBarHighlight below), so a "flash
 // but no slot fills in" result is a visible signal that slots are full,
 // not that the double-tap itself failed to register.
 function _saveCurrentPatternToNextSlot() {
@@ -9953,21 +9955,22 @@ function _saveCurrentPatternToNextSlot() {
   activeSlot = idx;
   updateSlotButtons();
 }
-// Track name background eases to HIGHLIGHT over 0.5s then back to normal
-// — fires on every recognized double-click/double-tap regardless of
-// whether a slot was actually available, so the gesture itself is always
-// visibly confirmed. Uses a plain inline style (not a class), so it can't
-// conflict with the instrument-group background classes (.inst-kit etc.)
-// — removing the inline style afterward just lets that class-based
-// background show through again underneath, unchanged.
-function _flashTrackNameHighlight(tr) {
-  const btn = document.getElementById(`tbtn-${tr}`);
-  if (!btn) return;
-  btn.style.transition = 'background 0.5s ease-out';
-  btn.style.background = _highlightColor();
+// Name bar background eases to HIGHLIGHT over 0.5s then back to normal —
+// fires on every recognized double-click/double-tap regardless of whether
+// a slot was actually available, so the gesture itself is always visibly
+// confirmed. Captures whatever the current background actually is right
+// before overwriting it, and restores exactly that afterward — #nameBar's
+// color comes from its own inline style, not a class, so a hardcoded
+// revert would silently drift out of sync with it if that ever changes.
+function _flashNameBarHighlight() {
+  const bar = document.getElementById('nameBar');
+  if (!bar) return;
+  const original = bar.style.background;
+  bar.style.transition = 'background 0.5s ease-out';
+  bar.style.background = _highlightColor();
   setTimeout(() => {
-    btn.style.background = '';
-    setTimeout(() => { btn.style.transition = ''; }, 550);
+    bar.style.background = original;
+    setTimeout(() => { bar.style.transition = ''; }, 550);
   }, 550);
 }
 function updateSlotButtons() {
@@ -10507,7 +10510,7 @@ function _stopRandAutoBreathe(tr) {
 }
 function _setRandBtnLabel(rb, isAuto) {
   if (!rb) return;
-  rb.textContent = '+';
+  rb.innerHTML = '<span class="glyph">+</span>';
 }
 function wireRandomizeButton(btn, tr) {
   let autoInterval = null, pendingTimeout = null;
@@ -11455,12 +11458,14 @@ function hideInstructions() {
   title.addEventListener('pointercancel', release);
 })();
 
-// ── Name bar → star map hold, plus swipe left/right for RECALL / next slot ──
+// ── Name bar → star map hold, plus swipe left/right for RECALL / next slot,
+//    plus double-tap to save the current pattern to a slot ──
 (function() {
   const nb = document.getElementById('nameBar');
   if (!nb) return;
   let _mapActive = false, _mapShown = false, _swipeHandled = false;
   let _startX = 0, _startY = 0, _mapDelayTimer = null;
+  let _lastTapTime = 0; // double-tap-to-save timing
 
   nb.addEventListener('touchstart', e => {
     e.preventDefault();
@@ -11500,11 +11505,34 @@ function hideInstructions() {
     e.preventDefault();
     if (_mapDelayTimer) { clearTimeout(_mapDelayTimer); _mapDelayTimer = null; }
     if (_mapActive) { _mapActive = false; hideCelestialMap(); }
+    // Double-tap-to-save — only counts a genuine quick tap (not a swipe,
+    // and not a hold that actually opened the map). This element's own
+    // touchstart above calls preventDefault(), which stops the browser
+    // from ever synthesizing a 'dblclick' from real touch input here, so
+    // this has to be raw touchend timing rather than a native dblclick
+    // listener (that's kept below anyway, purely as a desktop-mouse path).
+    if (!_swipeHandled && !_mapShown) {
+      const now = Date.now();
+      if (now - _lastTapTime < 350) {
+        _lastTapTime = 0;
+        _flashNameBarHighlight();
+        _saveCurrentPatternToNextSlot();
+      } else {
+        _lastTapTime = now;
+      }
+    }
   }, { passive: false });
   nb.addEventListener('touchcancel', e => {
     if (_mapDelayTimer) { clearTimeout(_mapDelayTimer); _mapDelayTimer = null; }
     if (_mapActive) { _mapActive = false; hideCelestialMap(); }
   }, { passive: false });
+  // Desktop mouse fallback — real mouse input isn't affected by this
+  // element's touchstart preventDefault, so the native dblclick fires fine.
+  nb.addEventListener('dblclick', e => {
+    e.preventDefault();
+    _flashNameBarHighlight();
+    _saveCurrentPatternToNextSlot();
+  });
 })();
 
 
@@ -11534,7 +11562,7 @@ function fullReset() {
     rb.classList.remove('rand-auto', 'rand-pending', 'pulsing'); _setRandBtnLabel(rb, false);
   });
   const _mainRandBtn = document.getElementById('randBtn');
-  if (_mainRandBtn) { _mainRandBtn.classList.remove('pulsing'); _mainRandBtn.textContent = '+'; }
+  if (_mainRandBtn) { _mainRandBtn.classList.remove('pulsing'); _mainRandBtn.innerHTML = '<span class="glyph">+</span>'; }
 
   // Per-track state back to first-load defaults
   const defaultInstruments = [(Math.random() < 0.5 ? 'drone' : 'amlgm'), 'sleg', 'sparkle', 'sbass3', 'congHi', 'congLo']; // DRONE/TEXTURE share slot 0, 50/50
@@ -11743,40 +11771,6 @@ function fullReset() {
     const tr = +btn.dataset.tr;
     clearTimeout(_mouseHoldTimer); _mouseHoldTimer = null;
     trackMuted[tr] = !trackMuted[tr]; updateTrackMute(tr); markModified();
-  });
-})();
-// Double-clicking/double-tapping a track name saves the current pattern to
-// the next empty slot — the same proven touchend-timing + native dblclick
-// pattern already used for PLAY/SAVE's double-tap-to-reset (wireDoubleTap
-// above), not the bespoke drag-aware detection this used to have baked
-// into the mute/drag gesture IIFE above (which never reliably fired).
-// Fully standalone and independent of that other IIFE's state, and
-// delegated on document rather than bound to specific button elements, so
-// it keeps working after buildUI() replaces the track name buttons (e.g.
-// on a reset).
-(function() {
-  let lastTapTr = -1, lastTapTime = 0;
-  document.addEventListener('touchend', e => {
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    const el = document.elementFromPoint(t.clientX, t.clientY);
-    const btn = el && el.closest && el.closest('.track-name-btn');
-    if (!btn) return;
-    const tr = +btn.dataset.tr;
-    const now = Date.now();
-    if (tr === lastTapTr && now - lastTapTime < 350) {
-      lastTapTr = -1;
-      _flashTrackNameHighlight(tr);
-      _saveCurrentPatternToNextSlot();
-    } else {
-      lastTapTr = tr; lastTapTime = now;
-    }
-  }, { passive: true });
-  document.addEventListener('dblclick', e => { // desktop mouse fallback
-    const btn = e.target.closest && e.target.closest('.track-name-btn');
-    if (!btn) return;
-    _flashTrackNameHighlight(+btn.dataset.tr);
-    _saveCurrentPatternToNextSlot();
   });
 })();
 // (Name bar's amalgam-sound trigger removed — it was firing alongside the
@@ -12081,7 +12075,7 @@ async function hardResetAudioEngine() {
     Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
     _autoRandLoopActive = false; _autoRandPending = false;
     const _mainRandBtn2 = document.getElementById('randBtn');
-    if (_mainRandBtn2) { _mainRandBtn2.classList.remove('pulsing'); _mainRandBtn2.textContent = '+'; }
+    if (_mainRandBtn2) { _mainRandBtn2.classList.remove('pulsing'); _mainRandBtn2.innerHTML = '<span class="glyph">+</span>'; }
     document.getElementById('clearBtn')?.classList.remove('active'); // sweep button visual, in case it was stuck lit
 
     // Drop any cached buffers/refs tied to the old context so nothing holds
