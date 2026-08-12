@@ -297,7 +297,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    new BEAT type, not new notes) even though it shares the .rand-btn
    class. Fixed 32px width/height box above is untouched either way. */
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.7875rem; font-weight: 400; }
-.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-3px); }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: #555; color: #fff; }
@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:57</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -754,8 +754,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 </div>
 
 <header>
-  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">BAR84</h1>
-  <!-- Old title text, kept here in case you want to switch back: Si•Fi -->
+  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">Si•Fi</h1>
   <div id="tapeReels" class="tape-reels">
     <div class="reel-wrap" id="leftReelWrap" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
       <img class="reel" id="reel1" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">
