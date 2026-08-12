@@ -162,7 +162,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    to have. Button box itself is untouched: width comes from flex:1 on
    .transport .btn and height is the fixed 54px above, neither keyed off
    text content, so this is purely a glyph-size change. */
-#randBtn { font-size: 2.625rem; font-weight: 900; }
+#randBtn { font-size: 2.8875rem; font-weight: 900; position: relative; top: -5px; }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
@@ -276,7 +276,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    excludes #beatCtrlRand (the BEAT menu's own N/A, a different concept:
    new BEAT type, not new notes) even though it shares the .rand-btn
    class. Fixed 32px width/height box above is untouched either way. */
-.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.625rem; font-weight: 900; }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.7875rem; font-weight: 900; position: relative; top: -5px; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: #555; color: #fff; }
@@ -709,7 +709,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:14</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11321,43 +11321,12 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   });
   _amalgamVolOverride = null; // reset AFTER the notes read it — it was being cleared too early before, so every note fell back to the flat default instead of the computed volume
 }
-(function() {
-  const spool = document.getElementById('reel2');
-  if (!spool) return;
-  const wrap = spool.closest('.reel-wrap') || spool;
-  wrap.style.touchAction = 'none';
-  wrap.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    // _fireAmalgamEcho(); // right spool no longer fires the amalgam/DRONE echo directly
-    document.getElementById('clearBtn')?.dispatchEvent(new MouseEvent('mousedown')); // acts like SWEEP instead
-    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
-  });
-  const release = e => {
-    wrap.style.filter = '';
-    // _resetDownbeatToNow(); // right spool no longer resets BEAT's downbeat
-    document.dispatchEvent(new MouseEvent('mouseup')); // acts like SWEEP instead
-    try { wrap.releasePointerCapture(e.pointerId); } catch(err) {}
-  };
-  wrap.addEventListener('pointerup', release);
-  wrap.addEventListener('pointercancel', release);
-  // Also catch a drag that started elsewhere and ends on the spool — the
-  // pointerdown/pointerup pair above only fires for a gesture that both
-  // starts AND gets captured on this element itself, so dragging in from
-  // another element and releasing here never triggered it before.
-  let _spoolOwnRelease = false;
-  wrap.addEventListener('pointerup', () => { _spoolOwnRelease = true; });
-  document.addEventListener('touchend', e => {
-    if (_spoolOwnRelease) { _spoolOwnRelease = false; return; } // already handled by the direct listener above
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    const el = document.elementFromPoint(t.clientX, t.clientY);
-    if (el && el.closest && el.closest('#rightReelWrap')) {
-      // _fireAmalgamEcho(); _resetDownbeatToNow(); // right spool no longer does either of these
-      document.getElementById('clearBtn')?.dispatchEvent(new MouseEvent('mousedown'));
-      document.dispatchEvent(new MouseEvent('mouseup'));
-    }
-  }, { passive: true });
-})();
+// Right tape spool (reel2) is now fully dormant — it used to proxy its
+// press/release directly onto SWEEP's own mousedown/mouseup (so touching
+// it acted exactly like pressing and releasing SWEEP, including SWEEP's
+// release "Cymbal" cue), which is exactly the unwanted "stop sound plus
+// SWEEP rolling over" behavior. All of that wiring is removed — the right
+// spool no longer does anything when touched.
 (function() {
   const spool = document.getElementById('reel1');
   if (!spool) return;
@@ -12354,7 +12323,19 @@ async function hardResetAudioEngine() {
     gain.gain.linearRampToValueAtTime(0.85, t + measure);
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
-      stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
+      // This used to call stopSweep() unconditionally here — which fires
+      // even while the button is still physically held, killing the sound
+      // (with its own release "Cymbal" cue), and critically, resetting
+      // _sweepDragStartY to null. Any further drag from a still-held
+      // finger after that point silently stopped affecting the level at
+      // all, since the drag handlers require a non-null start position —
+      // this was the actual cause of hold-and-drag-for-level appearing to
+      // do nothing much of the time. Only auto-release here if the finger
+      // has genuinely already lifted (gesture no longer active); if still
+      // held, just stay at the taken-over level and keep responding to
+      // drag — the real release happens whenever they actually let go.
+      if (!window._sweepGestureActive) { stopSweep(); return; }
+      gain.gain.setTargetAtTime(0.85, ctx.currentTime, 0.05); // hold steady at the taken-over level rather than re-ramping
     }, measure * 1000);
   }
 
