@@ -730,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 20:37</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 20:49</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -999,7 +999,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
           <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
-          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain,*/*" style="display:none;" onchange="importTapeFile(this.files[0])">
+          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
       </div>
 
