@@ -222,6 +222,13 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    dark/light swap .rec-mode-btn.on already uses elsewhere. */
 #exportTapeBtn, #shareTapeLinkBtn, #importTapeBtn { transition: background 0.1s, color 0.1s; }
 #exportTapeBtn:active, #shareTapeLinkBtn:active, #importTapeBtn:active { background:#111; color:#fff; }
+/* WILD toggle — standard pill switch, HIGHLIGHT color when on */
+.wild-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; }
+.wild-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.wild-toggle-slider { position: absolute; inset: 0; background: #ccc; transition: background 0.2s; border-radius: 24px; }
+.wild-toggle-slider::before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; transition: transform 0.2s; border-radius: 50%; }
+.wild-toggle input:checked + .wild-toggle-slider { background: var(--playhead-color, #f8ff00); }
+.wild-toggle input:checked + .wild-toggle-slider::before { transform: translateX(20px); }
 @keyframes boost-red { from { background: #e0142c; color: #fff; } to { background: #7a0016; color: #ffb3bb; } }
 #saveBtn.rec-active { background: #111; }
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
@@ -723,7 +730,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 18:59</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 19:08</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -941,6 +948,13 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </div>
           <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
+            <label class="wild-toggle">
+              <input type="checkbox" id="wildColorsToggle">
+              <span class="wild-toggle-slider"></span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -1091,6 +1105,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <script>
 let _bgPulseEnabled = false, _bgStaticEnabled = false, _bgPulseSteps = 4, _bgPulseCounter = 0;
+window._wildColorsEnabled = false; // WILD toggle in settings — randomizes app colors alongside every new whole-pattern RAND
 const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
   ssnare: { name: 'SNARE',       soft: 'Sounds/Snare50.wav', accent: 'Sounds/Snare100.wav', group: 'kit' },
@@ -1357,6 +1372,8 @@ function randomizeAppColors() {
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => { _pressPulse('randomizeColorsBtn'); randomizeAppColors(); });
+  const wildToggle = document.getElementById('wildColorsToggle');
+  if (wildToggle) wildToggle.addEventListener('change', () => { window._wildColorsEnabled = wildToggle.checked; });
 })();
 (function() {
   function hexToRgb(hex) {
@@ -8995,6 +9012,10 @@ function tempoNoteFactor() {
 }
 function randAll(mode, opts) {
   opts = opts || {};
+  // WILD mode — colors randomize right along with the pattern every time
+  // a whole new one gets generated via this function (the top-row + button,
+  // both a single press and its held auto-mode loop).
+  if (window._wildColorsEnabled) randomizeAppColors();
   _split32CycleCount = 0;
   mode = mode || 'all';
   const level = Math.floor(Math.random() * 5); // random pick every press, not a 1-5 cycle
@@ -11619,6 +11640,8 @@ function fullReset() {
   const pulseCb = document.getElementById('bgPulseEnable'); if (pulseCb) pulseCb.checked = false;
   const staticCb = document.getElementById('bgStaticEnable'); if (staticCb) staticCb.checked = false;
   const grayCb = document.getElementById('notesGrayscaleEnable'); if (grayCb) grayCb.checked = false;
+  window._wildColorsEnabled = false;
+  const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = false;
   const speedWrap = document.getElementById('bgPulseSpeedWrap'); if (speedWrap) speedWrap.style.display = 'none';
   // Note marker color is tinted against whatever background is currently
   // in effect — re-sync it now that CUSTOM bg is back off, otherwise it'd
