@@ -162,11 +162,11 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    to have. Button box itself is untouched: width comes from flex:1 on
    .transport .btn and height is the fixed 54px above, neither keyed off
    text content, so this is purely a glyph-size change. */
-#randBtn { font-size: 2.1rem; font-weight: 900; }
+#randBtn { font-size: 2.625rem; font-weight: 900; }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
-#playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: #adff00; -webkit-mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
+#playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: var(--highlight3-color, #adff00); -webkit-mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
 #playBtn.playing #playBtnMask { display: block; }
 #playBtn.playing.btn-beat-pulse #playBtnMask { animation: play-green-pulse 0.44s ease-out; }
 @keyframes play-green-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
@@ -174,7 +174,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 @keyframes play-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .btn:active { opacity: 0.7; }
 
-#beatBtn.active:not(.beat-auto-active) { background: #111 !important; color: #adff00 !important; }
+#beatBtn.active:not(.beat-auto-active) { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
 @keyframes beat-text-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
 .beat-type-menu {
@@ -220,7 +220,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
 @keyframes rec-icon-pulse { from { filter: brightness(0) invert(1) sepia(1) saturate(20) hue-rotate(330deg) brightness(1.5); } to { filter: brightness(0) invert(1) sepia(1) saturate(20) hue-rotate(330deg) brightness(0.5); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
-.btn-flash-blue { background: #0b5394 !important; color: #adff00 !important; border: none !important; transition: none !important; }
+.btn-flash-blue { background: #0b5394 !important; color: var(--highlight3-color, #adff00) !important; border: none !important; transition: none !important; }
 .rand-overlay-btn {
   font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
@@ -276,7 +276,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    excludes #beatCtrlRand (the BEAT menu's own N/A, a different concept:
    new BEAT type, not new notes) even though it shares the .rand-btn
    class. Fixed 32px width/height box above is untouched either way. */
-.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.3rem; font-weight: 900; }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: 1.625rem; font-weight: 900; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: #555; color: #fff; }
@@ -316,8 +316,8 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 @keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
 #randBtn.btn-flash-blue { background: var(--playhead-color, #f8ff00) !important; color: var(--highlight-text, #000) !important; }
-#clearBtn.active { background: #111 !important; color: #adff00 !important; }
-#scratchBtn.active { background: #111 !important; color: #adff00 !important; }
+#clearBtn.active { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
+#scratchBtn.active { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
 .shift-btn {
@@ -709,7 +709,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 00:03</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 02:50</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -868,25 +868,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RECORDING</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button id="recMode_realtime" class="rec-mode-btn" onclick="setRecordMode('realtime')">REALTIME</button>
-          <button id="recMode_bounceLoop" class="rec-mode-btn" onclick="setRecordMode('bounceLoop')">BOUNCE LOOP</button>
-          <button id="recMode_bounceStems" class="rec-mode-btn" onclick="setRecordMode('bounceStems')">BOUNCE LOOP STEMS</button>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
-          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
-          <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
-          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt" style="display:none;" onchange="importTapeFile(this.files[0])">
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
@@ -957,6 +938,14 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="flex:1;min-width:0;">
+              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 3</div>
+              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">PLAY's icon, and BEAT/SWEEP/RECALL's text when active or flashed</div>
+            </div>
+            <input type="color" id="highlight3ColorPicker" value="#adff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+            <style>#highlight3ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight3ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight3ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;min-width:0;">
               <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">BACKGROUND</div>
               <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">The page background only — menus keep their own color</div>
             </div>
@@ -964,6 +953,25 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
             <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
           </div>
           <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RECORDING</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button id="recMode_realtime" class="rec-mode-btn" onclick="setRecordMode('realtime')">REALTIME</button>
+          <button id="recMode_bounceLoop" class="rec-mode-btn" onclick="setRecordMode('bounceLoop')">BOUNCE LOOP</button>
+          <button id="recMode_bounceStems" class="rec-mode-btn" onclick="setRecordMode('bounceStems')">BOUNCE LOOP STEMS</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
+          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
+          <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
+          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
       </div>
 
@@ -1200,6 +1208,14 @@ function _highlight2Color() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--highlight2-color').trim();
   return v || '#0078ff';
 }
+// Third slot — collects the green (#adff00) used across the top row's
+// engaged/flash states: PLAY's icon fill, and BEAT/SWEEP/RECALL's text
+// when active or flashed. RECORD deliberately excluded (its own states
+// use a different color entirely).
+function _highlight3Color() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--highlight3-color').trim();
+  return v || '#adff00';
+}
 // ── Shared color helpers for the consolidated COLORS settings section ──
 function _relLuminance(hex) {
   const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -1227,6 +1243,20 @@ function _hslToHex(h, s, l) {
   const toHex = v => Math.round(v * 255).toString(16).padStart(2, '0');
   return '#' + toHex(r) + toHex(g) + toHex(b);
 }
+function _hexToHsl(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0; const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s, l];
+}
 // Applies each color plus a paired, luminance-based text color so whatever
 // sits on top (button labels, the beat-auto flash text, etc.) stays legible
 // no matter how dark or light the chosen color is — used both when a
@@ -1235,6 +1265,12 @@ function _applyTopColor(hex) {
   document.documentElement.style.setProperty('--neutral-top', hex);
   document.documentElement.style.setProperty('--neutral-top-text', _contrastText(hex));
   const el = document.getElementById('topColorPicker'); if (el) el.value = hex;
+  // Empty note marker background derives from TOP ROW — same hue/
+  // saturation, held at ~84% lightness (matching the flat #d6d6d6 grey
+  // this always used to be), so it reads as "that same light grey" by
+  // default and only visibly tints once TOP ROW actually changes.
+  const [h, s] = _hexToHsl(hex);
+  document.documentElement.style.setProperty('--empty-cell-color', _hslToHex(h, s, 0.839));
 }
 function _applyTrackColor(hex) {
   document.documentElement.style.setProperty('--neutral-track', hex);
@@ -1250,6 +1286,13 @@ function _applyHighlight2Color(hex) {
   document.documentElement.style.setProperty('--highlight2-color', hex);
   document.documentElement.style.setProperty('--highlight2-text', _contrastText(hex));
   const el = document.getElementById('highlight2ColorPicker'); if (el) el.value = hex;
+}
+function _applyHighlight3Color(hex) {
+  // No paired "-text" var here — HIGHLIGHT 3 IS the text color itself
+  // (drawn against fixed dark backgrounds like #111), not a background
+  // needing its own contrast-computed label color.
+  document.documentElement.style.setProperty('--highlight3-color', hex);
+  const el = document.getElementById('highlight3ColorPicker'); if (el) el.value = hex;
 }
 function _applyBgColor(hex) {
   document.documentElement.style.setProperty('--bg', hex);
@@ -1279,6 +1322,10 @@ function randomizeAppColors() {
   const highlightLight = 0.35 + Math.random() * 0.4;
   _applyHighlightColor(_hslToHex(highlightHue, highlightSat, highlightLight));
   _applyHighlight2Color(_hslToHex(highlightHue + 180, highlightSat, highlightLight));
+  // HIGHLIGHT 3 sits as text on a fixed dark (#111) background wherever
+  // it's used, so it stays in a bright/vivid range regardless of hue —
+  // same "LED" character as the default green, just a random hue.
+  _applyHighlight3Color(_hslToHex(Math.random() * 360, 0.65 + Math.random() * 0.35, 0.55 + Math.random() * 0.2));
   _applyBgColor(_hslToHex(Math.random() * 360, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
 }
 (function() {
@@ -1290,6 +1337,8 @@ function randomizeAppColors() {
   if (highlightPicker) highlightPicker.addEventListener('input', () => _applyHighlightColor(highlightPicker.value));
   const highlight2Picker = document.getElementById('highlight2ColorPicker');
   if (highlight2Picker) highlight2Picker.addEventListener('input', () => _applyHighlight2Color(highlight2Picker.value));
+  const highlight3Picker = document.getElementById('highlight3ColorPicker');
+  if (highlight3Picker) highlight3Picker.addEventListener('input', () => _applyHighlight3Color(highlight3Picker.value));
   const bgPicker = document.getElementById('bgColorPicker');
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
@@ -1353,64 +1402,18 @@ function randomizeAppColors() {
     }
     return rgbToHex(r * 255, g * 255, b * 255);
   }
-  const DEFAULT_APP_BG = '#f5f0e8'; // matches --bg in CSS
-  const HUE_SATURATION = 0.16; // how strongly the background's hue reads through the grey
-
-  const emptyCellColorPicker = document.getElementById('emptyCellColorPicker');
-  const emptyCellTransparentCb = document.getElementById('emptyCellTransparentEnable');
-  const bgColorPicker = document.getElementById('bgColorPicker');
-  const bgStaticCb = document.getElementById('bgStaticEnable');
-
-  let _emptyCellBaseColor = emptyCellColorPicker ? emptyCellColorPicker.value : '#d6d6d6';
-  let _emptyCellTransparent = false;
-
-  function getEffectiveBgHex() {
-    if (bgStaticCb && bgStaticCb.checked && bgColorPicker) return bgColorPicker.value;
-    return DEFAULT_APP_BG;
-  }
-  // Picks the light or dark variant of a base grey depending on whether the
-  // current background is dark or light (keeping the marker legible against
-  // either extreme), then recolors it to the background's hue at a fixed,
-  // clearly-visible saturation while preserving that variant's own lightness
-  // — so it reads as a warm/cool-tinted grey rather than the background
-  // itself, and rather than a linear RGB blend that's invisible at these
-  // near-white lightness levels.
-  function tintedFor(baseHex) {
-    const bg = getEffectiveBgHex();
-    const variant = relLuminance(bg) < 0.5 ? invertHex(baseHex) : baseHex;
-    const [, , variantL] = hexToHsl(variant);
-    const [bgH] = hexToHsl(bg);
-    return hslToHex(bgH, HUE_SATURATION, variantL);
-  }
   // Track lines always stay transparent now — no picker, no toggle.
   document.documentElement.style.setProperty('--track-line-color', 'transparent');
+  // Empty note marker color now derives from TOP ROW (see _applyTopColor)
+  // rather than its own picker — this just re-applies that derivation
+  // against whatever --neutral-top currently is, for the couple of call
+  // sites elsewhere that re-sync it after some other setting changes.
   function applyEmptyCellColor() {
-    document.documentElement.style.setProperty('--empty-cell-color',
-      _emptyCellTransparent ? 'transparent' : _emptyCellBaseColor);
+    const topHex = getComputedStyle(document.documentElement).getPropertyValue('--neutral-top').trim() || '#555555';
+    const [h, s] = _hexToHsl(topHex);
+    document.documentElement.style.setProperty('--empty-cell-color', _hslToHex(h, s, 0.839));
   }
-  // Exposed so the DISPLAY background controls can trigger a re-tint when the bg changes.
   window._applyEmptyCellColor = applyEmptyCellColor;
-  // Apply the actual resting state right away — this was previously only
-  // ever invoked reactively from an input/change event, so nothing ran the
-  // color logic at all until the person had already interacted with a
-  // control once, leaving the CSS custom property unset (and silently
-  // falling back to its own default) the whole time before that.
-  applyEmptyCellColor();
-
-  if (emptyCellColorPicker) {
-    emptyCellColorPicker.addEventListener('input', () => {
-      _emptyCellBaseColor = emptyCellColorPicker.value;
-      applyEmptyCellColor();
-    });
-  }
-  if (emptyCellTransparentCb) {
-    emptyCellTransparentCb.addEventListener('change', () => {
-      _emptyCellTransparent = emptyCellTransparentCb.checked;
-      if (emptyCellColorPicker) emptyCellColorPicker.disabled = _emptyCellTransparent;
-      applyEmptyCellColor();
-    });
-  }
-
   applyEmptyCellColor();
 })();
 (function() {
@@ -2052,7 +2055,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.5014 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397)
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.5959 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1.5dB more (was 0.5014)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -7140,10 +7143,15 @@ document.addEventListener('mouseup', () => {
   dragWriteTrack = -1; dragStartStep = -1; dragStartCellEl = null; dragMoved = false; dragWrittenSteps.clear(); dragTrimOwnerGs = -1;
 });
 
-// ── Drag-to-engage for icon buttons (sweep, FX, shift, R) and slot buttons ──
-// Excluded: .btn (PLAY/BEAT/CLEAR), .track-name-btn, input[type=range]
+// ── Drag-to-engage for icon buttons (L, <, R, FX, + and slot buttons) ──
+// Excluded: .btn (PLAY/BEAT/CLEAR), .track-name-btn, input[type=range],
+// and #beatCtrlRand specifically — it shares .rand-btn with the per-track
+// + buttons but is the BEAT menu's own "new beat type" control, a
+// different concept from "new notes", so it stays out of this generic
+// drag-across-tracks system.
 const DRAGGABLE_BTN_SELECTORS = [
-  '.track-ctrl-icon-btn:not(.rand-btn):not(.fx-btn)',
+  '.track-ctrl-icon-btn:not(#beatCtrlRand)',
+  '.shift-btn',
   '#scratchBtn',
   '#beatBtn',
   '#randBtn',
@@ -7663,7 +7671,7 @@ function concatAudioBuffers(buffers, sampleRate) {
 
 function flashBtnOrange(id) {
   const btn = document.getElementById(id); if (!btn) return;
-  btn.style.background = '#111'; btn.style.color = '#adff00';
+  btn.style.background = '#111'; btn.style.color = _highlight3Color();
   setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
 }
 function setBtnBlueHeld(id) {
@@ -12147,16 +12155,34 @@ async function hardResetAudioEngine() {
   // one left off, rather than each resetting to its own fixed start point.
   window._sweepSharedFreq = window._sweepSharedFreq || 200;
   const SWEEP_FLOOR = 200, SWEEP_CEIL = 4000;
+  // Rapid re-triggering (release, immediately press again before the
+  // previous release-fade finished) used to let multiple sweep layers
+  // overlap — sweepNodes gets reassigned to the new instance right away,
+  // but the OLD instance's fade-out was still running independently in
+  // the background, its own nodes orphaned from anything that could stop
+  // them. Several of those stacking up is very likely what "gets out of
+  // control" fast. Tracking the fading-out set explicitly and hard-killing
+  // it (no fade, just silence) the moment a new press starts guarantees
+  // at most one sweep layer is ever actually audible.
+  let _fadingSweepNodes = null;
+  function _hardKillFadingSweep() {
+    if (!_fadingSweepNodes) return;
+    const { noise, bp, gain, duckGain, dragGain } = _fadingSweepNodes;
+    [noise, bp, gain, duckGain, dragGain].forEach(n => { try { n.disconnect(); } catch(e) {} });
+    try { noise.stop(); } catch(e) {}
+    _fadingSweepNodes = null;
+  }
   // How far down the screen the finger has dragged since this hold began,
   // 0 (no drag) to 1 (fully maxed out at SWEEP_DRAG_MAX_PX). Persists
   // across a mid-hold direction switch (stopSweep(true)/startSweep) since
   // that's a continuation of the same physical hold, not a fresh press.
   let _sweepDragIntensity = 0, _sweepDragStartY = null;
-  const SWEEP_DRAG_MAX_PX = 130; // distance for full intensity — half of what it was
-  const SWEEP_DRAG_MAX_BOOST = 0.85; // +0.85x gain (~+5.3dB) at full drag
-  const SWEEP_LEVEL_TRIM = Math.pow(10, -1 / 20); // -1dB, applied to both the sweep and amalgam peak levels
+  const SWEEP_DRAG_MAX_PX = 130; // distance for full intensity, either direction
+  const SWEEP_DRAG_RANGE = 0.4; // ±0.4x gain (down = louder up to 1.4x, up = quieter down to 0.6x) — reduced from the old one-way +0.85x, which combined with the takeover ramp was a big part of getting too loud
+  const SWEEP_LEVEL_TRIM = Math.pow(10, -1 / 20); // -1dB, applied to the sweep's peak level
   function startSweep(direction) {
     if (!ctx || sweepNodes) return;
+    _hardKillFadingSweep(); // cut any still-fading previous instance dead before starting a new one
     ctx.resume();
     ensureSweepAnalyser();
     window._sweepStartMs = Date.now();
@@ -12188,7 +12214,7 @@ async function hardResetAudioEngine() {
     // drag position already has it (not reset to 1), so switching
     // direction mid-hold doesn't undo a boost already dialed in.
     const dragGain = ctx.createGain();
-    dragGain.gain.value = 1 + _sweepDragIntensity * SWEEP_DRAG_MAX_BOOST;
+    dragGain.gain.value = 1 + _sweepDragIntensity * SWEEP_DRAG_RANGE;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
 
     // Back through masterGain (and its kick-triggered sidechain duck stage),
@@ -12197,34 +12223,10 @@ async function hardResetAudioEngine() {
     noise.connect(bp); bp.connect(baseGain); baseGain.connect(duckGain); duckGain.connect(dragGain); dragGain.connect(masterGain);
     noise.start(t);
 
-    // Mix in TEXTURE's own amalgam-echo tone alongside the noise sweep —
-    // a soft sustained layer built from whatever the pattern's current
-    // tonal chord actually is, ramping in from silent up to half the
-    // sweep's own peak level over the same rise time, rather than just
-    // being noise/filter movement on its own.
-    let amalgamOscs = [];
-    let amalgamGain = null;
-    try {
-      if (typeof _regenerateAmalgamChord === 'function') _regenerateAmalgamChord();
-      const chord = (typeof _amalgamChord !== 'undefined' && _amalgamChord && _amalgamChord.length) ? _amalgamChord : [{ freq: 220 }];
-      amalgamGain = ctx.createGain();
-      amalgamGain.gain.setValueAtTime(0, t);
-      amalgamGain.gain.linearRampToValueAtTime(0.2145 * 0.5 * SWEEP_LEVEL_TRIM, t + riseDur); // 0 to 50% of baseGain's own peak, now -1dB more on top
-      amalgamGain.connect(duckGain);
-      const chordNorm = 1 / Math.sqrt(chord.length);
-      chord.forEach(n => {
-        const freq = n.freq || 220;
-        const o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = freq;
-        const o2 = ctx.createOscillator(); o2.type = 'triangle'; o2.frequency.value = freq * 2;
-        const noteGain = ctx.createGain(); noteGain.gain.value = chordNorm;
-        o1.connect(noteGain); o2.connect(noteGain); noteGain.connect(amalgamGain);
-        o1.start(t); o2.start(t);
-        o1.stop(t + bufDur); o2.stop(t + bufDur);
-        amalgamOscs.push(o1, o2);
-      });
-    } catch (e) {}
-
-    sweepNodes = { noise, bp, gain: baseGain, duckGain, dragGain, amalgamOscs, amalgamGain };
+    // Amalgam tone removed — was contributing to SWEEP getting loud/
+    // unpredictable fast; concentrating on getting the core sweep+drag
+    // behavior solid first.
+    sweepNodes = { noise, bp, gain: baseGain, duckGain, dragGain };
     btn.classList.add('active');
 
     // Continuously sample master output level and duck the sweep inversely.
@@ -12262,7 +12264,7 @@ async function hardResetAudioEngine() {
 
   function stopSweep(isSwitch) {
     if (!sweepNodes || !ctx) return;
-    const { bp, gain, noise, duckGain, dragGain, amalgamOscs, amalgamGain } = sweepNodes;
+    const { bp, gain, noise, duckGain, dragGain } = sweepNodes;
     // Capture wherever the pitch actually is right now — this is what lets
     // the next engagement (SWEEP or the left spool) continue from here
     // instead of resetting. Read before cancelScheduledValues touches it.
@@ -12286,8 +12288,6 @@ async function hardResetAudioEngine() {
       try { gain.disconnect(); } catch(e) {}
       try { duckGain.disconnect(); } catch(e) {}
       try { dragGain.disconnect(); } catch(e) {}
-      if (amalgamOscs) amalgamOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
-      if (amalgamGain) { try { amalgamGain.disconnect(); } catch(e) {} }
       return;
     }
 
@@ -12315,19 +12315,16 @@ async function hardResetAudioEngine() {
     gain.gain.cancelScheduledValues(t);
     gain.gain.setValueAtTime(gain.gain.value * 0.355, t); // -9dB total on the release tail (-5dB then another -4dB)
     gain.gain.linearRampToValueAtTime(0, t + releaseFade);
-    setTimeout(() => { try { noise.stop(); noise.disconnect(); } catch(e) {} try { dragGain.disconnect(); } catch(e) {} }, releaseFade * 1000 + 100);
-    // Fade and stop the amalgam mix-in layer alongside everything else.
-    if (amalgamGain) {
-      amalgamGain.gain.cancelScheduledValues(t);
-      amalgamGain.gain.setValueAtTime(amalgamGain.gain.value, t);
-      amalgamGain.gain.linearRampToValueAtTime(0, t + releaseFade);
-    }
-    if (amalgamOscs && amalgamOscs.length) {
-      setTimeout(() => {
-        amalgamOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch(e) {} });
-        try { amalgamGain.disconnect(); } catch(e) {}
-      }, releaseFade * 1000 + 100);
-    }
+    // Tracked separately from sweepNodes (already null by this point) so a
+    // rapid re-press during this fade can hard-kill it instead of letting
+    // it overlap with the new instance.
+    _hardKillFadingSweep();
+    _fadingSweepNodes = { noise, bp, gain, duckGain, dragGain };
+    setTimeout(() => {
+      try { noise.stop(); noise.disconnect(); } catch(e) {}
+      try { dragGain.disconnect(); } catch(e) {}
+      _fadingSweepNodes = null;
+    }, releaseFade * 1000 + 100);
     // Reset the drag-intensity tracker for next time — a genuine release
     // (not a mid-hold direction switch) ends the physical gesture.
     _sweepDragIntensity = 0; _sweepDragStartY = null;
@@ -12362,7 +12359,11 @@ async function hardResetAudioEngine() {
     // Don't touch anything before the fade-in completes — cancelling here
     // used to wipe out the quarter-note attack before it ever had a chance
     // to run, since both functions fire in the same instant on press.
-    gain.gain.linearRampToValueAtTime(1.5145, t + measure); // -2dB more (was 1.9065)
+    // Reduced from 1.5145 — that combined with the drag-boost gain on top
+    // was almost certainly the dominant source of SWEEP getting way too
+    // loud, fast. Still a real rise from the 0.2145 attack level, just not
+    // one that can stack with drag into something out of control.
+    gain.gain.linearRampToValueAtTime(0.85, t + measure);
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
       stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
@@ -12387,14 +12388,15 @@ async function hardResetAudioEngine() {
   document.addEventListener('mouseup', endPress);
   document.addEventListener('mousemove', e => {
     if (!window._sweepGestureActive || _sweepDragStartY === null) return;
-    const downPx = Math.max(0, e.clientY - _sweepDragStartY);
-    // Pushed past the max-intensity point entirely — auto-release rather
-    // than just sitting pinned at full intensity, so overshooting the
-    // gesture doesn't feel like it silently stopped responding.
-    if (downPx > SWEEP_DRAG_MAX_PX) { endPress(); return; }
-    _sweepDragIntensity = Math.min(1, downPx / SWEEP_DRAG_MAX_PX);
+    const dy = e.clientY - _sweepDragStartY; // signed — down positive (louder), up negative (quieter)
+    // Pushed past the max-intensity point in either direction — auto-
+    // release rather than just sitting pinned at the extreme, so
+    // overshooting the gesture doesn't feel like it silently stopped
+    // responding.
+    if (Math.abs(dy) > SWEEP_DRAG_MAX_PX) { endPress(); return; }
+    _sweepDragIntensity = Math.max(-1, Math.min(1, dy / SWEEP_DRAG_MAX_PX));
     if (sweepNodes && sweepNodes.dragGain && ctx) {
-      sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_MAX_BOOST, ctx.currentTime, 0.08);
+      sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_RANGE, ctx.currentTime, 0.08);
     }
   });
 
@@ -12421,19 +12423,19 @@ async function hardResetAudioEngine() {
     if (!window._sweepGestureActive) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
-    // How far the finger has dragged DOWN the screen from where the hold
-    // started drives the drag-intensity boost on the sweep/amalgam gain
-    // (see dragGain in startSweep) — upward movement or staying put keeps
-    // it at 0, only downward travel builds intensity.
+    // How far the finger has dragged from where the hold started drives
+    // the drag-intensity on the sweep gain (see dragGain in startSweep) —
+    // down is louder, up is quieter, symmetric around the press point.
     if (touch && _sweepDragStartY !== null) {
-      const downPx = Math.max(0, touch.clientY - _sweepDragStartY);
-      // Pushed past the max-intensity point entirely — auto-release
-      // rather than just sitting pinned at full intensity, so overshooting
-      // the gesture doesn't feel like it silently stopped responding.
-      if (downPx > SWEEP_DRAG_MAX_PX) { endPress(); return; }
-      _sweepDragIntensity = Math.min(1, downPx / SWEEP_DRAG_MAX_PX);
+      const dy = touch.clientY - _sweepDragStartY; // signed
+      // Pushed past the max-intensity point in either direction —
+      // auto-release rather than just sitting pinned at the extreme, so
+      // overshooting the gesture doesn't feel like it silently stopped
+      // responding.
+      if (Math.abs(dy) > SWEEP_DRAG_MAX_PX) { endPress(); return; }
+      _sweepDragIntensity = Math.max(-1, Math.min(1, dy / SWEEP_DRAG_MAX_PX));
       if (sweepNodes && sweepNodes.dragGain && ctx) {
-        sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_MAX_BOOST, ctx.currentTime, 0.08);
+        sweepNodes.dragGain.gain.setTargetAtTime(1 + _sweepDragIntensity * SWEEP_DRAG_RANGE, ctx.currentTime, 0.08);
       }
     }
     // The entire gesture is "claimed" by SWEEP the moment it's actually
