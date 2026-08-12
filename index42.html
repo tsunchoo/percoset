@@ -709,7 +709,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">12Aug26 03:14</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11672,8 +11672,17 @@ function fullReset() {
         if (dx > 0) _slotAdvanceOrRand(); else if (window._doRecall) window._doRecall();
         return;
       }
-      // First movement — this is a drag, not a stationary hold. Cancel the
-      // picker timer and commit to the mute-drag behavior instead.
+      // A real finger almost never stays at exactly zero delta during a
+      // tap — a couple of pixels of jitter is normal and shouldn't get
+      // misread as a drag (which used to happen here on literally any
+      // movement at all, silently defeating double-tap detection below
+      // since that's gated on !_isDragging: the second tap of a real
+      // double-tap almost always has a little jitter, so it kept getting
+      // classified as a drag before this ever got a chance to check).
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      // Genuine movement past the jitter threshold — this is a drag, not
+      // a stationary hold. Cancel the picker timer and commit to the
+      // mute-drag behavior instead.
       _isDragging = true;
       if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; }
       trackMuted[_nameHoldTr] = !trackMuted[_nameHoldTr];
