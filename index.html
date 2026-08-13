@@ -772,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 06:43</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 06:55</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2271,7 +2271,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.2978 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -4dB more (was 0.472, -0.5dB from the 0.5 default before that)
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.2366 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -2dB more (was 0.2978, -4dB before that, -0.5dB from the 0.5 default before that)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -9313,13 +9313,23 @@ function randAll(mode, opts) {
     const tempoSlider = document.getElementById('tempoBar'); if (tempoSlider) tempoSlider.value = bpm;
   }
   if (!_beatTypeLocked) {
-    const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown' || _beatType === 'boogie' || _beatType === 'jazz');
-    if (!onHalfFeel) {
-      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
-      if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie' && b !== 'jazz');
-      setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
+    // JAZZ and SHUFFLE share the same underlying triplet-timing feel, so
+    // even under tempo lock they're allowed to swap between each other —
+    // just never out to any other type while tempo's locked. HALFTIME and
+    // DOUBLEDOWN stay fully frozen as before (no swap partner of their own).
+    const _jazzShuffleTypes = _beatType === 'jazz' || _beatType === 'boogie';
+    if (_tempoLocked && _jazzShuffleTypes) {
+      const other = _beatType === 'jazz' ? 'boogie' : 'jazz';
+      setBeatType(Math.random() < 0.5 ? _beatType : other);
+    } else {
+      const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown');
+      if (!onHalfFeel) {
+        let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
+        if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie' && b !== 'jazz');
+        setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
+      }
+      // else: tempo locked and already on halftime/doubledown — leave the beat exactly as it is
     }
-    // else: tempo locked and already on halftime/doubledown/boogie/jazz — leave the beat exactly as it is
   }
 
   // Stop all auto-rand tracks and reset to R — except locked tracks, whose
@@ -9646,6 +9656,7 @@ function randAll(mode, opts) {
         grid[_tr][0] = 2; grid[_tr][8] = 2; // on-beat hits (1 & 3), slightly accented
         grid[_tr][7] = 1; grid[_tr][15] = 1; // the "ah" of 2 & 4 — collapses onto the triplet-3 timing via the scheduler snap
         redrawTrackCells(_tr); markModified();
+        _maybeEngageJazzAutoRand(_tr, 1 / 3); // RIDE — 1 in 3 chance of auto rand notes mode
       } else if (_beatType === 'jazz' && trackInstruments[_tr] === 'sidestick') {
         grid[_tr].fill(0);
         const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]; // never on the downbeats — comping stays out of the way of the main beat
@@ -9653,6 +9664,7 @@ function randAll(mode, opts) {
         const _shuffledOff = [..._offBeatSteps].sort(() => Math.random() - 0.5);
         _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[_tr][s] = Math.random() < 0.2 ? 2 : 1; }); // mostly quiet ghost notes, occasional accent
         redrawTrackCells(_tr); markModified();
+        _maybeEngageJazzAutoRand(_tr, 0.5); // SIDESTICK — 50% chance of auto rand notes mode
       } else {
         randomizeTrack(_tr);
       }
@@ -10608,6 +10620,25 @@ function randomizeTrack(tr) {
     grid[tr].fill(0);
     grid[tr][4] = 2;
     grid[tr][12] = 2;
+    if (trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    redrawTrackCells(tr); markModified();
+    return;
+  }
+
+  // SIDESTICK: 3-9 scattered hits per measure most of the time; about 1 in
+  // 4 times, straight quarter notes instead — landing on either the
+  // downbeat (1,2,3,4) or the upbeat ("and" of each beat), picked
+  // randomly between the two, rather than always the same one.
+  if (key === 'sidestick') {
+    if (Math.random() < 0.25) {
+      grid[tr].fill(0);
+      const onUpbeat = Math.random() < 0.5;
+      const positions = onUpbeat ? [2, 6, 10, 14] : [0, 4, 8, 12];
+      positions.forEach(s => { const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS; grid[tr][gs] = 2; });
+    } else {
+      const noteCount = 2 + Math.floor(Math.random() * 5); // 2-6 inclusive
+      placeNotes(tr, noteCount, 0.3, level);
+    }
     if (trackLegatoLen[tr]) trackLegatoLen[tr] = {};
     redrawTrackCells(tr); markModified();
     return;
@@ -13317,6 +13348,19 @@ function setBeatType(type) {
 // aren't 2 suitable ones. Writes the same fixed comping pattern
 // randAll() uses for these two — see the jazz-specific override in the
 // per-track RAND callback for the reasoning on the exact grid positions.
+// Rolls the given chance and, if it hits, engages this track's own per-
+// track auto-rand mode (holding its + would do the same thing manually) —
+// used specifically for JAZZ's forced RIDE/SIDESTICK tracks, both when
+// RAND generates a fresh pattern and when JAZZ gets picked straight from
+// the BEAT menu onto the current one.
+function _maybeEngageJazzAutoRand(tr, chance) {
+  if (Math.random() >= chance) return;
+  const rb = document.getElementById(`randbtn-${tr}`);
+  if (rb && rb._restartAuto) {
+    if (autoShiftStops[tr]) autoShiftStops[tr]();
+    rb._restartAuto();
+  }
+}
 function _applyJazzTracksToCurrentPattern() {
   const _essentialKeys = new Set(['skick', 'shihat', ...TONAL_KEYS, 'congHi', 'congLo', 'bongHi', 'bongLo']);
   const _unlocked = [];
@@ -13350,6 +13394,7 @@ function _applyJazzTracksToCurrentPattern() {
       _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[tr][s] = Math.random() < 0.2 ? 2 : 1; });
     }
     redrawTrackCells(tr);
+    _maybeEngageJazzAutoRand(tr, key === 'ride' ? 1 / 3 : 0.5); // RIDE 1-in-3, SIDESTICK 50%
   };
   _applyOne(rideTr, 'ride');
   _applyOne(sidestickTr, 'sidestick');
