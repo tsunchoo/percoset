@@ -763,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:07</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8475,7 +8475,7 @@ function queueRand(mode) {
         rbP.style.transition = `background ${_remaining}s ease-in, transform ${_remaining}s ease-in`;
         rbP.style.background = _highlight3Color();
         rbP.style.transform = 'scale(1.1)';
-        rbP.style.color = '#fff';
+        rbP.style.color = _contrastText(_highlight3Color());
       }, _flashHoldS * 1000);
     }
   } else {
@@ -9871,7 +9871,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO fixed at 50%; CONGA/BONGO fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? 0.5 : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // CONGA/BONGO fixed at 50% — checked first, overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
