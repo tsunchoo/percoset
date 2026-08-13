@@ -772,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 16:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 17:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9647,11 +9647,17 @@ function randAll(mode, opts) {
         grid[_tr][0] = 2; grid[_tr][8] = 2; // on-beat hits (1 & 3), slightly accented
         grid[_tr][7] = 1; grid[_tr][15] = 1; // the "ah" of 2 & 4 — collapses onto the triplet-3 timing via the scheduler snap
         redrawTrackCells(_tr); markModified();
-        _maybeEngageJazzAutoRand(_tr, 1 / 3); // RIDE — 1 in 3 chance of auto rand notes mode
+        // RIDE never gets auto rand notes mode, and gets locked (L) so
+        // this exact pattern can't drift on a later RAND either — it's
+        // the fixed backbone of the jazz feel, not something that should
+        // ever reinterpret itself.
+        trackSweep[_tr] = true;
+        const _rideLockBtn = document.getElementById(`swpbtn-${_tr}`);
+        if (_rideLockBtn) _rideLockBtn.classList.add('sweep-on');
       } else if (_beatType === 'jazz' && trackInstruments[_tr] === 'sidestick') {
         grid[_tr].fill(0);
         const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]; // never on the downbeats — comping stays out of the way of the main beat
-        const _ghostCount = 2 + Math.floor(Math.random() * 3); // 2-4 spontaneous hits
+        const _ghostCount = 2 + Math.floor(Math.random() * 4); // 2-5 spontaneous hits
         const _shuffledOff = [..._offBeatSteps].sort(() => Math.random() - 0.5);
         _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[_tr][s] = Math.random() < 0.2 ? 2 : 1; }); // mostly quiet ghost notes, occasional accent
         redrawTrackCells(_tr); markModified();
@@ -13414,15 +13420,20 @@ function _applyJazzTracksToCurrentPattern() {
       grid[tr].fill(0);
       grid[tr][0] = 2; grid[tr][8] = 2;
       grid[tr][7] = 1; grid[tr][15] = 1;
+      // RIDE never gets auto rand notes mode, and gets locked (L) so this
+      // exact pattern can't drift on a later RAND either.
+      trackSweep[tr] = true;
+      const _rideLockBtn = document.getElementById(`swpbtn-${tr}`);
+      if (_rideLockBtn) _rideLockBtn.classList.add('sweep-on');
     } else {
       grid[tr].fill(0);
       const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
-      const _ghostCount = 2 + Math.floor(Math.random() * 3);
+      const _ghostCount = 2 + Math.floor(Math.random() * 4); // 2-5 inclusive
       const _shuffledOff = [..._offBeatSteps].sort(() => Math.random() - 0.5);
       _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[tr][s] = Math.random() < 0.2 ? 2 : 1; });
     }
     redrawTrackCells(tr);
-    _maybeEngageJazzAutoRand(tr, key === 'ride' ? 1 / 3 : 0.5); // RIDE 1-in-3, SIDESTICK 50%
+    if (key === 'sidestick') _maybeEngageJazzAutoRand(tr, 0.5);
   };
   _applyOne(rideTr, 'ride');
   _applyOne(sidestickTr, 'sidestick');
