@@ -702,7 +702,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 21:39</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 21:54</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6948,11 +6948,22 @@ function buildUI() {
       markModified();
     };
     let _fxTouchJustHandled = false;
+    let _lastFxTouchStart = 0;
     fxBtn.addEventListener('mouseup', () => {
       if (_fxTouchJustHandled) { _fxTouchJustHandled = false; return; } // this mouseup is the synthetic ghost following a real touch
+      // The generic drag-to-engage system (this button matches
+      // DRAGGABLE_BTN_SELECTORS) dispatches its own synthetic
+      // mousedown+mouseup during touchstart itself — before the flag
+      // above even gets set, since that only happens in touchend below.
+      // That was firing cycleFxBtn() an extra time per tap (once here,
+      // once for real in touchend), advancing 2 stages instead of 1 —
+      // e.g. tapping from BLAST landed back on FX instead of OFF. Ignore
+      // it if a real touchstart on this exact button just happened;
+      // still honor it for a genuine drag-onto from elsewhere.
+      if (Date.now() - _lastFxTouchStart < 500) return;
       cycleFxBtn();
     });
-    fxBtn.addEventListener('touchstart', e => { e.preventDefault(); }, { passive: false });
+    fxBtn.addEventListener('touchstart', e => { e.preventDefault(); _lastFxTouchStart = Date.now(); }, { passive: false });
     fxBtn.addEventListener('touchend', e => { e.preventDefault(); _fxTouchJustHandled = true; setTimeout(() => { _fxTouchJustHandled = false; }, 700); cycleFxBtn(); }, { passive: false });
     ctrlRow.appendChild(fxBtn);
 
@@ -10918,23 +10929,25 @@ function wireShiftButton(btn, tr, dir) {
     doShift();
     holdTimer = setTimeout(startHold, 400);
   };
+  let _lastRealTouchOnThisBtn = 0;
   btn.addEventListener('mousedown', e => {
     // The generic drag-to-engage system (DRAGGABLE_BTN_SELECTORS, which
-    // includes .shift-btn) dispatches its own synthetic mousedown on every
-    // touchstart for this button — on top of the real touchstart handler
-    // below, which already calls onDown() directly. That meant every
-    // single tap was firing doShift() twice: once for real, once for the
-    // synthetic dispatch — shifting 2 steps (1/8 of the measure) instead
-    // of the intended 1 (1/16). Synthetic, JS-dispatched events are never
-    // "trusted" (e.isTrusted is always false for them, real hardware-
-    // driven input is always true), so this filters those out while still
-    // responding normally to an actual desktop mouse click.
-    if (e.isTrusted === false) return;
+    // includes .shift-btn) dispatches its own synthetic mousedown any time
+    // this button is touched — both for a direct tap (redundant, since
+    // the real touchstart handler below already calls onDown() itself)
+    // and for a genuine drag-onto from a different button (where nothing
+    // else fires onDown() at all, since touchstart never landed here).
+    // Blanket-rejecting untrusted events fixed the direct-tap double-fire
+    // (was moving 2 steps instead of 1) but broke the drag case entirely.
+    // Only skip it if a real touchstart on THIS exact button just handled
+    // the same touch a moment ago — otherwise treat it as a genuine
+    // drag-onto and let it through.
+    if (e.isTrusted === false && Date.now() - _lastRealTouchOnThisBtn < 500) return;
     onDown();
   });
   btn.addEventListener('mouseup', stop);
   btn.addEventListener('mouseleave', stop);
-  btn.addEventListener('touchstart', e => { e.preventDefault(); onDown(); }, { passive: false });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); _lastRealTouchOnThisBtn = Date.now(); onDown(); }, { passive: false });
   btn.addEventListener('touchend', e => { e.preventDefault(); stop(); }, { passive: false });
   btn.addEventListener('touchcancel', stop);
 }
