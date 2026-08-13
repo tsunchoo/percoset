@@ -171,6 +171,10 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; }
 #scratchBtn .ab-sep { font-weight: 400; opacity: 0.6; padding: 0 1px; }
+/* Turns HIGHLIGHT-3 colored the moment RECALL actually has a pattern to
+   swap to (see _updateRecallReadyState) — normal track-button color until
+   then, since there's nothing to recall yet. */
+#scratchBtnA.ab-ready, #scratchBtnB.ab-ready { color: var(--highlight3-color, #adff00); }
 /* This button's color is constantly being fought over — the flash class,
    the pulse animation, and the base track-text color (which itself keeps
    changing under WILD, often at the exact same moment as a flash, since
@@ -272,14 +276,14 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
 #randomizeColorsBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
 @keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.85); } 100% { transform: scale(1); } }
-#saveBtn.rec-active #recBtnMask { background: #e0142c !important; animation: rec-icon-pulse 0.5s infinite alternate; }
+#saveBtn.rec-active #recBtnMask { animation: rec-icon-pulse 0.5s infinite alternate; }
 #recBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); background: var(--highlight3-color, #adff00); -webkit-mask-image: url("data:image/png;base64,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"); mask-image: url("data:image/png;base64,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"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
 #saveBtn.rec-active #recBtnMask { display: block; }
 #saveBtn.rec-active #recBtnImg { opacity: 0; }
 #saveBtn.rec-beat-pulse { animation: rec-pump 0.44s ease-out; }
 @keyframes rec-pump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
-@keyframes rec-icon-pulse { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); } }
+@keyframes rec-icon-pulse { from { background: #ff0000; transform: translate(-50%, -50%) scale(1); } to { background: var(--highlight3-color, #adff00); transform: translate(-50%, -50%) scale(1.1); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
 .btn-flash-blue { background: #0b5394 !important; color: var(--highlight3-color, #adff00) !important; border: none !important; transition: none !important; }
 .rand-overlay-btn {
@@ -509,7 +513,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-name-btn.inst-tonal { background: #fd475d; color: #fff; }
 .track-name-btn.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
 .track-name-btn.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
-.track-name-btn.names-uniform { background: var(--track-names-custom-color, #555); color: #fff; }
+.track-name-btn.names-uniform { background: var(--neutral-top, #555); color: #fff; }
 
 @keyframes pulse-kit   { from { background: #0b5394; } to { background: #4a8ac4; } }
 @keyframes pulse-perc  { from { background: #7baa17; } to { background: #4a6b0e; } }
@@ -580,15 +584,15 @@ body.track-pulse-d.seq-playing .track-name-btn.has-notes.inst-tonal.inst-pad.not
    color throughout, not just for option D. color-mix() gives B/C a
    genuinely subtler swing toward that same picker color instead of a
    hardcoded intermediate. */
-@keyframes pulse-uniform   { from { background: var(--track-names-custom-color, #555); } to { background: var(--playhead-color, #f8ff00); } }
-@keyframes pulse-uniform-b { from { background: var(--track-names-custom-color, #555); } to { background: color-mix(in srgb, var(--track-names-custom-color, #555) 55%, var(--playhead-color, #f8ff00) 45%); } }
-@keyframes pulse-uniform-c { from { background: var(--track-names-custom-color, #555); } to { background: color-mix(in srgb, var(--track-names-custom-color, #555) 75%, var(--playhead-color, #f8ff00) 25%); } }
+@keyframes pulse-uniform   { from { background: var(--neutral-top, #555); } to { background: var(--playhead-color, #f8ff00); } }
+@keyframes pulse-uniform-b { from { background: var(--neutral-top, #555); } to { background: color-mix(in srgb, var(--neutral-top, #555) 55%, var(--playhead-color, #f8ff00) 45%); } }
+@keyframes pulse-uniform-c { from { background: var(--neutral-top, #555); } to { background: color-mix(in srgb, var(--neutral-top, #555) 75%, var(--playhead-color, #f8ff00) 25%); } }
 .track-name-btn.has-notes.names-uniform { animation: none; }
 body.track-pulse-a.seq-playing .track-name-btn.has-notes.names-uniform { animation: pulse-uniform   0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-btn.has-notes.names-uniform { animation: pulse-uniform-b 0.6s infinite alternate; }
 body.track-pulse-c.seq-playing .track-name-btn.has-notes.names-uniform { animation: pulse-uniform-c 0.6s infinite alternate; }
-body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform { background: var(--track-names-custom-color, #555); }
-@keyframes flash-uniform-d { from { background: var(--playhead-color, #f8ff00); } to { background: var(--track-names-custom-color, #555); } }
+body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform { background: var(--neutral-top, #555); }
+@keyframes flash-uniform-d { from { background: var(--playhead-color, #f8ff00); } to { background: var(--neutral-top, #555); } }
 body.track-pulse-d.seq-playing .track-name-btn.has-notes.names-uniform.note-flash { animation: flash-uniform-d 0.25s ease-out; }
 
 /* ── Vol overlay ── */
@@ -772,7 +776,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 17:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 17:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1013,12 +1017,10 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+            <input type="radio" name="trackNamesMode" value="color" onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">CUSTOM
-            <input type="color" id="trackNamesCustomColorPicker" value="#555555" oninput="setTrackNamesCustomColor(this.value)" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;margin-left:4px;">
-            <style>#trackNamesCustomColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackNamesCustomColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackNamesCustomColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+            <input type="radio" name="trackNamesMode" value="uniform" checked onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
           </label>
         </div>
       </div>
@@ -1027,7 +1029,10 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="a" checked onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+            <input type="radio" name="trackPulseMode" value="solid" checked onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackPulseMode" value="d" onchange="setTrackPulseMode('d')" style="width:15px;height:15px;cursor:pointer;">FLASH
@@ -8006,19 +8011,16 @@ function _flashTrackButtonNow(tr, t) {
   }, delayMs);
 }
 function setTrackPulseMode(mode) {
-  document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c', 'track-pulse-d');
-  document.body.classList.add('track-pulse-' + (mode === 'b' || mode === 'c' || mode === 'd' ? mode : 'a'));
+  document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c', 'track-pulse-d', 'track-pulse-solid');
+  // 'solid' intentionally matches no CSS selector at all — none of the
+  // pulse/flash animations are scoped to it, so track names just show
+  // their normal static background the whole time, pulsing or not.
+  const valid = ['a', 'b', 'c', 'd', 'solid'];
+  document.body.classList.add('track-pulse-' + (valid.includes(mode) ? mode : 'solid'));
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
   for (let tr = 0; tr < NUM_TRACKS; tr++) setTrackNameColor(tr, trackInstruments[tr]);
-}
-function setTrackNamesCustomColor(hex) {
-  document.documentElement.style.setProperty('--track-names-custom-color', hex);
-  // Picking a color implies wanting CUSTOM mode active — select its radio
-  // and apply it immediately, rather than requiring a separate tap first.
-  const radio = document.querySelector('input[name="trackNamesMode"][value="uniform"]');
-  if (radio && !radio.checked) { radio.checked = true; setTrackNamesUniform(true); }
 }
 function setTrackNameFontScale(pct) {
   document.documentElement.style.setProperty('--track-name-font-scale', (pct / 100));
@@ -11130,9 +11132,10 @@ function wireRandomizeButton(btn, tr) {
   btn.addEventListener('click', onTap);
 }
 
+window._trackNamesUniform = true; // DEFAULT is the new pre-selected radio — track names start out TOP-ROW colored, not color-coded by instrument group
 buildUI();
 updateMasterVolCells();
-setTrackPulseMode('a');
+setTrackPulseMode('solid');
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -11179,6 +11182,7 @@ setTimeout(async () => {
     try {
       const _startupSnap = snapshotState();
       _recallSnapB = _startupSnap;
+      _updateRecallReadyState();
     } catch (e) { console.error('Startup RECALL seed failed', e); }
   })();
 }, 300);
@@ -12053,9 +12057,10 @@ function hideInstructions() {
 function fullReset() {
   if (playing) togglePlay();
   _recallSnapB = null;
+  _updateRecallReadyState();
   window._resetRecallAB?.();
-  setTrackPulseMode('a');
-  const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="a"]'); if (_tpmRadio) _tpmRadio.checked = true;
+  setTrackPulseMode('solid');
+  const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="solid"]'); if (_tpmRadio) _tpmRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
@@ -12724,7 +12729,7 @@ async function hardResetAudioEngine() {
     ensureSweepAnalyser();
     window._sweepStartMs = Date.now();
     const bufDur = 12; // generous buffer length so long holds never run out
-    const riseDur = 2.5; // time to reach the capped peak frequency while held (was 3.5s — quicker now)
+    const riseDur = stepDuration() * 4; // one quarter note at current tempo — matches the redirect timing below
     const capFreq = 4000; // reasonable ceiling — never rises past this no matter how long it's held
     const t = ctx.currentTime;
     const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * bufDur), ctx.sampleRate);
@@ -12848,7 +12853,7 @@ async function hardResetAudioEngine() {
     if (!sweepNodes) return;
     const { bp } = sweepNodes;
     const t = ctx.currentTime;
-    const dur = 1.2;
+    const dur = stepDuration() * 4; // one quarter note at current tempo — same for both directions, and much faster than the old fixed 1.2s for the spool's sweep-down specifically
     const currentFreq = bp.frequency.value;
     bp.frequency.cancelScheduledValues(t);
     bp.frequency.setValueAtTime(currentFreq, t);
@@ -12965,6 +12970,17 @@ let _recallSnapB = null; // previous
 let _recallSnap = null; // kept for compatibility
 let _recallInterval = null;
 
+// Turns the A/B letters HIGHLIGHT-3 colored the moment RECALL actually has
+// something to swap to (right at startup, once the initial pattern is
+// seeded), and back to normal track-button color if it's ever cleared
+// (a full reset). Global so both the seed and fullReset() can call it.
+function _updateRecallReadyState() {
+  const aEl = document.getElementById('scratchBtnA');
+  const bEl = document.getElementById('scratchBtnB');
+  const ready = !!_recallSnapB;
+  if (aEl) aEl.classList.toggle('ab-ready', ready);
+  if (bEl) bEl.classList.toggle('ab-ready', ready);
+}
 function startRecallLoop() {
   if (_recallInterval) return;
   _recallInterval = setInterval(() => {
