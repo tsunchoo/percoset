@@ -763,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:18</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:38</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8402,7 +8402,7 @@ async function saveAllCombined() {
 
 // ── Live recording via MediaRecorder ──
 let _autoRandPending = false;
-let _randFlashTid = null; // pending "hold the HIGHLIGHT flash, then hand off to the gradual buildup" timeout — see queueRand()
+let _randFlashTid = null; // no longer used for a live timeout (the flash is now one held state, not staged) — kept only so the two defensive clears elsewhere remain harmless no-ops
 let _randTransitionWindow = null; // { start, end } in ctx.currentTime units while a RAND flourish is muting normal playback
 
 // Play through every track's current instrument once, back-to-back with no
@@ -8447,37 +8447,17 @@ function queueRand(mode) {
     _autoRandPending = true;
     _autoRandMode = mode;
     // A single, gradual build-up timed to culminate exactly when the new
-    // pattern actually loads (the next bar boundary) — a real CSS
-    // transition, not a repeating keyframe pulse, so its duration can be
-    // set to precisely match however much of the current measure is
-    // actually left, rather than hitting the highlight color repeatedly
-    // along the way.
+    // pattern actually loads (the next bar boundary). Simplified down to
+    // one single, solid, unchanging state — background #111, text
+    // HIGHLIGHT 3 — for the entire pending duration, exactly matching
+    // PLAY/BEAT's own active-state treatment with no separate "flash then
+    // gradual buildup to a different look" staging in between. Held
+    // via setBtnBlueHeld's class (background/color inline, !important),
+    // same mechanism as a quick tap while stopped — nothing here needs to
+    // touch its own styles at all, just leave the class on until the
+    // pattern actually lands and the bar-boundary code clears it.
     const rbP = document.getElementById('randBtn');
-    if (rbP) {
-      const stepsRemaining = (NUM_STEPS - currentStep) % NUM_STEPS || NUM_STEPS;
-      const timeRemaining = stepsRemaining * stepDuration();
-      rbP.classList.remove('rand-pending-fast');
-      // btn-flash-blue (added by setBtnBlueHeld right before this call, on
-      // every tap) sets background with !important, which would otherwise
-      // override the gradual transition below for as long as it's
-      // present. It used to get removed in this same synchronous tick —
-      // before the browser ever painted it — so the tap's HIGHLIGHT flash
-      // never actually became visible during playback at all. Now it's
-      // given a brief moment to actually show, then handed off to the
-      // gradual build-up for whatever time is left before the pattern
-      // loads.
-      const _flashHoldS = 0.12;
-      if (_randFlashTid) clearTimeout(_randFlashTid); // a repeat tap before the previous one's timeout fired used to leave that stale one free to apply its styling later, after this newer tap (or the bar boundary) had already moved on — the actual source of the "stuck scaled-up blue" button.
-      _randFlashTid = setTimeout(() => {
-        _randFlashTid = null;
-        rbP.classList.remove('btn-flash-blue');
-        const _remaining = Math.max(timeRemaining - _flashHoldS, 0.05);
-        rbP.style.transition = `background ${_remaining}s ease-in, transform ${_remaining}s ease-in`;
-        rbP.style.background = _highlight3Color();
-        rbP.style.transform = 'scale(1.1)';
-        rbP.style.color = _contrastText(_highlight3Color());
-      }, _flashHoldS * 1000);
-    }
+    if (rbP) rbP.classList.remove('rand-pending-fast');
   } else {
     playUiSound('Rand');
     scheduleRandTransition();
