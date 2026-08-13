@@ -763,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:45</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:57</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9473,6 +9473,42 @@ function randAll(mode, opts) {
     });
   }
 
+  // CONGA and BONGO must always appear as a matched Hi+Lo pair from the
+  // same family — never just one alone, and never conga+bongo mixed
+  // together. Whichever family the shuffle happened to touch first (if
+  // either) is the one kept; any trace of the other family gets swapped
+  // out, and the chosen family's missing half (if only one landed in the
+  // pool) gets swapped in to complete the pair.
+  {
+    const congaMembers = ['congHi', 'congLo'];
+    const bongoMembers = ['bongHi', 'bongLo'];
+    const hasConga = pool.some(k => congaMembers.includes(k));
+    const hasBongo = pool.some(k => bongoMembers.includes(k));
+    if (hasConga || hasBongo) {
+      const family = (hasConga && hasBongo) ? (Math.random() < 0.5 ? congaMembers : bongoMembers) : (hasConga ? congaMembers : bongoMembers);
+      const otherFamily = family === congaMembers ? bongoMembers : congaMembers;
+      const fillerPool = percKeysAll.filter(k => !pool.includes(k) && !congaMembers.includes(k) && !bongoMembers.includes(k));
+      let fillerIdx = 0;
+      for (let i = 0; i < pool.length; i++) {
+        if (otherFamily.includes(pool[i])) {
+          pool[i] = fillerPool[fillerIdx % fillerPool.length] || pool[i];
+          fillerIdx++;
+        }
+      }
+      const bassKeysLocal = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+      for (const member of family) {
+        if (!pool.includes(member)) {
+          let replaceIdx = -1;
+          for (let i = pool.length - 1; i >= 0; i--) {
+            if (!bassKeysLocal.has(pool[i]) && pool[i] !== 'skick' && pool[i] !== 'shihat' && !family.includes(pool[i])) { replaceIdx = i; break; }
+          }
+          if (replaceIdx === -1) replaceIdx = pool.length - 1; // always pair up rather than silently leaving it incomplete
+          pool[replaceIdx] = member;
+        }
+      }
+    }
+  }
+
   // Sort pool into fixed visual order: top=hihat, perc, tonal, bass, kick=bottom
   const kickKeys = new Set(['skick']);
   const bassKeys2 = new Set(['sbass','sbass3','sbass4','dbass','pbass']);
@@ -10623,11 +10659,13 @@ function randomizeTrack(tr) {
   const _cap = window._randNoteMax || maxN;
   window._lastNoteMaxUsed = _cap;
   let noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
-  // CONGA/BONGO/SHAKER/HIHAT: never fewer than 4 notes a measure, even if
-  // the global note-budget cap for this track would otherwise allow fewer —
-  // these instruments read as too sparse/broken-up below that.
-  const _noteFloorKeys = new Set(['congHi', 'congLo', 'bongHi', 'bongLo', 'shak', 'shihat']);
-  if (_noteFloorKeys.has(key)) noteCount = Math.max(4, noteCount);
+  // CONGA/BONGO: never fewer than 6 notes a measure (per-track minimum
+  // requested specifically for these two). SHAKER/HIHAT keep their own,
+  // lower floor of 4 — they read fine sparser than congas/bongos do.
+  const _noteFloorKeys = new Set(['shak', 'shihat']);
+  const _congaBongoKeys = new Set(['congHi', 'congLo', 'bongHi', 'bongLo']);
+  if (_congaBongoKeys.has(key)) noteCount = Math.max(6, noteCount);
+  else if (_noteFloorKeys.has(key)) noteCount = Math.max(4, noteCount);
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
   // Rhythm guitar: all downbeats, all upbeats, or random pattern
