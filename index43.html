@@ -405,11 +405,12 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .shift-btn .glyph { display: inline-block; transform: translateY(-2px); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: var(--neutral-top, #555); border: 3px solid var(--vol-border-color, transparent);
+  background: var(--neutral-top, #555); border: 3px solid transparent;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
 }
+body.vol-border-visible .track-vol-bar { border-color: var(--neutral-top, #b0b0b0) !important; }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
   background: var(--playhead-color, #f8ff00); pointer-events: none; transition: width 0.05s;
@@ -771,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 05:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 05:34</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8009,7 +8010,7 @@ function setTrackPulseMode(mode) {
   document.body.classList.add('track-pulse-' + (mode === 'b' || mode === 'c' || mode === 'd' ? mode : 'a'));
 }
 function setVolBorderMode(mode) {
-  document.documentElement.style.setProperty('--vol-border-color', mode === 'visible' ? 'var(--neutral-top, #b0b0b0)' : 'transparent');
+  document.body.classList.toggle('vol-border-visible', mode === 'visible');
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
