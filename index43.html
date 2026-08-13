@@ -772,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 05:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 05:51</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -863,7 +863,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       <div class="beat-type-item" data-beat="afrobeat">AFROBEAT</div>
       <div class="beat-type-item" data-beat="boogie">SHUFFLE</div>
       <div class="beat-type-item" data-beat="blap">BLAP</div>
-      <div class="beat-type-item" data-beat="splim">SPLIM</div>
+      <div class="beat-type-item" data-beat="jazz">JAZZ</div>
     </div>
   </div>
 </div>
@@ -2392,10 +2392,10 @@ function scheduler() {
     // Swing: offbeat (odd) steps get delayed by up to 60ms based on master slider
     const swingMs = (step % 2 === 1) ? getSwingOffsetMs() : 0;
     let t = nextStepTime + (swingMs / 1000);
-    if (_beatType === 'boogie') {
-      // BOOGIE — snap every track's actual playback timing (not the visual
-      // grid, which stays a normal 16-step display) onto the same true
-      // triplet-shuffle feel the beat engine itself uses. Each beat's 4
+    if (_beatType === 'boogie' || _beatType === 'jazz') {
+      // BOOGIE and JAZZ both — snap every track's actual playback timing
+      // (not the visual grid, which stays a normal 16-step display) onto
+      // the same true triplet-shuffle feel the beat engine itself uses. Each beat's 4
       // straight 16th positions collapse onto the nearest of the 3 real
       // triplet subdivisions: on-beat stays put, the "e" pushes toward
       // triplet-2, and "and"/"a" both collapse onto triplet-3 (pushed later
@@ -2876,10 +2876,15 @@ function fireStepAudio(step, t) {
           // DRIVE — kicks on 1 & 3, snares on 2 & 4 (syncopated a's handled below)
           doKick  = (bstep === 0 || bstep === 8);
           doSnare = (bstep === 4 || bstep === 12);
-        } else if (_beatType === 'splim') {
-          // SPLIM — identical to DRIVE ("SWING"), but with the DMX-style snare
-          doKick  = (bstep === 0 || bstep === 8);
-          doSnare = (bstep === 4 || bstep === 12);
+        } else if (_beatType === 'jazz') {
+          // JAZZ — soft "feathered" kick on every quarter note (felt more
+          // than heard — playKick attenuates it specifically for this beat
+          // type), closed hihat on 2 & 4 only. Ride and snare comping are
+          // deliberately NOT part of the BEAT-menu synthesis at all — those
+          // only show up as real tracks when RAND picks this beat type (see
+          // randAll's jazz-specific track forcing).
+          doKick = true;
+          doHat = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'rock') {
           // Kick on 1 (all the &s handled below), snares on 2+4 backbeat
           doKick  = (bstep === 0);
@@ -2926,7 +2931,7 @@ function fireStepAudio(step, t) {
           if (_beatType === 'reggae2') fireBeatSidestick(t); // ONE DROP — ties to its kicks on beats 2 & 4
         }
         if (_beatType === 'reggae' && (bstep === 4 || bstep === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
-        if (doSnare) { if (_beatType === 'blap' || _beatType === 'splim') playDmxSnare(t); else if (_beatType === 'halftime') playDmxSnareLow(t); else playSnare(t); }
+        if (doSnare) { if (_beatType === 'blap') playDmxSnare(t); else if (_beatType === 'halftime') playDmxSnareLow(t); else playSnare(t); }
         if (doHat) playSynthHihat(false, t, -1);
       }
     }
@@ -2945,9 +2950,6 @@ function fireStepAudio(step, t) {
       } else if (_beatType === 'drive') {
         if (bstep === 3 || bstep === 11) fireBeatKick(t); // a-of-1, a-of-3
         if (bstep === 7) playSnare(t);                    // a-of-2
-      } else if (_beatType === 'splim') {
-        if (bstep === 3 || bstep === 11) fireBeatKick(t); // a-of-1, a-of-3
-        if (bstep === 7) playDmxSnare(t);                 // a-of-2 — DMX-style snare
       } else if (_beatType === 'rock') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) fireBeatKick(t); // 1&, 2&, 3&, 4&
       } else if (_beatType === 'rollin') {
@@ -2957,7 +2959,7 @@ function fireStepAudio(step, t) {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 4 || bstep === 7 || bstep === 12) playDmxSnare(t); // now the same snare placement as SPLIM (was 3/6/9/11/14)
+        if (bstep === 4 || bstep === 7 || bstep === 12) playDmxSnare(t); // steady quarter-plus-a-of-2 snare placement
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -6189,11 +6191,12 @@ function playKick(t) {
   // tightened up for a drier hit (shorter pitch ramp and decay, less boom)
   const beatDest = window._beatGain || masterGain;
   const _pushAtten = (_beatType === 'push') ? 0.5623 : 1; // -5dB, PUSH only
+  const _jazzAtten = (_beatType === 'jazz') ? 0.1995 : 1; // -14dB — JAZZ's "feathered" kick, felt more than heard
   const osc = ctx.createOscillator(), g = ctx.createGain();
   osc.connect(g); g.connect(beatDest);
   osc.frequency.setValueAtTime(160, t);
   osc.frequency.exponentialRampToValueAtTime(38, t + 0.22);
-  g.gain.setValueAtTime(0.504 * _pushAtten, t);
+  g.gain.setValueAtTime(0.504 * _pushAtten * _jazzAtten, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.30);
   osc.start(t); osc.stop(t + 0.31);
   osc.onended = () => { try { g.disconnect(); } catch(e) {} };
@@ -6344,7 +6347,7 @@ function playDmxSnare(t) {
   const body = ctx.createOscillator(), bodyGain = ctx.createGain();
   body.type = 'triangle';
   body.frequency.setValueAtTime(280, t); body.frequency.exponentialRampToValueAtTime(120, t + 0.045);
-  bodyGain.gain.setValueAtTime(0.1009, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -10dB total now (was 0.32, then 0.254, 0.2017, 0.1602, 0.1427, 0.1271) — affects BLAP, SPLIM, SAMBA, DOUBLEDOWN
+  bodyGain.gain.setValueAtTime(0.1009, t); bodyGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06); // -10dB total now (was 0.32, then 0.254, 0.2017, 0.1602, 0.1427, 0.1271) — affects BLAP, SAMBA, DOUBLEDOWN
   body.connect(bodyGain); bodyGain.connect(snDest); body.start(t); body.stop(t + 0.06);
   body.onended = () => { try { bodyGain.disconnect(); } catch(e) {} };
 
@@ -8904,7 +8907,7 @@ async function _renderOfflineLoop(connectFn, loopSequence, tailSec) {
       for (let step = 0; step < NUM_STEPS; step++) {
         const swingMs = (step % 2 === 1) ? getSwingOffsetMs() : 0;
         let stepOffset = step * stepDuration() + (swingMs / 1000);
-        if (_beatType === 'boogie') {
+        if (_beatType === 'boogie' || _beatType === 'jazz') {
           const beatPos = step % 4;
           const sd = stepDuration();
           const _boogieOffsets = [0, sd / 3, (2 * sd) / 3, -sd / 3];
@@ -9309,7 +9312,7 @@ function randAll(mode, opts) {
   if (!_beatTypeLocked) {
     const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown' || _beatType === 'boogie');
     if (!onHalfFeel) {
-      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'splim'];
+      let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
       if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie');
       setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
     }
@@ -9519,6 +9522,27 @@ function randAll(mode, opts) {
     }
   }
 
+  // JAZZ beat type — RIDE and SNARE become real tracks (their comping
+  // pattern is written directly below, not left to normal randomization),
+  // using 2 of the 6 track slots. Kick and hihat stay BEAT-menu-only
+  // synthesis (see the scheduler) — they're never tracks. Forced in here,
+  // after the conga/bongo pairing pass but before the visual sort, same
+  // spot and same replace-a-slot approach as that pass.
+  const _jazzTrackKeys = ['ride', 'ssnare'];
+  if (_beatType === 'jazz') {
+    const bassKeysLocal2 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+    for (const member of _jazzTrackKeys) {
+      if (!pool.includes(member)) {
+        let replaceIdx = -1;
+        for (let i = pool.length - 1; i >= 0; i--) {
+          if (!bassKeysLocal2.has(pool[i]) && pool[i] !== 'skick' && pool[i] !== 'shihat' && !_jazzTrackKeys.includes(pool[i])) { replaceIdx = i; break; }
+        }
+        if (replaceIdx === -1) replaceIdx = pool.length - 1;
+        pool[replaceIdx] = member;
+      }
+    }
+  }
+
   // Sort pool into fixed visual order: top=hihat, perc, tonal, bass, kick=bottom
   const kickKeys = new Set(['skick']);
   const bassKeys2 = new Set(['sbass','sbass3','sbass4','dbass','pbass']);
@@ -9605,7 +9629,30 @@ function randAll(mode, opts) {
     const _tid = setTimeout(() => {
       window._randNoteMax = _maxForThisTrack;
       window._lastNoteMaxUsed = null;
-      randomizeTrack(_tr);
+      // JAZZ's RIDE and SNARE tracks get their comping pattern written
+      // directly, not the normal per-instrument randomization — this is a
+      // specific, deliberate pattern (ride: quarter notes on 1 & 3 plus a
+      // triplet skip landing on the "ah" of 2 & 4; snare: sparse random
+      // ghost notes/accents on off-beats), not something RAND should be
+      // free to reinterpret. The actual triplet timing itself comes from
+      // the scheduler's playback-time snap (same mechanism BOOGIE uses),
+      // not from anything about these grid positions themselves — the grid
+      // stays a normal 16-step display.
+      if (_beatType === 'jazz' && trackInstruments[_tr] === 'ride') {
+        grid[_tr].fill(0);
+        grid[_tr][0] = 2; grid[_tr][8] = 2; // on-beat hits (1 & 3), slightly accented
+        grid[_tr][7] = 1; grid[_tr][15] = 1; // the "ah" of 2 & 4 — collapses onto the triplet-3 timing via the scheduler snap
+        redrawTrackCells(_tr); markModified();
+      } else if (_beatType === 'jazz' && trackInstruments[_tr] === 'ssnare') {
+        grid[_tr].fill(0);
+        const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]; // never on the downbeats — comping stays out of the way of the main beat
+        const _ghostCount = 2 + Math.floor(Math.random() * 3); // 2-4 spontaneous hits
+        const _shuffledOff = [..._offBeatSteps].sort(() => Math.random() - 0.5);
+        _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[_tr][s] = Math.random() < 0.2 ? 2 : 1; }); // mostly quiet ghost notes, occasional accent
+        redrawTrackCells(_tr); markModified();
+      } else {
+        randomizeTrack(_tr);
+      }
       window._randNoteMax = null;
       // Every RAND track should actually have something playing — if it
       // somehow ended up with zero notes, force a small fallback pattern
