@@ -149,7 +149,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   touch-action: none;
 }
 .btn {
-  background: var(--neutral-top, #555); border: none; color: var(--neutral-top-text, #fff);
+  background: var(--neutral-top, #555); border: none; color: var(--neutral-track-text, #fff);
   font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700;
   letter-spacing: 0.5px; padding: 0 10px; cursor: pointer; text-transform: uppercase;
   transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: 54px; flex-shrink: 0; white-space: nowrap;
@@ -170,6 +170,15 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: var(--highlight3-color, #adff00); -webkit-mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
 #playBtn.playing #playBtnMask { display: block; }
 #playBtn.playing.btn-beat-pulse #playBtnMask { animation: play-green-pulse 0.44s ease-out; }
+/* PLAY and RECORD icon graphics are plain white PNGs with no built-in
+   color variant, unlike text buttons which just switch CSS color — so
+   they're recolored via filter:invert() instead, driven by the same
+   black/white choice _applyTrackColor() already makes for TRACK BUTTONS'
+   own text (--track-text-invert). Independent of and unaffected by
+   #playBtnMask above, which is the separate HIGHLIGHT-3-colored glow
+   shown only while actually playing — the icon itself keeps matching
+   track-button color throughout, highlighted or not. */
+#playBtnImg, #recBtnImg { filter: invert(var(--track-text-invert, 0)); }
 @keyframes play-green-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
 #playBtn.playing.btn-beat-pulse { animation: play-pulse 0.44s ease-out; }
 @keyframes play-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
@@ -741,7 +750,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 00:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 02:49</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1326,7 +1335,15 @@ function _applyTopColor(hex) {
 }
 function _applyTrackColor(hex) {
   document.documentElement.style.setProperty('--neutral-track', hex);
-  document.documentElement.style.setProperty('--neutral-track-text', _contrastText(hex));
+  const trackText = _contrastText(hex);
+  document.documentElement.style.setProperty('--neutral-track-text', trackText);
+  // Top row icon graphics (PLAY, RECORD) are white PNGs with no separate
+  // colored variant, unlike text buttons which can just switch their CSS
+  // color directly — filter:invert() flips white to black (or leaves it
+  // alone), so this drives that from the same black/white choice
+  // _contrastText() just made for TRACK BUTTONS, keeping the icons in
+  // sync with track-button text color rather than TOP ROW's own.
+  document.documentElement.style.setProperty('--track-text-invert', trackText === '#111111' ? '1' : '0');
   const el = document.getElementById('trackColorPicker'); if (el) el.value = hex;
 }
 function _applyHighlightColor(hex) {
@@ -1432,15 +1449,21 @@ async function importThemeFile(file) {
     if (inp) inp.value = '';
   }
 }
-// Apply a previously-saved default theme (see saveTheme() above) right at
-// load — before anything else touches colors — so it's what's actually on
-// screen from the very first paint, not just from the next randomize.
-(function() {
-  try {
-    const saved = localStorage.getItem('_sifiDefaultTheme');
-    if (saved) _applyColorTheme(JSON.parse(saved));
-  } catch (e) {}
-})();
+// Apply either a previously-saved default theme (see saveTheme() above) or
+// the app's own shipped defaults right at load — before anything else
+// touches colors — so every color-derived custom property (including
+// --track-text-invert, which the top-row icon graphics depend on) is
+// always genuinely initialized from the very first paint. This used to
+// only run the saved-theme branch, leaving everything unset on a fresh
+// install/first visit until something else happened to trigger a color
+// change (RANDOMIZE COLORS, WILD, a reset) — until then, properties like
+// --track-text-invert fell back to their bare CSS default (0, i.e. "don't
+// invert"), which doesn't match what the actual default track color
+// would compute, so the icons stayed white instead of matching it.
+// _resetAppColorsToDefault() already does exactly this same
+// saved-theme-else-shipped-defaults check internally, so it's reused
+// directly here rather than duplicating that logic.
+_resetAppColorsToDefault();
 function randomizeAppColors() {
   // Lightness ranges are constrained per-role only for TOP ROW / TRACK
   // BUTTONS, since those two use a fixed label-text color elsewhere too
@@ -2511,6 +2534,8 @@ function scheduler() {
         else delete trackPitchOverride[tr];
         if (snap.trackLegatoLen?.[tr]) trackLegatoLen[tr] = {...snap.trackLegatoLen[tr]};
         else delete trackLegatoLen[tr];
+        if (snap.trackLockedRoot?.[tr] !== undefined) trackLockedRoot[tr] = snap.trackLockedRoot[tr];
+        else delete trackLockedRoot[tr];
         if (snap.trackVolume) {
           trackVolume[tr] = snap.trackVolume[tr];
           if (trackGainNodes[tr]) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr], now + 0.04, 0.02);
@@ -3281,6 +3306,7 @@ const CHUG_ROOTS    = [82, 92, 98, 110, 123];   // E2 F#2 G2 A2 B2 — a bit low
 
 // Per-track pentatonic scale (set on each R press for tonal tracks)
 const trackBassScale = {}; // tr -> [freq, ...]
+const trackLockedRoot = {}; // tr -> root frequency, captured the moment L locks a tonal track — see randomizeBassTrack below
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
@@ -3361,7 +3387,14 @@ function randomizeBassTrack(tr, level) {
   if (trackLegatoLen[tr]) trackLegatoLen[tr] = {};
 
   let root;
-  if (globalScaleRoot !== null) {
+  if (trackSweep[tr] && trackLockedRoot[tr]) {
+    // Locked track, individually re-randomized via its own + — use the
+    // key it actually had when it was locked, not whatever the shared
+    // global key currently is (which other unlocked tracks may have since
+    // moved on from). Doesn't touch globalScaleRoot or any other track's
+    // scale — this is purely local to this one locked track.
+    root = transposeRootToRange(trackLockedRoot[tr], getRangeRoots(key));
+  } else if (globalScaleRoot !== null) {
     // Transpose existing global root into this instrument's range
     root = transposeRootToRange(globalScaleRoot, getRangeRoots(key));
   } else {
@@ -6902,6 +6935,17 @@ function buildUI() {
       if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
       trackSweep[tr] = !trackSweep[tr];
       sweepBtnL.classList.toggle('sweep-on', !!trackSweep[tr]);
+      // Pin this track's current root the moment it locks, so if it's
+      // individually re-randomized later via its own + (locking only
+      // protects it from the whole-pattern RAND sweep, not a direct press
+      // on its own button), new notes still come from the key it actually
+      // had when it was locked — not whatever the shared global key has
+      // drifted to since, from other tracks getting regenerated meanwhile.
+      if (trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr]) && trackBassScale[tr]?.[0]) {
+        trackLockedRoot[tr] = trackBassScale[tr][0];
+      } else if (!trackSweep[tr]) {
+        delete trackLockedRoot[tr];
+      }
       markModified();
     });
     ctrlRow.appendChild(sweepBtnL);
@@ -9804,7 +9848,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc') ? 0.5 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO fixed at 50%; CONGA/BONGO fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -9990,6 +10034,10 @@ function snapshotState() {
     // required for a pattern to genuinely play back the same way twice.
     trackPitchOverride: Object.fromEntries(Object.entries(trackPitchOverride).map(([k,v])=>[k,{...v}])),
     trackLegatoLen: Object.fromEntries(Object.entries(trackLegatoLen).map(([k,v])=>[k,{...v}])),
+    // A locked (L) tonal track's pinned key — same reasoning as the two
+    // above, so a locked track's own re-randomize still uses the right
+    // key after a RECALL/slot-load, not the current global one.
+    trackLockedRoot: {...trackLockedRoot},
     globalScaleRoot,
     currentScaleName,
     bpm, masterVol,
@@ -10073,6 +10121,8 @@ function restoreState(snap) {
       else delete trackPitchOverride[tr];
       if (snap.trackLegatoLen?.[tr]) trackLegatoLen[tr] = {...snap.trackLegatoLen[tr]};
       else delete trackLegatoLen[tr];
+      if (snap.trackLockedRoot?.[tr] !== undefined) trackLockedRoot[tr] = snap.trackLockedRoot[tr];
+      else delete trackLockedRoot[tr];
     } catch (err) { console.error('restoreState: pitch/legato restore failed for track', tr, err); }
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
@@ -12508,7 +12558,7 @@ async function hardResetAudioEngine() {
     const baseGain = ctx.createGain();
     const attackDur = stepDuration() * 4; // fades in from silence over a quarter note, instead of snapping on
     baseGain.gain.setValueAtTime(0, t);
-    baseGain.gain.linearRampToValueAtTime(0.1704, t + attackDur); // -4dB more (was 0.27)
+    baseGain.gain.linearRampToValueAtTime(0.2407, t + attackDur); // +3dB back (was 0.1704)
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
@@ -12594,7 +12644,7 @@ async function hardResetAudioEngine() {
     // Don't touch anything before the fade-in completes — cancelling here
     // used to wipe out the quarter-note attack before it ever had a chance
     // to run, since both functions fire in the same instant on press.
-    gain.gain.linearRampToValueAtTime(1.2029, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; -4dB more (was 1.9065)
+    gain.gain.linearRampToValueAtTime(1.6991, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; +3dB back (was 1.2029)
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
       stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
