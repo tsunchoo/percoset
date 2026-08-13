@@ -763,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 03:46</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 03:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2950,7 +2950,7 @@ function fireStepAudio(step, t) {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) playDmxSnare(t);
+        if (bstep === 4 || bstep === 7 || bstep === 12) playDmxSnare(t); // now the same snare placement as SPLIM (was 3/6/9/11/14)
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -7939,10 +7939,20 @@ function flashBtnOrange(id) {
 function setBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
   b.classList.add('btn-flash-blue');
+  if (id === 'randBtn') {
+    // Capture HIGHLIGHT 3 right now, before whatever comes right after
+    // this call (queueRand -> WILD) can reassign it — otherwise the flash
+    // reads the live CSS variable at paint time, by which point WILD has
+    // already changed it as part of this same press. Forced inline
+    // (important) so it can't lose to the class's own !important rule.
+    b.style.setProperty('background', '#111', 'important');
+    b.style.setProperty('color', _highlight3Color(), 'important');
+  }
 }
 function clearBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
   b.classList.remove('btn-flash-blue');
+  if (id === 'randBtn') { b.style.removeProperty('background'); b.style.removeProperty('color'); }
 }
 function flashBtnBlue(id) {
   const b = document.getElementById(id);
