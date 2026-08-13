@@ -166,15 +166,12 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 /* RECALL, now an A/B toggle — 50% larger than the base top-row text size
    (0.72rem * 1.5), bold (inherits .btn's own font-weight:700, already bold). */
 #scratchBtn { font-size: 1.08rem; }
-/* Both letters stay visible at all times — only which one is bold changes
-   as RECALL toggles between the two patterns. */
+/* All glyphs are always HIGHLIGHT-3 colored — only which letter is bold
+   changes as RECALL toggles between the two patterns. */
+#scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: var(--highlight3-color, #adff00); }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; }
 #scratchBtn .ab-sep { font-weight: 400; opacity: 0.6; padding: 0 1px; }
-/* Turns HIGHLIGHT-3 colored the moment RECALL actually has a pattern to
-   swap to (see _updateRecallReadyState) — normal track-button color until
-   then, since there's nothing to recall yet. */
-#scratchBtnA.ab-ready, #scratchBtnB.ab-ready { color: var(--highlight3-color, #adff00); }
 /* This button's color is constantly being fought over — the flash class,
    the pulse animation, and the base track-text color (which itself keeps
    changing under WILD, often at the exact same moment as a flash, since
@@ -331,6 +328,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-name-indicator {
   width: 10px; flex-shrink: 0; height: 100%;
   background: var(--neutral-track, #b0b0b0);
+  margin-right: calc(-1 * clamp(2px, 1vw, 5px)); /* cancels the row's own gap, which otherwise applies between every child including this pair */
 }
 .track-name-btn.has-notes { color: #fff; }
 .track-name-btn.muted { background: var(--dim); color: var(--bg); opacity: 0.55; }
@@ -598,6 +596,9 @@ body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-p
 @keyframes pulse-uniform-b { from { background: var(--neutral-top, #555); } to { background: color-mix(in srgb, var(--neutral-top, #555) 55%, var(--playhead-color, #f8ff00) 45%); } }
 @keyframes pulse-uniform-c { from { background: var(--neutral-top, #555); } to { background: color-mix(in srgb, var(--neutral-top, #555) 75%, var(--playhead-color, #f8ff00) 25%); } }
 .track-name-indicator.has-notes.names-uniform { animation: none; }
+/* Belt-and-suspenders — SOLID should never animate under any
+   circumstance, regardless of instrument group or names mode. */
+body.track-pulse-solid .track-name-indicator { animation: none !important; }
 body.track-pulse-a.seq-playing .track-name-indicator.has-notes.names-uniform { animation: pulse-uniform   0.6s infinite alternate; }
 body.track-pulse-b.seq-playing .track-name-indicator.has-notes.names-uniform { animation: pulse-uniform-b 0.6s infinite alternate; }
 body.track-pulse-c.seq-playing .track-name-indicator.has-notes.names-uniform { animation: pulse-uniform-c 0.6s infinite alternate; }
@@ -786,7 +787,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 17:41</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 17:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11208,7 +11209,6 @@ setTimeout(async () => {
     try {
       const _startupSnap = snapshotState();
       _recallSnapB = _startupSnap;
-      _updateRecallReadyState();
     } catch (e) { console.error('Startup RECALL seed failed', e); }
   })();
 }, 300);
@@ -12083,7 +12083,6 @@ function hideInstructions() {
 function fullReset() {
   if (playing) togglePlay();
   _recallSnapB = null;
-  _updateRecallReadyState();
   window._resetRecallAB?.();
   setTrackPulseMode('solid');
   const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="solid"]'); if (_tpmRadio) _tpmRadio.checked = true;
@@ -12996,17 +12995,6 @@ let _recallSnapB = null; // previous
 let _recallSnap = null; // kept for compatibility
 let _recallInterval = null;
 
-// Turns the A/B letters HIGHLIGHT-3 colored the moment RECALL actually has
-// something to swap to (right at startup, once the initial pattern is
-// seeded), and back to normal track-button color if it's ever cleared
-// (a full reset). Global so both the seed and fullReset() can call it.
-function _updateRecallReadyState() {
-  const aEl = document.getElementById('scratchBtnA');
-  const bEl = document.getElementById('scratchBtnB');
-  const ready = !!_recallSnapB;
-  if (aEl) aEl.classList.toggle('ab-ready', ready);
-  if (bEl) bEl.classList.toggle('ab-ready', ready);
-}
 function startRecallLoop() {
   if (_recallInterval) return;
   _recallInterval = setInterval(() => {
