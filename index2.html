@@ -404,11 +404,12 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .shift-btn:not(.right) { font-size: calc(1rem + 0.5em); }
 .shift-btn .glyph { display: inline-block; transform: translateY(-2px); }
 .track-vol-bar {
-  flex: 1; position: relative; overflow: hidden; height: clamp(28px, 8vw, 32px);
+  flex: 1; position: relative; overflow: hidden;
   background: var(--neutral-top, #555); border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
+  border-bottom: 10px solid var(--bg);
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
@@ -771,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 07:20</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 16:37</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12824,27 +12825,27 @@ async function hardResetAudioEngine() {
     }, measure * 1000);
   }
 
-  // Redirects the level toward whichever target matches where the finger
-  // currently is — the ceiling while over SWEEP itself (rising, same as a
-  // normal hold), or right down toward near-silence while dragged over
-  // the left spool (falling) — always continuing smoothly from whatever
-  // the level actually is at the moment of the switch, never jumping.
-  // Falling all the way toward near-silence (not just back to the attack
-  // level) and over a shorter, snappier ramp — landing back at the attack
-  // level was too close to where a still-rising sweep already sits early
-  // on to read as an audible change, and duck's own much more aggressive
-  // modulation sitting on top of this same signal could bury a subtler
-  // move entirely. Doesn't touch the spool's own independent Stop/Cymbal/
-  // brake behavior at all — this is purely SWEEP's own level responding
-  // to drag position.
-  function _sweepGainRedirect(rising) {
+  // Redirects the PITCH (not the level) toward whichever direction matches
+  // where the finger currently is — continuing to rise toward the ceiling
+  // while over SWEEP itself (same as a normal hold), or reversing to fall
+  // back down toward the floor while dragged over the left spool —
+  // always continuing smoothly from whatever frequency it's actually at
+  // right now, never jumping. Doesn't touch the level/gain at all, and
+  // doesn't touch the spool's own independent Stop/Cymbal/brake behavior
+  // either — this is purely the sweep's own pitch responding to drag
+  // position, matching how it already only rises while held and only
+  // falls on release, just re-triggerable mid-gesture by drag position
+  // instead of solely by release.
+  const SWEEP_FLOOR_FREQ = 200, SWEEP_CEIL_FREQ = 4000;
+  function _sweepPitchRedirect(rising) {
     if (!sweepNodes) return;
-    const { gain } = sweepNodes;
+    const { bp } = sweepNodes;
     const t = ctx.currentTime;
-    const dur = 0.4;
-    gain.gain.cancelScheduledValues(t);
-    gain.gain.setValueAtTime(gain.gain.value, t);
-    gain.gain.linearRampToValueAtTime(rising ? SWEEP_CEILING_LEVEL : 0.02, t + dur);
+    const dur = 1.2;
+    const currentFreq = bp.frequency.value;
+    bp.frequency.cancelScheduledValues(t);
+    bp.frequency.setValueAtTime(currentFreq, t);
+    bp.frequency.exponentialRampToValueAtTime(rising ? SWEEP_CEIL_FREQ : SWEEP_FLOOR_FREQ, t + dur);
   }
 
   const beginPress = () => { window._sweepGestureActive = true; startSweep(); startSweepTakeover(); };
@@ -12876,11 +12877,11 @@ async function hardResetAudioEngine() {
     if (onLeftSpool && !window._sweepOnSpool) {
       window._sweepOnSpool = true;
       _leftSpoolEngage();
-      _sweepGainRedirect(false); // start bringing the level back down while held over the spool
+      _sweepPitchRedirect(false); // start falling in pitch while held over the spool
     } else if (!onLeftSpool && window._sweepOnSpool) {
       window._sweepOnSpool = false;
       _leftSpoolRelease();
-      _sweepGainRedirect(true); // back over SWEEP — resume rising from wherever it currently is
+      _sweepPitchRedirect(true); // back over SWEEP — resume rising in pitch from wherever it currently is
     }
     // Dragging onto BEAT (or into its open dropdown) drives the same
     // drag-to-select menu as holding BEAT directly, instead of an instant toggle.
