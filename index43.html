@@ -708,10 +708,10 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
   touch-action: manipulation; transition: background 0.1s;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
-.slot-btn.saved  { color: #ffe033 !important; border: none; }
+.slot-btn.saved  { border: none; }
 .slot-btn.pending { animation: slot-pending 0.4s infinite alternate; color: #fff; }
 @keyframes slot-pending { from { background: var(--slot-saved); } to { background: #f5f0e8; } }
-.slot-btn.loaded { color: #ffe033 !important; border: none; }
+.slot-btn.loaded { border: none; }
 .slot-btn.beat-pulse { animation: slot-pulse 0.22s ease-out; }
 @keyframes slot-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #playBtn.btn-beat-pulse { animation: slot-pulse 0.44s ease-out; }
@@ -772,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 05:34</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 05:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -10396,13 +10396,19 @@ function updateSlotButtons() {
     } else if (slots[i] !== null) {
       const color = slots[i].barColor || '#aa64a6';
       btn.style.background = color;
+      // Text color computed against the actual background, same as the
+      // name bar's own barTextColor() — this used to be a fixed yellow
+      // regardless of what the background actually was, so slot numbers
+      // could disappear whenever a slot's color happened to land close to
+      // that same yellow (which became much more likely once slot colors
+      // started following HIGHLIGHT 3's hue instead of a fixed palette).
       if (i === activeSlot) {
         btn.classList.add('loaded');
-        btn.style.color = '#ffe033';
+        btn.style.color = barTextColor(color);
         btn.style.border = 'none';
       } else {
         btn.classList.add('saved');
-        btn.style.color = '#ffe033';
+        btn.style.color = barTextColor(color);
         btn.style.border = 'none';
       }
     } else {
