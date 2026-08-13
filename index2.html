@@ -273,14 +273,14 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
 #randomizeColorsBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
 @keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.85); } 100% { transform: scale(1); } }
-#saveBtn.rec-active #recBtnMask { animation: rec-icon-pulse 0.5s infinite alternate; }
+#saveBtn.rec-active #recBtnMask { background: #ff0000 !important; animation: rec-icon-pulse 0.5s infinite alternate; }
 #recBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); background: var(--highlight3-color, #adff00); -webkit-mask-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAYAAAB65WHVAAAHrUlEQVR4nO3aW3IbORBEUXL2v2fOh+2QbInqF9BIoM5ZwIRiOus2KfnxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOeo7+AWDL6/V69fpvP59PN0As42S4ngG+SsAZyfi4VXKM9xJt7mJodLNCjPcSbXowKpqpFOQtgk0LRsQlorxNrDnLcDhMlM8Ta44wFnYR5fbEmi0GwluifB+x5jtGwRfCPI5Q85kx8Hg8RDmRWGMAxQlzPqGuy4MvSpjnI9T1eODFCPP8hLoOD7oIYV6PUK/PA16cMK9PqNflwS5KmOsR6vX8N/oHoD1xrslzX4837kIcKH/4NL0GD3EBwsw7Qj03v+KYnDjzE/uYm7frpBweR/k0PR+foCckzpxhN/MR6Mk4Mq6wn7n4yjMJh0VrfuWRzyfoCYgzPdhVPoEO54joyb6y+YoTyuFwN7/yyOMTdCBxZgS7yyPQYRwJI9lfFoEO4jhIYIc5BDqEoyCJPWbwR4HBHALp/PFwHJ+gBxJnZmCn4wj0IEbPTOx1DIEewNiZkd3eT6BvZuTMzH7vJdA3Mm5WYMf3EeibGDUrsed7CPQNjJkV2XV/At2ZEbMy++5LoDsyXiqw834EGiCUQHfiUwWV2HsfAt2BsVKR3bcn0I0ZKZXZf1sC3ZBxgjtoSaAbMUr44B7aEGiAUALdgE8L8JW7uE6gLzJCeM99XCPQFxgfbHMn5wk0QCiBPsmnAtjPvZwj0CcYGxznbo4T6IOMDM5zP8cINEAogT7A2x+uc0f7CfRORgXtuKd9BBoglEDv4G0P7bmrbQINEEqgN3jLQz/u62cC/QPjgf7c2XsCDRBKoN/wVof7uLfvCTRAKIH+hrc53M/dfSXQAKEE+h/e4jCO+/ubQAOEEuhPvL1hPHf4QaABQgn0b97akMM9/iLQAKEE+uFtDYncpUADxBJogFDlA+1rFOSqfp/lAw2QqnSgq7+dYQaV77R0oAGSCTRAqLKBrvy1CWZT9V7LBhognUADhCoZ6Kpfl2BmFe+2ZKABZiDQAKHKBbri1yRYRbX7LRdogFkINECoUoGu9vUIVlTpjksFGmAmAg0QSqABQpUJdKXfW8HqqtxzmUADzEagAUIJNEAogQYIVSLQVf6gAJVUuOsSgQaYkUADhBJogFACDRBq+UBX+EMCVLX6fS8faIBZCTRAKIEGCCXQAKEEGiCUQAOEEmiAUEsHevV/IwmsfedLBxpgZgINEEqgAUIJNEAogQYIJdAAoQQaIJRAA4QSaIBQAg0QSqABQgk0QCiBBggl0AChBBoglEADhBJogFACDRBKoAFCCTRAKIEGCCXQAKGWDvTz+XyO/hmAvla+86UDDTAzgQYIJdAAoQQaIJRAA4QSaIBQAg0QavlAr/xvJKG61e97+UADzEqgAUIJNEAogQYIVSLQq/8hASqqcNclAg0wI4EGCCXQAKEEGiBUmUBX+IMCVFHlnssEGmA2Ag0QSqABQpUKdJXfW8HKKt1xqUADzESgAUKVC3Slr0ewmmr3Wy7QALMQaIBQJQNd7WsSrKDi3ZYMNMAMBBogVNlAV/y6BLOqeq9lAw2QTqABQpUOdNWvTTCTyndaOtAAycoHuvLbGdJVv8/ygQZIJdAAoQT64WsUJHKXAg0QS6B/87aGHO7xF4EGCCXQn3hrw3ju8INAA4QS6H94e8M47u9vAg0QSqC/4S0O93N3Xwk0QCiBfsPbHO7j3r4n0AChBPoH3urQnzt7T6A3GA/0475+JtAAoQR6B295aM9dbRNogFACvZO3PbTjnvYR6AOMCq5zR/sJNEAogT7I2x/Ocz/HCPQJRgbHuZvjBPokY4P93Ms5Ag0QSqAv8KkAtrmT8wT6IuOD99zHNQLdgBHCV+7iOoEGCCXQjfi0AB/cQxsC3ZBRgjtoSaAbM04qs/+2BLoDI6Uiu29PoDsxViqx9z4EGiCUQHfkUwUV2Hk/At2Z8bIy++5LoG9gxKzIrvsT6JsYMyux53sI9I2MmhXY8X0E+mbGzczs914CPYCRMyO7vZ9AD2LszMRexxDogYyeGdjpOP7Hh3i9Xq/RPwN8Jszj+QQdwjGQxB4zCHQQR0ECO8wh0GEcByPZXxaBDuRIGMHu8ngg4fzxkN6EOZdP0OEcDz3ZVzaBnoAjoge7yucBTcavPLhKmOfhE/RkHBdX2M9cBHpCjowz7GY+Htjk/MqDLcI8L5+gJ+f4+Il9zM3DW4hP0/whzGvwEBck1HUJ81r8imNBjrQmz309HujifJpenzCvy4MtQqjXI8zr84CLEer5CXMdHnRRQj0fYa7HAy9OqPMJc10ePI/HQ6gTCTMGwBdiPY4o85kx8JZQ30eY+Y5RsItYtyfKbDEQDhPr80SZI4yFS8R6myhzluHQjFh/EGVaMCK6qRRsQaYHo+JWK0RbjLmLoTFccrTFmJGMj3g9Ay7AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwDn/Ax7gTeh3lbOrAAAAAElFTkSuQmCC"); mask-image: url("data:image/png;base64,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"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
 #saveBtn.rec-active #recBtnMask { display: block; }
 #saveBtn.rec-active #recBtnImg { opacity: 0; }
 #saveBtn.rec-beat-pulse { animation: rec-pump 0.44s ease-out; }
 @keyframes rec-pump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
-@keyframes rec-icon-pulse { from { background: #ff0000; transform: translate(-50%, -50%) scale(1); } to { background: var(--highlight3-color, #adff00); transform: translate(-50%, -50%) scale(1.1); } }
+@keyframes rec-icon-pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.1); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
 .btn-flash-blue { background: #0b5394 !important; color: var(--highlight3-color, #adff00) !important; border: none !important; transition: none !important; }
 .rand-overlay-btn {
@@ -702,7 +702,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 18:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 18:42</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -740,6 +740,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
+    <span id="topTempoFreetimeLabel" style="display:block;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:#111;white-space:nowrap;">FREETIME</span>
   </div>
 </header>
 
@@ -1091,6 +1092,7 @@ const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
   ssnare: { name: 'SNARE',       soft: 'Sounds/Snare50.wav', accent: 'Sounds/Snare100.wav', group: 'kit' },
   sidestick: { name: 'SIDESTICK', soft: 'Sounds/Sidestick50.wav', accent: 'Sounds/Sidestick100.wav', group: 'perc' },
+  snare2: { name: 'SNARE 2', soft: null, accent: null, group: 'kit' },
   shihat: { name: 'HIHAT',       soft: null, accent: null, group: 'kit' },
   ride:   { name: 'RIDE',        soft: 'Sounds/Ride50.wav',  accent: 'Sounds/Ride100.wav',  group: 'kit'  },
   tamb:   { name: 'TAMB',        soft: 'Sounds/Tamb50.wav',   accent: 'Sounds/Tamb100.wav',   group: 'perc' },
@@ -2149,6 +2151,7 @@ function _rawSynthConnectNode(tr) {
 
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
+  if (key === 'snare2') { triggerFxEnvelope(tr, time); playSynthSnare_reinstated(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
   if (key === 'amlgm')  {
     triggerFxEnvelope(tr, time);
@@ -9439,13 +9442,15 @@ function randAll(mode, opts) {
     }
   }
 
-  // JAZZ beat type — RIDE and SNARE become real tracks (their comping
-  // pattern is written directly below, not left to normal randomization),
-  // using 2 of the 6 track slots. Kick and hihat stay BEAT-menu-only
-  // synthesis (see the scheduler) — they're never tracks. Forced in here,
-  // after the conga/bongo pairing pass but before the visual sort, same
-  // spot and same replace-a-slot approach as that pass.
-  const _jazzTrackKeys = ['ride', 'sidestick'];
+  // JAZZ beat type — RIDE and a comping voice (SIDESTICK or SNARE 2,
+  // picked 50/50 each time) become real tracks (their pattern is written
+  // directly below, not left to normal randomization), using 2 of the 6
+  // track slots. Kick and hihat stay BEAT-menu-only synthesis (see the
+  // scheduler) — they're never tracks. Forced in here, after the
+  // conga/bongo pairing pass but before the visual sort, same spot and
+  // same replace-a-slot approach as that pass.
+  const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'snare2';
+  const _jazzTrackKeys = ['ride', _jazzCompingKey];
   if (_beatType === 'jazz') {
     const bassKeysLocal2 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
     for (const member of _jazzTrackKeys) {
@@ -9557,23 +9562,22 @@ function randAll(mode, opts) {
       // stays a normal 16-step display.
       if (_beatType === 'jazz' && trackInstruments[_tr] === 'ride') {
         grid[_tr].fill(0);
-        grid[_tr][0] = 2; grid[_tr][4] = 2; grid[_tr][8] = 2; grid[_tr][12] = 2; // repeated every quarter note
+        grid[_tr][0] = 2; grid[_tr][8] = 2; // accented on-beat hits (1 & 3)
+        grid[_tr][4] = 1; grid[_tr][12] = 1; // lighter quarter notes (2 & 4)
+        grid[_tr][7] = 1; grid[_tr][15] = 1; // anticipation hits — the "ah" landing right before each accented beat, via the scheduler's triplet-timing snap
         redrawTrackCells(_tr); markModified();
-        // RIDE never gets auto rand notes mode, and gets locked (L) so
-        // this exact pattern can't drift on a later RAND either — it's
-        // the fixed backbone of the jazz feel, not something that should
-        // ever reinterpret itself.
-        trackSweep[_tr] = true;
-        const _rideLockBtn = document.getElementById(`swpbtn-${_tr}`);
-        if (_rideLockBtn) _rideLockBtn.classList.add('sweep-on');
-      } else if (_beatType === 'jazz' && trackInstruments[_tr] === 'sidestick') {
+        // RIDE never gets auto rand notes mode — this is the fixed
+        // backbone of the jazz feel, not something that should ever
+        // reinterpret itself. Not locked (L) though — free to be
+        // re-randomized like any other track if you actually want to.
+      } else if (_beatType === 'jazz' && (trackInstruments[_tr] === 'sidestick' || trackInstruments[_tr] === 'snare2')) {
         grid[_tr].fill(0);
         const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]; // never on the downbeats — comping stays out of the way of the main beat
         const _ghostCount = 2 + Math.floor(Math.random() * 4); // 2-5 spontaneous hits
         const _shuffledOff = [..._offBeatSteps].sort(() => Math.random() - 0.5);
         _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[_tr][s] = Math.random() < 0.2 ? 2 : 1; }); // mostly quiet ghost notes, occasional accent
         redrawTrackCells(_tr); markModified();
-        _maybeEngageJazzAutoRand(_tr, 0.5); // SIDESTICK — 50% chance of auto rand notes mode
+        _maybeEngageJazzAutoRand(_tr, 0.5); // 50% chance of auto rand notes mode
       } else {
         randomizeTrack(_tr);
       }
@@ -11119,12 +11123,14 @@ function _syncTempoLockUI() {
   const num = document.getElementById('topTempoBpmNum');
   const lbl = document.getElementById('topTempoBpmLabel');
   const locked = document.getElementById('topTempoLockedLabel');
+  const freetime = document.getElementById('topTempoFreetimeLabel');
   if (slider) slider.classList.toggle('tempo-locked', _tempoLocked);
   if (icon) icon.style.opacity = _tempoLocked ? '1' : '0';
   if (btn) btn.style.background = _tempoLocked ? '#f17d21' : 'var(--panel)';
   if (num) num.style.color = _tempoLocked ? 'var(--playhead)' : 'var(--header-text-color, #111)';
   if (lbl) lbl.style.color = _tempoLocked ? 'var(--playhead)' : 'var(--header-text-dim, #555)';
   if (locked) locked.style.display = _tempoLocked ? 'block' : 'none';
+  if (freetime) freetime.style.display = _tempoLocked ? 'none' : 'block';
 }
 function toggleTempoLock() {
   _tempoLocked = !_tempoLocked;
@@ -12768,7 +12774,7 @@ async function hardResetAudioEngine() {
     bp.frequency.exponentialRampToValueAtTime(rising ? SWEEP_CEIL_FREQ : SWEEP_FLOOR_FREQ, t + dur);
   }
 
-  const beginPress = () => { window._sweepGestureActive = true; startSweep(); startSweepTakeover(); };
+  const beginPress = () => { window._sweepGestureActive = true; playUiSound('Cymbal'); startSweep(); startSweepTakeover(); };
   const endPress = () => {
     window._sweepGestureActive = false;
     if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
@@ -13318,7 +13324,8 @@ function _applyJazzTracksToCurrentPattern() {
   for (const tr of _preferred) { if (_targets.length < 2) _targets.push(tr); }
   for (const tr of _unlocked) { if (_targets.length < 2 && !_targets.includes(tr)) _targets.push(tr); }
   if (_targets.length < 2) return;
-  const [rideTr, sidestickTr] = _targets;
+  const [rideTr, compingTr] = _targets;
+  const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'snare2';
   const _applyOne = (tr, key) => {
     trackInstruments[tr] = key;
     const tb = document.getElementById(`tbtn-${tr}`); if (tb) tb.textContent = INSTRUMENTS[key]?.name || key;
@@ -13331,12 +13338,12 @@ function _applyJazzTracksToCurrentPattern() {
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) { fb.classList.remove('on'); fb.classList.remove('blast-on'); }
     if (key === 'ride') {
       grid[tr].fill(0);
-      grid[tr][0] = 2; grid[tr][4] = 2; grid[tr][8] = 2; grid[tr][12] = 2; // repeated every quarter note
-      // RIDE never gets auto rand notes mode, and gets locked (L) so this
-      // exact pattern can't drift on a later RAND either.
-      trackSweep[tr] = true;
-      const _rideLockBtn = document.getElementById(`swpbtn-${tr}`);
-      if (_rideLockBtn) _rideLockBtn.classList.add('sweep-on');
+      grid[tr][0] = 2; grid[tr][8] = 2; // accented on-beat hits (1 & 3)
+      grid[tr][4] = 1; grid[tr][12] = 1; // lighter quarter notes (2 & 4)
+      grid[tr][7] = 1; grid[tr][15] = 1; // anticipation hits — the "ah" landing right before each accented beat
+      // RIDE never gets auto rand notes mode — the fixed backbone of the
+      // jazz feel. Not locked (L) though — free to be re-randomized like
+      // any other track if you actually want to.
     } else {
       grid[tr].fill(0);
       const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
@@ -13345,10 +13352,10 @@ function _applyJazzTracksToCurrentPattern() {
       _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[tr][s] = Math.random() < 0.2 ? 2 : 1; });
     }
     redrawTrackCells(tr);
-    if (key === 'sidestick') _maybeEngageJazzAutoRand(tr, 0.5);
+    if (key === 'sidestick' || key === 'snare2') _maybeEngageJazzAutoRand(tr, 0.5);
   };
   _applyOne(rideTr, 'ride');
-  _applyOne(sidestickTr, 'sidestick');
+  _applyOne(compingTr, _jazzCompingKey);
   markModified();
 }
 // Tapping the already-active BEAT TYPE button toggles the lock (tapping it otherwise does
