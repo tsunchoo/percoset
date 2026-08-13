@@ -772,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 06:55</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 07:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1738,7 +1738,11 @@ function playUiSound(name) {
   const g = ctx.createGain();
   // Stop (spool hold touch): -8.5dB (x0.376) from base 0.7
   // Cymbal (spool release): -10.5dB (x0.299) from base 0.7
-  g.gain.value = name === 'rewind' ? 0.625 : name === 'Stop' ? 0.7 * 0.376 : name === 'StopReversed' ? 0.7 * 0.376 : name === 'Cymbal' ? 0.7 * 0.299 : name === 'Rand' ? 0.7 * 0.3548 : 0.7;
+  // Overall -2dB (x0.7943) applied uniformly across all of these on top of
+  // their existing relative levels — covers rewind/rewind2, Stop,
+  // StopReversed, Cymbal, Rand, and the plain 0.7 default (click, play,
+  // clickoff).
+  g.gain.value = (name === 'rewind' ? 0.625 : name === 'Stop' ? 0.7 * 0.376 : name === 'StopReversed' ? 0.7 * 0.376 : name === 'Cymbal' ? 0.7 * 0.299 : name === 'Rand' ? 0.7 * 0.3548 : 0.7) * 0.7943;
   src.connect(g); g.connect(masterGain);
   src.start();
   src.onended = () => { try { g.disconnect(); } catch(e) {} };
@@ -12705,6 +12709,12 @@ async function hardResetAudioEngine() {
   const btn = document.getElementById('clearBtn');
   if (!btn) return;
   let sweepNodes = null;
+  // Shared level targets — attack level (where it fades in to and falls
+  // back toward while dragged over the left spool) and the full-hold
+  // ceiling (where it climbs to normally, and resumes climbing toward
+  // when dragged back off the spool onto SWEEP itself).
+  const SWEEP_ATTACK_LEVEL = 0.1704; // -3dB more (was 0.2407)
+  const SWEEP_CEILING_LEVEL = 1.2029; // -3dB more (was 1.6991)
 
   // Sidechain analyser on master output — reads current mix level to duck the sweep
   let _sweepAnalyser = null, _sweepAnalyserData = null, _sweepDuckLoop = null;
@@ -12738,7 +12748,7 @@ async function hardResetAudioEngine() {
     const baseGain = ctx.createGain();
     const attackDur = stepDuration() * 4; // fades in from silence over a quarter note, instead of snapping on
     baseGain.gain.setValueAtTime(0, t);
-    baseGain.gain.linearRampToValueAtTime(0.2407, t + attackDur); // +3dB back (was 0.1704)
+    baseGain.gain.linearRampToValueAtTime(SWEEP_ATTACK_LEVEL, t + attackDur);
     const duckGain = ctx.createGain();
     duckGain.gain.value = 1;
     window._sweepPressStartT = t; // pump intensity ramps up relative to this, over the same measure as the crossfade
@@ -12824,11 +12834,28 @@ async function hardResetAudioEngine() {
     // Don't touch anything before the fade-in completes — cancelling here
     // used to wipe out the quarter-note attack before it ever had a chance
     // to run, since both functions fire in the same instant on press.
-    gain.gain.linearRampToValueAtTime(1.6991, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks; +3dB back (was 1.2029)
+    gain.gain.linearRampToValueAtTime(SWEEP_CEILING_LEVEL, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
       stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
     }, measure * 1000);
+  }
+
+  // Redirects the level toward whichever target matches where the finger
+  // currently is — the ceiling while over SWEEP itself (rising, same as a
+  // normal hold), or back down toward the attack level while dragged over
+  // the left spool (falling) — always continuing smoothly from whatever
+  // the level actually is at the moment of the switch, never jumping.
+  // Doesn't touch the spool's own independent Stop/Cymbal/brake behavior
+  // at all — this is purely SWEEP's own level responding to drag position.
+  function _sweepGainRedirect(rising) {
+    if (!sweepNodes) return;
+    const { gain } = sweepNodes;
+    const t = ctx.currentTime;
+    const dur = 0.8;
+    gain.gain.cancelScheduledValues(t);
+    gain.gain.setValueAtTime(gain.gain.value, t);
+    gain.gain.linearRampToValueAtTime(rising ? SWEEP_CEILING_LEVEL : SWEEP_ATTACK_LEVEL, t + dur);
   }
 
   const beginPress = () => { window._sweepGestureActive = true; startSweep(); startSweepTakeover(); };
@@ -12860,9 +12887,11 @@ async function hardResetAudioEngine() {
     if (onLeftSpool && !window._sweepOnSpool) {
       window._sweepOnSpool = true;
       _leftSpoolEngage();
+      _sweepGainRedirect(false); // start bringing the level back down while held over the spool
     } else if (!onLeftSpool && window._sweepOnSpool) {
       window._sweepOnSpool = false;
       _leftSpoolRelease();
+      _sweepGainRedirect(true); // back over SWEEP — resume rising from wherever it currently is
     }
     // Dragging onto BEAT (or into its open dropdown) drives the same
     // drag-to-select menu as holding BEAT directly, instead of an instant toggle.
