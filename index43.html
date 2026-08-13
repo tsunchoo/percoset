@@ -763,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:38</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:45</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9577,10 +9577,16 @@ function randAll(mode, opts) {
       // Tambourine/Ride — those instruments already cover the whole measure
       // evenly at that density, so Delay just smears an already-continuous
       // part rather than adding anything.
+      // CONGA/BONGO are exempt from both density-based strips below — their
+      // 50% reverb chance (set earlier) is meant to be unconditional, and
+      // their patterns are naturally busy/dense enough to trip these checks
+      // almost every time, which was silently undoing that fixed chance
+      // right after it was set.
+      const _congaBongoTr = ['congHi', 'congLo', 'bongHi', 'bongLo'].includes(trackInstruments[_tr]);
       const _full16th = grid[_tr].every(v => v > 0);
       const _full8thRelevant = ['shihat','shak','tamb','ride'].includes(trackInstruments[_tr]) &&
         [0,2,4,6,8,10,12,14].every(s => grid[_tr][s] > 0);
-      if ((_full16th || _full8thRelevant) && trackDelay[_tr]) {
+      if ((_full16th || _full8thRelevant) && trackDelay[_tr] && !_congaBongoTr) {
         trackDelay[_tr] = false;
         const db2 = document.getElementById(`delaybtn-${_tr}`);
         if (db2) db2.classList.toggle('on', false);
@@ -9591,7 +9597,7 @@ function randAll(mode, opts) {
       if (_effMax && _effMax > 0) {
         const _actualNotes = grid[_tr].filter(v => v > 0).length;
         _densityRatio = Math.min(1, _actualNotes / _effMax);
-        if (_actualNotes >= 0.8 * _effMax) {
+        if (_actualNotes >= 0.8 * _effMax && !_congaBongoTr) {
           if (trackDelay[_tr]) {
             trackDelay[_tr] = false;
             const db = document.getElementById(`delaybtn-${_tr}`);
