@@ -404,7 +404,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .shift-btn:not(.right) { font-size: calc(1rem + 0.5em); }
 .shift-btn .glyph { display: inline-block; transform: translateY(-2px); }
 .track-vol-bar {
-  flex: 1; position: relative; overflow: hidden;
+  flex: 1; position: relative; overflow: hidden; height: 100%;
   background: var(--neutral-top, #555); border: 3px solid transparent;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
@@ -772,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 06:23</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 06:43</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2271,7 +2271,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.472 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -0.5dB from the 0.5 default
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.2978 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -4dB more (was 0.472, -0.5dB from the 0.5 default before that)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -9313,13 +9313,13 @@ function randAll(mode, opts) {
     const tempoSlider = document.getElementById('tempoBar'); if (tempoSlider) tempoSlider.value = bpm;
   }
   if (!_beatTypeLocked) {
-    const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown' || _beatType === 'boogie');
+    const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown' || _beatType === 'boogie' || _beatType === 'jazz');
     if (!onHalfFeel) {
       let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
-      if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie');
+      if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie' && b !== 'jazz');
       setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
     }
-    // else: tempo locked and already on halftime/doubledown/boogie — leave the beat exactly as it is
+    // else: tempo locked and already on halftime/doubledown/boogie/jazz — leave the beat exactly as it is
   }
 
   // Stop all auto-rand tracks and reset to R — except locked tracks, whose
@@ -10956,7 +10956,20 @@ function wireShiftButton(btn, tr, dir) {
     doShift();
     holdTimer = setTimeout(startHold, 400);
   };
-  btn.addEventListener('mousedown', onDown);
+  btn.addEventListener('mousedown', e => {
+    // The generic drag-to-engage system (DRAGGABLE_BTN_SELECTORS, which
+    // includes .shift-btn) dispatches its own synthetic mousedown on every
+    // touchstart for this button — on top of the real touchstart handler
+    // below, which already calls onDown() directly. That meant every
+    // single tap was firing doShift() twice: once for real, once for the
+    // synthetic dispatch — shifting 2 steps (1/8 of the measure) instead
+    // of the intended 1 (1/16). Synthetic, JS-dispatched events are never
+    // "trusted" (e.isTrusted is always false for them, real hardware-
+    // driven input is always true), so this filters those out while still
+    // responding normally to an actual desktop mouse click.
+    if (e.isTrusted === false) return;
+    onDown();
+  });
   btn.addEventListener('mouseup', stop);
   btn.addEventListener('mouseleave', stop);
   btn.addEventListener('touchstart', e => { e.preventDefault(); onDown(); }, { passive: false });
