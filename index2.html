@@ -316,19 +316,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   font-size: calc(clamp(0.64rem, 2.3vw, 0.86rem) * var(--track-name-font-scale, 1)); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   cursor: pointer; background: var(--neutral-track, #b0b0b0); color: var(--neutral-track-text, var(--text));
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
-  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: clamp(68px, calc(22vw - 10px), 96px);
+  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: clamp(78px, 22vw, 106px);
   display: flex; align-items: center;
   touch-action: none; -webkit-tap-highlight-color: transparent;
   transition: background 0.06s, color 0.06s;
-}
-/* 10px sliver sitting flush against the name button's left edge (no gap),
-   taken out of the button's own width so the overall row layout is
-   unchanged — this is what actually pulses/flashes now; the button itself
-   just shows its static color, indicator and button always matching. */
-.track-name-indicator {
-  width: 10px; flex-shrink: 0; height: 100%;
-  background: var(--neutral-track, #b0b0b0);
-  margin-right: calc(-1 * clamp(2px, 1vw, 5px)); /* cancels the row's own gap, which otherwise applies between every child including this pair */
 }
 .track-name-btn.has-notes { color: #fff; }
 .track-name-btn.muted { background: var(--dim); color: var(--bg); opacity: 0.55; }
@@ -513,98 +504,22 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 /* Basses and pads get their own colors within the tonal group */
 .sound-option.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
 .sound-option.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
-/* Track name buttons AND their indicator sliver both show the same base
-   instrument-group color — the button stays static at this color always;
-   the indicator is what actually pulses (see below). */
-.track-name-btn.inst-kit, .track-name-indicator.inst-kit   { background: #0b5394; color: #fff; }
-.track-name-btn.inst-perc, .track-name-indicator.inst-perc  { background: #7baa17; color: #fff; }
-.track-name-btn.inst-tonal, .track-name-indicator.inst-tonal { background: #fd475d; color: #fff; }
-.track-name-btn.inst-tonal.inst-bass, .track-name-indicator.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
-.track-name-btn.inst-tonal.inst-pad, .track-name-indicator.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
-.track-name-btn.names-uniform, .track-name-indicator.names-uniform { background: var(--neutral-top, #555); color: #fff; }
+/* Track name buttons keep their static base background (instrument-group
+   color, or --neutral-top when DEFAULT names mode is on) — no background
+   pulsing at all. The only thing that pulses is the TEXT color, between
+   HIGHLIGHT 3 (the same color the top row's own highlighted state uses)
+   and the track button's normal default text color, and only while a
+   track actually has notes and the sequencer is playing. */
+.track-name-btn.inst-kit   { background: #0b5394; color: #fff; }
+.track-name-btn.inst-perc  { background: #7baa17; color: #fff; }
+.track-name-btn.inst-tonal { background: #fd475d; color: #fff; }
+.track-name-btn.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
+.track-name-btn.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
+.track-name-btn.names-uniform { background: var(--neutral-top, #555); color: #fff; }
 
-@keyframes pulse-kit   { from { background: #0b5394; } to { background: #4a8ac4; } }
-@keyframes pulse-perc  { from { background: #7baa17; } to { background: #4a6b0e; } }
-@keyframes pulse-tonal { from { background: #fd475d; } to { background: #b02040; } }
-@keyframes pulse-bass  { from { background: #8d3ba8; } to { background: #5e2670; } }
-@keyframes pulse-pad   { from { background: #3a9c5a; } to { background: #FFFF39; } }
-.track-name-indicator.has-notes.inst-kit,
-.track-name-indicator.has-notes.inst-perc,
-.track-name-indicator.has-notes.inst-tonal { animation: none; }
-body.track-pulse-a.seq-playing .track-name-indicator.has-notes.inst-kit   { animation: pulse-kit   0.6s infinite alternate; }
-body.track-pulse-a.seq-playing .track-name-indicator.has-notes.inst-perc  { animation: pulse-perc  0.6s infinite alternate; }
-body.track-pulse-a.seq-playing .track-name-indicator.has-notes.inst-tonal { animation: pulse-tonal 0.6s infinite alternate; }
-body.track-pulse-a.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-bass { animation: pulse-bass 0.6s infinite alternate; }
-body.track-pulse-a.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-pad  { animation: pulse-pad  0.6s infinite alternate; }
-
-/* Option B — same idea as A, but the darker end of each pair stays put and
-   the OTHER end is pulled in to that pair's midpoint, for a more subtle
-   fade instead of swinging all the way out to the original lighter color. */
-@keyframes pulse-kit-b   { from { background: #0b5394; } to { background: #135a9a; } }
-@keyframes pulse-perc-b  { from { background: #50730f; } to { background: #4a6b0e; } }
-@keyframes pulse-tonal-b { from { background: #b92543; } to { background: #b02040; } }
-@keyframes pulse-bass-b  { from { background: #642977; } to { background: #5e2670; } }
-@keyframes pulse-pad-b   { from { background: #3a9c5a; } to { background: #41a761; } }
-body.track-pulse-b.seq-playing .track-name-indicator.has-notes.inst-kit   { animation: pulse-kit-b   0.6s infinite alternate; }
-body.track-pulse-b.seq-playing .track-name-indicator.has-notes.inst-perc  { animation: pulse-perc-b  0.6s infinite alternate; }
-body.track-pulse-b.seq-playing .track-name-indicator.has-notes.inst-tonal { animation: pulse-tonal-b 0.6s infinite alternate; }
-body.track-pulse-b.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-bass { animation: pulse-bass-b 0.6s infinite alternate; }
-body.track-pulse-b.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-b  0.6s infinite alternate; }
-
-/* Option C — same mechanism as B (a continuous color fade, darker end
-   fixed), just pulled in even closer than B's — noticeably subtler still. */
-@keyframes pulse-kit-c   { from { background: #0b5394; } to { background: #0f5697; } }
-@keyframes pulse-perc-c  { from { background: #4d6f0f; } to { background: #4a6b0e; } }
-@keyframes pulse-tonal-c { from { background: #b52242; } to { background: #b02040; } }
-@keyframes pulse-bass-c  { from { background: #612773; } to { background: #5e2670; } }
-@keyframes pulse-pad-c   { from { background: #3a9c5a; } to { background: #3ea25e; } }
-body.track-pulse-c.seq-playing .track-name-indicator.has-notes.inst-kit   { animation: pulse-kit-c   0.6s infinite alternate; }
-body.track-pulse-c.seq-playing .track-name-indicator.has-notes.inst-perc  { animation: pulse-perc-c  0.6s infinite alternate; }
-body.track-pulse-c.seq-playing .track-name-indicator.has-notes.inst-tonal { animation: pulse-tonal-c 0.6s infinite alternate; }
-body.track-pulse-c.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-bass { animation: pulse-bass-c 0.6s infinite alternate; }
-body.track-pulse-c.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-pad  { animation: pulse-pad-c  0.6s infinite alternate; }
-
-/* Option D — a genuine momentary flash to the note-marker chrome-yellow
-   (#f8ff00, same as --playhead-color) on each real note hit, like RAND/PLAY
-   flash to their own secondary colors — not a continuous loop. Idle state
-   is each category's own darkest anchor color; .note-flash (added per-hit
-   by _flashTrackButtonNow, same mechanism the other momentary button
-   flashes in the app already use) snaps it to yellow and eases back down. */
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-kit   { background: #0b5394; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-perc  { background: #4a6b0e; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-tonal { background: #b02040; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-bass { background: #5e2670; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-pad  { background: #3a9c5a; }
-@keyframes flash-kit-d   { from { background: var(--playhead-color, #f8ff00); } to { background: #0b5394; } }
-@keyframes flash-perc-d  { from { background: var(--playhead-color, #f8ff00); } to { background: #4a6b0e; } }
-@keyframes flash-tonal-d { from { background: var(--playhead-color, #f8ff00); } to { background: #b02040; } }
-@keyframes flash-bass-d  { from { background: var(--playhead-color, #f8ff00); } to { background: #5e2670; } }
-@keyframes flash-pad-d   { from { background: var(--playhead-color, #f8ff00); } to { background: #3a9c5a; } }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-kit.note-flash   { animation: flash-kit-d   0.25s ease-out; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-perc.note-flash  { animation: flash-perc-d  0.25s ease-out; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-tonal.note-flash { animation: flash-tonal-d 0.25s ease-out; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-bass.note-flash { animation: flash-bass-d 0.25s ease-out; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.inst-tonal.inst-pad.note-flash  { animation: flash-pad-d  0.25s ease-out; }
-
-/* CUSTOM mode gets its own parallel set — same idea as above, but a
-   user-chosen custom color as the fixed anchor instead of an instrument
-   color, and the NOTE PULSE color picker (--playhead-color) as the "lit"
-   color throughout, not just for option D. color-mix() gives B/C a
-   genuinely subtler swing toward that same picker color instead of a
-   hardcoded intermediate. */
-@keyframes pulse-uniform   { from { background: var(--neutral-top, #555); } to { background: var(--playhead-color, #f8ff00); } }
-@keyframes pulse-uniform-b { from { background: var(--neutral-top, #555); } to { background: color-mix(in srgb, var(--neutral-top, #555) 55%, var(--playhead-color, #f8ff00) 45%); } }
-@keyframes pulse-uniform-c { from { background: var(--neutral-top, #555); } to { background: color-mix(in srgb, var(--neutral-top, #555) 75%, var(--playhead-color, #f8ff00) 25%); } }
-.track-name-indicator.has-notes.names-uniform { animation: none; }
-/* Belt-and-suspenders — SOLID should never animate under any
-   circumstance, regardless of instrument group or names mode. */
-body.track-pulse-solid .track-name-indicator { animation: none !important; }
-body.track-pulse-a.seq-playing .track-name-indicator.has-notes.names-uniform { animation: pulse-uniform   0.6s infinite alternate; }
-body.track-pulse-b.seq-playing .track-name-indicator.has-notes.names-uniform { animation: pulse-uniform-b 0.6s infinite alternate; }
-body.track-pulse-c.seq-playing .track-name-indicator.has-notes.names-uniform { animation: pulse-uniform-c 0.6s infinite alternate; }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.names-uniform { background: var(--neutral-top, #555); }
-@keyframes flash-uniform-d { from { background: var(--playhead-color, #f8ff00); } to { background: var(--neutral-top, #555); } }
-body.track-pulse-d.seq-playing .track-name-indicator.has-notes.names-uniform.note-flash { animation: flash-uniform-d 0.25s ease-out; }
+@keyframes name-text-pulse { from { color: var(--highlight3-color, #adff00); } to { color: var(--neutral-track-text, #fff); } }
+.track-name-btn.has-notes { animation: none; }
+body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-pulse 0.6s infinite alternate; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -787,7 +702,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 17:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 18:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1044,9 +959,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="d" onchange="setTrackPulseMode('d')" style="width:15px;height:15px;cursor:pointer;">FLASH
           </label>
         </div>
       </div>
@@ -2679,7 +2591,6 @@ function fireStepAudio(step, t) {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
-        if (document.body.classList.contains('track-pulse-d')) _flashTrackButtonNow(tr, t);
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
         if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
@@ -6829,9 +6740,7 @@ function openSoundPicker(tr) {
 }
 function setTrackNameColor(tr, key) {
   const btn = document.getElementById(`tbtn-${tr}`); if (!btn) return;
-  const indicator = document.getElementById(`tind-${tr}`);
   btn.classList.remove('inst-kit','inst-perc','inst-tonal','inst-bass','inst-pad','names-uniform');
-  if (indicator) indicator.classList.remove('inst-kit','inst-perc','inst-tonal','inst-bass','inst-pad','names-uniform');
   const g = INSTRUMENTS[key]?.group || 'perc';
   const _laneColors = {'kit':'#0b5394','perc':'#85A838','tonal':'#fd475d'};
   const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(key);
@@ -6846,15 +6755,10 @@ function setTrackNameColor(tr, key) {
   // regardless of any pulse/flash animation touching background elsewhere
   // — those are all scoped to the .inst-* classes, so if the class was
   // never added, none of that can ever apply in the first place.
-  if (window._trackNamesUniform) {
-    btn.classList.add('names-uniform');
-    if (indicator) indicator.classList.add('names-uniform');
-    return;
-  }
+  if (window._trackNamesUniform) { btn.classList.add('names-uniform'); return; }
   btn.classList.add('inst-' + g);
-  if (indicator) indicator.classList.add('inst-' + g);
-  if (isBass) { btn.classList.add('inst-bass'); if (indicator) indicator.classList.add('inst-bass'); }
-  else if (isPad) { btn.classList.add('inst-pad'); if (indicator) indicator.classList.add('inst-pad'); }
+  if (isBass) btn.classList.add('inst-bass');
+  else if (isPad) btn.classList.add('inst-pad');
 }
 
 function selectSound(tr, k) {
@@ -6960,13 +6864,6 @@ function buildUI() {
 
     // ── Control row ──
     const ctrlRow = document.createElement('div'); ctrlRow.className = 'track-ctrl-row'; ctrlRow.id = `ctrlrow-${tr}`;
-
-    // Indicator sliver — sits flush against the name button's left edge,
-    // 10px taken out of the button's own width so overall layout is
-    // unchanged. This is the part that actually pulses/flashes now; the
-    // name button next to it just shows a static color.
-    const nameIndicator = document.createElement('div'); nameIndicator.className = 'track-name-indicator'; nameIndicator.id = `tind-${tr}`;
-    ctrlRow.appendChild(nameIndicator);
 
     // Name button (click=mute, hold=sound picker)
     const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
@@ -7161,7 +7058,6 @@ function redrawTrackCells(tr) {
   const hasNotes = grid[tr].some(v => v > 0);
   if (tbtn) {
     tbtn.classList.toggle('has-notes', hasNotes);
-    const tind = document.getElementById(`tind-${tr}`); if (tind) tind.classList.toggle('has-notes', hasNotes);
     // Blank the label entirely when a track has no notes at all, rather
     // than showing an instrument name for a track that isn't actually
     // doing anything — recomputed from trackInstruments each time so it
@@ -7224,7 +7120,6 @@ function tapStep(tr, s, cell) {
   const hasNotes = grid[tr].some(v => v > 0);
   if (tbtn) {
     tbtn.classList.toggle('has-notes', hasNotes);
-    const tind = document.getElementById(`tind-${tr}`); if (tind) tind.classList.toggle('has-notes', hasNotes);
     tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : 'EMPTY';
   }
   if (val > 0 && ctx) previewNote(tr, val === 2);
@@ -8027,23 +7922,12 @@ function getExportSnaps() {
 // FLASH mode's per-note trigger — called once per real note hit, from the
 // live scheduler only. Timed to when the note actually sounds (t is a
 // Web-Audio-scheduled, possibly-lookahead time), not when this JS runs.
-function _flashTrackButtonNow(tr, t) {
-  if (!ctx) return;
-  const delayMs = Math.max(0, (t - ctx.currentTime) * 1000);
-  setTimeout(() => {
-    const ind = document.getElementById(`tind-${tr}`);
-    if (!ind) return;
-    ind.classList.remove('note-flash'); void ind.offsetWidth; ind.classList.add('note-flash');
-    setTimeout(() => ind.classList.remove('note-flash'), 130);
-  }, delayMs);
-}
 function setTrackPulseMode(mode) {
-  document.body.classList.remove('track-pulse-a', 'track-pulse-b', 'track-pulse-c', 'track-pulse-d', 'track-pulse-solid');
-  // 'solid' intentionally matches no CSS selector at all — none of the
-  // pulse/flash animations are scoped to it, so track names just show
-  // their normal static background the whole time, pulsing or not.
-  const valid = ['a', 'b', 'c', 'd', 'solid'];
-  document.body.classList.add('track-pulse-' + (valid.includes(mode) ? mode : 'solid'));
+  document.body.classList.remove('track-pulse-a', 'track-pulse-solid');
+  // 'solid' intentionally matches no CSS selector at all — the text-pulse
+  // animation is only scoped to track-pulse-a, so track names just show
+  // their normal static text color the whole time under 'solid'.
+  document.body.classList.add('track-pulse-' + (mode === 'a' ? 'a' : 'solid'));
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
@@ -9172,7 +9056,7 @@ function fullClear() {
       if (trackGainNodes[tr]) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr], ctx.currentTime, 0.01);
     }
     const tb = document.getElementById(`tbtn-${tr}`);
-    if (tb) { tb.textContent = 'EMPTY'; tb.classList.remove('muted','has-notes','shifting'); const ti = document.getElementById(`tind-${tr}`); if (ti) ti.classList.remove('has-notes'); setTrackNameColor(tr, trackInstruments[tr]); }
+    if (tb) { tb.textContent = 'EMPTY'; tb.classList.remove('muted','has-notes','shifting'); setTrackNameColor(tr, trackInstruments[tr]); }
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
     const sb = document.getElementById(`swpbtn-${tr}`);
     if (sb) { sb.textContent = 'L'; sb.classList.remove('sweep-on'); }
@@ -9673,8 +9557,7 @@ function randAll(mode, opts) {
       // stays a normal 16-step display.
       if (_beatType === 'jazz' && trackInstruments[_tr] === 'ride') {
         grid[_tr].fill(0);
-        grid[_tr][0] = 2; grid[_tr][8] = 2; // on-beat hits (1 & 3), slightly accented
-        grid[_tr][7] = 1; grid[_tr][15] = 1; // the "ah" of 2 & 4 — collapses onto the triplet-3 timing via the scheduler snap
+        grid[_tr][0] = 2; grid[_tr][4] = 2; grid[_tr][8] = 2; grid[_tr][12] = 2; // repeated every quarter note
         redrawTrackCells(_tr); markModified();
         // RIDE never gets auto rand notes mode, and gets locked (L) so
         // this exact pattern can't drift on a later RAND either — it's
@@ -13448,8 +13331,7 @@ function _applyJazzTracksToCurrentPattern() {
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) { fb.classList.remove('on'); fb.classList.remove('blast-on'); }
     if (key === 'ride') {
       grid[tr].fill(0);
-      grid[tr][0] = 2; grid[tr][8] = 2;
-      grid[tr][7] = 1; grid[tr][15] = 1;
+      grid[tr][0] = 2; grid[tr][4] = 2; grid[tr][8] = 2; grid[tr][12] = 2; // repeated every quarter note
       // RIDE never gets auto rand notes mode, and gets locked (L) so this
       // exact pattern can't drift on a later RAND either.
       trackSweep[tr] = true;
