@@ -163,6 +163,15 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    .transport .btn and height is the fixed 54px above, neither keyed off
    text content, so this is purely a glyph-size change. */
 #randBtn { font-size: 2.8875rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+/* This button's color is constantly being fought over — the flash class,
+   the pulse animation, and the base track-text color (which itself keeps
+   changing under WILD, often at the exact same moment as a flash, since
+   both fire together on a new pattern). Overriding .btn's own
+   background/color transition here to leave only transform means every
+   color change snaps instantly instead of cross-fading — nothing left to
+   visually collide mid-transition regardless of what else is changing
+   underneath it at the same time. */
+#randBtn { transition: transform 0.12s ease-out; }
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
@@ -754,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 03:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 03:46</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
