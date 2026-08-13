@@ -172,13 +172,6 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    visually collide mid-transition regardless of what else is changing
    underneath it at the same time. */
 #randBtn { transition: transform 0.12s ease-out; }
-/* The + button's default color was fighting with its own flash — the
-   "match track buttons" rule kept reasserting itself the instant the
-   flash ended, since both are just color rules on the same element with
-   nothing keeping them apart. Unhooked from that rule entirely: this
-   button's idle color goes back to following TOP ROW's own text color
-   instead, so nothing is racing the flash right after it fires. */
-#randBtn { color: var(--neutral-top-text, #fff); }
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
@@ -770,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:03</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:07</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
