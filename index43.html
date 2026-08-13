@@ -763,7 +763,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 04:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 05:09</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2414,26 +2414,12 @@ function scheduler() {
     // that must not happen to it.
     // Fire pending auto-rand on downbeat
     if (step === 0) {
-      // RECALL should always be able to revert to whatever was actually
-      // playing a moment ago — not just "whatever was playing right before
-      // the last RAND or slot swap." Rolling one-bar-delayed capture: at
-      // the start of each bar, whatever we captured LAST bar becomes the
-      // RECALL target, then we capture the current (about-to-play) state
-      // for next time. That way manual edits (per-track R, drawing on the
-      // grid) get picked up too, instead of RECALL jumping all the way back
-      // past them to a stale save slot. The explicit captures inside the
-      // RAND/slot-swap blocks below still take precedence for those exact
-      // moments — this just keeps things fresh on ordinary bars too.
-      // Only actually advances when something changed since the last
-      // capture — otherwise several quiet bars in a row would keep
-      // overwriting the rolling snapshot with an identical copy of what's
-      // already playing, making RECALL a no-op (recalling "the same
-      // pattern") once nothing had changed for a bar or two.
-      if (window._patternDirtySinceSnap) {
-        if (window._rollingBarSnap) _recallSnapB = window._rollingBarSnap;
-        window._rollingBarSnap = snapshotState();
-        window._patternDirtySinceSnap = false;
-      }
+      // RECALL only ever gets updated at two explicit moments — a new
+      // whole-pattern RAND landing (top-row + button, single press or its
+      // auto-mode loop) or a save slot being chosen. It does not track
+      // ordinary edits (drawing notes, per-track R, dragging, etc.) at
+      // all — see the explicit _recallSnapB assignments at each of those
+      // two trigger points below and elsewhere in this file.
       _committedSwing = swingVal; // commit swing amount only at bar start
       requestAnimationFrame(updateSwingReadout);
       // AUTO RAND's blue/green color pulse takes exactly 4 beats (one bar)
@@ -2468,7 +2454,7 @@ function scheduler() {
           rbClear.style.transform = '';
           rbClear.style.color = '';
         }
-        _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // save current as previous before change, and keep the passive rolling-updater in sync so it can't later overwrite this with a stale value
+        _recallSnapB = snapshotState(); // save current as previous, right before this new whole-pattern RAND lands
         randAll(_autoRandMode); _autoRandMode = undefined;
         clearBtnBlueHeld('randBtn');
         playRandReleaseSweep(t);
@@ -2496,7 +2482,7 @@ function scheduler() {
           _autoRandBarCount++;
           if (_autoRandBarCount >= 4) {
             _autoRandBarCount = 0;
-            _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // keep the passive rolling-updater in sync — see the queueRand() site for why
+            _recallSnapB = snapshotState(); // save current as previous, right before this new whole-pattern RAND lands
             const _savedSlot2 = activeSlot;
             randAll(undefined);
             activeSlot = _savedSlot2; // automatic evolution isn't a manual edit — don't invalidate the slot match
@@ -2511,7 +2497,7 @@ function scheduler() {
     if ((step === 0 || step === 4 || step === 8 || step === 12) && _pendingSlot >= 0) {
       const pi = _pendingSlot; _pendingSlot = -1;
       const snap = slots[pi];
-      _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // capture what's about to be replaced, so RECALL can revert to it; kept in sync with the passive rolling-updater too
+      _recallSnapB = snapshotState(); // capture what's about to be replaced, so RECALL can revert to it
       const now = ctx.currentTime;
       // Brief master gain dip to mask FX node reconnection clicks
       if (masterGain) {
@@ -8442,7 +8428,7 @@ let _autoRandLoopActive = false; // RAND button press-and-hold auto-mode
 let _autoRandBarCount = 0;       // counts real bar-starts toward the next 4-bar regenerate
 
 function queueRand(mode) {
-  _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // save current as previous before change. Also syncing the passive rolling-updater (window._rollingBarSnap) to the same value right here — that updater runs independently at bar boundaries, and without this it can end up reverting _recallSnapB to a stale, unrelated pattern between this tap and whichever bar boundary actually processes it, especially with RAND pressed more than once in quick succession.
+  _recallSnapB = snapshotState(); // save current as previous, right before this new whole-pattern RAND lands
   if (playing) {
     _autoRandPending = true;
     _autoRandMode = mode;
@@ -10110,7 +10096,8 @@ function snapshotState() {
     }
   };
 }
-function restoreState(snap) {
+function restoreState(snap, opts) {
+  opts = opts || {};
   globalScaleRoot = snap.globalScaleRoot ?? null;
   if (snap.currentScaleName) { currentScaleName = snap.currentScaleName; PENTA_MINOR = SCALES[currentScaleName] || PENTA_MINOR; }
   if (snap.currentScaleName) { currentScaleName = snap.currentScaleName; PENTA_MINOR = SCALES[currentScaleName] || PENTA_MINOR; }
@@ -10200,7 +10187,14 @@ function restoreState(snap) {
     applyBarColor(snap.barColor);
   }
   if (snap.trackDelay) { snap.trackDelay.forEach((d,i) => { trackDelay[i] = d; const b = document.getElementById(`delaybtn-${i}`); if (b) b.classList.toggle('on', d); }); }
-  if (snap.beatPlaying !== undefined) {
+  // RECALL skips this entirely — BEAT on/off is a live mixing decision in
+  // the moment, not part of "the pattern" the way the grid/instruments
+  // are, and restoring it alongside a genuine pattern revert was
+  // confusing: BEAT flipping back at the same time could make it look
+  // like RECALL hadn't done anything, or that toggling BEAT itself counted
+  // as a new pattern to revert past. Slot loads and tape imports still
+  // restore it fully — those are meant to reproduce everything faithfully.
+  if (!opts.skipBeatState && snap.beatPlaying !== undefined) {
     beatPlaying = snap.beatPlaying;
     _beatPending = false;
     if (snap.beatType) setBeatType(snap.beatType);
@@ -10283,7 +10277,6 @@ function markModified() {
   activeSlot = -1;
   updateSlotButtons();
   updateLegatoVisuals();
-  window._patternDirtySinceSnap = true; // RECALL's rolling snapshot only advances on a real change — see the step===0 handler
 }
 let _pendingSlot = -1;
 function slotPress(i) {
@@ -10304,7 +10297,7 @@ function slotPress(i) {
   } else if (!playing) {
     // Not playing — switch immediately
     _pendingSlot = -1;
-    _recallSnapB = snapshotState(); window._rollingBarSnap = _recallSnapB; // capture what's about to be replaced, so RECALL can revert to it; kept in sync with the passive rolling-updater too
+    _recallSnapB = snapshotState(); // capture what's about to be replaced, so RECALL can revert to it
     restoreState(slots[i]);
     activeSlot = i;
     updateSlotButtons();
@@ -10564,7 +10557,13 @@ function randomizeTrack(tr) {
   if (key === 'shihat' && Math.random() < 0.25) {
     for (let s = 0; s < NUM_STEPS; s++) {
       const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
-      grid[tr][gs] = (s === 2 || s === 6 || s === 10 || s === 14) ? 1 : 0;
+      grid[tr][gs] = (s === 2 || s === 6 || s === 10 || s === 14) ? 2 : 0; // accented (2), not just a plain hit
+    }
+    // 50% chance this specific pattern also gets FX on top.
+    if (Math.random() < 0.5) {
+      trackFx[tr] = { x: 0.5, y: 0.5 };
+      if (ctx) setFxActive(tr, trackFx[tr]);
+      const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.add('on');
     }
     redrawTrackCells(tr); markModified(); return;
   }
@@ -11051,7 +11050,6 @@ setTimeout(async () => {
     try {
       const _startupSnap = snapshotState();
       _recallSnapB = _startupSnap;
-      window._rollingBarSnap = _startupSnap;
     } catch (e) { console.error('Startup RECALL seed failed', e); }
   })();
 }, 300);
@@ -11925,7 +11923,7 @@ function hideInstructions() {
 // and leave the page blank, so the reset gesture must never depend on one.
 function fullReset() {
   if (playing) togglePlay();
-  window._rollingBarSnap = null; _recallSnapB = null; window._patternDirtySinceSnap = true;
+  _recallSnapB = null;
   setTrackPulseMode('a');
   const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="a"]'); if (_tpmRadio) _tpmRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
@@ -12753,7 +12751,7 @@ async function hardResetAudioEngine() {
     if (target && !target.dataset.sweepTriggered) {
       target.dataset.sweepTriggered = '1';
       if (target.id === 'randBtn') { setBtnBlueHeld('randBtn'); queueRand(); }
-      if (target.id === 'scratchBtn') { if (_recallSnapB) { const _cur = snapshotState(); restoreState(_recallSnapB); flashBtnOrange('scratchBtn'); window._reelReversePending = true; _recallSnapB = _cur; playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
+      if (target.id === 'scratchBtn') { if (_recallSnapB) { const _cur = snapshotState(); restoreState(_recallSnapB, { skipBeatState: true }); flashBtnOrange('scratchBtn'); window._reelReversePending = true; _recallSnapB = _cur; playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
     }
   };
   btn.addEventListener('touchmove', sweepMoveHandler, { passive: false });
@@ -12798,10 +12796,11 @@ function loadScratchSample() {
 }
 
 
-// RECALL button — saves last pattern every bar, tap to restore it
+// RECALL button — only updates on a new whole-pattern RAND (top-row +,
+// single press or its auto-mode loop) or a save slot being chosen; never
+// tracks ordinary edits.
 let _recallSnapA = null; // currently playing
 let _recallSnapB = null; // previous
-window._patternDirtySinceSnap = true; // starts true so the very first bar's rolling snapshot actually captures
 let _recallSnap = null; // kept for compatibility
 let _recallInterval = null;
 
@@ -12849,7 +12848,7 @@ function stopRecallLoop() {
         r.classList.remove('spinning');
         r.classList.add('spinning-reverse');
       });
-      restoreState(_recallSnapB);
+      restoreState(_recallSnapB, { skipBeatState: true });
       flashBtnOrange('scratchBtn');
       window._reelReversePending = true;
       _recallSnapB = current;
