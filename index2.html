@@ -772,7 +772,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 16:37</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 16:54</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2927,7 +2927,7 @@ function fireStepAudio(step, t) {
           if (_beatType === 'reggae2') fireBeatSidestick(t); // ONE DROP — ties to its kicks on beats 2 & 4
         }
         if (_beatType === 'reggae' && (bstep === 4 || bstep === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
-        if (doSnare) { if (_beatType === 'blap') playDmxSnare(t); else if (_beatType === 'halftime') playDmxSnareLow(t); else playSnare(t); }
+        if (doSnare) { if (_beatType === 'halftime') playDmxSnareLow(t); else if (_snareVariant === 'dmx') playDmxSnare(t); else playSnare(t); }
         if (doHat) playSynthHihat(false, t, -1);
       }
     }
@@ -3121,6 +3121,7 @@ function togglePlay() {
 // ── Beat button: Kick on 1&3, Snare on 2&4 ──
 let beatPlaying = true, _beatPending = false; // BEAT on by default at page load
 let _beatType = 'disco'; // 'disco' | 'halftime' | 'reggae'
+let _snareVariant = 'regular'; // 'regular' | 'dmx' — re-rolled fresh each time setBeatType() picks a new type
 let _beatOffset = 0; // BEAT ctrl-row '<' — steps the whole pattern is shifted by, same idea as trackOffset
 
 const _revBufCache = new WeakMap();
@@ -13343,6 +13344,14 @@ function onBeatCtrlRandTap() {
 function setBeatType(type) {
   const _wasJazz = _beatType === 'jazz';
   _beatType = type;
+  // Regular vs DMX-style snare — a fresh 50/50 pick every time a new beat
+  // type gets selected, replacing what used to be one fixed choice per
+  // type (BLAP always DMX, everyone else always regular). Stays put for
+  // as long as this beat type stays active, only re-rolled on the next
+  // selection. HALFTIME keeps its own dedicated low-pitched DMX variant
+  // regardless — that one's tied to its half-time feel specifically, not
+  // a style choice between these two.
+  _snareVariant = Math.random() < 0.5 ? 'regular' : 'dmx';
   const btns = { disco: 'beatTypeDiscoBtn', halftime: 'beatTypeHalfBtn', reggae: 'beatTypeReggaeBtn', breaks: 'beatTypeBreaksBtn', bounce: 'beatTypeBounceBtn', reggae2: 'beatTypeReggae2Btn' };
   Object.entries(btns).forEach(([t, id]) => {
     const b = document.getElementById(id);
