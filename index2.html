@@ -389,7 +389,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   color: var(--neutral-track-text, var(--text)); font-family: 'DM Sans', sans-serif;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   font-size: 1rem; font-weight: 700; transition: opacity 0.1s; padding: 0;
-  touch-action: manipulation;
+  touch-action: none;
 }
 .shift-btn:active { opacity: 0.4; }
 .shift-btn.on { background: #f17d21; color: #fff; }
@@ -702,7 +702,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">14Aug26 04:01</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">14Aug26 04:12</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11078,9 +11078,18 @@ function wireRandomizeButton(btn, tr) {
     lastTap = now;
   };
 
-  btn.addEventListener('touchstart', e => { e.preventDefault(); }, { passive: false });
-  btn.addEventListener('touchend', e => { e.preventDefault(); onTap(); }, { passive: false });
-  btn.addEventListener('click', onTap);
+  // Same pattern as L/REVERB — mouseup is what the drag-to-engage system
+  // (DRAGGABLE_BTN_SELECTORS) actually dispatches; this button used to
+  // rely on 'click' and a direct touchend trigger, neither of which the
+  // drag system's synthetic mousedown/mouseup could ever reach, so
+  // dragging across + buttons never worked at all.
+  let _lastRealTouchOnThisBtn = 0;
+  btn.addEventListener('mouseup', e => {
+    if (e.isTrusted && Date.now() - _lastRealTouchOnThisBtn < 500) return;
+    onTap();
+  });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); _lastRealTouchOnThisBtn = Date.now(); }, { passive: false });
+  btn.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
 }
 
 window._trackNamesUniform = true; // DEFAULT is the new pre-selected radio — track names start out TOP-ROW colored, not color-coded by instrument group
