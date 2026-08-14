@@ -702,7 +702,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">13Aug26 21:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">14Aug26 04:01</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6915,8 +6915,18 @@ function buildUI() {
     delayBtn.className = 'shift-btn right'; delayBtn.textContent = 'R';
     delayBtn.id = `delaybtn-${tr}`;
     delayBtn.classList.toggle('on', trackDelay[tr]);
-    delayBtn.addEventListener('click', () => toggleTrackDelay(tr));
-    delayBtn.addEventListener('touchend', e => { e.preventDefault(); toggleTrackDelay(tr); }, { passive: false });
+    // Uses mouseup (not click) specifically because the drag-to-engage
+    // system (DRAGGABLE_BTN_SELECTORS, which includes .shift-btn) only
+    // ever dispatches synthetic mousedown/mouseup — never an actual click
+    // event — so a click-based listener here could never be reached by
+    // it at all. This was the real reason dragging across REVERB buttons
+    // never worked: not a double-fire bug like the other buttons had, but
+    // this one never being wired to the drag system's event type in the
+    // first place.
+    delayBtn.addEventListener('mouseup', e => {
+      if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
+      toggleTrackDelay(tr);
+    });
     ctrlRow.appendChild(delayBtn);
 
     // FX button — simple toggle, crunch on/off. Double-tap toggles BLAST
@@ -10931,23 +10941,19 @@ function wireShiftButton(btn, tr, dir) {
   };
   let _lastRealTouchOnThisBtn = 0;
   btn.addEventListener('mousedown', e => {
-    // The generic drag-to-engage system (DRAGGABLE_BTN_SELECTORS, which
-    // includes .shift-btn) dispatches its own synthetic mousedown any time
-    // this button is touched — both for a direct tap (redundant, since
-    // the real touchstart handler below already calls onDown() itself)
-    // and for a genuine drag-onto from a different button (where nothing
-    // else fires onDown() at all, since touchstart never landed here).
-    // Blanket-rejecting untrusted events fixed the direct-tap double-fire
-    // (was moving 2 steps instead of 1) but broke the drag case entirely.
-    // Only skip it if a real touchstart on THIS exact button just handled
-    // the same touch a moment ago — otherwise treat it as a genuine
-    // drag-onto and let it through.
-    if (e.isTrusted === false && Date.now() - _lastRealTouchOnThisBtn < 500) return;
+    // Same pattern as L (see sweepBtnL above) — fires from the drag
+    // system's own untrusted mousedown (immediate, on touchstart), and
+    // ignores the browser's own genuine trusted mousedown that follows a
+    // real touch shortly after. touchstart below only tracks the timing
+    // for that filter and starts the hold-repeat timer — it no longer
+    // triggers the shift itself, so there's exactly one trigger path,
+    // same as L, instead of two racing each other.
+    if (e.isTrusted && Date.now() - _lastRealTouchOnThisBtn < 500) return;
     onDown();
   });
   btn.addEventListener('mouseup', stop);
   btn.addEventListener('mouseleave', stop);
-  btn.addEventListener('touchstart', e => { e.preventDefault(); _lastRealTouchOnThisBtn = Date.now(); onDown(); }, { passive: false });
+  btn.addEventListener('touchstart', e => { e.preventDefault(); _lastRealTouchOnThisBtn = Date.now(); }, { passive: false });
   btn.addEventListener('touchend', e => { e.preventDefault(); stop(); }, { passive: false });
   btn.addEventListener('touchcancel', stop);
 }
