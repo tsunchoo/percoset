@@ -311,6 +311,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-ctrl-row {
   display: flex; align-items: stretch; gap: clamp(2px, 1vw, 5px);
   height: clamp(28px, 8vw, 32px);
+  touch-action: none; /* a touch landing in the gap between buttons (missing one slightly) used to fall through to the page's own pan-y scroll — on iOS that overscroll could trigger a pull-to-refresh reload, silently losing the current pattern. Blocking it at the whole-row level, not just per-button, closes that gap. */
 }
 .track-name-btn {
   font-size: calc(clamp(0.64rem, 2.3vw, 0.86rem) * var(--track-name-font-scale, 1)); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
@@ -702,7 +703,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">14Aug26 04:12</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">14Aug26 04:25</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9504,6 +9505,19 @@ function randAll(mode, opts) {
     }
   }
 
+  // DISCO beat type — forces a hihat into the pool if it isn't already
+  // there, so there's always one to carry the fixed accented-upbeat
+  // pattern (written below, alongside JAZZ's ride/comping override).
+  if (_beatType === 'disco' && !pool.includes('shihat')) {
+    const bassKeysLocal3 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+    let replaceIdx = -1;
+    for (let i = pool.length - 1; i >= 0; i--) {
+      if (!bassKeysLocal3.has(pool[i]) && pool[i] !== 'skick' && pool[i] !== 'shihat') { replaceIdx = i; break; }
+    }
+    if (replaceIdx === -1) replaceIdx = pool.length - 1;
+    pool[replaceIdx] = 'shihat';
+  }
+
   // Sort pool into fixed visual order: top=hihat, perc, tonal, bass, kick=bottom
   const kickKeys = new Set(['skick']);
   const bassKeys2 = new Set(['sbass','sbass3','sbass4','dbass','pbass']);
@@ -9599,7 +9613,15 @@ function randAll(mode, opts) {
       // the scheduler's playback-time snap (same mechanism BOOGIE uses),
       // not from anything about these grid positions themselves — the grid
       // stays a normal 16-step display.
-      if (_beatType === 'jazz' && trackInstruments[_tr] === 'ride') {
+      if (_beatType === 'disco' && trackInstruments[_tr] === 'shihat') {
+        grid[_tr].fill(0);
+        grid[_tr][2] = 2; grid[_tr][6] = 2; grid[_tr][10] = 2; grid[_tr][14] = 2; // 4 accented hits on the upbeat &s
+        trackFx[_tr] = { x: 0.5, y: 0.5 }; // FX engaged
+        trackPump[_tr] = false; // explicitly NOT BLAST
+        if (ctx) setFxActive(_tr, trackFx[_tr]);
+        const _discoFxBtn = document.getElementById(`fxbtn-${_tr}`); if (_discoFxBtn) { _discoFxBtn.classList.add('on'); _discoFxBtn.classList.remove('blast-on'); }
+        redrawTrackCells(_tr); markModified();
+      } else if (_beatType === 'jazz' && trackInstruments[_tr] === 'ride') {
         grid[_tr].fill(0);
         grid[_tr][0] = 2; grid[_tr][8] = 2; // accented on-beat hits (1 & 3)
         grid[_tr][4] = 1; grid[_tr][12] = 1; // lighter quarter notes (2 & 4)
@@ -13314,6 +13336,7 @@ function onBeatCtrlRandTap() {
 
 function setBeatType(type) {
   const _wasJazz = _beatType === 'jazz';
+  const _wasDisco = _beatType === 'disco';
   _beatType = type;
   // Regular vs DMX-style snare — a fresh 50/50 pick every time a new beat
   // type gets selected, replacing what used to be one fixed choice per
@@ -13338,6 +13361,11 @@ function setBeatType(type) {
   // reason), so re-selecting an already-active JAZZ doesn't keep
   // stomping on tracks someone's since edited by hand.
   if (type === 'jazz' && !_wasJazz) _applyJazzTracksToCurrentPattern();
+  // DISCO gets its own forced hihat track the same way — 4 accented
+  // upbeat hits with FX (not BLAST) — applied to the current pattern the
+  // moment DISCO is actually picked, not just to whatever RAND generates
+  // next.
+  if (type === 'disco' && !_wasDisco) _applyDiscoHihatToCurrentPattern();
 }
 // Forces RIDE and SIDESTICK onto 2 of the current pattern's tracks,
 // overwriting whichever percussion tracks it can use — skips locked (L)
@@ -13359,6 +13387,35 @@ function _maybeEngageJazzAutoRand(tr, chance) {
     if (autoShiftStops[tr]) autoShiftStops[tr]();
     rb._restartAuto();
   }
+}
+// Forces a hihat onto one track with a fixed 4-hit accented-upbeat
+// pattern and FX engaged (not BLAST) — reuses an existing unlocked hihat
+// track if the pattern already has one, rather than creating a second,
+// duplicate hihat track; only picks a fresh target if it has to.
+function _applyDiscoHihatToCurrentPattern() {
+  const _essentialKeys = new Set(['skick', 'shihat', ...TONAL_KEYS, 'congHi', 'congLo', 'bongHi', 'bongLo', 'ride', 'sidestick', 'snare2']);
+  const _existingHihatTr = trackInstruments.findIndex((k, tr) => k === 'shihat' && !trackSweep[tr]);
+  let targetTr = _existingHihatTr;
+  if (targetTr === -1) {
+    const _unlocked = [];
+    for (let tr = 0; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _unlocked.push(tr);
+    if (_unlocked.length < 1) return; // nothing safe to use
+    const _preferred = _unlocked.filter(tr => !_essentialKeys.has(trackInstruments[tr]));
+    targetTr = _preferred.length > 0 ? _preferred[0] : _unlocked[0];
+  }
+  trackInstruments[targetTr] = 'shihat';
+  const tb = document.getElementById(`tbtn-${targetTr}`); if (tb) tb.textContent = INSTRUMENTS['shihat']?.name || 'HIHAT';
+  setTrackNameColor(targetTr, 'shihat');
+  grid[targetTr].fill(0);
+  grid[targetTr][2] = 2; grid[targetTr][6] = 2; grid[targetTr][10] = 2; grid[targetTr][14] = 2; // 4 accented hits on the upbeat &s
+  trackDelay[targetTr] = false;
+  const db = document.getElementById(`delaybtn-${targetTr}`); if (db) db.classList.toggle('on', false);
+  trackFx[targetTr] = { x: 0.5, y: 0.5 }; // FX engaged
+  trackPump[targetTr] = false; // explicitly NOT BLAST
+  if (ctx) setFxActive(targetTr, trackFx[targetTr]);
+  const fb = document.getElementById(`fxbtn-${targetTr}`); if (fb) { fb.classList.add('on'); fb.classList.remove('blast-on'); }
+  redrawTrackCells(targetTr);
+  markModified();
 }
 function _applyJazzTracksToCurrentPattern() {
   // Reuse an existing RIDE (and existing SIDESTICK/SNARE 2) track first,
