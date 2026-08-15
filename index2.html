@@ -589,9 +589,9 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-
    falls, across every track — updates live as the beat offset changes
    (< in the BEAT menu, or the right tape spool). */
 .step-cell.beat-one-indicator {
-  background-image: linear-gradient(#000, #000);
-  background-size: 50% 3px;
-  background-position: left bottom;
+  background-image: linear-gradient(var(--dev-marker-color, #000), var(--dev-marker-color, #000));
+  background-size: var(--dev-marker-thickness, 3px) 50%;
+  background-position: left center;
   background-repeat: no-repeat;
 }
 /* teeth — positioned so bottom edge sits exactly on the lane border */
@@ -726,7 +726,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 21:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -751,6 +751,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 
 <header>
   <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">Si•Fi</h1>
+  <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:2px;right:2px;font-size:0.55rem;font-weight:700;letter-spacing:1px;background:none;border:none;color:var(--dim);padding:4px;cursor:pointer;">DEV</button>
   <div id="tapeReels" class="tape-reels">
     <div class="reel-wrap" id="leftReelWrap" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
       <img class="reel" id="reel1" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">
@@ -826,6 +827,36 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
 <div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:48px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 
+
+<!-- Dev menu — small, separate from the performance-lock title gesture -->
+<div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
+    <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DEV MENU</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET MARKER COLOR</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="radio" name="devMarkerColor" value="highlight" onchange="setDevMarkerColor('highlight')" style="width:14px;height:14px;cursor:pointer;">HIGHLIGHT
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="radio" name="devMarkerColor" value="highlight2" onchange="setDevMarkerColor('highlight2')" style="width:14px;height:14px;cursor:pointer;">HIGHLIGHT 2
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="radio" name="devMarkerColor" value="highlight3" onchange="setDevMarkerColor('highlight3')" style="width:14px;height:14px;cursor:pointer;">HIGHLIGHT 3
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="radio" name="devMarkerColor" value="black" checked onchange="setDevMarkerColor('black')" style="width:14px;height:14px;cursor:pointer;">BLACK (DEFAULT)
+      </label>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET MARKER THICKNESS</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="range" id="devMarkerThicknessSlider" min="1" max="10" step="1" value="3" oninput="setDevMarkerThickness(this.value)" style="flex:1;">
+        <span id="devMarkerThicknessReadout" style="font-size:0.7rem;font-weight:700;color:#111;min-width:28px;">3px</span>
+      </div>
+    </div>
+    <button onclick="hideDevMenu()" class="rec-mode-btn">CLOSE</button>
+  </div>
+</div>
 
 <!-- Settings window — appears on reel hold -->
 <div id="instructionsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);">
@@ -1179,10 +1210,13 @@ document.addEventListener('touchstart', () => { _lastRealTouchTimeGlobal = Date.
 // the page and silently loses whatever pattern was playing. Blocking
 // default here stops that at the source; the app's own buttons handle
 // their own touch events already, so this doesn't interfere with any of
-// them. The sound picker's own scrollable list is the one deliberate
-// exception — it genuinely needs default scroll behavior to work.
+// them. Two deliberate exceptions: the sound picker's own scrollable
+// list, and every settings slider (input[type=range]) — sliders rely
+// entirely on the browser's own native touch-drag to move their thumb,
+// so blocking default here broke every single one of them.
 document.addEventListener('touchmove', e => {
   if (e.target.closest('.sound-picker-inner')) return;
+  if (e.target.closest('input[type="range"]')) return;
   e.preventDefault();
 }, { passive: false });
 let masterVol = 0.8; // actual master output volume
@@ -12319,6 +12353,23 @@ function _stopAmalgamSwell() {
   wrap.addEventListener('pointerup', release);
   wrap.addEventListener('pointercancel', release);
 })();
+function showDevMenu() {
+  const el = document.getElementById('devMenuOverlay');
+  if (el) el.style.display = 'flex';
+}
+function hideDevMenu() {
+  const el = document.getElementById('devMenuOverlay');
+  if (el) el.style.display = 'none';
+}
+function setDevMarkerColor(mode) {
+  const map = { highlight: 'var(--playhead-color, #f8ff00)', highlight2: 'var(--highlight2-color, #0078ff)', highlight3: 'var(--highlight3-color, #adff00)', black: '#000' };
+  document.documentElement.style.setProperty('--dev-marker-color', map[mode] || '#000');
+}
+function setDevMarkerThickness(px) {
+  document.documentElement.style.setProperty('--dev-marker-thickness', px + 'px');
+  const readout = document.getElementById('devMarkerThicknessReadout');
+  if (readout) readout.textContent = px + 'px';
+}
 function showInstructions() {
   const el = document.getElementById('instructionsOverlay');
   if (el) { el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center'; }
