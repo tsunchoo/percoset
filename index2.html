@@ -733,7 +733,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:21</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:25</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -861,6 +861,16 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <span id="devMarkerThicknessReadout" style="font-size:0.7rem;font-weight:700;color:#111;min-width:28px;">3px</span>
       </div>
     </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" style="flex:1;">
+        <span id="devOffsetStepReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">16TH</span>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
+    </label>
     <button onclick="hideDevMenu()" class="rec-mode-btn">CLOSE</button>
   </div>
 </div>
@@ -1217,13 +1227,17 @@ document.addEventListener('touchstart', () => { _lastRealTouchTimeGlobal = Date.
 // the page and silently loses whatever pattern was playing. Blocking
 // default here stops that at the source; the app's own buttons handle
 // their own touch events already, so this doesn't interfere with any of
-// them. Two deliberate exceptions: the sound picker's own scrollable
-// list, and every settings slider (input[type=range]) — sliders rely
-// entirely on the browser's own native touch-drag to move their thumb,
-// so blocking default here broke every single one of them.
+// them. Deliberate exceptions: the sound picker's own scrollable list,
+// every settings slider (input[type=range], which relies entirely on
+// the browser's own native touch-drag to move their thumb), and the
+// settings panel and instructions/performance-lock panel themselves —
+// both scroll their own content and were just as broken as the sliders
+// were for the same reason.
 document.addEventListener('touchmove', e => {
   if (e.target.closest('.sound-picker-inner')) return;
   if (e.target.closest('input[type="range"]')) return;
+  if (e.target.closest('#settingsPanel')) return;
+  if (e.target.closest('#instructionsOverlay')) return;
   e.preventDefault();
 }, { passive: false });
 let masterVol = 0.8; // actual master output volume
@@ -12388,6 +12402,27 @@ function setDevMarkerThickness(px) {
   const readout = document.getElementById('devMarkerThicknessReadout');
   if (readout) readout.textContent = px + 'px';
 }
+// Offset step size — how many 16th-note steps beatCtrlShift() moves per
+// press of < or the right spool. 0=16th(1 step), 1=8th(2), 2=quarter(4),
+// 3=half the measure(8).
+let _devOffsetStepSize = 1;
+const _DEV_OFFSET_STEP_LABELS = ['16TH', '8TH', 'QUARTER', 'HALF MEASURE'];
+const _DEV_OFFSET_STEP_SIZES = [1, 2, 4, 8];
+function setDevOffsetStepSize(idx) {
+  idx = +idx;
+  _devOffsetStepSize = _DEV_OFFSET_STEP_SIZES[idx] ?? 1;
+  const readout = document.getElementById('devOffsetStepReadout');
+  if (readout) readout.textContent = _DEV_OFFSET_STEP_LABELS[idx] ?? '16TH';
+}
+// Overrides any instrument-group color-coding on the note markers —
+// applies via the same body.notes-grayscale class the existing
+// performance-lock-panel toggle already uses, so both stay in sync
+// regardless of which one was used most recently.
+function setDevNotesGrayscale(on) {
+  document.body.classList.toggle('notes-grayscale', on);
+  const otherCb = document.getElementById('notesGrayscaleEnable');
+  if (otherCb) otherCb.checked = on;
+}
 function showInstructions() {
   const el = document.getElementById('instructionsOverlay');
   if (el) { el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center'; }
@@ -13783,10 +13818,11 @@ function _updateBeatOneIndicator() {
   }
 }
 
-// < — shift the whole BEAT pattern by one step, same idea as a track's
+// < — shift the whole BEAT pattern by the dev-menu-configured step size
+// (16th/8th/quarter/half-measure, default 16th), same idea as a track's
 // shift-left. Doesn't stay engaged, so just a momentary rollover flash.
 function beatCtrlShift() {
-  _beatOffset = (_beatOffset + 1) % NUM_STEPS;
+  _beatOffset = (_beatOffset + _devOffsetStepSize) % NUM_STEPS;
   flashBtnOrange('beatCtrlShift');
   _updateBeatOneIndicator();
   markModified();
