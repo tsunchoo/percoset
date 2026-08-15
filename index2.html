@@ -705,7 +705,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 05:49</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 05:59</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1118,6 +1118,7 @@ const INSTRUMENTS = {
   jcmgtr: { name: 'JINX',         soft: null, accent: null, group: 'tonal' },
   clar:   { name: 'JENNY',       soft: null, accent: null, group: 'tonal' },
   boog:   { name: 'DREAM PIANO',  soft: null, accent: null, group: 'tonal' },
+  magic:  { name: 'MAGIC',        soft: null, accent: null, group: 'tonal' },
   sparkle:{ name: 'DENIECE',     soft: null, accent: null, group: 'tonal' },
   rhodes: { name: 'SPACE KOTO',       soft: null, accent: null, group: 'tonal' },
   rhodes2:{ name: 'DX PIANO',    soft: null, accent: null, group: 'tonal' },
@@ -2189,6 +2190,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'spiano')   { return; }
   if (key === 'satk')     { return; }
   if (key === 'boog')     { return; }
+  if (key === 'magic')    { return; }
   if (key === 'jcmgtr')   { return; }
   if (key === 'sprkls')   { return; } // handled in scheduler
   if (key === 'clar')     { return; } // handled in scheduler
@@ -2605,7 +2607,7 @@ function fireStepAudio(step, t) {
       if (val > 0) {
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
-        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
+        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'magic' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
           const scale = trackBassScale[tr] || [110];
           const noteIdx = gs % scale.length;
           const freq = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale[noteIdx];
@@ -2656,6 +2658,7 @@ function fireStepAudio(step, t) {
           if (key === 'spiano')  playSchoolPiano(freq, dur, val === 2, t, tr);
           if (key === 'satk')    playSynthAttack(freq, dur, val === 2, t, tr);
           if (key === 'boog')    playPrimePiano(freq, dur, val === 2, t, tr);
+          if (key === 'magic')   playMagic(freq, dur, val === 2, t, tr);
           if (key === 'damask')  playDamask(freq, dur, val === 2, t, tr);
           if (key === 'yamask')  playYamask(freq, dur, val === 2, t, tr, _yamaskPhraseTick(tr));
           if (key === 'dulc')    playBooboo(freq, dur, val === 2, t, tr);
@@ -2747,6 +2750,7 @@ function fireStepAudio(step, t) {
             if (key === 'spiano')  playSchoolPiano(freq2, dur2, false, t2, tr);
             if (key === 'satk')    playSynthAttack(freq2, dur2, false, t2, tr);
             if (key === 'boog')    playPrimePiano(freq2, dur2, false, t2, tr);
+            if (key === 'magic')   playMagic(freq2, dur2, false, t2, tr);
             if (key === 'fflute')  playGlassBell(freq2, dur2, false, t2, tr);
             if (key === 'blunt')   playBlunt(freq2, dur2, false, t2, tr);
             if (key === 'drone')   playAtmos(freq2, dur2, false, t2, tr);
@@ -3268,7 +3272,7 @@ const trackLockedRoot = {}; // tr -> root frequency, captured the moment L locks
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
-const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone']);
+const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone','magic']);
 
 function buildScaleFromRoot(root, scaleOverride) {
   const scaleArr = scaleOverride || PENTA_MINOR;
@@ -3286,7 +3290,7 @@ function transposeRootToRange(root, roots) {
 }
 function getRangeRoots(key) {
   if (key === 'sparkle') return SPARKLE_ROOTS;
-  if (key === 'sflute' || key === 'boog' || key === 'fflute') return HIGH_ROOTS;
+  if (key === 'sflute' || key === 'boog' || key === 'fflute' || key === 'magic') return HIGH_ROOTS;
   if (key === 'blunt') return MID_ROOTS;
   if (key === 'chug') return CHUG_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
@@ -3499,6 +3503,65 @@ function randomizeBassTrack(tr, level) {
     }
     // mode 2 = falls through to normal random placeNotes below
     if (mode !== 2) { redrawTrackCells(tr); markModified(); return; }
+  }
+
+  // MAGIC: same placement shape as CHUG (downbeat/upbeat/random/16th-style
+  // mode selection), but thinned down to only 2-4 actual triggers per
+  // measure and connected into legato phrases, rather than CHUG's usual
+  // full density. Each trigger plays a 3-note chord (see playMagic).
+  if (key === 'magic') {
+    let mode;
+    const r = Math.random();
+    if (r < 0.40) mode = (Math.random() < 0.5) ? 0 : 1;
+    else if (r < 0.75) mode = 2;
+    else mode = 3;
+    if (mode === 0) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 4 === 0) ? ((s === 0 || Math.random() < 0.45) ? 2 : 1) : 0;
+      }
+    } else if (mode === 1) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 4 === 2) ? (Math.random() < 0.35 ? 2 : 1) : 0;
+      }
+    } else if (mode === 3) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 2 === 0) ? ((s % 4 === 0 || Math.random() < 0.2) ? 2 : 1) : 0;
+      }
+    } else {
+      // mode 2 — random placement, note count already constrained to
+      // 2-4 so no separate thinning pass is needed for this branch.
+      const _magicCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      placeNotes(tr, _magicCount, 0.4, level);
+    }
+    // Thin down to 2-4 hits for modes 0/1/3, which otherwise place on
+    // every matching beat position — keep accented notes preferentially.
+    if (mode !== 2) {
+      const onsets = [];
+      for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
+      const keepCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      if (onsets.length > keepCount) {
+        const accented = onsets.filter(s => grid[tr][s] === 2);
+        const soft = onsets.filter(s => grid[tr][s] === 1);
+        const ordered = [...accented, ...soft];
+        const keep = new Set(ordered.slice(0, keepCount));
+        onsets.forEach(s => { if (!keep.has(s)) grid[tr][s] = 0; });
+      }
+    }
+    // Legato — connect each remaining note toward the next one.
+    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    const finalOnsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) finalOnsets.push(s);
+    finalOnsets.forEach((s, i) => {
+      const nextOnset = finalOnsets[i + 1];
+      const gapToNext = nextOnset !== undefined ? nextOnset - s : NUM_STEPS - s;
+      const maxLen = _legatoMaxLen(tr, s);
+      trackLegatoLen[tr][s] = Math.min(gapToNext, maxLen);
+    });
+    redrawTrackCells(tr); markModified();
+    return;
   }
 
   // Choir: redistribute notes to beat positions for longer legato stretches
@@ -5228,9 +5291,29 @@ function playBoog(freq, durSec, isAccent, time, tr) {
 // of layering both full voices together rather than deeply merging their
 // internal synthesis parameters, which gets the same "blended hybrid"
 // result with a fraction of the complexity. ──
-function playPrimePiano(freq, durSec, isAccent, time, tr) {
-  playSynthLeg(freq, durSec, isAccent, time, tr, 0.6310); // -4dB total (was -1dB, +3dB more)
-  playRhodes2(freq, durSec, isAccent, time, tr, 0.6310); // -4dB total (was -1dB, +3dB more)
+function playPrimePiano(freq, durSec, isAccent, time, tr, gainScale) {
+  gainScale = gainScale === undefined ? 1 : gainScale;
+  playSynthLeg(freq, durSec, isAccent, time, tr, 0.6310 * gainScale); // -4dB total (was -1dB, +3dB more)
+  playRhodes2(freq, durSec, isAccent, time, tr, 0.6310 * gainScale); // -4dB total (was -1dB, +3dB more)
+}
+// ── MAGIC: DREAM PIANO's own voice, but a 3-note chord drawn from the
+// current scale instead of a single melody note, and with a short,
+// quieter delay-tap repeat on every voice for a bit of shimmer.
+function playMagic(freq, durSec, isAccent, time, tr) {
+  const scale = trackBassScale[tr];
+  let freqs = [freq];
+  if (scale && scale.length >= 3) {
+    let baseIdx = scale.findIndex(f => Math.abs(f - freq) < 0.01);
+    if (baseIdx === -1) baseIdx = 0;
+    const idx2 = (baseIdx + 2) % scale.length;
+    const idx3 = (baseIdx + 4) % scale.length;
+    freqs = [scale[baseIdx], scale[idx2], scale[idx3]];
+  }
+  const delayTime = 0.16, delayGain = 0.35; // short, quiet echo — not a long dub-style repeat
+  freqs.forEach(f => {
+    playPrimePiano(f, durSec, isAccent, time, tr, 1);
+    playPrimePiano(f, durSec, false, time + delayTime, tr, delayGain);
+  });
 }
 
 // ── Synth Flute: 80s FM-style breathy flute ──
@@ -7159,6 +7242,7 @@ function previewNote(tr, isAccent) {
     else if (key === 'spiano')  playSchoolPiano(freq, dur, isAccent, t, tr);
     else if (key === 'satk')    playSynthAttack(freq, dur, isAccent, t, tr);
     else if (key === 'boog')    playPrimePiano(freq, dur, isAccent, t, tr);
+    else if (key === 'magic')   playMagic(freq, dur, isAccent, t, tr);
     else if (key === 'damask')  playDamask(freq, dur, isAccent, t, tr);
     else if (key === 'yamask')  playYamask(freq, dur, isAccent, t, tr);
     else if (key === 'dulc')    playBooboo(freq, dur, isAccent, t, tr);
@@ -10672,7 +10756,7 @@ function randomizeTrack(tr) {
   // other kit/perc instrument. STRINGS is now a normal tonal instrument,
   // dispatched through randomizeBassTrack just below like any other lead.
 
-  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening' || trackInstruments[tr] === 'drone') {
+  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'magic' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening' || trackInstruments[tr] === 'drone') {
     randomizeBassTrack(tr, level); return;
   }
 
@@ -10841,6 +10925,65 @@ function randomizeTrack(tr) {
     }
     // mode 2 = falls through to normal random placeNotes below
     if (mode !== 2) { redrawTrackCells(tr); markModified(); return; }
+  }
+
+  // MAGIC: same placement shape as CHUG (downbeat/upbeat/random/16th-style
+  // mode selection), but thinned down to only 2-4 actual triggers per
+  // measure and connected into legato phrases, rather than CHUG's usual
+  // full density. Each trigger plays a 3-note chord (see playMagic).
+  if (key === 'magic') {
+    let mode;
+    const r = Math.random();
+    if (r < 0.40) mode = (Math.random() < 0.5) ? 0 : 1;
+    else if (r < 0.75) mode = 2;
+    else mode = 3;
+    if (mode === 0) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 4 === 0) ? ((s === 0 || Math.random() < 0.45) ? 2 : 1) : 0;
+      }
+    } else if (mode === 1) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 4 === 2) ? (Math.random() < 0.35 ? 2 : 1) : 0;
+      }
+    } else if (mode === 3) {
+      for (let s = 0; s < NUM_STEPS; s++) {
+        const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
+        grid[tr][gs] = (s % 2 === 0) ? ((s % 4 === 0 || Math.random() < 0.2) ? 2 : 1) : 0;
+      }
+    } else {
+      // mode 2 — random placement, note count already constrained to
+      // 2-4 so no separate thinning pass is needed for this branch.
+      const _magicCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      placeNotes(tr, _magicCount, 0.4, level);
+    }
+    // Thin down to 2-4 hits for modes 0/1/3, which otherwise place on
+    // every matching beat position — keep accented notes preferentially.
+    if (mode !== 2) {
+      const onsets = [];
+      for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
+      const keepCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      if (onsets.length > keepCount) {
+        const accented = onsets.filter(s => grid[tr][s] === 2);
+        const soft = onsets.filter(s => grid[tr][s] === 1);
+        const ordered = [...accented, ...soft];
+        const keep = new Set(ordered.slice(0, keepCount));
+        onsets.forEach(s => { if (!keep.has(s)) grid[tr][s] = 0; });
+      }
+    }
+    // Legato — connect each remaining note toward the next one.
+    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    const finalOnsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) finalOnsets.push(s);
+    finalOnsets.forEach((s, i) => {
+      const nextOnset = finalOnsets[i + 1];
+      const gapToNext = nextOnset !== undefined ? nextOnset - s : NUM_STEPS - s;
+      const maxLen = _legatoMaxLen(tr, s);
+      trackLegatoLen[tr][s] = Math.min(gapToNext, maxLen);
+    });
+    redrawTrackCells(tr); markModified();
+    return;
   }
 
   // Choir: redistribute notes to beat positions for longer legato stretches
