@@ -440,6 +440,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   min-width: 320px; padding: 16px 16px 30px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   position: relative; max-height: calc(80vh + 40px); overflow-y: auto;
+  overscroll-behavior-y: contain; /* scrolling to either end of the list used to leak through to the page's own overscroll/pull-to-refresh, which could dismiss the whole picker and drop you back at the main screen */
 }
 .sound-picker-close {
   position: absolute; top: 8px; right: 8px;
@@ -704,7 +705,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:31</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2002,7 +2003,7 @@ function getPumpChain(tr, dest) {
   // effect compounds and gets out of control — ease off specifically for
   // these two. Re-applied every call so it's correct even if the track's
   // instrument changes after the chain was first created.
-  const isPad = (trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'drone');
+  const isPad = (trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'drone' || trackInstruments[tr] === 'magic');
   nodes.comp.threshold.value = isPad ? -20 : -28;
   nodes.comp.knee.value = 6;
   nodes.comp.ratio.value = isPad ? 4 : 8;
@@ -2669,7 +2670,7 @@ function fireStepAudio(step, t) {
           }
           }
           // Duck all pad tracks when busiest track fires
-          const _padKeys = new Set(['fflute','sstring','sleg','sparkle','sprkls','rhodes','rhodes2','opening']);
+          const _padKeys = new Set(['fflute','sstring','sleg','sparkle','sprkls','rhodes','rhodes2','opening','magic']);
           if (!_padKeys.has(key)) {
             let _bestDensity = 0, _busiestTr = -1;
             for (let _i = 0; _i < NUM_TRACKS; _i++) {
@@ -5296,9 +5297,8 @@ function playPrimePiano(freq, durSec, isAccent, time, tr, gainScale) {
   playSynthLeg(freq, durSec, isAccent, time, tr, 0.6310 * gainScale); // -4dB total (was -1dB, +3dB more)
   playRhodes2(freq, durSec, isAccent, time, tr, 0.6310 * gainScale); // -4dB total (was -1dB, +3dB more)
 }
-// ── MAGIC: DREAM PIANO's own voice, but a 3-note chord drawn from the
-// current scale instead of a single melody note, and with a short,
-// quieter delay-tap repeat on every voice for a bit of shimmer.
+// ── MAGIC: DREAM PIANO's own voice, played as a 3-note chord drawn from
+// the current scale instead of a single melody note.
 function playMagic(freq, durSec, isAccent, time, tr) {
   const scale = trackBassScale[tr];
   let freqs = [freq];
@@ -5309,10 +5309,8 @@ function playMagic(freq, durSec, isAccent, time, tr) {
     const idx3 = (baseIdx + 4) % scale.length;
     freqs = [scale[baseIdx], scale[idx2], scale[idx3]];
   }
-  const delayTime = 0.16, delayGain = 0.35; // short, quiet echo — not a long dub-style repeat
   freqs.forEach(f => {
     playPrimePiano(f, durSec, isAccent, time, tr, 1);
-    playPrimePiano(f, durSec, false, time + delayTime, tr, delayGain);
   });
 }
 
@@ -6869,7 +6867,7 @@ function setTrackNameColor(tr, key) {
   const g = INSTRUMENTS[key]?.group || 'perc';
   const _laneColors = {'kit':'#0b5394','perc':'#85A838','tonal':'#fd475d'};
   const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(key);
-  const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone'].includes(key);
+  const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone', 'magic'].includes(key);
   let laneColor = _laneColors[g] || 'var(--text)';
   if (isBass) laneColor = '#8d3ba8';
   else if (isPad) laneColor = '#FFFF39';
