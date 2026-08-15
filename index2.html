@@ -588,7 +588,12 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-
 /* Subtle real-time indicator of where the BEAT engine's own "1" currently
    falls, across every track — updates live as the beat offset changes
    (< in the BEAT menu, or the right tape spool). */
-.step-cell.beat-one-indicator { border-bottom: 3px solid #000; }
+.step-cell.beat-one-indicator {
+  background-image: linear-gradient(#000, #000);
+  background-size: 50% 3px;
+  background-position: left bottom;
+  background-repeat: no-repeat;
+}
 /* teeth — positioned so bottom edge sits exactly on the lane border */
 .step-cell::before {
   content: ''; position: absolute; bottom: -3px; left: -1px;
@@ -721,7 +726,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 20:16</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 21:44</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
