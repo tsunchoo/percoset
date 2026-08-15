@@ -705,7 +705,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:37</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:46</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6856,7 +6856,24 @@ function openSoundPicker(tr) {
       list.querySelectorAll('.sound-option').forEach(o => o.classList.toggle('hover-preview', o.dataset.key === k));
     });
     opt.addEventListener('mouseup', e => { e.stopPropagation(); selectSound(tr, k); });
-    opt.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); selectSound(tr, k); }, { passive: false });
+    // touchend used to fire selectSound() (which always closes the whole
+    // picker) unconditionally — including when the finger had actually
+    // been scrolling the list and just happened to lift while still over
+    // an option, which is nearly unavoidable since the list is made
+    // entirely of options with no empty space to grab. Now only counts as
+    // a real tap if the finger stayed close to where it started.
+    let _optTouchStartX = 0, _optTouchStartY = 0;
+    opt.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      _optTouchStartX = t ? t.clientX : 0; _optTouchStartY = t ? t.clientY : 0;
+    }, { passive: true });
+    opt.addEventListener('touchend', e => {
+      e.stopPropagation(); e.preventDefault();
+      const t = e.changedTouches[0];
+      const moved = t ? Math.hypot(t.clientX - _optTouchStartX, t.clientY - _optTouchStartY) : 0;
+      if (moved > 10) return; // scrolled, not tapped — leave the picker open
+      selectSound(tr, k);
+    }, { passive: false });
     list.appendChild(opt);
   });
   document.getElementById('soundPicker').classList.add('visible');
@@ -12135,11 +12152,12 @@ function _stopAmalgamSwell() {
   if (!ctx || !_amalgamSwellGain) return;
   const t = ctx.currentTime;
   const g = _amalgamSwellGain, oscs = _amalgamSwellOscs;
+  const releaseDur = stepDuration() * 4; // one quarter note at current tempo
   g.gain.cancelScheduledValues(t);
   g.gain.setValueAtTime(g.gain.value, t);
-  g.gain.linearRampToValueAtTime(0, t + 1.2); // slow swell out
-  oscs.forEach(osc => { try { osc.stop(t + 1.3); } catch (e) {} });
-  setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 1500);
+  g.gain.linearRampToValueAtTime(0, t + releaseDur);
+  oscs.forEach(osc => { try { osc.stop(t + releaseDur + 0.1); } catch (e) {} });
+  setTimeout(() => { try { g.disconnect(); } catch (e) {} }, (releaseDur + 0.3) * 1000);
   _amalgamSwellOscs = null;
   _amalgamSwellGain = null;
 }
