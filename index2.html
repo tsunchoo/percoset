@@ -171,7 +171,8 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: var(--neutral-track-text, var(--text)); }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { color: var(--highlight3-color, #adff00); }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
-#scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; }
+#scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; font-size: 1.23rem; }
+#scratchBtnA:not(.ab-current), #scratchBtnB:not(.ab-current) { font-size: 0.78rem; }
 #scratchBtn .ab-sep { font-weight: 400; padding: 0 1px; }
 /* This button's color is constantly being fought over — the flash class,
    the pulse animation, and the base track-text color (which itself keeps
@@ -704,7 +705,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 05:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 05:46</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
