@@ -189,7 +189,8 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    nothing shifts, only the symbol inside it grows. Grows once to 2x and
    stays there permanently (not a pulse that reverts) — same trigger
    applies whether it's a single press or entering AUTO mode. */
-#randBtn.glyph-grown .glyph { transform: translateY(-2px) scale(2); transition: transform 0.5s ease-out; }
+#randBtn.press-pulse .glyph { animation: rand-scale-pulse 0.5s ease-out; }
+@keyframes rand-scale-pulse { 0% { transform: translateY(-2px) scale(1); } 40% { transform: translateY(-2px) scale(8); } 100% { transform: translateY(-2px) scale(1); } }
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
@@ -713,7 +714,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 16:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 18:03</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8060,11 +8061,6 @@ function setBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
   b.classList.add('btn-flash-blue');
   if (id === 'randBtn') {
-    // Capture HIGHLIGHT 3 right now, before whatever comes right after
-    // this call (queueRand -> WILD) can reassign it — otherwise the flash
-    // reads the live CSS variable at paint time, by which point WILD has
-    // already changed it as part of this same press. Forced inline
-    // (important) so it can't lose to the class's own !important rule.
     b.style.setProperty('background', '#111', 'important');
     b.style.setProperty('color', _highlight3Color(), 'important');
   }
@@ -10232,7 +10228,6 @@ function stopAllAutoRand() {
   const startAuto = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // holding again while already in auto stops it
     btn.classList.add('pulsing');
-    btn.classList.add('glyph-grown');
     btn.innerHTML = '<span class="glyph">+</span>';
     _autoRandLoopActive = true;
     _autoRandBarCount = 0; // whatever's already playing gets its full 4 bars before the first change
@@ -10241,7 +10236,6 @@ function stopAllAutoRand() {
   const singleFire = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // turning AUTO off doesn't need its own press-pulse
     _pressPulse('randBtn');
-    btn.classList.add('glyph-grown');
     setBtnBlueHeld('randBtn'); queueRand();
   };
 
