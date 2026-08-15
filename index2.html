@@ -22,7 +22,7 @@
   --neutral-top: #555; --neutral-track: #b0b0b0;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior-y: contain; }
+html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
 button, .step-cell, .track-header-btn, .vol-mute-col, .fx-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 body {
   overflow-x: hidden;
@@ -190,8 +190,8 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    stays there permanently (not a pulse that reverts) — same trigger
    applies whether it's a single press or entering AUTO mode. */
 #randBtn.press-pulse .glyph { animation: rand-scale-pulse 0.5s ease-out; }
-@keyframes rand-scale-pulse { 0% { transform: translateY(-2px) scale(1); } 99.9% { transform: translateY(-2px) scale(20); } 100% { transform: translateY(-2px) scale(1); } }
-#randBtn .glyph { display: inline-block; transform: translateY(-2px); }
+@keyframes rand-scale-pulse { 0% { transform: translate(1px, -3px) scale(1); } 99.9% { transform: translate(1px, -3px) scale(20); } 100% { transform: translate(1px, -3px) scale(1); } }
+#randBtn .glyph { display: inline-block; transform: translate(1px, -3px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
 #saveBtn { position: relative; }
@@ -367,12 +367,17 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .rand-btn.rand-auto { background: var(--highlight2-color, #0078ff) !important; color: var(--highlight2-text, #fff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
-#randBtn.pulsing { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); }
+/* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
+   commented out per request. Icon now stays the same fixed HIGHLIGHT-3
+   color PLAY and BEAT use for their own active states, instead of
+   changing with the pulse. */
+/* #randBtn.pulsing { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); } */
+#randBtn.pulsing { background: #111; color: var(--highlight3-color, #adff00); }
 /* rand-pulse and beat-auto-color-only alternate between HIGHLIGHT and
    HIGHLIGHT 2 — the two intentionally stay separate variables so this
    two-color flash keeps working; unifying them would flatten it. */
 @keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); transform: scale(1); } }
-#randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; }
+/* #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; } */
 /* BEAT's own auto-mode color cycle — deliberately a SEPARATE, color-only
    keyframe (never touches transform at all), so it genuinely cannot
    conflict with the existing per-beat scale-pulse (#beatBtn.btn-beat-pulse
@@ -714,7 +719,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 18:43</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 19:28</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -858,6 +863,16 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     <!-- Sliders -->
     <div style="display:flex;flex-direction:column;gap:24px;">
 
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
+          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
+          <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
+          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain" style="display:none;" onchange="importTapeFile(this.files[0])">
+        </div>
+      </div>
+
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="display:flex;justify-content:space-between;">
           <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
@@ -989,16 +1004,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <button id="recMode_realtime" class="rec-mode-btn" onclick="setRecordMode('realtime')">REALTIME</button>
           <button id="recMode_bounceLoop" class="rec-mode-btn" onclick="setRecordMode('bounceLoop')">BOUNCE LOOP</button>
           <button id="recMode_bounceStems" class="rec-mode-btn" onclick="setRecordMode('bounceStems')">BOUNCE LOOP STEMS</button>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
-          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
-          <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
-          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
       </div>
 
@@ -1159,6 +1164,20 @@ const INSTRUMENT_KEYS = Object.keys(INSTRUMENTS);
 let ctx = null, masterGain = null;
 let _lastRealTouchTimeGlobal = 0;
 document.addEventListener('touchstart', () => { _lastRealTouchTimeGlobal = Date.now(); }, { passive: true, capture: true });
+// Global scroll/gesture lock — this app is a fixed mobile interface, not
+// a scrolling page, and a touch landing on anything that isn't one of
+// its own controls (the gap between buttons, empty background space,
+// etc.) used to be free to trigger the browser's own default gesture
+// handling — which on iOS can mean pull-to-refresh, and that reloads
+// the page and silently loses whatever pattern was playing. Blocking
+// default here stops that at the source; the app's own buttons handle
+// their own touch events already, so this doesn't interfere with any of
+// them. The sound picker's own scrollable list is the one deliberate
+// exception — it genuinely needs default scroll behavior to work.
+document.addEventListener('touchmove', e => {
+  if (e.target.closest('.sound-picker-inner')) return;
+  e.preventDefault();
+}, { passive: false });
 let masterVol = 0.8; // actual master output volume
 
 function setMasterVol(v) {
@@ -2453,6 +2472,7 @@ function scheduler() {
             _autoRandBarCount = 0;
             _recallSnapB = snapshotState(); // save current as previous, right before this new whole-pattern RAND lands
             const _savedSlot2 = activeSlot;
+            _pressPulse('randBtn'); // glyph scale-pulse on every auto-regenerate, not just the initial press
             randAll(undefined);
             activeSlot = _savedSlot2; // automatic evolution isn't a manual edit — don't invalidate the slot match
             updateSlotButtons();
@@ -6821,6 +6841,23 @@ function commitBeatMenuSelection(item) {
 function _pressPulse(id) {
   const b = document.getElementById(id);
   if (!b) return;
+  if (id === 'randBtn') {
+    const glyphEl = b.querySelector('.glyph');
+    if (glyphEl) {
+      let dur;
+      if (playing) {
+        // Time remaining until the end of the current measure — the pulse
+        // finishes exactly as the new pattern actually lands, whether
+        // this fired from a direct press or from auto mode's own
+        // bar-boundary regenerate.
+        const stepsRemaining = (NUM_STEPS - currentStep) % NUM_STEPS || NUM_STEPS;
+        dur = stepsRemaining * stepDuration();
+      } else {
+        dur = 1.0; // stopped — twice the original 0.5s
+      }
+      glyphEl.style.animationDuration = dur + 's';
+    }
+  }
   b.classList.remove('press-pulse'); void b.offsetWidth; b.classList.add('press-pulse');
 }
 
@@ -7570,6 +7607,7 @@ const DRAGGABLE_BTN_SELECTORS = [
   '#scratchBtn',
   '#beatBtn',
   '#randBtn',
+  '#rightReelWrap',
 ];
 function isDraggableBtn(el) {
   if (!el) return false;
@@ -12207,14 +12245,34 @@ function _stopAmalgamSwell() {
   if (!spool) return;
   const wrap = spool.closest('.reel-wrap') || spool;
   wrap.style.touchAction = 'none';
+  wrap.id = wrap.id || 'rightReelWrap';
+  const onEngage = () => {
+    _startAmalgamSwell();
+    // Same shift-the-whole-BEAT-pattern-by-one-step action as the < button
+    // in the BEAT menu — a momentary, one-time trigger, so it coexists
+    // fine alongside the swell (which is purely about the sound, not the
+    // pattern) without needing to distinguish tap from hold.
+    beatCtrlShift();
+  };
+  const onRelease = () => { _stopAmalgamSwell(); };
   wrap.addEventListener('pointerdown', e => {
     e.preventDefault();
     try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
-    _startAmalgamSwell();
+    onEngage();
   });
-  const release = e => { _stopAmalgamSwell(); try { wrap.releasePointerCapture(e.pointerId); } catch (err) {} };
+  const release = e => { onRelease(); try { wrap.releasePointerCapture(e.pointerId); } catch (err) {} };
   wrap.addEventListener('pointerup', release);
   wrap.addEventListener('pointercancel', release);
+  // Also listen for mousedown/mouseup specifically — the generic
+  // drag-to-engage system (DRAGGABLE_BTN_SELECTORS) only ever dispatches
+  // synthetic mousedown/mouseup, which the pointer-event listeners above
+  // can't see, so without these the spool could never pick up a drag
+  // gesture arriving from another button.
+  wrap.addEventListener('mousedown', e => {
+    if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mousedown following a real touch, but let the drag system's own dispatched (untrusted) event through
+    onEngage();
+  });
+  wrap.addEventListener('mouseup', onRelease);
 })();
 // Older right tape spool (reel2) wiring — it used to proxy its
 // press/release directly onto SWEEP's own mousedown/mouseup (so touching
