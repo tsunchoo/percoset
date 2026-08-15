@@ -189,8 +189,8 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    nothing shifts, only the symbol inside it grows. Grows once to 2x and
    stays there permanently (not a pulse that reverts) — same trigger
    applies whether it's a single press or entering AUTO mode. */
-#randBtn.press-pulse .glyph { animation: rand-scale-pulse 0.5s ease-out forwards; }
-@keyframes rand-scale-pulse { 0% { transform: translateY(-2px) scale(1); } 100% { transform: translateY(-2px) scale(14); } }
+#randBtn.press-pulse .glyph { animation: rand-scale-pulse 0.5s ease-out; }
+@keyframes rand-scale-pulse { 0% { transform: translateY(-2px) scale(1); } 40% { transform: translateY(-2px) scale(20); } 100% { transform: translateY(-2px) scale(1); } }
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
@@ -714,7 +714,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 18:10</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 18:13</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9507,7 +9507,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k));
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
