@@ -182,6 +182,11 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    visually collide mid-transition regardless of what else is changing
    underneath it at the same time. */
 #randBtn { transition: transform 0.12s ease-out; }
+/* Scales up 5x on press, same 0.5s timing as the shared press-pulse
+   animation everything else uses — transform doesn't affect layout, so
+   nothing around it shifts, it just visually grows over its neighbors. */
+#randBtn.press-pulse { animation: rand-scale-pulse 0.5s ease-out; position: relative; z-index: 50; }
+@keyframes rand-scale-pulse { 0% { transform: scale(1); } 40% { transform: scale(5); } 100% { transform: scale(1); } }
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
@@ -705,7 +710,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:46</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:51</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12131,8 +12136,12 @@ function _startAmalgamSwell() {
   if (!notes || notes.length === 0) return;
   const t = ctx.currentTime;
   const swellGain = ctx.createGain();
+  const target = 0.14;
+  const fastRiseDur = stepDuration() * 4; // one quarter note — audible quickly, matching the release's own pace
+  const fastRiseLevel = target * 0.45; // doesn't need to hit full volume this fast, just needs to be clearly coming in
   swellGain.gain.setValueAtTime(0, t);
-  swellGain.gain.linearRampToValueAtTime(0.14, t + 2.2); // slow swell in
+  swellGain.gain.linearRampToValueAtTime(fastRiseLevel, t + fastRiseDur);
+  swellGain.gain.linearRampToValueAtTime(target, t + 2.2); // keeps swelling the rest of the way at the original, slower pace
   swellGain.connect(masterGain);
   const oscs = notes.map(n => {
     const osc = ctx.createOscillator();
