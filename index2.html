@@ -705,7 +705,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:31</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:37</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -6913,8 +6913,24 @@ function closeSoundPicker() {
   document.getElementById('soundPicker').classList.remove('visible');
   soundPickerTrack = -1;
 }
+// Backdrop-tap-to-close needs to genuinely be a tap, not just end on the
+// backdrop — the inner panel is centered and not full-screen/full-width,
+// so there's real backdrop space around it, and a scroll gesture within
+// the list (especially with momentum near the end of a long list) could
+// easily drift the finger past the panel's edge by release time. A plain
+// click-target check alone was closing the whole picker on what was
+// meant to be a scroll, not a tap on the backdrop.
+let _soundPickerBackdropDownX = 0, _soundPickerBackdropDownY = 0, _soundPickerBackdropDownOnBackdrop = false;
+document.getElementById('soundPicker').addEventListener('pointerdown', e => {
+  _soundPickerBackdropDownOnBackdrop = (e.target === document.getElementById('soundPicker'));
+  _soundPickerBackdropDownX = e.clientX; _soundPickerBackdropDownY = e.clientY;
+});
 document.getElementById('soundPicker').addEventListener('click', e => {
-  if (e.target === document.getElementById('soundPicker')) closeSoundPicker();
+  if (!_soundPickerBackdropDownOnBackdrop) return;
+  if (e.target !== document.getElementById('soundPicker')) return;
+  const moved = Math.hypot(e.clientX - _soundPickerBackdropDownX, e.clientY - _soundPickerBackdropDownY);
+  if (moved > 10) return; // drifted — this was a scroll/drag, not a deliberate tap
+  closeSoundPicker();
 });
 
 // ── Vol overlay ──
@@ -9430,7 +9446,7 @@ function randAll(mode, opts) {
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
   const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/BOOBOO
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
-  const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone']); // max one PAD-classified instrument per pattern — HASSELL/STRINGS/etc. never together
+  const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone', 'magic']); // max one PAD-classified instrument per pattern — HASSELL/STRINGS/etc. never together
   // Exclude instruments already locked on other tracks
   const lockedInstruments = new Set();
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
