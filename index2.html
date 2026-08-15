@@ -169,7 +169,6 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 /* All glyphs are always HIGHLIGHT-3 colored — only which letter is bold
    changes as RECALL toggles between the two patterns. */
 #scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: var(--neutral-track-text, var(--text)); }
-#scratchBtnA.ab-current, #scratchBtnB.ab-current { color: var(--highlight3-color, #adff00); }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; font-size: 1.23rem; }
 #scratchBtnA:not(.ab-current), #scratchBtnB:not(.ab-current) { font-size: 1.005rem; }
@@ -705,7 +704,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 05:59</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:09</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9690,6 +9689,13 @@ function randAll(mode, opts) {
       // immediately audible without needing a separate unmute step first.
       // Instrument label itself is cosmetic once empty, so it's left alone
       // rather than needing a "blank" instrument that doesn't exist.
+      // Still consumes a pool slot (poolIdx++) even though nothing here
+      // gets applied — skipping it entirely used to shift every later
+      // track's assignment back by one, so the pool's very last entry
+      // (often KICK, since that's what sorts to the bottom — or half of
+      // a forced CONGA/BONGO pair, if that's what landed there) was never
+      // consumed by any track at all and silently vanished.
+      poolIdx++;
       grid[tr].fill(0);
       trackDelay[tr] = false;
       trackFx[tr] = { x: 0, y: 0 };
