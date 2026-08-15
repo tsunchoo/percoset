@@ -189,8 +189,8 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    nothing shifts, only the symbol inside it grows. Grows once to 2x and
    stays there permanently (not a pulse that reverts) — same trigger
    applies whether it's a single press or entering AUTO mode. */
-#randBtn.press-pulse .glyph { animation: rand-scale-pulse 0.5s ease-out; }
-@keyframes rand-scale-pulse { 0% { transform: translateY(-2px) scale(1); } 40% { transform: translateY(-2px) scale(8); } 100% { transform: translateY(-2px) scale(1); } }
+#randBtn.press-pulse .glyph { animation: rand-scale-pulse 0.5s ease-out forwards; }
+@keyframes rand-scale-pulse { 0% { transform: translateY(-2px) scale(1); } 100% { transform: translateY(-2px) scale(14); } }
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
@@ -714,7 +714,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 18:03</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 18:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2908,7 +2908,7 @@ function fireStepAudio(step, t) {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 4 || bstep === 7 || bstep === 12) playDmxSnare(t); // steady quarter-plus-a-of-2 snare placement
+        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined); }
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -3075,6 +3075,7 @@ function togglePlay() {
 let beatPlaying = true, _beatPending = false; // BEAT on by default at page load
 let _beatType = 'disco'; // 'disco' | 'halftime' | 'reggae'
 let _snareVariant = 'regular'; // 'regular' | 'dmx' — re-rolled fresh each time setBeatType() picks a new type
+let _sambaSnareVariant = 'snare2'; // 'snare2' | 'sidestick' — SAMBA's own snare voice, re-rolled fresh on selection
 let _beatOffset = 0; // BEAT ctrl-row '<' — steps the whole pattern is shifted by, same idea as trackOffset
 
 const _revBufCache = new WeakMap();
@@ -6333,6 +6334,24 @@ function fireBeatSidestick(t) {
   rattle.start(t + 0.004);
   rattle.onended = () => { try { rattleHP.disconnect(); rattleBP.disconnect(); rattleG.disconnect(); } catch(e) {} };
 }
+// SIDESTICK, played through the beat engine directly (not tied to any
+// track) — reuses the same decoded sample buffers the SIDESTICK
+// instrument itself uses, routed to the beat bus like every other beat
+// snare sound here.
+function playBeatSidestick(t) {
+  duckPumpTracks(t);
+  if (!_renderTapBeat) return;
+  const buf = buffers['sidestick'] && buffers['sidestick']['accent'];
+  if (!buf) { playSnare(t); return; } // sample not loaded yet — fall back rather than silently drop the hit
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const g = ctx.createGain();
+  g.gain.value = 0.6;
+  const snDest = window._beatGain || masterGain;
+  src.connect(g); g.connect(snDest);
+  src.start(t);
+  src.onended = () => { try { g.disconnect(); } catch (e) {} };
+}
 function playSnare(t) {
   duckPumpTracks(t);
   if (!_renderTapBeat) return;
@@ -6423,6 +6442,20 @@ function playDmxSnare(t) {
 // significantly lower body-tone pitch, closer to some of the deeper-tuned
 // voices the real DMX shipped with, rather than the bright/snappy one
 // used elsewhere.
+// Plays the SIDESTICK sample directly from the beat engine (no specific
+// track involved) — used by SAMBA's random snare-voice choice.
+function playBeatSidestickSample(t) {
+  if (!ctx || !buffers['sidestick']) return;
+  const buf = buffers['sidestick']['accent'] || buffers['sidestick']['soft'];
+  if (!buf) return;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const g = ctx.createGain();
+  g.gain.value = 0.5;
+  src.connect(g);
+  g.connect(window._beatGain || masterGain);
+  src.start(t);
+}
 function playDmxSnareLow(t) {
   duckPumpTracks(t);
   if (!_renderTapBeat) return;
@@ -13672,6 +13705,9 @@ function setBeatType(type) {
   // regardless — that one's tied to its half-time feel specifically, not
   // a style choice between these two.
   _snareVariant = Math.random() < 0.5 ? 'regular' : 'dmx';
+  // SAMBA's own snare voice — SNARE 2 or SIDESTICK, 50/50, re-rolled
+  // fresh each time SAMBA gets selected.
+  _sambaSnareVariant = Math.random() < 0.5 ? 'snare2' : 'sidestick';
   const btns = { disco: 'beatTypeDiscoBtn', halftime: 'beatTypeHalfBtn', reggae: 'beatTypeReggaeBtn', breaks: 'beatTypeBreaksBtn', bounce: 'beatTypeBounceBtn', reggae2: 'beatTypeReggae2Btn' };
   Object.entries(btns).forEach(([t, id]) => {
     const b = document.getElementById(id);
