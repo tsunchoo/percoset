@@ -721,7 +721,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 20:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 20:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7108,6 +7108,15 @@ function buildUI() {
     nameBtn.classList.toggle('muted', trackMuted[tr]);
     ctrlRow.appendChild(nameBtn);
 
+    // Vol bar
+    const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
+    volBar.classList.toggle('muted', trackMuted[tr]);
+    const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
+    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
+    volBar.appendChild(volFill);
+    attachVolBarEvents(volBar, tr);
+    ctrlRow.appendChild(volBar);
+
     // L button — lock track from RAND (far left, before offset buttons)
     const sweepBtnL = document.createElement('button'); sweepBtnL.className = 'track-ctrl-icon-btn lock-btn'; sweepBtnL.id = `swpbtn-${tr}`;
     sweepBtnL.dataset.tr = tr;
@@ -7218,15 +7227,6 @@ function buildUI() {
     wireRandomizeButton(randBtn, tr);
     ctrlRow.appendChild(randBtn);
 
-
-    // Vol bar
-    const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
-    volBar.classList.toggle('muted', trackMuted[tr]);
-    const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
-    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
-    volBar.appendChild(volFill);
-    attachVolBarEvents(volBar, tr);
-    ctrlRow.appendChild(volBar);
 
     trackWrap.appendChild(ctrlRow);
 
@@ -10506,10 +10506,17 @@ function restoreState(snap, opts) {
   // like RECALL hadn't done anything, or that toggling BEAT itself counted
   // as a new pattern to revert past. Slot loads and tape imports still
   // restore it fully — those are meant to reproduce everything faithfully.
+  // Beat TYPE (disco/samba/jazz/etc.) always restores, regardless of
+  // skipBeatState — that flag is specifically about not toggling BEAT
+  // on/off for RECALL (a live mixing decision), not about which type is
+  // selected, which is genuinely part of the pattern's own identity. This
+  // used to be bundled inside the same skipBeatState-gated block below,
+  // which meant RECALL never restored the type at all — it kept whatever
+  // was already playing instead of the previous pattern's own type.
+  if (snap.beatType) setBeatType(snap.beatType);
   if (!opts.skipBeatState && snap.beatPlaying !== undefined) {
     beatPlaying = snap.beatPlaying;
     _beatPending = false;
-    if (snap.beatType) setBeatType(snap.beatType);
     const bb = document.getElementById('beatBtn');
     if (bb) bb.classList.toggle('active', beatPlaying);
     updateBeatPulse();
