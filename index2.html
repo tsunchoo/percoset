@@ -162,7 +162,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    to have. Button box itself is untouched: width comes from flex:1 on
    .transport .btn and height is the fixed 54px above, neither keyed off
    text content, so this is purely a glyph-size change. */
-#randBtn { font-size: 2.8875rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+#randBtn { font-size: 2.8875rem; font-weight: 900; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 /* RECALL, now an A/B toggle — 50% larger than the base top-row text size
    (0.72rem * 1.5), bold (inherits .btn's own font-weight:700, already bold). */
 #scratchBtn { font-size: 1.08rem; }
@@ -712,7 +712,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 06:59</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
