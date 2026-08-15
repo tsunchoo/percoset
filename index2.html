@@ -733,7 +733,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:17</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:21</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12328,16 +12328,27 @@ function _stopAmalgamSwell() {
   // on every touchmove, regardless of what else might be intercepting the
   // event elsewhere. Safe to coexist with the other trigger paths above
   // since onEngage()/onRelease() both guard against re-firing while
-  // already in the matching state.
+  // already in the matching state. Release is debounced slightly — even
+  // a genuinely stationary finger generates touchmove events with small
+  // natural jitter, and near the spool's own edge that jitter could flip
+  // elementFromPoint() back and forth, releasing and re-engaging rapidly
+  // (heard as the swell barely starting before cutting off, or several
+  // overlapping partial swells landing on top of each other at once).
+  let _spoolReleaseTid = null;
   document.addEventListener('touchmove', e => {
     const touch = e.touches[0];
     if (!touch) return;
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const overSpool = !!(el && el.closest('#rightReelWrap'));
-    if (overSpool) onEngage(); else if (_spoolEngaged) onRelease();
+    if (overSpool) {
+      if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; }
+      onEngage();
+    } else if (_spoolEngaged && !_spoolReleaseTid) {
+      _spoolReleaseTid = setTimeout(() => { _spoolReleaseTid = null; onRelease(); }, 100);
+    }
   }, { passive: true });
-  document.addEventListener('touchend', () => { if (_spoolEngaged) onRelease(); });
-  document.addEventListener('touchcancel', () => { if (_spoolEngaged) onRelease(); });
+  document.addEventListener('touchend', () => { if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; } if (_spoolEngaged) onRelease(); });
+  document.addEventListener('touchcancel', () => { if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; } if (_spoolEngaged) onRelease(); });
 })();
 // Older right tape spool (reel2) wiring — it used to proxy its
 // press/release directly onto SWEEP's own mousedown/mouseup (so touching
