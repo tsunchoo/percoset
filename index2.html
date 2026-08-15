@@ -703,7 +703,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">14Aug26 04:25</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 04:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11858,12 +11858,70 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   });
   _amalgamVolOverride = null; // reset AFTER the notes read it — it was being cleared too early before, so every note fell back to the flat default instead of the computed volume
 }
-// Right tape spool (reel2) is now fully dormant — it used to proxy its
+// Right tape spool (reel2) — brought back as the trigger for a slow
+// "swelling" version of the amalgam/texture chord: holding it eases the
+// current chord in via plain sine tones (not the short one-shot echo
+// buffer, which has its own decay shape baked in and isn't loop-safe) at
+// a low, sustained level, and releasing eases it back out. Never proxies
+// onto SWEEP's own press/release the way it briefly used to (see the
+// removed wiring this replaced) — this is its own, independent sound.
+let _amalgamSwellOscs = null, _amalgamSwellGain = null;
+function _startAmalgamSwell() {
+  if (!ctx || _amalgamSwellOscs) return; // already swelling
+  if (!_amalgamChord) _regenerateAmalgamChord();
+  const notes = _amalgamChord;
+  if (!notes || notes.length === 0) return;
+  const t = ctx.currentTime;
+  const swellGain = ctx.createGain();
+  swellGain.gain.setValueAtTime(0, t);
+  swellGain.gain.linearRampToValueAtTime(0.14, t + 2.2); // slow swell in
+  swellGain.connect(masterGain);
+  const oscs = notes.map(n => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = n.freq;
+    const oscGain = ctx.createGain();
+    oscGain.gain.value = 1 / notes.length; // even blend regardless of how many notes are in the chord
+    osc.connect(oscGain);
+    oscGain.connect(swellGain);
+    osc.start(t);
+    return osc;
+  });
+  _amalgamSwellOscs = oscs;
+  _amalgamSwellGain = swellGain;
+}
+function _stopAmalgamSwell() {
+  if (!ctx || !_amalgamSwellGain) return;
+  const t = ctx.currentTime;
+  const g = _amalgamSwellGain, oscs = _amalgamSwellOscs;
+  g.gain.cancelScheduledValues(t);
+  g.gain.setValueAtTime(g.gain.value, t);
+  g.gain.linearRampToValueAtTime(0, t + 1.2); // slow swell out
+  oscs.forEach(osc => { try { osc.stop(t + 1.3); } catch (e) {} });
+  setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 1500);
+  _amalgamSwellOscs = null;
+  _amalgamSwellGain = null;
+}
+(function() {
+  const spool = document.getElementById('reel2');
+  if (!spool) return;
+  const wrap = spool.closest('.reel-wrap') || spool;
+  wrap.style.touchAction = 'none';
+  wrap.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    _startAmalgamSwell();
+  });
+  const release = e => { _stopAmalgamSwell(); try { wrap.releasePointerCapture(e.pointerId); } catch (err) {} };
+  wrap.addEventListener('pointerup', release);
+  wrap.addEventListener('pointercancel', release);
+})();
+// Older right tape spool (reel2) wiring — it used to proxy its
 // press/release directly onto SWEEP's own mousedown/mouseup (so touching
 // it acted exactly like pressing and releasing SWEEP, including SWEEP's
 // release "Cymbal" cue), which is exactly the unwanted "stop sound plus
-// SWEEP rolling over" behavior. All of that wiring is removed — the right
-// spool no longer does anything when touched.
+// SWEEP rolling over" behavior. That's gone for good — the swell above is
+// its own, independent replacement, not a restoration of the old proxy.
 (function() {
   const spool = document.getElementById('reel1');
   if (!spool) return;
@@ -12636,6 +12694,7 @@ async function hardResetAudioEngine() {
     _amalgamBaseBuffer = null;
     _droneAirNoiseBuffer = null;
     _amalgamTriggerTimes = [];
+    _amalgamSwellOscs = null; _amalgamSwellGain = null; // hard reset drops the audio context entirely — any swell in progress is already gone with it
     window._uiSoundBufs = {};
 
     if (ctx) { try { await ctx.close(); } catch(e) {} }
