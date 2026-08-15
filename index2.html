@@ -395,7 +395,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 @keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
 #randBtn.btn-flash-blue { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
-#clearBtn.active { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
+#clearBtn.active { background: #000 !important; color: #000 !important; }
 #scratchBtn.active { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
@@ -587,6 +587,10 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-
   min-height: 0; box-sizing: border-box;
   overflow: visible;
 }
+/* Subtle real-time indicator of where the BEAT engine's own "1" currently
+   falls, across every track — updates live as the beat offset changes
+   (< in the BEAT menu, or the right tape spool). */
+.step-cell.beat-one-indicator { border-bottom: 1px solid #000; }
 /* teeth — positioned so bottom edge sits exactly on the lane border */
 .step-cell::before {
   content: ''; position: absolute; bottom: -3px; left: -1px;
@@ -719,7 +723,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 19:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 19:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2928,7 +2932,7 @@ function fireStepAudio(step, t) {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined); }
+        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined, 0.7499); }
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -3129,10 +3133,11 @@ function playSynthKick(isAccent, time, tr) {
   osc.start(time); osc.stop(time + 0.46);
   _cleanupNodes([g], time + 0.47);
 }
-function playSynthSnare_reinstated(isAccent, time, tr) {
+function playSynthSnare_reinstated(isAccent, time, tr, gainScale) {
   if (!ctx) return;
+  gainScale = gainScale === undefined ? 1 : gainScale;
   const dest = getSynthConnectNode(tr);
-  const dur = isAccent ? 0.22 : 0.15, vol = isAccent ? 0.325 : 0.210;
+  const dur = isAccent ? 0.22 : 0.15, vol = (isAccent ? 0.325 : 0.210) * gainScale;
   // Noise: shorter, crisper, higher filtered — jazzy rimshot character
   const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
   const d = buf.getChannelData(0);
@@ -4467,7 +4472,7 @@ function playPulseBass(freq, durSec, isAccent, time, tr) {
 function playBashPiano(freq, durSec, isAccent, time, tr, _isDouble) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.1951 : 0.1196; // bigger accent/normal swing — rhythmic, percussive character; +2dB
+  const vel = isAccent ? 0.2456 : 0.1506; // +2dB more (was 0.1951/0.1196)
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.5;
   lp.frequency.setValueAtTime(isAccent ? 7000 : 4800, time);
@@ -5328,7 +5333,11 @@ function playPrimePiano(freq, durSec, isAccent, time, tr, gainScale) {
   playRhodes2(freq, durSec, isAccent, time, tr, 0.6310 * gainScale); // -4dB total (was -1dB, +3dB more)
 }
 // ── MAGIC: DREAM PIANO's own voice, played as a 3-note chord drawn from
-// the current scale instead of a single melody note.
+// the current scale instead of a single melody note. The 3 notes are
+// staggered 10ms apart rather than fired perfectly simultaneously — a
+// small, natural-sounding "strum" rather than a hard synchronous stack,
+// and it spreads the chord's node-creation cost across a few scheduler
+// ticks instead of one single spike.
 function playMagic(freq, durSec, isAccent, time, tr) {
   const scale = trackBassScale[tr];
   let freqs = [freq];
@@ -5339,8 +5348,9 @@ function playMagic(freq, durSec, isAccent, time, tr) {
     const idx3 = (baseIdx + 4) % scale.length;
     freqs = [scale[baseIdx], scale[idx2], scale[idx3]];
   }
-  freqs.forEach(f => {
-    playPrimePiano(f, durSec, isAccent, time, tr, 1);
+  const staggerMs = 0.01;
+  freqs.forEach((f, i) => {
+    playPrimePiano(f, durSec, isAccent, time + i * staggerMs, tr, 1);
   });
 }
 
@@ -6471,7 +6481,7 @@ function playBeatSidestickSample(t) {
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const g = ctx.createGain();
-  g.gain.value = 0.5;
+  g.gain.value = 0.3155; // -2.5dB more (was 0.4207)
   src.connect(g);
   g.connect(window._beatGain || masterGain);
   src.start(t);
@@ -10191,7 +10201,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — checked first, overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (trackInstruments[tr] === 'magic') ? 0 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // MAGIC never gets reverb through RAND — checked first, unconditional 0, only ever on if set manually via the track's own R button; CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     trackDelay[tr] = delayOn;
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -11449,6 +11459,7 @@ function wireRandomizeButton(btn, tr) {
 
 window._trackNamesUniform = true; // DEFAULT is the new pre-selected radio — track names start out TOP-ROW colored, not color-coded by instrument group
 buildUI();
+_updateBeatOneIndicator(); // needs the grid cells buildUI() just created to exist first
 updateMasterVolCells();
 setTrackPulseMode('solid');
 // BEAT is on by default — sync the button's visible state to match, since
@@ -12545,6 +12556,7 @@ function fullReset() {
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
+  _updateBeatOneIndicator(); // needs the cells buildUI() just recreated to exist first
   // Track 1 is no longer special — no forced FX or auto-rand re-engagement
   // after a reset, same as every other track.
   updateSlotButtons();
@@ -13259,11 +13271,12 @@ async function hardResetAudioEngine() {
     bp.frequency.exponentialRampToValueAtTime(rising ? SWEEP_CEIL_FREQ : SWEEP_FLOOR_FREQ, t + dur);
   }
 
-  const beginPress = () => { window._sweepGestureActive = true; playUiSound('Cymbal'); startSweep(); startSweepTakeover(); };
+  const beginPress = () => { window._sweepGestureActive = true; playUiSound('Cymbal'); startSweep(); startSweepTakeover(); btn.classList.add('active'); };
   const endPress = () => {
     window._sweepGestureActive = false;
     if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
     stopSweep(); // released early — cuts off right where the ramps currently are
+    btn.classList.remove('active');
   };
 
   btn.addEventListener('touchstart', e => { e.preventDefault(); beginPress(); }, { passive: false });
@@ -13675,11 +13688,25 @@ function updateBeatCtrlRow() {
 // L — same lock, exposed on the ctrl row too
 function beatCtrlToggleL() { toggleBeatTypeLock(); updateBeatCtrlRow(); }
 
+// Moves the "beat's own 1" indicator (a thin black border along the
+// bottom of whichever step column it currently falls on, across every
+// track) to match wherever _beatOffset currently points. Called any time
+// that offset changes — the < button, the right tape spool — and once at
+// startup so it's correct from the very first render.
+function _updateBeatOneIndicator() {
+  document.querySelectorAll('.step-cell.beat-one-indicator').forEach(el => el.classList.remove('beat-one-indicator'));
+  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    const el = document.querySelector(`.step-cell[data-track="${tr}"][data-step="${_beatOffset}"]`);
+    if (el) el.classList.add('beat-one-indicator');
+  }
+}
+
 // < — shift the whole BEAT pattern by one step, same idea as a track's
 // shift-left. Doesn't stay engaged, so just a momentary rollover flash.
 function beatCtrlShift() {
   _beatOffset = (_beatOffset + 1) % NUM_STEPS;
   flashBtnOrange('beatCtrlShift');
+  _updateBeatOneIndicator();
   markModified();
 }
 
