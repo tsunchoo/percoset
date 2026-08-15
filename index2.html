@@ -588,11 +588,18 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-
 /* Subtle real-time indicator of where the BEAT engine's own "1" currently
    falls, across every track — updates live as the beat offset changes
    (< in the BEAT menu, or the right tape spool). */
-.step-cell.beat-one-indicator {
-  background-image: linear-gradient(var(--dev-marker-color, #000), var(--dev-marker-color, #000));
-  background-size: var(--dev-marker-thickness, 3px) 50%;
-  background-position: left center;
-  background-repeat: no-repeat;
+/* A real element, not a background-image — pseudo-elements (::before/
+   ::after, used elsewhere on this cell for the teeth and the empty-note
+   dot) always render above an element's own background regardless of
+   CSS/DOM order, so a background-image-based marker was permanently
+   stuck underneath the empty-note dot and invisible most of the time.
+   z-index here puts it above both pseudo-elements reliably. */
+.beat-one-marker {
+  position: absolute; left: 0; top: 25%; bottom: 25%;
+  width: var(--dev-marker-thickness, 3px);
+  background: var(--dev-marker-color, #000);
+  pointer-events: none;
+  z-index: 5;
 }
 /* teeth — positioned so bottom edge sits exactly on the lane border */
 .step-cell::before {
@@ -726,7 +733,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:17</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -13758,10 +13765,10 @@ function beatCtrlToggleL() { toggleBeatTypeLock(); updateBeatCtrlRow(); }
 // that offset changes — the < button, the right tape spool — and once at
 // startup so it's correct from the very first render.
 function _updateBeatOneIndicator() {
-  document.querySelectorAll('.step-cell.beat-one-indicator').forEach(el => el.classList.remove('beat-one-indicator'));
+  document.querySelectorAll('.beat-one-marker').forEach(el => el.remove());
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     const el = document.querySelector(`.step-cell[data-track="${tr}"][data-step="${_beatOffset}"]`);
-    if (el) el.classList.add('beat-one-indicator');
+    if (el) { const marker = document.createElement('div'); marker.className = 'beat-one-marker'; el.appendChild(marker); }
   }
 }
 
