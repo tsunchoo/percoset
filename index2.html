@@ -703,7 +703,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 05:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 05:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1092,7 +1092,7 @@ window._wildColorsSkipNext = true; // don't apply WILD to the initial startup pa
 const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
   ssnare: { name: 'SNARE',       soft: 'Sounds/Snare50.wav', accent: 'Sounds/Snare100.wav', group: 'kit' },
-  sidestick: { name: 'SIDESTICK', soft: 'Sounds/Sidestick50.wav', accent: 'Sounds/Sidestick100.wav', group: 'perc' },
+  sidestick: { name: 'SIDESTICK', soft: 'Sounds/Sidestick50.wav', accent: 'Sounds/Sidestick100.wav', group: 'kit' },
   snare2: { name: 'SNARE 2', soft: null, accent: null, group: 'kit' },
   shihat: { name: 'HIHAT',       soft: null, accent: null, group: 'kit' },
   ride:   { name: 'RIDE',        soft: 'Sounds/Ride50.wav',  accent: 'Sounds/Ride100.wav',  group: 'kit'  },
@@ -3573,6 +3573,36 @@ function randomizeBassTrack(tr, level) {
       trackLegatoLen[tr][s] = Math.max(2, Math.min(3, maxLen));
     });
     redrawTrackCells(tr);
+  }
+
+  // JINX: melodic contour with one deliberate large jump partway through —
+  // small stepwise movement within a phrase (mostly ±1 scale step, close
+  // together), one genuinely big leap to a different note, then another
+  // stepwise phrase to finish. Mimics a natural melodic gesture rather
+  // than either pure randomness or a pure scale-walk throughout. Assigns
+  // pitch explicitly (trackPitchOverride) instead of leaving these notes
+  // to whatever the default step-position-in-scale mapping would give them.
+  if (key === 'jcmgtr' && trackBassScale[tr]) {
+    const _jinxScale = trackBassScale[tr];
+    const _jinxScaleLen = _jinxScale.length;
+    const _jinxOnsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) _jinxOnsets.push(s);
+    if (_jinxOnsets.length >= 3 && _jinxScaleLen >= 4) {
+      if (!trackPitchOverride[tr]) trackPitchOverride[tr] = {};
+      const _jinxJumpAt = 1 + Math.floor(Math.random() * (_jinxOnsets.length - 2)); // never the very first or last note — needs a real phrase on both sides
+      let _jinxIdx = Math.floor(Math.random() * _jinxScaleLen);
+      _jinxOnsets.forEach((s, i) => {
+        if (i === _jinxJumpAt) {
+          const _jumpSize = 3 + Math.floor(Math.random() * Math.max(1, _jinxScaleLen - 3)); // a genuinely large leap, at least 3 scale steps
+          const _jumpDir = Math.random() < 0.5 ? -1 : 1;
+          _jinxIdx = Math.max(0, Math.min(_jinxScaleLen - 1, _jinxIdx + _jumpDir * _jumpSize));
+        } else if (i > 0) {
+          const _stepMove = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1 — stays close within a phrase
+          _jinxIdx = Math.max(0, Math.min(_jinxScaleLen - 1, _jinxIdx + _stepMove));
+        }
+        trackPitchOverride[tr][s] = _jinxScale[_jinxIdx];
+      });
+    }
   }
 
   // JINX: chooses legato phrases anywhere from 2 to 6 steps long — always
@@ -10852,6 +10882,36 @@ function randomizeTrack(tr) {
         const wantLen = 2 + Math.floor(Math.random() * 2); // 2-3, occasionally capped up to 4
         trackLegatoLen[tr][s] = Math.min(wantLen, maxLen);
       }
+    }
+  }
+
+  // JINX: melodic contour with one deliberate large jump partway through —
+  // small stepwise movement within a phrase (mostly ±1 scale step, close
+  // together), one genuinely big leap to a different note, then another
+  // stepwise phrase to finish. Mimics a natural melodic gesture rather
+  // than either pure randomness or a pure scale-walk throughout. Assigns
+  // pitch explicitly (trackPitchOverride) instead of leaving these notes
+  // to whatever the default step-position-in-scale mapping would give them.
+  if (key === 'jcmgtr' && trackBassScale[tr]) {
+    const _jinxScale = trackBassScale[tr];
+    const _jinxScaleLen = _jinxScale.length;
+    const _jinxOnsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) _jinxOnsets.push(s);
+    if (_jinxOnsets.length >= 3 && _jinxScaleLen >= 4) {
+      if (!trackPitchOverride[tr]) trackPitchOverride[tr] = {};
+      const _jinxJumpAt = 1 + Math.floor(Math.random() * (_jinxOnsets.length - 2)); // never the very first or last note — needs a real phrase on both sides
+      let _jinxIdx = Math.floor(Math.random() * _jinxScaleLen);
+      _jinxOnsets.forEach((s, i) => {
+        if (i === _jinxJumpAt) {
+          const _jumpSize = 3 + Math.floor(Math.random() * Math.max(1, _jinxScaleLen - 3)); // a genuinely large leap, at least 3 scale steps
+          const _jumpDir = Math.random() < 0.5 ? -1 : 1;
+          _jinxIdx = Math.max(0, Math.min(_jinxScaleLen - 1, _jinxIdx + _jumpDir * _jumpSize));
+        } else if (i > 0) {
+          const _stepMove = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1 — stays close within a phrase
+          _jinxIdx = Math.max(0, Math.min(_jinxScaleLen - 1, _jinxIdx + _stepMove));
+        }
+        trackPitchOverride[tr][s] = _jinxScale[_jinxIdx];
+      });
     }
   }
 
