@@ -162,7 +162,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    to have. Button box itself is untouched: width comes from flex:1 on
    .transport .btn and height is the fixed 54px above, neither keyed off
    text content, so this is purely a glyph-size change. */
-#randBtn { font-size: 2.8875rem; font-weight: 900; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#randBtn { font-size: 2.8875rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
 /* RECALL, now an A/B toggle — 50% larger than the base top-row text size
    (0.72rem * 1.5), bold (inherits .btn's own font-weight:700, already bold). */
 #scratchBtn { font-size: 1.08rem; }
@@ -189,9 +189,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    nothing shifts, only the symbol inside it grows. Grows once to 2x and
    stays there permanently (not a pulse that reverts) — same trigger
    applies whether it's a single press or entering AUTO mode. */
-#randBtn.press-pulse .glyph { animation: rand-scale-pulse 0.5s ease-out; }
-@keyframes rand-scale-pulse { 0% { transform: translate(1px, -3px) scale(1); } 99.9% { transform: translate(1px, -3px) scale(20); } 100% { transform: translate(1px, -3px) scale(1); } }
-#randBtn .glyph { display: inline-block; transform: translate(1px, -3px); }
+#randBtn .glyph { display: inline-block; transform: translateY(-2px); }
 #playBtn.playing { background: #111; }
 #playBtn { position: relative; }
 #saveBtn { position: relative; }
@@ -395,7 +393,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 @keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
 #randBtn.btn-flash-blue { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
-#clearBtn.active { background: #000 !important; color: #000 !important; }
+#clearBtn.active { background: #000 !important; color: var(--highlight3-color, #adff00) !important; }
 #scratchBtn.active { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
@@ -590,7 +588,7 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-
 /* Subtle real-time indicator of where the BEAT engine's own "1" currently
    falls, across every track — updates live as the beat offset changes
    (< in the BEAT menu, or the right tape spool). */
-.step-cell.beat-one-indicator { border-bottom: 1px solid #000; }
+.step-cell.beat-one-indicator { border-bottom: 3px solid #000; }
 /* teeth — positioned so bottom edge sits exactly on the lane border */
 .step-cell::before {
   content: ''; position: absolute; bottom: -3px; left: -1px;
@@ -723,7 +721,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 19:58</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 20:13</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2805,7 +2803,16 @@ function fireStepAudio(step, t) {
       if (allEmpty) playMetronome(t, step === 0);
     }
     // Beat: fire from main clock on downbeats only
-    const bstep = (step - _beatOffset + NUM_STEPS) % NUM_STEPS; // '<' shift — same pattern as per-track offset
+    // _beatOffset is in half-steps now (0 to NUM_STEPS*2-1) so each press
+    // of < / the right spool moves the beat by half of what it used to —
+    // the integer half determines which 16th-note bstep lands on (for all
+    // the exact-bstep pattern matching below to keep working unchanged),
+    // and the remaining half-step, if any, shifts the actual scheduled
+    // time of every beat-engine sound this tick by half a step's duration.
+    const _beatOffsetSteps = Math.floor(_beatOffset / 2);
+    const _beatOffsetSubStep = (_beatOffset % 2) * 0.5;
+    const bstep = (step - _beatOffsetSteps + NUM_STEPS) % NUM_STEPS; // '<' shift — same pattern as per-track offset
+    if (_beatOffsetSubStep > 0) t += _beatOffsetSubStep * stepDuration();
     if (bstep % 8 === 0 || bstep % 8 === 4) {
       // Activate pending beat on next downbeat
       if (_beatPending) {
@@ -3100,7 +3107,7 @@ let beatPlaying = true, _beatPending = false; // BEAT on by default at page load
 let _beatType = 'disco'; // 'disco' | 'halftime' | 'reggae'
 let _snareVariant = 'regular'; // 'regular' | 'dmx' — re-rolled fresh each time setBeatType() picks a new type
 let _sambaSnareVariant = 'snare2'; // 'snare2' | 'sidestick' — SAMBA's own snare voice, re-rolled fresh on selection
-let _beatOffset = 0; // BEAT ctrl-row '<' — steps the whole pattern is shifted by, same idea as trackOffset
+let _beatOffset = 0; // BEAT ctrl-row '<' — half-steps the whole pattern is shifted by (0 to NUM_STEPS*2-1); each press moves it by 1 half-step, i.e. half of a full 16th-note step
 
 const _revBufCache = new WeakMap();
 function reverseBuffer(buf, revLen) {
@@ -6851,23 +6858,6 @@ function commitBeatMenuSelection(item) {
 function _pressPulse(id) {
   const b = document.getElementById(id);
   if (!b) return;
-  if (id === 'randBtn') {
-    const glyphEl = b.querySelector('.glyph');
-    if (glyphEl) {
-      let dur;
-      if (playing) {
-        // Time remaining until the end of the current measure — the pulse
-        // finishes exactly as the new pattern actually lands, whether
-        // this fired from a direct press or from auto mode's own
-        // bar-boundary regenerate.
-        const stepsRemaining = (NUM_STEPS - currentStep) % NUM_STEPS || NUM_STEPS;
-        dur = stepsRemaining * stepDuration();
-      } else {
-        dur = 1.0; // stopped — twice the original 0.5s
-      }
-      glyphEl.style.animationDuration = dur + 's';
-    }
-  }
   b.classList.remove('press-pulse'); void b.offsetWidth; b.classList.add('press-pulse');
 }
 
@@ -12257,7 +12247,10 @@ function _stopAmalgamSwell() {
   const wrap = spool.closest('.reel-wrap') || spool;
   wrap.style.touchAction = 'none';
   wrap.id = wrap.id || 'rightReelWrap';
+  let _spoolEngaged = false;
   const onEngage = () => {
+    if (_spoolEngaged) return; // already engaged via another path (direct press, generic drag system, or the dedicated touchmove check below) — never double-fire
+    _spoolEngaged = true;
     _startAmalgamSwell();
     // Same shift-the-whole-BEAT-pattern-by-one-step action as the < button
     // in the BEAT menu — a momentary, one-time trigger, so it coexists
@@ -12265,7 +12258,7 @@ function _stopAmalgamSwell() {
     // pattern) without needing to distinguish tap from hold.
     beatCtrlShift();
   };
-  const onRelease = () => { _stopAmalgamSwell(); };
+  const onRelease = () => { _spoolEngaged = false; _stopAmalgamSwell(); };
   wrap.addEventListener('pointerdown', e => {
     e.preventDefault();
     try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
@@ -12284,6 +12277,23 @@ function _stopAmalgamSwell() {
     onEngage();
   });
   wrap.addEventListener('mouseup', onRelease);
+  // Dedicated drag-onto detection, independent of the generic
+  // DRAGGABLE_BTN_SELECTORS system — that system relies on
+  // elementFromPoint() correctly resolving to this exact wrap element,
+  // which wasn't reliably triggering it in practice. This checks directly
+  // on every touchmove, regardless of what else might be intercepting the
+  // event elsewhere. Safe to coexist with the other trigger paths above
+  // since onEngage()/onRelease() both guard against re-firing while
+  // already in the matching state.
+  document.addEventListener('touchmove', e => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const overSpool = !!(el && el.closest('#rightReelWrap'));
+    if (overSpool) onEngage(); else if (_spoolEngaged) onRelease();
+  }, { passive: true });
+  document.addEventListener('touchend', () => { if (_spoolEngaged) onRelease(); });
+  document.addEventListener('touchcancel', () => { if (_spoolEngaged) onRelease(); });
 })();
 // Older right tape spool (reel2) wiring — it used to proxy its
 // press/release directly onto SWEEP's own mousedown/mouseup (so touching
@@ -13695,16 +13705,18 @@ function beatCtrlToggleL() { toggleBeatTypeLock(); updateBeatCtrlRow(); }
 // startup so it's correct from the very first render.
 function _updateBeatOneIndicator() {
   document.querySelectorAll('.step-cell.beat-one-indicator').forEach(el => el.classList.remove('beat-one-indicator'));
+  const _visualStep = Math.floor(_beatOffset / 2); // half-steps collapse to the nearest 16th-note column — that's the finest the visual grid can show
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    const el = document.querySelector(`.step-cell[data-track="${tr}"][data-step="${_beatOffset}"]`);
+    const el = document.querySelector(`.step-cell[data-track="${tr}"][data-step="${_visualStep}"]`);
     if (el) el.classList.add('beat-one-indicator');
   }
 }
 
-// < — shift the whole BEAT pattern by one step, same idea as a track's
-// shift-left. Doesn't stay engaged, so just a momentary rollover flash.
+// < — shift the whole BEAT pattern by one HALF-step (half of what a full
+// step move used to be), same idea as a track's shift-left. Doesn't stay
+// engaged, so just a momentary rollover flash.
 function beatCtrlShift() {
-  _beatOffset = (_beatOffset + 1) % NUM_STEPS;
+  _beatOffset = (_beatOffset + 1) % (NUM_STEPS * 2);
   flashBtnOrange('beatCtrlShift');
   _updateBeatOneIndicator();
   markModified();
