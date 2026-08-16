@@ -351,7 +351,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
-.track-ctrl-icon-btn.sweep-on { background: #555; color: #fff; }
+.track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
@@ -589,22 +589,6 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes.note-flash { animation:
   min-height: 0; box-sizing: border-box;
   overflow: visible;
 }
-/* Subtle real-time indicator of where the BEAT engine's own "1" currently
-   falls, across every track — updates live as the beat offset changes
-   (< in the BEAT menu, or the right tape spool). */
-/* A real element, not a background-image — pseudo-elements (::before/
-   ::after, used elsewhere on this cell for the teeth and the empty-note
-   dot) always render above an element's own background regardless of
-   CSS/DOM order, so a background-image-based marker was permanently
-   stuck underneath the empty-note dot and invisible most of the time.
-   z-index here puts it above both pseudo-elements reliably. */
-.beat-one-marker {
-  position: absolute; left: 0; top: 0; bottom: 0;
-  width: var(--dev-marker-thickness, 3px);
-  background: var(--dev-marker-color, #000);
-  pointer-events: none;
-  z-index: 5;
-}
 /* teeth — positioned so bottom edge sits exactly on the lane border */
 .step-cell::before {
   content: ''; position: absolute; bottom: -3px; left: -1px;
@@ -743,7 +727,7 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 23:07</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 23:31</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -849,28 +833,6 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DEV MENU</div>
     <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET MARKER COLOR</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="radio" name="devMarkerColor" value="highlight" onchange="setDevMarkerColor('highlight')" style="width:14px;height:14px;cursor:pointer;">HIGHLIGHT
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="radio" name="devMarkerColor" value="highlight2" onchange="setDevMarkerColor('highlight2')" style="width:14px;height:14px;cursor:pointer;">HIGHLIGHT 2
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="radio" name="devMarkerColor" value="highlight3" onchange="setDevMarkerColor('highlight3')" style="width:14px;height:14px;cursor:pointer;">HIGHLIGHT 3
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="radio" name="devMarkerColor" value="black" checked onchange="setDevMarkerColor('black')" style="width:14px;height:14px;cursor:pointer;">BLACK (DEFAULT)
-      </label>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET MARKER THICKNESS</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <input type="range" id="devMarkerThicknessSlider" min="1" max="10" step="1" value="3" oninput="setDevMarkerThickness(this.value)" style="flex:1;">
-        <span id="devMarkerThicknessReadout" style="font-size:0.7rem;font-weight:700;color:#111;min-width:28px;">3px</span>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
       <div style="display:flex;align-items:center;gap:10px;">
         <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" style="flex:1;">
@@ -930,6 +892,18 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
     <!-- Sliders -->
     <div style="display:flex;flex-direction:column;gap:24px;">
 
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TONAL / PERC BALANCE</div>
+          <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
+        </div>
+        <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
+          <span>DRUMS</span>
+          <span>MUSIC</span>
+        </div>
+      </div>
+
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
@@ -946,18 +920,6 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
           <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
         </div>
         <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TONAL / PERC BALANCE</div>
-          <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
-        </div>
-        <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
-        <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
-          <span>6 PERC</span>
-          <span>6 TONAL</span>
-        </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:5px;">
@@ -11684,7 +11646,6 @@ function wireRandomizeButton(btn, tr) {
 window._trackNamesUniform = false; // COLOR-CODED is now the pre-selected radio at startup — track names start out colored by instrument group, not TOP-ROW uniform
 document.body.classList.add('notes-grayscale'); // grayscale note markers is now the default at startup, matching the DEV menu checkbox's own default checked state
 buildUI();
-_updateBeatOneIndicator(); // needs the grid cells buildUI() just created to exist first
 updateMasterVolCells();
 setTrackPulseMode('solid');
 // BEAT is on by default — sync the button's visible state to match, since
@@ -12448,9 +12409,10 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
     const now = Date.now();
     if (now - _lastSpoolTapTime < 350) {
       // Double-click/double-tap — resets the offset back to the 1 instead
-      // of shifting it further along.
+      // of shifting it further along, undoing the visual shift on every
+      // track the same way beatCtrlShift() applies it.
       _beatOffset = 0;
-      _updateBeatOneIndicator();
+      for (let tr = 0; tr < NUM_TRACKS; tr++) { trackOffset[tr] = 0; redrawTrackCells(tr); }
       flashBtnOrange('beatCtrlShift');
       markModified();
     } else {
@@ -12538,15 +12500,6 @@ function showDevMenu() {
 function hideDevMenu() {
   const el = document.getElementById('devMenuOverlay');
   if (el) el.style.display = 'none';
-}
-function setDevMarkerColor(mode) {
-  const map = { highlight: 'var(--playhead-color, #f8ff00)', highlight2: 'var(--highlight2-color, #0078ff)', highlight3: 'var(--highlight3-color, #adff00)', black: '#000' };
-  document.documentElement.style.setProperty('--dev-marker-color', map[mode] || '#000');
-}
-function setDevMarkerThickness(px) {
-  document.documentElement.style.setProperty('--dev-marker-thickness', px + 'px');
-  const readout = document.getElementById('devMarkerThicknessReadout');
-  if (readout) readout.textContent = px + 'px';
 }
 // Offset step size — how many 16th-note steps beatCtrlShift() moves per
 // press of < or the right spool. 0=16th(1 step), 1=8th(2), 2=quarter(4),
@@ -12830,7 +12783,6 @@ function fullReset() {
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 
   buildUI(); // rebuild every track row's DOM fresh from the reset state above
-  _updateBeatOneIndicator(); // needs the cells buildUI() just recreated to exist first
   // Track 1 is no longer special — no forced FX or auto-rand re-engagement
   // after a reset, same as every other track.
   updateSlotButtons();
@@ -13961,26 +13913,20 @@ function updateBeatCtrlRow() {
 // L — same lock, exposed on the ctrl row too
 function beatCtrlToggleL() { toggleBeatTypeLock(); updateBeatCtrlRow(); }
 
-// Moves the "beat's own 1" indicator (a thin black border along the
-// bottom of whichever step column it currently falls on, across every
-// track) to match wherever _beatOffset currently points. Called any time
-// that offset changes — the < button, the right tape spool — and once at
-// startup so it's correct from the very first render.
-function _updateBeatOneIndicator() {
-  document.querySelectorAll('.beat-one-marker').forEach(el => el.remove());
-  for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    const el = document.querySelector(`.step-cell[data-track="${tr}"][data-step="${_beatOffset}"]`);
-    if (el) { const marker = document.createElement('div'); marker.className = 'beat-one-marker'; el.appendChild(marker); }
-  }
-}
-
 // < — shift the whole BEAT pattern by the dev-menu-configured step size
 // (16th/8th/quarter/half-measure, default 16th), same idea as a track's
 // shift-left. Doesn't stay engaged, so just a momentary rollover flash.
+// Also visually shifts every track's own notes by the same amount — same
+// as pressing every single track's own < button at once — so the whole
+// grid moves to show the new alignment directly, instead of a separate
+// marker indicating where the beat's 1 now falls.
 function beatCtrlShift() {
   _beatOffset = (_beatOffset + _devOffsetStepSize) % NUM_STEPS;
+  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    trackOffset[tr] = (trackOffset[tr] + _devOffsetStepSize + NUM_STEPS) % NUM_STEPS;
+    redrawTrackCells(tr);
+  }
   flashBtnOrange('beatCtrlShift');
-  _updateBeatOneIndicator();
   markModified();
 }
 
