@@ -737,7 +737,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 21:09</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 21:24</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -940,6 +940,18 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
           <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
         </div>
         <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;justify-content:space-between;">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TONAL / PERC BALANCE</div>
+          <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
+        </div>
+        <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
+          <span>6 PERC</span>
+          <span>6 TONAL</span>
+        </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:5px;">
@@ -3001,7 +3013,7 @@ function fireStepAudio(step, t) {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined, 0.6683); }
+        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined, 0.5956); }
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -3609,6 +3621,8 @@ function randomizeBassTrack(tr, level) {
     drone:   [[2,5,0.25],[4,7,0.40],[6,10,0.55]],  // STRINGS — a normal tonal instrument now, same rules as any other
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
     jcmgtr:  [[1,3,0.20],[2,4,0.35],[3,6,0.50]],   // JINX — back to a calmer, more natural density (was pushed busier to [3,6]/[5,9]/[8,13] at one point)
+    denial:  [[2,5,0.35],[5,8,0.55],[8,13,0.70]],  // ARBY — same note counts as the generic default, but explicit and boosted accent ratio, matched to DENIECE below rather than relying on both sharing the same implicit fallback
+    sparkle: [[2,5,0.35],[5,8,0.55],[8,13,0.70]],  // DENIECE — explicit now, matched to ARBY above
   };
   const levelTable = noteTables[key] || [
     [2, 5,  0.20],
@@ -6628,7 +6642,7 @@ function playBeatSidestickSample(t) {
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const g = ctx.createGain();
-  g.gain.value = 0.3155; // -2.5dB more (was 0.4207)
+  g.gain.value = 0.2812; // -1dB more (was 0.3155)
   src.connect(g);
   g.connect(window._beatGain || masterGain);
   src.start(t);
@@ -9736,8 +9750,9 @@ function randAll(mode, opts) {
     }
     // Fill remaining from keys excluding solo perc/unique/hat if already used
     while (result.length < REAL_TRACK_COUNT) {
-      const fill = keys.filter(k => !(soloPercUsed && soloPercKeys.has(k) && !result.includes(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k) && !result.includes(k)) && !(soloHatUsed && soloHatKeys.has(k) && !result.includes(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k) && !result.includes(k)) && !(jinxClashUsed && jinxClashKeys.has(k) && !result.includes(k)) && !(padUsed && padKeys.has(k) && !result.includes(k)));
-      result.push(fill[Math.floor(Math.random() * fill.length)] || keys[0]);
+      const fill = keys.filter(k => !result.includes(k) && !(soloPercUsed && soloPercKeys.has(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k)) && !(soloHatUsed && soloHatKeys.has(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k)) && !(jinxClashUsed && jinxClashKeys.has(k)) && !(padUsed && padKeys.has(k)));
+      if (fill.length === 0) { result.push(keys.find(k => !result.includes(k)) || keys[0]); continue; } // truly nothing left eligible — take any key not already used, or accept a rare duplicate as an absolute last resort rather than looping forever
+      result.push(fill[Math.floor(Math.random() * fill.length)]);
     }
     return result;
   }
@@ -9748,11 +9763,9 @@ function randAll(mode, opts) {
   } else if (mode === 'tonal') {
     pool = buildPool(tonalKeys);
   } else {
-    // Equal chance: pick tonal and perc, then shuffle. Roughly the same
-    // 60/40 split as before, scaled up now that all 6 tracks participate
-    // (was 3-of-5 when track 1 was reserved) — 4 tonal (including bass) +
-    // 2 non-tonal.
-    const tonalTarget = 4;
+    // Tonal/perc split — set via the TONAL/PERC BALANCE slider in
+    // settings, defaulting to 3/3. Left = 6 perc, right = 6 tonal.
+    const tonalTarget = window._tonalPercBalance !== undefined ? window._tonalPercBalance : 3;
     // Count how many of each are already locked in
     const lockedTonal = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr])).length;
     const lockedPerc = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && !TONAL_KEYS.has(trackInstruments[tr])).length;
@@ -9774,7 +9787,7 @@ function randAll(mode, opts) {
     const bassAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && bassKeys.has(trackInstruments[tr]));
     const totalUnlockedSlots = REAL_TRACK_COUNT - lockedTonal - lockedPerc;
     let bassChoice = null;
-    if (!bassAlreadyLocked && totalUnlockedSlots > 0) {
+    if (!bassAlreadyLocked && totalUnlockedSlots > 0 && tonalTarget > 0) { // tonalTarget === 0 means the balance slider is set to all-percussion — that overrules the usual bass guarantee entirely, no bass at all in that case
       const bassAvail = tonalKeys.filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const allBassAvail = Object.keys(INSTRUMENTS).filter(k => bassKeys.has(k) && !currentDeck.has(k));
       const pool2 = bassAvail.length > 0 ? bassAvail : allBassAvail;
@@ -12531,6 +12544,12 @@ function setDevNotesGrayscale(on) {
 window._devRandOffsetEnabled = false;
 function setDevRandOffset(on) {
   window._devRandOffsetEnabled = !!on;
+}
+window._tonalPercBalance = 3; // 0-6 — how many of the 6 tracks RAND aims for tonal, the rest going to percussion
+function setTonalPercBalance(v) {
+  window._tonalPercBalance = +v;
+  const readout = document.getElementById('tonalPercBalanceReadout');
+  if (readout) readout.textContent = `${v} / ${6 - v}`;
 }
 function showInstructions() {
   const el = document.getElementById('instructionsOverlay');
