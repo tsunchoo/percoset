@@ -737,7 +737,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 04:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 05:54</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3605,7 +3605,7 @@ function randomizeBassTrack(tr, level) {
   }
 
   // MAGIC: same placement shape as CHUG (downbeat/upbeat/random/16th-style
-  // mode selection), but thinned down to only 2-4 actual triggers per
+  // mode selection), but thinned down to only 2-3 actual triggers per
   // measure and connected into legato phrases, rather than CHUG's usual
   // full density. Each trigger plays a 3-note chord (see playMagic).
   if (key === 'magic') {
@@ -3632,7 +3632,7 @@ function randomizeBassTrack(tr, level) {
     } else {
       // mode 2 — random placement, note count already constrained to
       // 2-4 so no separate thinning pass is needed for this branch.
-      const _magicCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      const _magicCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
       placeNotes(tr, _magicCount, 0.4, level);
     }
     // Thin down to 2-4 hits for modes 0/1/3, which otherwise place on
@@ -3640,7 +3640,7 @@ function randomizeBassTrack(tr, level) {
     if (mode !== 2) {
       const onsets = [];
       for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
-      const keepCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      const keepCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
       if (onsets.length > keepCount) {
         const accented = onsets.filter(s => grid[tr][s] === 2);
         const soft = onsets.filter(s => grid[tr][s] === 1);
@@ -5409,7 +5409,7 @@ function playMagic(freq, durSec, isAccent, time, tr) {
     if (baseIdx === -1) baseIdx = 0;
     const idx2 = (baseIdx + 2) % scale.length;
     const idx3 = (baseIdx + 4) % scale.length;
-    freqs = [scale[baseIdx], scale[idx2], scale[idx3]];
+    freqs = [scale[idx2], scale[idx3]]; // tonic (scale[baseIdx]) dropped — just the two color tones now, no root
   }
   const staggerMs = 0.01;
   freqs.forEach((f, i) => {
@@ -9724,6 +9724,14 @@ function randAll(mode, opts) {
       nonBassShuffle.push(k);
       if (nonBassShuffle.length === wantCount) break;
     }
+    // MAGIC caps the whole pattern's tonal variety — if it's among what
+    // got picked, only one other non-bass tonal track is allowed
+    // alongside it (bass itself is separate and still guaranteed).
+    if (nonBassShuffle.includes('magic')) {
+      const others = nonBassShuffle.filter(k => k !== 'magic');
+      nonBassShuffle.length = 0;
+      nonBassShuffle.push('magic', ...others.slice(0, 1));
+    }
     const tPool = [...(bassChoice ? [bassChoice] : []), ...nonBassShuffle].slice(0, tonalSlotsEff);
 
     const percAvail = percKeys.filter(k => !currentDeck.has(k));
@@ -10161,6 +10169,9 @@ function randAll(mode, opts) {
   const _congaBongoReverbRoll = Math.random() < 0.5;
   const _congaBongoFxRoll = Math.random() < 0.5;
   const _congaBongoKeysSet = new Set(['congHi', 'congLo', 'bongHi', 'bongLo']);
+  // MAGIC turns FX off for the whole pattern, every track, no exceptions —
+  // checked once here rather than per-track below.
+  const _magicPresentThisRand = trackInstruments.some(k => k === 'magic');
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (trackSweep[tr]) continue; // locked
     if (TONAL_KEYS.has(trackInstruments[tr]) || trackInstruments[tr] === 'ride' || _congaBongoKeysSet.has(trackInstruments[tr])) {
@@ -10176,7 +10187,7 @@ function randAll(mode, opts) {
       const isJinx = trackInstruments[tr] === 'jcmgtr';
       const isCongaBongo = _congaBongoKeysSet.has(trackInstruments[tr]);
       const fxBoost = level >= 4 ? 0.845 : (level === 3 ? 0.585 : 0); // +30% over previous 0.65/0.45
-      const fxOn = isCongaBongo ? _congaBongoFxRoll : isJinx ? _jinxComboRoll[tr] : isRide ? Math.random() < 0.5 : isSlay ? Math.random() < 0.08 : isChug ? Math.random() < 0.95 : isClap ? Math.random() < 0.95 : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(1, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG/CLAP almost always on but no longer absolute, so "every track" and "no tracks" both stay reachable; RIDE ~50%; JINX linked to its own reverb roll above; CONGA/BONGO shared 50/50 roll for the whole pair
+      const fxOn = _magicPresentThisRand ? false : isCongaBongo ? _congaBongoFxRoll : isJinx ? _jinxComboRoll[tr] : isRide ? Math.random() < 0.5 : isSlay ? Math.random() < 0.08 : isChug ? Math.random() < 0.95 : isClap ? Math.random() < 0.95 : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(1, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG/CLAP almost always on but no longer absolute, so "every track" and "no tracks" both stay reachable; RIDE ~50%; JINX linked to its own reverb roll above; CONGA/BONGO shared 50/50 roll for the whole pair; MAGIC anywhere in the pattern forces every track off
       const newFxVal = fxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
       trackFx[tr] = newFxVal;
       if (ctx) setFxActive(tr, newFxVal);
@@ -11116,7 +11127,7 @@ function randomizeTrack(tr) {
   }
 
   // MAGIC: same placement shape as CHUG (downbeat/upbeat/random/16th-style
-  // mode selection), but thinned down to only 2-4 actual triggers per
+  // mode selection), but thinned down to only 2-3 actual triggers per
   // measure and connected into legato phrases, rather than CHUG's usual
   // full density. Each trigger plays a 3-note chord (see playMagic).
   if (key === 'magic') {
@@ -11143,7 +11154,7 @@ function randomizeTrack(tr) {
     } else {
       // mode 2 — random placement, note count already constrained to
       // 2-4 so no separate thinning pass is needed for this branch.
-      const _magicCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      const _magicCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
       placeNotes(tr, _magicCount, 0.4, level);
     }
     // Thin down to 2-4 hits for modes 0/1/3, which otherwise place on
@@ -11151,7 +11162,7 @@ function randomizeTrack(tr) {
     if (mode !== 2) {
       const onsets = [];
       for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
-      const keepCount = 2 + Math.floor(Math.random() * 3); // 2-4
+      const keepCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
       if (onsets.length > keepCount) {
         const accented = onsets.filter(s => grid[tr][s] === 2);
         const soft = onsets.filter(s => grid[tr][s] === 1);
