@@ -737,7 +737,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 05:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 06:21</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9724,13 +9724,22 @@ function randAll(mode, opts) {
       nonBassShuffle.push(k);
       if (nonBassShuffle.length === wantCount) break;
     }
-    // MAGIC caps the whole pattern's tonal variety — if it's among what
-    // got picked, only one other non-bass tonal track is allowed
-    // alongside it (bass itself is separate and still guaranteed).
-    if (nonBassShuffle.includes('magic')) {
+    // MAGIC caps the whole pattern's tonal variety to itself plus one
+    // other (bass stays separate, still guaranteed) — checked whether
+    // MAGIC was just picked this pass OR is already sitting on a locked
+    // track from before. A locked MAGIC track doesn't go through the
+    // pool at all, so without this second check it would be invisible
+    // here and this whole constraint would silently do nothing whenever
+    // MAGIC happened to already be locked in.
+    const magicAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && trackInstruments[tr] === 'magic');
+    if (magicAlreadyLocked || nonBassShuffle.includes('magic')) {
+      const lockedOtherTonalCount = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr]) && !bassKeys.has(trackInstruments[tr]) && trackInstruments[tr] !== 'magic').length;
+      const allowedOthers = Math.max(0, 1 - lockedOtherTonalCount);
+      const magicInThisPass = nonBassShuffle.includes('magic');
       const others = nonBassShuffle.filter(k => k !== 'magic');
       nonBassShuffle.length = 0;
-      nonBassShuffle.push('magic', ...others.slice(0, 1));
+      if (magicInThisPass) nonBassShuffle.push('magic');
+      nonBassShuffle.push(...others.slice(0, allowedOthers));
     }
     const tPool = [...(bassChoice ? [bassChoice] : []), ...nonBassShuffle].slice(0, tonalSlotsEff);
 
