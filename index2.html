@@ -737,7 +737,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 21:07</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 21:09</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12338,12 +12338,13 @@ function _fireAmalgamEcho() {
 function _scheduleAmalgamNotes() {
   if (!_amalgamChord) _regenerateAmalgamChord(); // first-ever touch, before any RAND press
   const notes = _amalgamChord;
-  // Normalize against chord size — summing N uncorrelated notes raises
-  // perceived loudness roughly by sqrt(N), not by N itself, so without this
-  // a pattern with 5-6 tonal tracks echoes noticeably louder overall than
-  // one with only 1-2. This keeps the total level roughly consistent
-  // regardless of how many tracks happen to be tonal in a given pattern.
-  const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
+  // Normalize against chord size, linearly — each note contributes two
+  // summed layers inside _playPhantomNote (a sustained body plus a
+  // transient blip), so a straight sqrt(N) assumption undercounted how
+  // much multiple simultaneous tonal tracks actually sum to and let it
+  // clip. This keeps the total level safely consistent regardless of how
+  // many tracks happen to be tonal in a given pattern.
+  const chordNormFactor = notes.length > 0 ? 1 / notes.length : 1;
   const step32Ms = stepDuration() * 500; // tempo-relative 32nd-note length (half a 16th note)
   const totalSlots = 16; // 2 quarter notes = 16 thirty-second-note slots
   const decayRatio = 0.55; // each repeat quieter than the last — loosened slightly so more stay audible
@@ -12375,7 +12376,11 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   _regenerateAmalgamChord(); // capture the pattern's tonal content as it is right now
   let notes = _amalgamChord;
   if (!notes || notes.length === 0) notes = [{ tr, key: 'amlgm', freq: 220 }]; // no tonal tracks anywhere — fall back to a plain root note so the step is never silent
-  const chordNormFactor = notes.length > 0 ? 1 / Math.sqrt(notes.length) : 1;
+  // Linear normalization, not sqrt — each note contributes two summed
+  // layers inside _playPhantomNote (a sustained body plus a transient
+  // blip), so sqrt(N) undercounted how much multiple simultaneous tonal
+  // tracks actually sum to and let this clip.
+  const chordNormFactor = notes.length > 0 ? 1 / notes.length : 1;
   const vol = 0.0561 * chordNormFactor * (isAccent ? 1.3 : 1); // -19dB total now (was -14dB, -5dB more) — fills in quieter bits, shouldn't be heard over everything
   const droneAtten = (trackInstruments[tr] === 'drone') ? 0.1996 : 1; // -14dB total now (was -10dB, +4dB more), DRONE only — TEXTURE unaffected
   _amalgamVolOverride = trackPump[tr] ? vol * droneAtten * 0.5623 : vol * droneAtten; // -5dB when BLAST is on this track
