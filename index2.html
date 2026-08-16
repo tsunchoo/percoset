@@ -737,7 +737,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 20:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 21:07</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1193,21 +1193,21 @@ const INSTRUMENTS = {
   jcmgtr: { name: 'JINX',         soft: null, accent: null, group: 'tonal' },
   clar:   { name: 'JENNY',       soft: null, accent: null, group: 'tonal' },
   boog:   { name: 'DREAM PIANO',  soft: null, accent: null, group: 'tonal' },
+  rhodes2:{ name: 'DX PIANO',    soft: null, accent: null, group: 'tonal' },
+  bashp:  { name: 'MARIO PIANO',  soft: null, accent: null, group: 'tonal' },
+  spiano: { name: 'SCHOOL PIANO', soft: null, accent: null, group: 'tonal' },
   magic:  { name: 'MAGIC',        soft: null, accent: null, group: 'tonal' },
   sparkle:{ name: 'DENIECE',     soft: null, accent: null, group: 'tonal' },
   rhodes: { name: 'SPACE KOTO',       soft: null, accent: null, group: 'tonal' },
-  rhodes2:{ name: 'DX PIANO',    soft: null, accent: null, group: 'tonal' },
   denial: { name: 'ARBY',        soft: null, accent: null, group: 'tonal' },
   stab:   { name: 'RYTM GTR',     soft: null, accent: null, group: 'tonal' },
   chug:   { name: 'CHUG',        soft: null, accent: null, group: 'tonal' },
-  bashp:  { name: 'MARIO PIANO',  soft: null, accent: null, group: 'tonal' },
   sstring:{ name: 'CYBER PAD',   soft: null, accent: null, group: 'tonal' },
   sleg:   { name: 'SOLAR PAD',   soft: null, accent: null, group: 'tonal' },
   fflute: { name: 'SLAY', soft: null, accent: null, group: 'tonal' },
   blunt:  { name: 'HASSELL',      soft: null, accent: null, group: 'tonal' },
   sprkls: { name: 'SPARKLES',    soft: null, accent: null, group: 'tonal' },
   sflute: { name: 'XYLOPHONE',   soft: null, accent: null, group: 'tonal' },
-  spiano: { name: 'SCHOOL PIANO', soft: null, accent: null, group: 'tonal' },
   damask: { name: 'DAMASK',      soft: null, accent: null, group: 'tonal' },
   yamask: { name: 'YAMASK',      soft: null, accent: null, group: 'tonal' },
   dulc:   { name: 'BOOBOO',      soft: null, accent: null, group: 'tonal' },
@@ -2058,7 +2058,7 @@ function setFxActive(tr, fxVal) {
   const now = ctx.currentTime;
   // Basses keep the fully-wet routing exactly as it was before the 80/20
   // blend was introduced; every other instrument uses the new 20% wet mix.
-  const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sstring', 'sleg', 'fflute', 'blunt', 'opening'].includes(trackInstruments[tr]);
+  const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge', 'sstring', 'sleg', 'fflute', 'blunt', 'opening'].includes(trackInstruments[tr]);
   const wetAmt = isBass ? 1 : 0.2;
   const dryAmt = isBass ? 0 : 0.8;
   dryGain.gain.cancelScheduledValues(now); dryGain.gain.setValueAtTime(on ? dryAmt : 1, now);
@@ -3001,7 +3001,7 @@ function fireStepAudio(step, t) {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined, 0.7499); }
+        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined, 0.6683); }
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -7042,7 +7042,7 @@ function openSoundPicker(tr) {
   soundPickerTrack = tr;
   document.getElementById('soundPickerTitle').textContent = `TRK ${tr+1} — SOUND`;
   const list = document.getElementById('soundPickerList'); list.innerHTML = '';
-  const _isBass = k => ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(k);
+  const _isBass = k => ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge'].includes(k);
   const _isPad = k => ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone'].includes(k);
   // Same category order as before (KIT, PERC, LEAD, PAD, BASS), just no
   // section headers/sub-grids — one flat grid to fit on one page.
@@ -7114,7 +7114,7 @@ function setTrackNameColor(tr, key) {
   btn.classList.remove('inst-kit','inst-perc','inst-tonal','inst-bass','inst-pad','names-uniform');
   const g = INSTRUMENTS[key]?.group || 'perc';
   const _laneColors = {'kit':'#0b5394','perc':'#85A838','tonal':'#fd475d'};
-  const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass'].includes(key);
+  const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge'].includes(key);
   const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone', 'magic'].includes(key);
   let laneColor = _laneColors[g] || 'var(--text)';
   if (isBass) laneColor = '#8d3ba8';
@@ -10402,12 +10402,16 @@ function randAll(mode, opts) {
   _regenerateAmalgamChord();
   if (ctx) _fireAmalgamEcho();
   // RAND OFFSET (dev menu) — once everything else about the pattern is
-  // decided, nudge the beat offset by a random 16th-note amount. Purely
-  // an extra layer of variation on top of what's already been chosen,
-  // independent of the actual notes/instruments themselves.
+  // decided, push every track's notes along by the same random 1-16
+  // amount, using the same per-track offset every track already has.
+  // The beat engine and its "1" marker both stay exactly where they are —
+  // only the notes move, relative to that fixed downbeat.
   if (window._devRandOffsetEnabled) {
-    _beatOffset = Math.floor(Math.random() * NUM_STEPS);
-    _updateBeatOneIndicator();
+    const randomShift = (1 + Math.floor(Math.random() * NUM_STEPS)) % NUM_STEPS;
+    for (let tr = 0; tr < NUM_TRACKS; tr++) {
+      trackOffset[tr] = randomShift;
+      redrawTrackCells(tr);
+    }
   }
   markModified();
   // The per-track randomize calls above are staggered via setTimeout (30ms
@@ -12391,13 +12395,26 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   wrap.style.touchAction = 'none';
   wrap.id = wrap.id || 'rightReelWrap';
   let _spoolEngaged = false;
+  let _lastSpoolTapTime = 0;
   const onEngage = () => {
     if (_spoolEngaged) return; // already engaged via another path (direct press, generic drag system, or the dedicated touchmove check below) — never double-fire
     _spoolEngaged = true;
-    // Shifts the whole BEAT pattern by one step, same idea as the < button
-    // in the BEAT menu — a momentary, one-time trigger. The amalgam swell
-    // sound used to also fire here but has been removed entirely.
-    beatCtrlShift();
+    const now = Date.now();
+    if (now - _lastSpoolTapTime < 350) {
+      // Double-click/double-tap — resets the offset back to the 1 instead
+      // of shifting it further along.
+      _beatOffset = 0;
+      _updateBeatOneIndicator();
+      flashBtnOrange('beatCtrlShift');
+      markModified();
+    } else {
+      // Shifts the whole BEAT pattern by one step, same idea as the <
+      // button in the BEAT menu — a momentary, one-time trigger. The
+      // amalgam swell sound used to also fire here but has been removed
+      // entirely.
+      beatCtrlShift();
+    }
+    _lastSpoolTapTime = now;
   };
   const onRelease = () => { _spoolEngaged = false; };
   wrap.addEventListener('pointerdown', e => {
