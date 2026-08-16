@@ -534,7 +534,11 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 
 @keyframes name-text-pulse { from { color: var(--highlight3-color, #adff00); } to { color: var(--neutral-track-text, #fff); } }
 .track-name-btn.has-notes { animation: none; }
-body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-pulse 0.6s infinite alternate; }
+/* One-shot flash, triggered per actual note hit on that track (see
+   _flashTrackNameOnNote) rather than a continuous, generically-timed
+   loop — so the text now visibly follows that track's own rhythm
+   instead of a fixed, unrelated pulse rate. */
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.note-flash { animation: name-text-pulse 0.15s ease-out; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -595,7 +599,7 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes { animation: name-text-
    stuck underneath the empty-note dot and invisible most of the time.
    z-index here puts it above both pseudo-elements reliably. */
 .beat-one-marker {
-  position: absolute; left: 0; top: 25%; bottom: 25%;
+  position: absolute; left: 0; top: 0; bottom: 0;
   width: var(--dev-marker-thickness, 3px);
   background: var(--dev-marker-color, #000);
   pointer-events: none;
@@ -733,7 +737,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">15Aug26 22:25</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 04:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -772,7 +776,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
-    <span id="topTempoFreetimeLabel" style="display:block;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:#111;white-space:nowrap;">FREETIME</span>
+    <span id="topTempoFreetimeLabel" style="display:block;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:#111;white-space:nowrap;">FREE</span>
   </div>
 </header>
 
@@ -869,7 +873,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
       </div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
+      <input type="checkbox" id="devNotesGrayscale" checked onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
     <button onclick="hideDevMenu()" class="rec-mode-btn">CLOSE</button>
   </div>
@@ -1032,10 +1036,10 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" checked onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
           </label>
         </div>
       </div>
@@ -2697,6 +2701,7 @@ function fireStepAudio(step, t) {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
+        _flashTrackNameOnNote(tr, t); // text pulse follows this track's own actual note hits now, not a generic timed animation
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
         if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'magic' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
@@ -6906,6 +6911,18 @@ function commitBeatMenuSelection(item) {
 // preventDefault() on touchstart, which suppresses the native 'click' a
 // generic delegated listener would need — so this is called explicitly from
 // each button's actual press handler instead of relying on click bubbling.
+// Flashes a track name's text exactly when a note actually fires on that
+// track — t is a future audioContext time, converted to a real-world
+// delay so the visual lands in sync with the audio, not immediately.
+function _flashTrackNameOnNote(tr, t) {
+  if (!ctx) return;
+  const delay = Math.max(0, (t - ctx.currentTime) * 1000);
+  setTimeout(() => {
+    const btn = document.getElementById(`tbtn-${tr}`);
+    if (!btn) return;
+    btn.classList.remove('note-flash'); void btn.offsetWidth; btn.classList.add('note-flash');
+  }, delay);
+}
 function _pressPulse(id) {
   const b = document.getElementById(id);
   if (!b) return;
@@ -9597,7 +9614,7 @@ function randAll(mode, opts) {
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
   const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
-  const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k));
+  const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k) && k !== 'jcmgtr'); // JINX no longer eligible for RAND — still fully selectable manually from the sound picker
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
     : percKeysAll;
@@ -11505,7 +11522,8 @@ function wireRandomizeButton(btn, tr) {
   btn.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
 }
 
-window._trackNamesUniform = true; // DEFAULT is the new pre-selected radio — track names start out TOP-ROW colored, not color-coded by instrument group
+window._trackNamesUniform = false; // COLOR-CODED is now the pre-selected radio at startup — track names start out colored by instrument group, not TOP-ROW uniform
+document.body.classList.add('notes-grayscale'); // grayscale note markers is now the default at startup, matching the DEV menu checkbox's own default checked state
 buildUI();
 _updateBeatOneIndicator(); // needs the grid cells buildUI() just created to exist first
 updateMasterVolCells();
@@ -12250,55 +12268,9 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   });
   _amalgamVolOverride = null; // reset AFTER the notes read it — it was being cleared too early before, so every note fell back to the flat default instead of the computed volume
 }
-// Right tape spool (reel2) — brought back as the trigger for a slow
-// "swelling" version of the amalgam/texture chord: holding it eases the
-// current chord in via plain sine tones (not the short one-shot echo
-// buffer, which has its own decay shape baked in and isn't loop-safe) at
-// a low, sustained level, and releasing eases it back out. Never proxies
-// onto SWEEP's own press/release the way it briefly used to (see the
-// removed wiring this replaced) — this is its own, independent sound.
-let _amalgamSwellOscs = null, _amalgamSwellGain = null;
-function _startAmalgamSwell() {
-  if (!ctx || _amalgamSwellOscs) return; // already swelling
-  if (!_amalgamChord) _regenerateAmalgamChord();
-  const notes = _amalgamChord;
-  if (!notes || notes.length === 0) return;
-  const t = ctx.currentTime;
-  const swellGain = ctx.createGain();
-  const target = 0.14;
-  const fastRiseDur = stepDuration() * 4; // one quarter note — audible quickly, matching the release's own pace
-  const fastRiseLevel = target * 0.45; // doesn't need to hit full volume this fast, just needs to be clearly coming in
-  swellGain.gain.setValueAtTime(0, t);
-  swellGain.gain.linearRampToValueAtTime(fastRiseLevel, t + fastRiseDur);
-  swellGain.gain.linearRampToValueAtTime(target, t + 2.2); // keeps swelling the rest of the way at the original, slower pace
-  swellGain.connect(masterGain);
-  const oscs = notes.map(n => {
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = n.freq;
-    const oscGain = ctx.createGain();
-    oscGain.gain.value = 1 / notes.length; // even blend regardless of how many notes are in the chord
-    osc.connect(oscGain);
-    oscGain.connect(swellGain);
-    osc.start(t);
-    return osc;
-  });
-  _amalgamSwellOscs = oscs;
-  _amalgamSwellGain = swellGain;
-}
-function _stopAmalgamSwell() {
-  if (!ctx || !_amalgamSwellGain) return;
-  const t = ctx.currentTime;
-  const g = _amalgamSwellGain, oscs = _amalgamSwellOscs;
-  const releaseDur = stepDuration() * 4; // one quarter note at current tempo
-  g.gain.cancelScheduledValues(t);
-  g.gain.setValueAtTime(g.gain.value, t);
-  g.gain.linearRampToValueAtTime(0, t + releaseDur);
-  oscs.forEach(osc => { try { osc.stop(t + releaseDur + 0.1); } catch (e) {} });
-  setTimeout(() => { try { g.disconnect(); } catch (e) {} }, (releaseDur + 0.3) * 1000);
-  _amalgamSwellOscs = null;
-  _amalgamSwellGain = null;
-}
+// Right tape spool (reel2) — shifts the whole BEAT pattern (same as the
+// < button in the BEAT menu). The amalgam swell sound that used to also
+// play here has been removed entirely.
 (function() {
   const spool = document.getElementById('reel2');
   if (!spool) return;
@@ -12309,14 +12281,12 @@ function _stopAmalgamSwell() {
   const onEngage = () => {
     if (_spoolEngaged) return; // already engaged via another path (direct press, generic drag system, or the dedicated touchmove check below) — never double-fire
     _spoolEngaged = true;
-    _startAmalgamSwell();
-    // Same shift-the-whole-BEAT-pattern-by-one-step action as the < button
-    // in the BEAT menu — a momentary, one-time trigger, so it coexists
-    // fine alongside the swell (which is purely about the sound, not the
-    // pattern) without needing to distinguish tap from hold.
+    // Shifts the whole BEAT pattern by one step, same idea as the < button
+    // in the BEAT menu — a momentary, one-time trigger. The amalgam swell
+    // sound used to also fire here but has been removed entirely.
     beatCtrlShift();
   };
-  const onRelease = () => { _spoolEngaged = false; _stopAmalgamSwell(); };
+  const onRelease = () => { _spoolEngaged = false; };
   wrap.addEventListener('pointerdown', e => {
     e.preventDefault();
     try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
@@ -12660,7 +12630,8 @@ function fullReset() {
   document.body.style.removeProperty('--reel-filter');
   const pulseCb = document.getElementById('bgPulseEnable'); if (pulseCb) pulseCb.checked = false;
   const staticCb = document.getElementById('bgStaticEnable'); if (staticCb) staticCb.checked = false;
-  const grayCb = document.getElementById('notesGrayscaleEnable'); if (grayCb) grayCb.checked = false;
+  const grayCb = document.getElementById('devNotesGrayscale'); if (grayCb) grayCb.checked = true;
+  document.body.classList.add('notes-grayscale'); // grayscale is the default — a full reset should return to it, not clear it
   window._wildColorsEnabled = true;
   window._wildColorsSkipNext = true; // same as a fresh page load — colors stay default until the first + press or auto-rand after this
   const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = true;
@@ -13181,7 +13152,6 @@ async function hardResetAudioEngine() {
     _amalgamBaseBuffer = null;
     _droneAirNoiseBuffer = null;
     _amalgamTriggerTimes = [];
-    _amalgamSwellOscs = null; _amalgamSwellGain = null; // hard reset drops the audio context entirely — any swell in progress is already gone with it
     window._uiSoundBufs = {};
 
     if (ctx) { try { await ctx.close(); } catch(e) {} }
