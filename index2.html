@@ -737,7 +737,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 06:21</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 20:57</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -776,7 +776,6 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
-    <span id="topTempoFreetimeLabel" style="display:block;position:absolute;top:100%;right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:#111;white-space:nowrap;">FREE</span>
   </div>
 </header>
 
@@ -874,6 +873,9 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" checked onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
     </label>
     <button onclick="hideDevMenu()" class="rec-mode-btn">CLOSE</button>
   </div>
@@ -1214,6 +1216,7 @@ const INSTRUMENTS = {
   amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'perc' },
   drone:  { name: 'STRINGS',     soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
+  sludge: { name: 'SLUDGE BASS', soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
   sbass4: { name: 'PUNK BASS',   soft: null, accent: null, group: 'tonal' },
   dbass:  { name: 'DOUBLE BASS', soft: null, accent: null, group: 'tonal' },
@@ -2268,6 +2271,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
     return;
   }
   if (key === 'sbass')   { return; } // handled in scheduler with legato duration
+  if (key === 'sludge')  { return; } // handled in scheduler with legato duration
   if (key === 'ngate')   { return; } // handled in scheduler
   if (key === 'sbass3')  { return; }
   if (key === 'sbass4')  { return; }
@@ -2704,7 +2708,7 @@ function fireStepAudio(step, t) {
         _flashTrackNameOnNote(tr, t); // text pulse follows this track's own actual note hits now, not a generic timed animation
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
-        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'magic' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
+        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'sludge' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'magic' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
           const scale = trackBassScale[tr] || [110];
           const noteIdx = gs % scale.length;
           const freq = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale[noteIdx];
@@ -2732,9 +2736,10 @@ function fireStepAudio(step, t) {
             dur = Math.max(0.01, dur * (1 - trackFx[tr].x) + 0.01 * trackFx[tr].x);
           }
           if (sfxOn) triggerFxEnvelope(tr, t);
-          if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass') duckSidechainTracks(t);
+          if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'sludge') duckSidechainTracks(t);
           if (_renderThisTrack) {
           if (key === 'sbass')   playSynthBass(freq, dur, val === 2, t, tr);
+          if (key === 'sludge')  playSludgeBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass3')  playMotownBass(freq, dur, val === 2, t, tr);
           if (key === 'sbass4')  playPlunkBass(freq, dur, val === 2, t, tr);
           if (key === 'dbass')   playDoubleBass(freq, dur, val === 2, t, tr);
@@ -2824,8 +2829,9 @@ function fireStepAudio(step, t) {
             const freq2 = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale2[noteIdx2];
             const dur2 = stepDuration() * 0.5;
             if (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0)) triggerFxEnvelope(tr, t2);
-            if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass') duckSidechainTracks(t2);
+            if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'sludge') duckSidechainTracks(t2);
             if (key === 'sbass')   playSynthBass(freq2, dur2, false, t2, tr);
+            if (key === 'sludge')  playSludgeBass(freq2, dur2, false, t2, tr);
             if (key === 'sbass3')  playMotownBass(freq2, dur2, false, t2, tr);
             if (key === 'sbass4')  playPlunkBass(freq2, dur2, false, t2, tr);
             if (key === 'dbass')   playDoubleBass(freq2, dur2, false, t2, tr);
@@ -3322,6 +3328,71 @@ function playSynthBass(freq, durSec, isAccent, time, tr) {
   sub.onended = () => { try { subG.disconnect(); } catch(e) {} };
 }
 
+// ── Sludge Bass: dark, distorted, with a fast internal amplitude pump
+// simulating a hard sidechain "grumble" baked into the voice itself
+// (separate from the global ducking system) ──
+function playSludgeBass(freq, durSec, isAccent, time, tr) {
+  if (!ctx || !freq || freq < 10) return;
+  const vel = isAccent ? 1.3438 : 0.9487;
+  const startFreq = _bassGlideState[tr] || freq;
+  _bassGlideState[tr] = freq;
+  let dest = (tr !== undefined && trackFxNodes[tr])
+    ? (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0) ? trackFxNodes[tr].fxSend : trackFxNodes[tr].dryGain)
+    : (trackGainNodes[tr] || masterGain);
+  if (ctx && _duckEligible(tr)) dest = getSidechainDuckGain(tr, dest);
+
+  const saw = ctx.createOscillator(); saw.type = 'sawtooth';
+  const saw2 = ctx.createOscillator(); saw2.type = 'sawtooth'; saw2.detune.value = 17; // slightly out of tune second layer — the "messy" part
+  const sub = ctx.createOscillator(); sub.type = 'sine';
+  const sawG = ctx.createGain(); sawG.gain.value = 0.22;
+  const saw2G = ctx.createGain(); saw2G.gain.value = 0.18;
+  const subG = ctx.createGain(); subG.gain.value = 0.4;
+
+  const slideTime = Math.min(durSec * 0.3, 0.12);
+  [saw, saw2].forEach(o => {
+    o.frequency.setValueAtTime(Math.max(startFreq, 1), time);
+    o.frequency.exponentialRampToValueAtTime(Math.max(freq, 1), time + slideTime);
+  });
+  sub.frequency.setValueAtTime(Math.max(startFreq * 0.5, 1), time);
+  sub.frequency.exponentialRampToValueAtTime(Math.max(freq * 0.5, 1), time + slideTime);
+
+  // Dark — much lower cutoff than the regular bass, muddier
+  const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 1.5;
+  filt.frequency.setValueAtTime(Math.max(startFreq * 1.7, 20), time);
+  filt.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.7, 20), time + slideTime);
+
+  // Messy — waveshaper grit on the saw layers only, sub stays clean
+  const shaper = ctx.createWaveShaper();
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) { const x = (i / 255) * 2 - 1; curve[i] = Math.tanh(x * 3.2); }
+  shaper.curve = curve;
+
+  // Grumble — fast LFO pumping the voice's own gain, standing in for a
+  // hard, fast sidechain duck without needing a full envelope-follower.
+  const grumbleLfo = ctx.createOscillator(); grumbleLfo.type = 'sine'; grumbleLfo.frequency.value = 11;
+  const grumbleDepth = ctx.createGain(); grumbleDepth.gain.value = 0.35;
+  const pumpGain = ctx.createGain(); pumpGain.gain.value = 1;
+  grumbleLfo.connect(grumbleDepth); grumbleDepth.connect(pumpGain.gain);
+  grumbleLfo.start(time); grumbleLfo.stop(time + durSec + 0.05);
+
+  const ampEnv = ctx.createGain();
+  ampEnv.gain.setValueAtTime(0, time);
+  ampEnv.gain.linearRampToValueAtTime(vel, time + 0.01);
+  ampEnv.gain.setValueAtTime(vel, time + durSec * 0.8);
+  ampEnv.gain.linearRampToValueAtTime(0.001, time + durSec);
+
+  saw.connect(sawG); sawG.connect(shaper);
+  saw2.connect(saw2G); saw2G.connect(shaper);
+  shaper.connect(filt);
+  sub.connect(subG); subG.connect(filt);
+  filt.connect(pumpGain); pumpGain.connect(ampEnv); ampEnv.connect(dest);
+  saw.start(time); saw.stop(time + durSec + 0.05);
+  saw2.start(time); saw2.stop(time + durSec + 0.05);
+  sub.start(time); sub.stop(time + durSec + 0.05);
+  saw.onended = () => { try { sawG.disconnect(); saw2G.disconnect(); shaper.disconnect(); filt.disconnect(); pumpGain.disconnect(); ampEnv.disconnect(); grumbleDepth.disconnect(); } catch(e) {} };
+  sub.onended = () => { try { subG.disconnect(); } catch(e) {} };
+}
+
 // Pentatonic minor intervals (semitones from root): 0,3,5,7,10
 const SCALES = {
   'penta-min': [0,3,5,7,10],
@@ -3371,7 +3442,7 @@ const trackLockedRoot = {}; // tr -> root frequency, captured the moment L locks
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
-const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone','magic']);
+const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone','magic']);
 
 function buildScaleFromRoot(root, scaleOverride) {
   const scaleArr = scaleOverride || PENTA_MINOR;
@@ -3402,7 +3473,7 @@ function getRangeRoots(key) {
 // the scale on every 8th note. Standalone helper so it's easy to call from
 // both randomizeBassTrack() and anywhere else that might want it later.
 const ARPEGGIO_KEYS = new Set(['rhodes2', 'rhodes', 'sflute', 'spiano']); // DX PIANO, SPACE KOTO, XYLOPHONE, SCHOOL PIANO (DREAM PIANO removed)
-const BASS_ARPEGGIO_KEYS = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']); // rarer — 1 in 8, not 1 in 4
+const BASS_ARPEGGIO_KEYS = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']); // rarer — 1 in 8, not 1 in 4
 function _writeArpeggioPattern(tr, scale) {
   // Below 100bpm there's room for it to breathe, so sometimes go 16th notes
   // instead of 8ths — never at faster tempos, where it'd turn to mush.
@@ -3476,7 +3547,7 @@ function randomizeBassTrack(tr, level) {
   // spread apart so they never end up sitting in the same octave — this
   // applies whenever there are multiple of them, whether or not a bass is
   // also present in the pattern.
-  const _bassKeysNow = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+  const _bassKeysNow = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
   // Mid-tier tonal instruments — the supportive/harmonic-filler ones, not
   // the flashy solo leads (JINX/JENNY/DREAM PIANO/SPACE KOTO/DX PIANO) and
   // not bass. These get grouped for octave-separation purposes explicitly,
@@ -3711,7 +3782,7 @@ function randomizeBassTrack(tr, level) {
   // BASSES: bias toward legato phrases — some notes sustain 2-3 steps
   // (occasionally the full 4-step cap), giving a more played-in, connected
   // feel instead of every note being a short staccato hit.
-  if ((key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass') && trackBassScale[tr]) {
+  if ((key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'sludge') && trackBassScale[tr]) {
     if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] > 0 && Math.random() < 0.45) {
@@ -4232,7 +4303,7 @@ function playMotownBass(freq, durSec, isAccent, time, tr) {
   const sub  = ctx.createOscillator(); sub.type  = 'sine';   sub.frequency.value  = f * 0.5;
 
   const _blastAtten = trackPump[tr] ? 0.7943 : 1; // -2dB when BLAST is on this track — had no BLAST-specific attenuation at all before, same idea as PUNK BASS's own fix
-  const mix = ctx.createGain(); mix.gain.value = vel * 0.55 * _blastAtten; // scaled by vel
+  const mix = ctx.createGain(); mix.gain.value = 0.55 * _blastAtten; // vel lives only in ampEnv below — it used to also get applied here, compounding to roughly vel^2 and clipping at the output on accented hits
 
   // Tight lowpass — closed, punchy, no bloom
   const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 0.8;
@@ -4240,13 +4311,16 @@ function playMotownBass(freq, durSec, isAccent, time, tr) {
   filt.frequency.exponentialRampToValueAtTime(f * 1.1, time + 0.03);
 
   // Sharp attack, fast decay to dry sustain, hold through the note's real
-  // length, then a short tail — not a decrescendo across the whole duration
+  // length, then a short tail — not a decrescendo across the whole duration.
+  // Attack eased from 4ms to 8ms — a small "microfade" that's still fast
+  // and punchy but softens the transient enough to stop it clipping on its
+  // own, same idea DOUBLE BASS already uses at 12ms.
   const ampEnv = ctx.createGain();
   const decay = Math.min(durSec * 0.55, 0.18); // quick attack settle
   const tail = 0.12; // short tail after the hold
   const sustainEnd = Math.max(durSec, decay + 0.05);
   ampEnv.gain.setValueAtTime(0, time);
-  ampEnv.gain.linearRampToValueAtTime(vel, time + 0.004);
+  ampEnv.gain.linearRampToValueAtTime(vel, time + 0.008);
   ampEnv.gain.exponentialRampToValueAtTime(vel * 0.35, time + decay);
   ampEnv.gain.setValueAtTime(vel * 0.35, time + sustainEnd); // hold at body level through the note's actual assigned length
   ampEnv.gain.exponentialRampToValueAtTime(0.001, time + sustainEnd + tail);
@@ -4635,15 +4709,25 @@ function playDenialism(freq, durSec, isAccent, time, tr) {
   // harmonics the waveshaper generates, the main thing that actually reads
   // as "warmer" rather than just "quieter."
   const warmthLP = ctx.createBiquadFilter(); warmthLP.type = 'lowpass'; warmthLP.frequency.value = 3800; warmthLP.Q.value = 0.6;
+  // Bit-crush stage — quantizes the signal into discrete steps for a
+  // crunchier, more digitally-broken edge on top of the existing soft
+  // clip. oversample is deliberately 'none' here — oversampling would
+  // smooth away the aliasing artifacts that actually give bit-crushing
+  // its character.
+  const crushSteps = 12;
+  const crush = ctx.createWaveShaper();
+  const crushCurve = new Float32Array(1024);
+  for (let i = 0; i < 1024; i++) { const x = (i * 2) / 1024 - 1; crushCurve[i] = Math.round(x * crushSteps) / crushSteps; }
+  crush.curve = crushCurve; crush.oversample = 'none';
   const outGain = ctx.createGain(); outGain.gain.value = 0.0398 * 1.3335; // -28dB total, then +2.5dB (was -26dB before that) — output level only, doesn't touch the distortion drive
 
   osc1.connect(env); osc2.connect(env);
-  env.connect(ws); ws.connect(warmthLP); warmthLP.connect(outGain); outGain.connect(dest);
+  env.connect(ws); ws.connect(warmthLP); warmthLP.connect(crush); crush.connect(outGain); outGain.connect(dest);
 
   const stopAt = time + decayTime + tailTime + 0.1;
   osc1.start(time); osc1.stop(stopAt);
   osc2.start(time); osc2.stop(stopAt);
-  osc1.onended = () => { try { env.disconnect(); ws.disconnect(); warmthLP.disconnect(); outGain.disconnect(); } catch(e) {} };
+  osc1.onended = () => { try { env.disconnect(); ws.disconnect(); warmthLP.disconnect(); crush.disconnect(); outGain.disconnect(); } catch(e) {} };
 }
 
 // ── Stab: short sharp synth chord stab, fast tail ──
@@ -6235,7 +6319,7 @@ const LEAD_INSTRUMENT_KEYS = new Set(['jcmgtr', 'clar', 'boog', 'sparkle', 'rhod
 // -1dB trim applied right at its own output, before any FX/delay/pump
 // processing. Recalculated fresh on every note (not baked in once) so it
 // never goes stale if a track's instrument gets swapped.
-const _BASS_KEYS_FOR_TRIM = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+const _BASS_KEYS_FOR_TRIM = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
 const _sourceTrimGains = {};
 function getSourceTrimGain(tr, dest) {
   if (!_sourceTrimGains[tr]) {
@@ -7400,6 +7484,7 @@ function previewNote(tr, isAccent) {
     const dur = 0.25;
     if (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0)) triggerFxEnvelope(tr, t);
     if (key === 'sbass')   playSynthBass(freq, dur, isAccent, t, tr);
+    if (key === 'sludge')  playSludgeBass(freq, dur, isAccent, t, tr);
     else if (key === 'sbass3')  playMotownBass(freq, dur, isAccent, t, tr);
     else if (key === 'sbass4')  playPlunkBass(freq, dur, isAccent, t, tr);
     else if (key === 'dbass')   playDoubleBass(freq, dur, isAccent, t, tr);
@@ -9599,7 +9684,7 @@ function randAll(mode, opts) {
   PENTA_MINOR = SCALES[currentScaleName];
   const allRoots = [...BASS_ROOTS, ...MELODY_ROOTS];
   globalScaleRoot = allRoots[Math.floor(Math.random() * allRoots.length)];
-  const bassKeys = new Set(['sbass','sbass3','sbass4','dbass','pbass']);
+  const bassKeys = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge']);
   const soloPercKeys = new Set(['tamb','shak','ngate','clap','guiro']); // max one of these
   const soloLeadKeys = new Set(['fflute', 'damask', 'yamask']); // max one of these
   const soloUniqueKeys = new Set(['jcmgtr','clar','boog']); // max one of these — JCX GUITAR / JENNY / BOOG
@@ -9783,7 +9868,7 @@ function randAll(mode, opts) {
           fillerIdx++;
         }
       }
-      const bassKeysLocal = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+      const bassKeysLocal = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
       for (const member of family) {
         if (!pool.includes(member)) {
           let replaceIdx = -1;
@@ -9807,7 +9892,7 @@ function randAll(mode, opts) {
   const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'snare2';
   const _jazzTrackKeys = ['ride', _jazzCompingKey];
   if (_beatType === 'jazz') {
-    const bassKeysLocal2 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+    const bassKeysLocal2 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
     // A locked (L) track already holding one of these is skipped by the
     // assignment loop further down (locked tracks never get touched by
     // it), but the pool itself doesn't know that — without this check, the
@@ -9831,7 +9916,7 @@ function randAll(mode, opts) {
   // there, so there's always one to carry the fixed accented-upbeat
   // pattern (written below, alongside JAZZ's ride/comping override).
   if (_beatType === 'disco' && !pool.includes('shihat')) {
-    const bassKeysLocal3 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass']);
+    const bassKeysLocal3 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
     let replaceIdx = -1;
     for (let i = pool.length - 1; i >= 0; i--) {
       if (!bassKeysLocal3.has(pool[i]) && pool[i] !== 'skick' && pool[i] !== 'shihat') { replaceIdx = i; break; }
@@ -9842,7 +9927,7 @@ function randAll(mode, opts) {
 
   // Sort pool into fixed visual order: top=hihat, perc, tonal, bass, kick=bottom
   const kickKeys = new Set(['skick']);
-  const bassKeys2 = new Set(['sbass','sbass3','sbass4','dbass','pbass']);
+  const bassKeys2 = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge']);
   const hihatKeys = new Set(['shihat']);
   const tonalNonBassKeys = new Set([...TONAL_KEYS].filter(k => !bassKeys2.has(k)));
 
@@ -10194,9 +10279,10 @@ function randAll(mode, opts) {
       const isChug = trackInstruments[tr] === 'chug';
       const isRide = trackInstruments[tr] === 'ride';
       const isJinx = trackInstruments[tr] === 'jcmgtr';
+      const isSludge = trackInstruments[tr] === 'sludge';
       const isCongaBongo = _congaBongoKeysSet.has(trackInstruments[tr]);
       const fxBoost = level >= 4 ? 0.845 : (level === 3 ? 0.585 : 0); // +30% over previous 0.65/0.45
-      const fxOn = _magicPresentThisRand ? false : isCongaBongo ? _congaBongoFxRoll : isJinx ? _jinxComboRoll[tr] : isRide ? Math.random() < 0.5 : isSlay ? Math.random() < 0.08 : isChug ? Math.random() < 0.95 : isClap ? Math.random() < 0.95 : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(1, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG/CLAP almost always on but no longer absolute, so "every track" and "no tracks" both stay reachable; RIDE ~50%; JINX linked to its own reverb roll above; CONGA/BONGO shared 50/50 roll for the whole pair; MAGIC anywhere in the pattern forces every track off
+      const fxOn = _magicPresentThisRand ? false : isCongaBongo ? _congaBongoFxRoll : isJinx ? _jinxComboRoll[tr] : isSludge ? Math.random() < 0.5 : isRide ? Math.random() < 0.5 : isSlay ? Math.random() < 0.08 : isChug ? Math.random() < 0.95 : isClap ? Math.random() < 0.95 : isDamask ? Math.random() < 0.75 : isOpening ? Math.random() < 0.1 : isHopkins ? Math.random() < 0.5 : isRytmGtr ? Math.random() < 0.4 : Math.random() < Math.min(1, ((isBass ? 0.805 : 0.4025) + fxBoost) * autoBoost * 1.25); // base +15%, then +25% more; DAMASK often gets FX — a plaintive lead wants the reverb-ish send; OPENING rarely does; CHUG/CLAP almost always on but no longer absolute, so "every track" and "no tracks" both stay reachable; RIDE ~50%; SLUDGE BASS fixed 50% (from there BLAST's own existing chance can escalate it further); JINX linked to its own reverb roll above; CONGA/BONGO shared 50/50 roll for the whole pair; MAGIC anywhere in the pattern forces every track off
       const newFxVal = fxOn ? { x: 0.5, y: 0.5 } : { x: 0, y: 0 };
       trackFx[tr] = newFxVal;
       if (ctx) setFxActive(tr, newFxVal);
@@ -10315,6 +10401,14 @@ function randAll(mode, opts) {
   }
   _regenerateAmalgamChord();
   if (ctx) _fireAmalgamEcho();
+  // RAND OFFSET (dev menu) — once everything else about the pattern is
+  // decided, nudge the beat offset by a random 16th-note amount. Purely
+  // an extra layer of variation on top of what's already been chosen,
+  // independent of the actual notes/instruments themselves.
+  if (window._devRandOffsetEnabled) {
+    _beatOffset = Math.floor(Math.random() * NUM_STEPS);
+    _updateBeatOneIndicator();
+  }
   markModified();
   // The per-track randomize calls above are staggered via setTimeout (30ms
   // per track), so markModified()'s legato-visual refresh just now ran
@@ -10964,7 +11058,7 @@ function randomizeTrack(tr) {
   // other kit/perc instrument. STRINGS is now a normal tonal instrument,
   // dispatched through randomizeBassTrack just below like any other lead.
 
-  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'magic' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening' || trackInstruments[tr] === 'drone') {
+  if (trackInstruments[tr] === 'sbass' || trackInstruments[tr] === 'sbass3' || trackInstruments[tr] === 'sbass4' || trackInstruments[tr] === 'dbass' || trackInstruments[tr] === 'pbass' || trackInstruments[tr] === 'sludge' || trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'denial' || trackInstruments[tr] === 'jcmgtr' || trackInstruments[tr] === 'sprkls' || trackInstruments[tr] === 'clar' || trackInstruments[tr] === 'sstring' || trackInstruments[tr] === 'sleg' || trackInstruments[tr] === 'sparkle' || trackInstruments[tr] === 'rhodes' || trackInstruments[tr] === 'rhodes2' || trackInstruments[tr] === 'sflute' || trackInstruments[tr] === 'spiano' || trackInstruments[tr] === 'satk' || trackInstruments[tr] === 'boog' || trackInstruments[tr] === 'magic' || trackInstruments[tr] === 'fflute' || trackInstruments[tr] === 'blunt' || trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'opening' || trackInstruments[tr] === 'drone') {
     randomizeBassTrack(tr, level); return;
   }
 
@@ -11242,7 +11336,7 @@ function randomizeTrack(tr) {
   // BASSES: bias toward legato phrases — some notes sustain 2-3 steps
   // (occasionally the full 4-step cap), giving a more played-in, connected
   // feel instead of every note being a short staccato hit.
-  if ((key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass') && trackBassScale[tr]) {
+  if ((key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'sludge') && trackBassScale[tr]) {
     if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
     for (let s = 0; s < NUM_STEPS; s++) {
       if (grid[tr][s] > 0 && Math.random() < 0.45) {
@@ -11621,14 +11715,12 @@ function _syncTempoLockUI() {
   const num = document.getElementById('topTempoBpmNum');
   const lbl = document.getElementById('topTempoBpmLabel');
   const locked = document.getElementById('topTempoLockedLabel');
-  const freetime = document.getElementById('topTempoFreetimeLabel');
   if (slider) slider.classList.toggle('tempo-locked', _tempoLocked);
   if (icon) icon.style.opacity = _tempoLocked ? '1' : '0';
   if (btn) btn.style.background = _tempoLocked ? '#f17d21' : 'var(--panel)';
   if (num) num.style.color = _tempoLocked ? 'var(--playhead)' : 'var(--header-text-color, #111)';
   if (lbl) lbl.style.color = _tempoLocked ? 'var(--playhead)' : 'var(--header-text-dim, #555)';
   if (locked) locked.style.display = _tempoLocked ? 'block' : 'none';
-  if (freetime) freetime.style.display = _tempoLocked ? 'none' : 'block';
 }
 function toggleTempoLock() {
   _tempoLocked = !_tempoLocked;
@@ -11891,6 +11983,7 @@ function _leftSpoolRelease() {
     const freq = scale[ownerGs % scale.length];
     const dur = stepDuration() * _legatoMaxLen(tr, gs0);
     if (key === 'sbass')  playSynthBass(freq, dur, false, nextStepTime, tr);
+    if (key === 'sludge') playSludgeBass(freq, dur, false, nextStepTime, tr);
     if (key === 'sbass3') playMotownBass(freq, dur, false, nextStepTime, tr);
     if (key === 'sbass4') playPlunkBass(freq, dur, false, nextStepTime, tr);
     if (key === 'dbass') playDoubleBass(freq, dur, false, nextStepTime, tr);
@@ -12202,7 +12295,7 @@ function _regenerateAmalgamChord() {
   // tonal track — so the amalgam echo genuinely reflects what's about to
   // play, rather than an arbitrary random chord unrelated to the pattern.
   const notes = [];
-  const _amalgamBassKeys = new Set(['sbass','sbass3','sbass4','dbass','pbass']);
+  const _amalgamBassKeys = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge']);
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     const key = trackInstruments[tr];
     if (!TONAL_KEYS.has(key) || _amalgamBassKeys.has(key)) continue;
@@ -12412,6 +12505,10 @@ function setDevNotesGrayscale(on) {
   document.body.classList.toggle('notes-grayscale', on);
   const otherCb = document.getElementById('notesGrayscaleEnable');
   if (otherCb) otherCb.checked = on;
+}
+window._devRandOffsetEnabled = false;
+function setDevRandOffset(on) {
+  window._devRandOffsetEnabled = !!on;
 }
 function showInstructions() {
   const el = document.getElementById('instructionsOverlay');
