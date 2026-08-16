@@ -743,7 +743,7 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 22:55</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 23:07</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9960,6 +9960,21 @@ function randAll(mode, opts) {
     return 1; // perc
   }
   pool = [...pool].sort((a, b) => trackRank(a) - trackRank(b));
+
+  // Absolute, unconditional guarantee: if the TONAL/PERC BALANCE slider is
+  // pinned at all-percussion, there must be zero bass anywhere in the
+  // final pool, full stop — checked here directly against the pool
+  // that's actually about to get assigned, rather than trusting every
+  // upstream step (bass guarantee, JAZZ/DISCO forcing, conga/bongo
+  // pairing) to have correctly respected that setting on its own.
+  if (mode !== 'perc' && mode !== 'tonal' && window._tonalPercBalance === 0) {
+    const percFallback = percKeysAll.filter(k => !pool.includes(k) && !bassKeys2.has(k));
+    pool = pool.map(k => {
+      if (!bassKeys2.has(k)) return k;
+      const repl = percFallback.length > 0 ? percFallback.splice(Math.floor(Math.random() * percFallback.length), 1)[0] : 'skick';
+      return repl;
+    });
+  }
 
   // At the top intensity tier (level 4 of 0-4, i.e. the top 90%+ of the
   // range), it's fine — good, even — to leave one track completely silent
