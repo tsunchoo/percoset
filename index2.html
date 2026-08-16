@@ -630,7 +630,13 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes.note-flash { animation:
 .step-cell.soft::after { background: var(--track-color, var(--text)); opacity: 0.4; }
 .step-cell.on::after   { background: var(--track-color, var(--text)); opacity: 1; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
-body.notes-grayscale .step-cell::after { filter: grayscale(1); }
+/* Two fixed gray levels, not a per-track filter — a grayscale() filter
+   preserves each original color's own luminance, so different track
+   colors were converting to genuinely different shades of gray instead
+   of one consistent pair. This throws the color away entirely instead,
+   so accent state is the only thing distinguishing the two levels. */
+body.notes-grayscale .step-cell.soft:not(.playing)::after { background: #999 !important; opacity: 1 !important; filter: none; }
+body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !important; opacity: 1 !important; filter: none; }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.15; }
 .step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: 1; }
@@ -737,7 +743,7 @@ body.notes-grayscale .step-cell::after { filter: grayscale(1); }
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 21:24</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 22:55</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9977,15 +9983,22 @@ function randAll(mode, opts) {
       // UNMUTED though — every RAND track is always unmuted regardless of
       // whether it actually has notes in it, so a manual edit later is
       // immediately audible without needing a separate unmute step first.
-      // Instrument label itself is cosmetic once empty, so it's left alone
-      // rather than needing a "blank" instrument that doesn't exist.
-      // Still consumes a pool slot (poolIdx++) even though nothing here
-      // gets applied — skipping it entirely used to shift every later
-      // track's assignment back by one, so the pool's very last entry
-      // (often KICK, since that's what sorts to the bottom — or half of
-      // a forced CONGA/BONGO pair, if that's what landed there) was never
-      // consumed by any track at all and silently vanished.
-      poolIdx++;
+      // Still consumes a pool slot (poolIdx++) — skipping it entirely used
+      // to shift every later track's assignment back by one, so the
+      // pool's very last entry (often KICK, since that's what sorts to
+      // the bottom — or half of a forced CONGA/BONGO pair, if that's what
+      // landed there) was never consumed by any track at all and
+      // silently vanished. The instrument itself now DOES get assigned
+      // here too, even though it stays silent regardless — leaving it
+      // unassigned meant this track just kept showing whatever
+      // instrument it happened to have from a previous pattern forever,
+      // completely ignoring the current pool (and, concretely, the
+      // TONAL/PERC BALANCE slider) — a track could go on displaying a
+      // stale bass indefinitely even with the slider pinned at all-perc,
+      // since nothing ever overwrote it.
+      const kEmpty = pool[poolIdx++] || pool[pool.length - 1];
+      trackInstruments[tr] = kEmpty;
+      setTrackNameColor(tr, kEmpty);
       grid[tr].fill(0);
       trackDelay[tr] = false;
       trackFx[tr] = { x: 0, y: 0 };
