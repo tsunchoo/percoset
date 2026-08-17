@@ -727,7 +727,7 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 04:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 04:54</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1071,7 +1071,7 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
     <div style="display:flex;align-items:center;justify-content:center;height:65vh;width:64px;position:relative;">
       <input type="range" id="bpmSlider" min="40" max="200" value="110"
         style="position:absolute;width:65vh;height:3px;background:var(--text);outline:none;transform:rotate(-90deg);left:calc(50% - 32.5vh);top:calc(50% - 1.5px);-webkit-appearance:none;appearance:none;"
-        oninput="bpm=+this.value; document.getElementById('bpmVal').textContent=this.value+' BPM'; document.getElementById('bpmOverlayVal').textContent=this.value+' BPM'; document.getElementById('topTempoBpmNum').textContent=this.value;">
+        oninput="if (_tempoLocked) { this.value = bpm; return; } bpm=+this.value; document.getElementById('bpmVal').textContent=this.value+' BPM'; document.getElementById('bpmOverlayVal').textContent=this.value+' BPM'; document.getElementById('topTempoBpmNum').textContent=this.value;">
     </div>
     <div id="bpmOverlayVal" style="font-size:1.2rem;font-weight:700;letter-spacing:2px;font-family:'DM Sans',sans-serif;">110 BPM</div>
   </div>
@@ -1193,7 +1193,7 @@ const INSTRUMENTS = {
   dulc:   { name: 'BOOBOO',      soft: null, accent: null, group: 'tonal' },
   opening:{ name: 'OPENING',     soft: null, accent: null, group: 'tonal' },
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
-  amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'perc' },
+  amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
   drone:  { name: 'STRINGS',     soft: null, accent: null, group: 'tonal' },
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sludge: { name: 'SLUDGE BASS', soft: null, accent: null, group: 'tonal' },
@@ -3422,7 +3422,7 @@ const trackLockedRoot = {}; // tr -> root frequency, captured the moment L locks
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
-const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone','magic']);
+const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone','magic','amlgm']);
 
 function buildScaleFromRoot(root, scaleOverride) {
   const scaleArr = scaleOverride || PENTA_MINOR;
@@ -11751,12 +11751,14 @@ function _tempoScreenRefresh() {
   if (lockBtn) lockBtn.style.background = _tempoLocked ? '#f17d21' : 'var(--panel)';
 }
 function _tempoSetNudge(newNudge) {
+  if (_tempoLocked) return; // a nudge still audibly changes the tempo even though it's temporary, so it counts as overriding the lock same as a permanent change would
   const oldEff = bpm + _tempoNudge;
   _tempoNudge = newNudge;
   _tempoLiveRetime(oldEff, bpm + _tempoNudge);
   _tempoScreenRefresh();
 }
 function _tempoSetResting(newBpm) {
+  if (_tempoLocked) return; // covers every caller at once — tap tempo, hold-to-nudge, and the drag gesture all route through here
   const oldEff = bpm + _tempoNudge;
   bpm = Math.max(40, Math.min(200, Math.round(newBpm)));
   _tempoLiveRetime(oldEff, bpm + _tempoNudge);
@@ -12289,7 +12291,7 @@ function _regenerateAmalgamChord() {
   const _amalgamBassKeys = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge']);
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     const key = trackInstruments[tr];
-    if (!TONAL_KEYS.has(key) || _amalgamBassKeys.has(key)) continue;
+    if (!TONAL_KEYS.has(key) || _amalgamBassKeys.has(key) || key === 'amlgm') continue; // TEXTURE never contributes to its own echoed chord
     const scale = trackBassScale[tr];
     if (!scale) continue;
     let freq = scale[0];
