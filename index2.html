@@ -336,6 +336,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
    updatePlayhead, toggled every scheduler tick, gated by track-pulse-a so
    SOLID mode genuinely shows a static button with no pulse at all. */
 body.track-pulse-a .track-name-btn.playing { filter: brightness(1.35) saturate(1.2); opacity: 1; }
+/* Independent of the background pulse above — same .playing trigger
+   (updatePlayhead, one flash per actual note hit), separate setting,
+   both can be on/off independently of each other. */
+body.track-text-pulse-a .track-name-btn.playing { color: var(--highlight3-color, #adff00) !important; }
 .track-name-btn.shifting { background: var(--playhead) !important; color: #fff !important; animation: pulse 0.5s infinite alternate; }
 .track-ctrl-icon-btn {
   width: 32px; flex-shrink: 0;
@@ -731,7 +735,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:43</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1038,6 +1042,18 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackTextPulseMode" value="a" checked onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
           </label>
         </div>
       </div>
@@ -8312,10 +8328,14 @@ function toggleMoreSettings() {
 }
 function setTrackPulseMode(mode) {
   document.body.classList.remove('track-pulse-a', 'track-pulse-solid');
-  // 'solid' intentionally matches no CSS selector at all — the text-pulse
-  // animation is only scoped to track-pulse-a, so track names just show
-  // their normal static text color the whole time under 'solid'.
+  // 'solid' intentionally matches no CSS selector at all — the background
+  // brightness pulse is only scoped to track-pulse-a, so track buttons
+  // just show their normal static background the whole time under 'solid'.
   document.body.classList.add('track-pulse-' + (mode === 'a' ? 'a' : 'solid'));
+}
+function setTrackTextPulseMode(mode) {
+  document.body.classList.remove('track-text-pulse-a', 'track-text-pulse-solid');
+  document.body.classList.add('track-text-pulse-' + (mode === 'a' ? 'a' : 'solid'));
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
@@ -11637,6 +11657,7 @@ document.body.classList.add('notes-grayscale'); // grayscale note markers is now
 buildUI();
 updateMasterVolCells();
 setTrackPulseMode('solid');
+setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -12687,6 +12708,8 @@ function fullReset() {
   window._resetRecallAB?.();
   setTrackPulseMode('solid');
   const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="solid"]'); if (_tpmRadio) _tpmRadio.checked = true;
+  setTrackTextPulseMode('a');
+  const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="a"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
