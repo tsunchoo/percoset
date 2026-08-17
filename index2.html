@@ -532,13 +532,16 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-name-btn.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
 .track-name-btn.names-uniform { background: var(--neutral-top, #555); color: #fff; }
 
-@keyframes name-text-pulse { from { color: var(--highlight3-color, #adff00); } to { color: var(--neutral-track-text, #fff); } }
+@keyframes name-bg-pulse { from { filter: brightness(1.7); } to { filter: brightness(1); } }
 .track-name-btn.has-notes { animation: none; }
 /* One-shot flash, triggered per actual note hit on that track (see
    _flashTrackNameOnNote) rather than a continuous, generically-timed
-   loop — so the text now visibly follows that track's own rhythm
-   instead of a fixed, unrelated pulse rate. */
-body.track-pulse-a.seq-playing .track-name-btn.has-notes.note-flash { animation: name-text-pulse 0.15s ease-out; }
+   loop — so the button visibly follows that track's own rhythm instead
+   of a fixed, unrelated pulse rate. Brightness-based rather than a fixed
+   color swap, so it works the same regardless of the track's own color
+   (tonal/perc/bass/pad/uniform). SOLID genuinely means no pulse at all —
+   scoped to track-pulse-a only, same as it always should have been. */
+body.track-pulse-a.seq-playing .track-name-btn.has-notes.note-flash { animation: name-bg-pulse 0.15s ease-out; }
 
 /* ── Vol overlay ── */
 #volOverlay {
@@ -621,6 +624,15 @@ body.track-pulse-a.seq-playing .track-name-btn.has-notes.note-flash { animation:
    so accent state is the only thing distinguishing the two levels. */
 body.notes-grayscale .step-cell.soft:not(.playing)::after { background: #999 !important; opacity: 1 !important; filter: none; }
 body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !important; opacity: 1 !important; filter: none; }
+/* split32 and legato-tail both pull --track-color directly, independent
+   of the .on/.soft classes above, so they slipped through untouched —
+   32nds showing striped color, and the back half of a legato note (its
+   sustain "tail") showing solid color, even with grayscale on. */
+body.notes-grayscale .step-cell.split32::after {
+  background: repeating-linear-gradient(to right, #333 0%, #333 45%, transparent 45%, transparent 55%, #333 55%, #333 100%) !important;
+  filter: none;
+}
+body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important; filter: none; }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.15; }
 .step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: 1; }
@@ -727,7 +739,7 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 04:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:31</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12729,6 +12741,18 @@ function fullReset() {
   // Global music state
   bpm = 110; swingVal = 0.625; masterVol = 0.8; randAllLevel = 0;
   _tempoLocked = false; _beatTypeLocked = false; _beatType = 'disco';
+  // Neither the lock icon/UI nor the BPM number display anywhere ever
+  // actually got refreshed after a reset — the underlying bpm/_tempoLocked
+  // variables were correctly reset, but the tempo screen, the top bar's
+  // own BPM readout, and the settings slider could all keep showing
+  // whatever they last displayed, including a lock icon that still read
+  // as locked even though _tempoLocked was already false underneath it.
+  _syncTempoLockUI();
+  const _bpmVal = document.getElementById('bpmVal'); if (_bpmVal) _bpmVal.textContent = bpm + ' BPM';
+  const _bpmOverlayVal = document.getElementById('bpmOverlayVal'); if (_bpmOverlayVal) _bpmOverlayVal.textContent = bpm + ' BPM';
+  const _topTempoBpmNum = document.getElementById('topTempoBpmNum'); if (_topTempoBpmNum) _topTempoBpmNum.textContent = bpm;
+  const _bpmSliderEl = document.getElementById('bpmSlider'); if (_bpmSliderEl) _bpmSliderEl.value = bpm;
+  const _bpmSettingsSliderEl = document.getElementById('bpmSettingsSlider'); if (_bpmSettingsSliderEl) _bpmSettingsSliderEl.value = bpm;
   _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.24; _beatFx = false; _beatPump = false;
   _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
   _beatVolRaw = 0.4283; _applyBeatVolWithDuck();
