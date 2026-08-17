@@ -169,6 +169,11 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 /* All glyphs are always HIGHLIGHT-3 colored — only which letter is bold
    changes as RECALL toggles between the two patterns. */
 #scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: var(--neutral-track-text, var(--text)); }
+/* flashBtnOrange('scratchBtn') sets color on the outer button, but these
+   spans have their own explicit color rules above, which take precedence
+   over anything set on the parent — so that flash was never actually
+   visible on the "A"/"B" text itself. This class overrides it directly. */
+#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: var(--highlight3-color, #adff00) !important; }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; font-size: 1.23rem; }
 #scratchBtnA:not(.ab-current), #scratchBtnB:not(.ab-current) { font-size: 1.005rem; }
@@ -309,6 +314,7 @@ input[type=range]::-moz-range-track { background: #555; height: 4px; border-radi
 input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f17d21; cursor: pointer; border-radius: 0; border: none; }
 .vol-wrap { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 960px; margin-top: 6px; padding: 6px 0; }
 .master-vol-slider { flex: 1; }
+#masterVolBar { accent-color: var(--vol-slider-color, var(--highlight3-color, #adff00)); }
 #bpmSettingsSlider.tempo-locked::-webkit-slider-thumb { background: #b0b0b0; }
 #bpmSettingsSlider.tempo-locked::-moz-range-thumb { background: #b0b0b0; }
 .vol-section { width: 100%; max-width: 960px; margin-top: 12px; display: flex; align-items: center; gap: 6px; }
@@ -339,7 +345,7 @@ body.track-pulse-a .track-name-btn.playing { filter: brightness(1.35) saturate(1
 /* Independent of the background pulse above — same .playing trigger
    (updatePlayhead, one flash per actual note hit), separate setting,
    both can be on/off independently of each other. */
-body.track-text-pulse-a .track-name-btn.playing { color: var(--highlight3-color, #adff00) !important; }
+body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-color, var(--highlight3-color, #adff00)) !important; }
 .track-name-btn.shifting { background: var(--playhead) !important; color: #fff !important; animation: pulse 0.5s infinite alternate; }
 .track-ctrl-icon-btn {
   width: 32px; flex-shrink: 0;
@@ -735,7 +741,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 16:44</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -936,6 +942,21 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL SLIDER COLOR</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="volSliderColor" value="2" onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="volSliderColor" value="3" checked onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
           <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">42</span>
         </div>
@@ -1054,6 +1075,21 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackTextPulseMode" value="a" checked onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TEXT PULSE COLOR</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackTextPulseColor" value="1" onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackTextPulseColor" value="2" onchange="setTrackTextPulseColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackTextPulseColor" value="3" checked onchange="setTrackTextPulseColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
         </div>
       </div>
@@ -1570,7 +1606,16 @@ function randomizeAppColors() {
   const bgPicker = document.getElementById('bgColorPicker');
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
-  if (randomizeBtn) randomizeBtn.addEventListener('click', () => { _pressPulse('randomizeColorsBtn'); randomizeAppColors(); });
+  if (randomizeBtn) randomizeBtn.addEventListener('click', () => {
+    // Guards against a ghost-click landing here right as settings opens —
+    // the tap that opens the panel can trigger the DOM's own click event
+    // slightly after the layout has already changed underneath it, which
+    // can land on whatever happens to now be at those same screen
+    // coordinates. A genuine, deliberate press on this button will always
+    // happen well after the panel has actually opened.
+    if (Date.now() - _settingsOpenedAt < 350) return;
+    _pressPulse('randomizeColorsBtn'); randomizeAppColors();
+  });
   const saveThemeBtn = document.getElementById('saveThemeBtn');
   if (saveThemeBtn) saveThemeBtn.addEventListener('click', saveTheme);
   const wildToggle = document.getElementById('wildColorsToggle');
@@ -8270,6 +8315,11 @@ function flashBtnOrange(id) {
   btn.style.background = '#111'; btn.style.color = _highlight3Color();
   setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
 }
+function _flashScratchBtnText() {
+  const btn = document.getElementById('scratchBtn'); if (!btn) return;
+  btn.classList.add('ab-flash');
+  setTimeout(() => btn.classList.remove('ab-flash'), 300);
+}
 function setBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
   b.classList.add('btn-flash-blue');
@@ -8336,6 +8386,14 @@ function setTrackPulseMode(mode) {
 function setTrackTextPulseMode(mode) {
   document.body.classList.remove('track-text-pulse-a', 'track-text-pulse-solid');
   document.body.classList.add('track-text-pulse-' + (mode === 'a' ? 'a' : 'solid'));
+}
+function setTrackTextPulseColor(n) {
+  const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
+  document.documentElement.style.setProperty('--track-text-pulse-color', map[n] || map[3]);
+}
+function setVolSliderColor(n) {
+  const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
+  document.documentElement.style.setProperty('--vol-slider-color', map[n] || map[3]);
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
@@ -9755,35 +9813,63 @@ function randAll(mode, opts) {
     const percSlots = Math.max(0, REAL_TRACK_COUNT - tonalSlots - lockedPerc);
 
     // Build exact pool for unlocked slots
-    // Never duplicate anything already in the current deck
+    // Never duplicate anything already in the current deck — this
+    // includes LOCKED tracks too, since currentDeck is every track's
+    // current instrument, not just the unlocked ones.
     const currentDeck = new Set(trackInstruments);
-
-    // Bass is no longer specially guaranteed — it's just another tonal
-    // instrument now, selected (or not) through the exact same random
-    // pool as everything else below, which already fully respects the
-    // TONAL/PERC BALANCE slider (tonalSlots/tonalTarget). No forcing.
     const tonalSlotsEff = tonalSlots, percSlotsEff = percSlots;
 
-    const nonBassAvail = tonalKeys.filter(k => !currentDeck.has(k));
-    const nonBassShuffled = [...nonBassAvail].sort(() => Math.random() - 0.5);
-    const wantCount = tonalSlotsEff;
-    // Solo-group instruments (JCX GUITAR / JENNY / BOOG, and SLAY)
-    // must stay capped at one each — this path used to build its own pool
-    // independently of buildPool() and so never checked these at all.
+    // Solo-group "already used" flags — checked against LOCKED tracks
+    // specifically, since locked tracks never go through the shuffle
+    // below at all but still count toward each group's one-only limit.
     let soloLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloLeadKeys.has(trackInstruments[tr]));
     let soloUniqueUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloUniqueKeys.has(trackInstruments[tr]));
     let soloRareLeadUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && soloRareLeadKeys.has(trackInstruments[tr]));
     let jinxClashUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && jinxClashKeys.has(trackInstruments[tr]));
     let padUsed2 = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && padKeys.has(trackInstruments[tr]));
+
     const nonBassShuffle = [];
-    for (const k of nonBassShuffled) {
+    const _leadKeysSet = new Set([...soloLeadKeys, ...soloRareLeadKeys]);
+
+    // Bass first — a priority, not a forced guarantee like it used to be.
+    // If a slot is available and an unused bass exists, it wins the first
+    // slot outright rather than being just one random option lost among
+    // everything else.
+    if (nonBassShuffle.length < tonalSlotsEff) {
+      const availableBass = tonalKeys.filter(k => bassKeys.has(k) && !currentDeck.has(k));
+      if (availableBass.length > 0) nonBassShuffle.push(availableBass[Math.floor(Math.random() * availableBass.length)]);
+    }
+
+    // Everything else non-bass, non-lead fills next, shuffled — this is
+    // the main supporting-instrument pool (pads, rhythm, texture, etc).
+    const nonLeadPool = tonalKeys.filter(k => !bassKeys.has(k) && !_leadKeysSet.has(k) && !currentDeck.has(k) && !nonBassShuffle.includes(k));
+    const nonLeadShuffled = [...nonLeadPool].sort(() => Math.random() - 0.5);
+    for (const k of nonLeadShuffled) {
+      if (nonBassShuffle.length >= tonalSlotsEff) break;
       if (soloLeadKeys.has(k)) { if (soloLeadUsed2) continue; soloLeadUsed2 = true; }
       if (soloUniqueKeys.has(k)) { if (soloUniqueUsed2) continue; soloUniqueUsed2 = true; }
       if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed2) continue; soloRareLeadUsed2 = true; }
       if (jinxClashKeys.has(k)) { if (jinxClashUsed2) continue; jinxClashUsed2 = true; }
       if (padKeys.has(k)) { if (padUsed2) continue; padUsed2 = true; }
       nonBassShuffle.push(k);
-      if (nonBassShuffle.length === wantCount) break;
+    }
+
+    // Lead instruments only get considered at all once there's genuine
+    // room for variety — 3 or more tonal slots total. With fewer than
+    // that, every slot stays a supporting instrument (bass/pad/rhythm),
+    // never a lead soaking up one of only 1-2 tonal slots on its own.
+    if (nonBassShuffle.length < tonalSlotsEff && tonalSlotsEff >= 3) {
+      const leadPool = tonalKeys.filter(k => _leadKeysSet.has(k) && !currentDeck.has(k) && !nonBassShuffle.includes(k));
+      const leadShuffled = [...leadPool].sort(() => Math.random() - 0.5);
+      for (const k of leadShuffled) {
+        if (nonBassShuffle.length >= tonalSlotsEff) break;
+        if (soloLeadKeys.has(k)) { if (soloLeadUsed2) continue; soloLeadUsed2 = true; }
+        if (soloUniqueKeys.has(k)) { if (soloUniqueUsed2) continue; soloUniqueUsed2 = true; }
+        if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed2) continue; soloRareLeadUsed2 = true; }
+        if (jinxClashKeys.has(k)) { if (jinxClashUsed2) continue; jinxClashUsed2 = true; }
+        if (padKeys.has(k)) { if (padUsed2) continue; padUsed2 = true; }
+        nonBassShuffle.push(k);
+      }
     }
     // MAGIC caps the whole pattern's tonal variety to itself plus one
     // other (bass stays separate, still guaranteed) — checked whether
@@ -11658,6 +11744,8 @@ buildUI();
 updateMasterVolCells();
 setTrackPulseMode('solid');
 setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
+setTrackTextPulseColor(3); // HIGHLIGHT 3 is the default text pulse color
+setVolSliderColor(3); // HIGHLIGHT 3 is the default vol slider color
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -11710,12 +11798,14 @@ setTimeout(async () => {
 
 
 // ── Settings panel ──
+let _settingsOpenedAt = 0;
 function showSettings() {
   const el = document.getElementById('settingsOverlay');
   if (el) { el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center'; }
   const snd = document.getElementById('settingsNameDisplay');
   if (snd) snd.textContent = _currentSpecies || '';
   syncSettingsPanel();
+  _settingsOpenedAt = Date.now();
 }
 function hideSettings() {
   const el = document.getElementById('settingsOverlay');
@@ -12710,6 +12800,10 @@ function fullReset() {
   const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="solid"]'); if (_tpmRadio) _tpmRadio.checked = true;
   setTrackTextPulseMode('a');
   const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="a"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
+  setTrackTextPulseColor(3);
+  const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="3"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
+  setVolSliderColor(3);
+  const _vscRadio = document.querySelector('input[name="volSliderColor"][value="3"]'); if (_vscRadio) _vscRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
@@ -13580,7 +13674,7 @@ async function hardResetAudioEngine() {
     if (target && !target.dataset.sweepTriggered) {
       target.dataset.sweepTriggered = '1';
       if (target.id === 'randBtn') { setBtnBlueHeld('randBtn'); queueRand(); }
-      if (target.id === 'scratchBtn') { if (_recallSnapB) { const _cur = snapshotState(); restoreState(_recallSnapB, { skipBeatState: true }); flashBtnOrange('scratchBtn'); window._reelReversePending = true; _recallSnapB = _cur; window._toggleRecallAB?.(); playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
+      if (target.id === 'scratchBtn') { if (_recallSnapB) { const _cur = snapshotState(); restoreState(_recallSnapB, { skipBeatState: true }); flashBtnOrange('scratchBtn'); _flashScratchBtnText(); window._reelReversePending = true; _recallSnapB = _cur; window._toggleRecallAB?.(); playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
     }
   };
   btn.addEventListener('touchmove', sweepMoveHandler, { passive: false });
@@ -13692,6 +13786,7 @@ function stopRecallLoop() {
       });
       restoreState(_recallSnapB, { skipBeatState: true });
       flashBtnOrange('scratchBtn');
+      _flashScratchBtnText();
       window._reelReversePending = true;
       _recallSnapB = current;
       window._toggleRecallAB?.();
