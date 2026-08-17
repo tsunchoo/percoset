@@ -727,7 +727,7 @@ body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !im
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">16Aug26 23:31</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 04:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9747,31 +9747,15 @@ function randAll(mode, opts) {
     // Never duplicate anything already in the current deck
     const currentDeck = new Set(trackInstruments);
 
-    // Bass: max one across all tracks — skip if a locked track already has
-    // bass. Picked FIRST and guaranteed a slot if one exists anywhere,
-    // rather than being silently skipped just because non-bass tonal locks
-    // happened to already use up the whole 3-slot tonal budget — RAND was
-    // ending up with no bass at all far too often because of exactly that.
-    const bassAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && bassKeys.has(trackInstruments[tr]));
-    const totalUnlockedSlots = REAL_TRACK_COUNT - lockedTonal - lockedPerc;
-    let bassChoice = null;
-    if (!bassAlreadyLocked && totalUnlockedSlots > 0 && tonalTarget > 0) { // tonalTarget === 0 means the balance slider is set to all-percussion — that overrules the usual bass guarantee entirely, no bass at all in that case
-      const bassAvail = tonalKeys.filter(k => bassKeys.has(k) && !currentDeck.has(k));
-      const allBassAvail = Object.keys(INSTRUMENTS).filter(k => bassKeys.has(k) && !currentDeck.has(k));
-      const pool2 = bassAvail.length > 0 ? bassAvail : allBassAvail;
-      if (pool2.length > 0) bassChoice = pool2[Math.floor(Math.random() * pool2.length)];
-    }
-    // If bass got picked but the tonal budget had already hit 0 (locked
-    // non-bass tonal tracks ate the whole thing), borrow a slot from perc
-    // instead — bass takes priority over the exact 3/2 split.
-    let tonalSlotsEff = tonalSlots, percSlotsEff = percSlots;
-    if (bassChoice && tonalSlotsEff === 0 && percSlotsEff > 0) {
-      tonalSlotsEff = 1; percSlotsEff -= 1;
-    }
+    // Bass is no longer specially guaranteed — it's just another tonal
+    // instrument now, selected (or not) through the exact same random
+    // pool as everything else below, which already fully respects the
+    // TONAL/PERC BALANCE slider (tonalSlots/tonalTarget). No forcing.
+    const tonalSlotsEff = tonalSlots, percSlotsEff = percSlots;
 
-    const nonBassAvail = tonalKeys.filter(k => !bassKeys.has(k) && !currentDeck.has(k));
+    const nonBassAvail = tonalKeys.filter(k => !currentDeck.has(k));
     const nonBassShuffled = [...nonBassAvail].sort(() => Math.random() - 0.5);
-    const wantCount = Math.max(0, tonalSlotsEff - (bassChoice ? 1 : 0));
+    const wantCount = tonalSlotsEff;
     // Solo-group instruments (JCX GUITAR / JENNY / BOOG, and SLAY)
     // must stay capped at one each — this path used to build its own pool
     // independently of buildPool() and so never checked these at all.
@@ -9807,7 +9791,7 @@ function randAll(mode, opts) {
       if (magicInThisPass) nonBassShuffle.push('magic');
       nonBassShuffle.push(...others.slice(0, allowedOthers));
     }
-    const tPool = [...(bassChoice ? [bassChoice] : []), ...nonBassShuffle].slice(0, tonalSlotsEff);
+    const tPool = nonBassShuffle.slice(0, tonalSlotsEff);
 
     const percAvail = percKeys.filter(k => !currentDeck.has(k));
     const pShuffle = [...percAvail].sort(() => Math.random() - 0.5);
@@ -10135,14 +10119,15 @@ function randAll(mode, opts) {
     const fxBtn = document.getElementById(`fxbtn-${tr}`); if (fxBtn) fxBtn.classList.remove('on');
   }
   // Final safety net — regardless of which path above ran, there should
-  // always be exactly one bass somewhere among the real tracks whenever
-  // there's room for one. RAND should never produce a pattern with none,
-  // and never more than one on its own (a person deliberately assigning a
-  // second bass by hand is the only way two should ever coexist).
+  // be exactly one bass somewhere among the real tracks whenever the
+  // TONAL/PERC BALANCE slider allows for one (i.e. isn't pinned at
+  // all-percussion) and there's room. Never more than one on its own — a
+  // person deliberately assigning a second bass by hand is the only way
+  // two should ever coexist.
   (function _ensureExactlyOneBass() {
     const bassTracks = [];
     for (let tr = 1; tr < NUM_TRACKS; tr++) if (bassKeys.has(trackInstruments[tr])) bassTracks.push(tr);
-    if (bassTracks.length === 0) {
+    if (bassTracks.length === 0 && window._tonalPercBalance !== 0) { // slider pinned at all-percussion means no bass, full stop — this safety net no longer overrides that
       // Nothing currently has bass — force one onto the LAST unlocked,
       // non-empty real track (highest index), not the first. The pool this
       // whole assignment is built from gets rank-sorted before assignment
