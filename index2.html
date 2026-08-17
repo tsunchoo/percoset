@@ -739,7 +739,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:31</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -10672,6 +10672,19 @@ function restoreState(snap, opts) {
     const lm=document.getElementById(`lane-${tr}`); if(lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
     const vb=document.getElementById(`vbar-${tr}`); if(vb) { vb.classList.toggle('muted', trackMuted[tr]); const f=vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
     redrawTrackCells(tr);
+  }
+  // RECALL (the only caller that passes skipBeatState) can genuinely
+  // restore a different tempo while the lock is on — the lock was meant
+  // to stop RAND from touching tempo, not to freeze it against every
+  // possible source of change, and leaving it engaged afterward while
+  // the actual tempo had already silently moved underneath it was
+  // exactly the inconsistency causing RAND to seemingly ignore the lock
+  // right after an A/B swap. Auto-disengaging it here, right at the
+  // moment the mismatch actually happens, keeps the lock state honest
+  // instead of relying on every future RAND call to notice a stale lock.
+  if (opts.skipBeatState && _tempoLocked && snap.bpm !== bpm) {
+    _tempoLocked = false;
+    _syncTempoLockUI();
   }
   bpm=snap.bpm;
   document.getElementById('bpmSlider').value=bpm;
