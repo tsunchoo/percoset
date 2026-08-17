@@ -332,7 +332,10 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 }
 .track-name-btn.has-notes { color: #fff; }
 .track-name-btn.muted { background: var(--dim); color: var(--bg); opacity: 0.55; }
-.track-name-btn.playing { filter: brightness(1.35) saturate(1.2); opacity: 1; }
+/* The button flashing along with a track's own notes — driven by
+   updatePlayhead, toggled every scheduler tick, gated by track-pulse-a so
+   SOLID mode genuinely shows a static button with no pulse at all. */
+body.track-pulse-a .track-name-btn.playing { filter: brightness(1.35) saturate(1.2); opacity: 1; }
 .track-name-btn.shifting { background: var(--playhead) !important; color: #fff !important; animation: pulse 0.5s infinite alternate; }
 .track-ctrl-icon-btn {
   width: 32px; flex-shrink: 0;
@@ -532,17 +535,6 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
 .track-name-btn.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
 .track-name-btn.names-uniform { background: var(--neutral-top, #555); color: #fff; }
 
-@keyframes name-bg-pulse { from { filter: brightness(1.7); } to { filter: brightness(1); } }
-.track-name-btn.has-notes { animation: none; }
-/* One-shot flash, triggered per actual note hit on that track (see
-   _flashTrackNameOnNote) rather than a continuous, generically-timed
-   loop — so the button visibly follows that track's own rhythm instead
-   of a fixed, unrelated pulse rate. Brightness-based rather than a fixed
-   color swap, so it works the same regardless of the track's own color
-   (tonal/perc/bass/pad/uniform). SOLID genuinely means no pulse at all —
-   scoped to track-pulse-a only, same as it always should have been. */
-body.track-pulse-a.seq-playing .track-name-btn.has-notes.note-flash { animation: name-bg-pulse 0.15s ease-out; }
-
 /* ── Vol overlay ── */
 #volOverlay {
   display: none; position: fixed; inset: 0; z-index: 200;
@@ -739,7 +731,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:33</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 15:43</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1045,7 +1037,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
             <input type="radio" name="trackPulseMode" value="solid" checked onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+            <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
           </label>
         </div>
       </div>
@@ -2697,7 +2689,6 @@ function fireStepAudio(step, t) {
       const is32Split = rawVal === 3;
       const val = is32Split ? 2 : rawVal; // treat split as accent-level for the main hit
       if (val > 0) {
-        _flashTrackNameOnNote(tr, t); // text pulse follows this track's own actual note hits now, not a generic timed animation
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
         if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'sludge' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'magic' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
@@ -6989,18 +6980,6 @@ function commitBeatMenuSelection(item) {
 // preventDefault() on touchstart, which suppresses the native 'click' a
 // generic delegated listener would need — so this is called explicitly from
 // each button's actual press handler instead of relying on click bubbling.
-// Flashes a track name's text exactly when a note actually fires on that
-// track — t is a future audioContext time, converted to a real-world
-// delay so the visual lands in sync with the audio, not immediately.
-function _flashTrackNameOnNote(tr, t) {
-  if (!ctx) return;
-  const delay = Math.max(0, (t - ctx.currentTime) * 1000);
-  setTimeout(() => {
-    const btn = document.getElementById(`tbtn-${tr}`);
-    if (!btn) return;
-    btn.classList.remove('note-flash'); void btn.offsetWidth; btn.classList.add('note-flash');
-  }, delay);
-}
 function _pressPulse(id) {
   const b = document.getElementById(id);
   if (!b) return;
