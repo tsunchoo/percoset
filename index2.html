@@ -314,12 +314,6 @@ input[type=range]::-moz-range-track { background: #555; height: 4px; border-radi
 input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f17d21; cursor: pointer; border-radius: 0; border: none; }
 .vol-wrap { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 960px; margin-top: 6px; padding: 6px 0; }
 .master-vol-slider { flex: 1; }
-/* accent-color has no effect here — input[type=range]::-webkit-slider-thumb
-   below already disables native appearance and hardcodes the thumb color,
-   which completely overrides accent-color regardless of what it's set to.
-   Overriding the thumb's own background directly instead, which is what
-   actually renders. */
-#masterVolBar::-webkit-slider-thumb { background: var(--vol-slider-color, var(--highlight3-color, #adff00)) !important; }
 #bpmSettingsSlider.tempo-locked::-webkit-slider-thumb { background: #b0b0b0; }
 #bpmSettingsSlider.tempo-locked::-moz-range-thumb { background: #b0b0b0; }
 .vol-section { width: 100%; max-width: 960px; margin-top: 12px; display: flex; align-items: center; gap: 6px; }
@@ -446,7 +440,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
-  background: var(--playhead-color, #f8ff00); pointer-events: none; transition: width 0.05s;
+  background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
@@ -746,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 17:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 17:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -947,7 +941,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL SLIDER COLOR</div>
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
@@ -9955,16 +9949,13 @@ function randAll(mode, opts) {
   // track slots. Kick and hihat stay BEAT-menu-only synthesis (see the
   // scheduler) — they're never tracks. Forced in here, after the
   // conga/bongo pairing pass but before the visual sort, same spot and
-  // same replace-a-slot approach as that pass.
+  // same replace-a-slot approach as that pass. Always forced regardless
+  // of the TONAL/PERC BALANCE slider — these tracks come bundled with
+  // JAZZ itself, not something the slider is meant to compete with; the
+  // slider governs the remaining, non-forced slots.
   const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'snare2';
   const _jazzTrackKeys = ['ride', _jazzCompingKey];
-  // Neither this nor DISCO's own hihat-forcing below should inject
-  // percussion into the pool at all when the TONAL/PERC BALANCE slider is
-  // pinned at all-tonal — that setting should be an absolute guarantee,
-  // not something these two beat-type-specific overrides can silently
-  // punch a hole in.
-  const _allTonalPinned = (mode !== 'perc' && mode !== 'tonal' && window._tonalPercBalance === 6);
-  if (_beatType === 'jazz' && !_allTonalPinned) {
+  if (_beatType === 'jazz') {
     const bassKeysLocal2 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
     // A locked (L) track already holding one of these is skipped by the
     // assignment loop further down (locked tracks never get touched by
@@ -9988,7 +9979,8 @@ function randAll(mode, opts) {
   // DISCO beat type — forces a hihat into the pool if it isn't already
   // there, so there's always one to carry the fixed accented-upbeat
   // pattern (written below, alongside JAZZ's ride/comping override).
-  if (_beatType === 'disco' && !_allTonalPinned && !pool.includes('shihat')) {
+  // Same as JAZZ above — always forced regardless of the slider.
+  if (_beatType === 'disco' && !pool.includes('shihat')) {
     const bassKeysLocal3 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
     let replaceIdx = -1;
     for (let i = pool.length - 1; i >= 0; i--) {
