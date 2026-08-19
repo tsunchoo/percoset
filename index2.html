@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 07:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 21:37</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12516,6 +12516,55 @@ function _regenerateAmalgamChord() {
   }
   _amalgamChord = notes;
 }
+// Right tape spool, single tap — plays back the first half of the
+// measure's worth of steps from whichever track currently has the most
+// notes in it, through the same amalgam voice TEXTURE itself uses, each
+// successive note quieter than the last. Uses that track's own actual
+// pitches when it's tonal; a percussion busiest track borrows pitches
+// from whichever tonal track exists instead, since there's nothing of
+// its own to use, falling back to a plain neutral note if the whole
+// pattern has no tonal content anywhere at all.
+function _playSpoolAmalgamSwell() {
+  if (!ctx) return;
+  let busiestTr = -1, busiestCount = -1;
+  for (let tr = 1; tr < NUM_TRACKS; tr++) { // track 0/TEXTURE excluded — sampling its own echo of everything else back into itself would be circular
+    const count = grid[tr].filter(v => v > 0).length;
+    if (count > busiestCount) { busiestCount = count; busiestTr = tr; }
+  }
+  if (busiestTr === -1 || busiestCount === 0) return;
+  const key = trackInstruments[busiestTr];
+  const isTonal = TONAL_KEYS.has(key);
+  const scale = trackBassScale[busiestTr];
+  let fallbackScale = null;
+  if (!isTonal || !scale) {
+    for (let tr = 0; tr < NUM_TRACKS; tr++) {
+      if (TONAL_KEYS.has(trackInstruments[tr]) && trackBassScale[tr]) { fallbackScale = trackBassScale[tr]; break; }
+    }
+  }
+  const half = Math.floor(NUM_STEPS / 2);
+  const activeSteps = [];
+  for (let s = 0; s < half; s++) if (grid[busiestTr][s] > 0) activeSteps.push(s);
+  if (activeSteps.length === 0) return;
+  const now = ctx.currentTime;
+  const dur = stepDuration();
+  const dest = getSynthConnectNode(busiestTr); // routes through the source track's own volume/mute/FX chain, rather than an arbitrary unrelated one
+  activeSteps.forEach((s, i) => {
+    let freq;
+    if (isTonal && scale) {
+      freq = (trackPitchOverride[busiestTr] && trackPitchOverride[busiestTr][s] !== undefined) ? trackPitchOverride[busiestTr][s] : scale[s % scale.length];
+    } else if (fallbackScale) {
+      freq = fallbackScale[s % fallbackScale.length];
+    } else {
+      freq = 220; // nothing tonal anywhere in the whole pattern — a plain, neutral A3
+    }
+    while (freq < 200) freq *= 2;
+    const time = now + i * dur;
+    const decay = Math.pow(0.82, i); // each successive note quieter than the last
+    _amalgamVolOverride = 0.0397 * decay; // same base level TEXTURE's own normal volume uses, just decaying across the sequence
+    _playPhantomNote(busiestTr, key, freq, false, time, dest, dur);
+    _amalgamVolOverride = null;
+  });
+}
 let _amalgamTriggerTimes = [];
 function _fireAmalgamEcho() {
   if (!ctx) return;
@@ -12584,9 +12633,9 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   });
   _amalgamVolOverride = null; // reset AFTER the notes read it — it was being cleared too early before, so every note fell back to the flat default instead of the computed volume
 }
-// Right tape spool (reel2) — shifts the whole BEAT pattern (same as the
-// < button in the BEAT menu). The amalgam swell sound that used to also
-// play here has been removed entirely.
+// Right tape spool (reel2) — single tap plays the amalgam swell (see
+// _playSpoolAmalgamSwell). Double tap resets the beat offset back to the
+// 1, same as it always has.
 (function() {
   const spool = document.getElementById('reel2');
   if (!spool) return;
@@ -12608,11 +12657,10 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
       flashBtnOrange('beatCtrlShift');
       markModified();
     } else {
-      // Shifts the whole BEAT pattern by one step, same idea as the <
-      // button in the BEAT menu — a momentary, one-time trigger. The
-      // amalgam swell sound used to also fire here but has been removed
-      // entirely.
-      beatCtrlShift();
+      // Single tap — plays the amalgam swell instead of shifting the
+      // beat pattern now (that's still available from the < button in
+      // the BEAT menu itself, this just no longer duplicates it here).
+      _playSpoolAmalgamSwell();
     }
     _lastSpoolTapTime = now;
   };
