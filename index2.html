@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">17Aug26 17:44</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">18Aug26 13:49</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -905,9 +905,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <!-- Sliders -->
     <div style="display:flex;flex-direction:column;gap:24px;">
 
-      <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;flex-direction:column;gap:15px;">
         <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TONAL / PERC BALANCE</div>
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RANDOM BALANCE</div>
           <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
         </div>
         <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
@@ -4654,7 +4654,7 @@ function playPulseBass(freq, durSec, isAccent, time, tr) {
 function playBashPiano(freq, durSec, isAccent, time, tr, _isDouble) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.2456 : 0.1506; // +2dB more (was 0.1951/0.1196)
+  const vel = isAccent ? 0.2919 : 0.1790; // +1.5dB more (was 0.2456/0.1506)
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.5;
   lp.frequency.setValueAtTime(isAccent ? 7000 : 4800, time);
@@ -7653,6 +7653,7 @@ function _applyDragStep(tr, s, cellEl, erase, isFirst) {
 }
 
 document.addEventListener('touchstart', e => {
+  if (_isAnyOverlayOpen()) return;
   const cell = e.target.closest('.step-cell');
   if (!cell) return;
   const tr = +cell.dataset.track, s = +cell.dataset.step;
@@ -7787,6 +7788,26 @@ document.addEventListener('mouseup', () => {
 // + buttons but is the BEAT menu's own "new beat type" control, a
 // different concept from "new notes", so it stays out of this generic
 // drag-across-tracks system.
+// Checked at the top of every global touch/drag handler that could
+// otherwise reach a button sitting behind an open overlay — the overlay
+// itself already blocks direct taps just by being on top of everything,
+// but the generic drag-to-engage system below dispatches synthetic
+// events based on screen coordinates via elementFromPoint(), which
+// operates independently of the DOM's own event-capturing hierarchy and
+// so was never actually stopped by an overlay just being visually on top.
+function _isAnyOverlayOpen() {
+  const displayIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay'];
+  for (const id of displayIds) {
+    const el = document.getElementById(id);
+    if (el && el.style.display !== 'none') return true;
+  }
+  const visibleClassIds = ['soundPicker', 'volOverlay'];
+  for (const id of visibleClassIds) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('visible')) return true;
+  }
+  return false;
+}
 const DRAGGABLE_BTN_SELECTORS = [
   '.track-ctrl-icon-btn:not(#beatCtrlRand)',
   '.shift-btn',
@@ -7801,6 +7822,7 @@ function isDraggableBtn(el) {
 }
 let btnDragActive = false, btnDragVisited = new Set();
 document.addEventListener('touchstart', e => {
+  if (_isAnyOverlayOpen()) return;
   const btn = e.target.closest(DRAGGABLE_BTN_SELECTORS.join(','));
   if (!btn || btn.matches('.track-name-btn')) return;
   // step-cell has its own system
@@ -7814,6 +7836,7 @@ document.addEventListener('touchstart', e => {
 
 document.addEventListener('touchmove', e => {
   if (!btnDragActive) return;
+  if (_isAnyOverlayOpen()) return;
   const touch = e.touches[0];
   const el = document.elementFromPoint(touch.clientX, touch.clientY);
   const btn = el?.closest(DRAGGABLE_BTN_SELECTORS.join(','));
@@ -9878,14 +9901,26 @@ function randAll(mode, opts) {
     // here and this whole constraint would silently do nothing whenever
     // MAGIC happened to already be locked in.
     const magicAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && trackInstruments[tr] === 'magic');
+    let _magicShortfall = 0;
     if (magicAlreadyLocked || nonBassShuffle.includes('magic')) {
       const lockedOtherTonalCount = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr]) && !bassKeys.has(trackInstruments[tr]) && trackInstruments[tr] !== 'magic').length;
       const allowedOthers = Math.max(0, 1 - lockedOtherTonalCount);
       const magicInThisPass = nonBassShuffle.includes('magic');
-      const others = nonBassShuffle.filter(k => k !== 'magic');
+      const others = nonBassShuffle.filter(k => k !== 'magic' && k !== 'boog'); // MAGIC is DREAM PIANO's own synthesis played as a chord — the two together would be redundant/clashing, so DREAM PIANO never gets to be the "one other" tonal slot alongside it
+      const _beforeCapLen = nonBassShuffle.length;
       nonBassShuffle.length = 0;
       if (magicInThisPass) nonBassShuffle.push('magic');
       nonBassShuffle.push(...others.slice(0, allowedOthers));
+      // MAGIC's own cap can leave the tonal side short of what the
+      // TONAL/PERC BALANCE slider actually asked for — without this,
+      // those now-unfilled slots would silently get handed to percussion
+      // instead (the slider's own promise broken), or worse, the pool
+      // itself would come up short and the assignment loop's own
+      // duplicate-avoiding fallback would just repeat the same
+      // instrument across multiple tracks. Left empty instead — MAGIC
+      // is already dense and heavy on its own, so fewer competing tracks
+      // is the right call anyway, not just the least-bad option.
+      _magicShortfall = Math.max(0, Math.min(tonalSlotsEff, _beforeCapLen) - nonBassShuffle.length);
     }
     const tPool = nonBassShuffle.slice(0, tonalSlotsEff);
 
@@ -10024,13 +10059,22 @@ function randAll(mode, opts) {
 
   // At the top intensity tier (level 4 of 0-4, i.e. the top 90%+ of the
   // range), it's fine — good, even — to leave one track completely silent
-  // rather than cramming an instrument into every single slot. Picked once,
-  // up front, from whichever real tracks aren't locked.
-  let _emptyTrackIdx = -1;
-  if (level === 4) {
-    const _emptyCandidates = [];
-    for (let tr = 1; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _emptyCandidates.push(tr);
-    if (_emptyCandidates.length > 0) _emptyTrackIdx = _emptyCandidates[Math.floor(Math.random() * _emptyCandidates.length)];
+  // rather than cramming an instrument into every single slot. Combined
+  // with however many slots MAGIC's own cap left unfilled above (see
+  // _magicShortfall) — both are independent reasons for a track to end up
+  // empty, so their counts just add together here.
+  const _emptyTrackIndices = new Set();
+  {
+    const _emptyNeeded = (level === 4 ? 1 : 0) + _magicShortfall;
+    if (_emptyNeeded > 0) {
+      const _emptyCandidates = [];
+      for (let tr = 1; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _emptyCandidates.push(tr);
+      for (let i = 0; i < _emptyNeeded && _emptyCandidates.length > 0; i++) {
+        const idx = Math.floor(Math.random() * _emptyCandidates.length);
+        _emptyTrackIndices.add(_emptyCandidates[idx]);
+        _emptyCandidates.splice(idx, 1);
+      }
+    }
   }
 
   // Assign sorted pool sequentially to unlocked tracks
@@ -10039,7 +10083,7 @@ function randAll(mode, opts) {
 
   let poolIdx = 0;
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (tr === _emptyTrackIdx) {
+    if (_emptyTrackIndices.has(tr)) {
       // Leave it genuinely silent — no notes, FX/Delay/BLAST cleared. Stays
       // UNMUTED though — every RAND track is always unmuted regardless of
       // whether it actually has notes in it, so a manual edit later is
@@ -10245,7 +10289,7 @@ function randAll(mode, opts) {
       // one and re-randomize the same track twice for no reason.
       let target = -1;
       for (let tr = NUM_TRACKS - 1; tr >= 1; tr--) {
-        if (tr === _emptyTrackIdx || trackSweep[tr] || trackInstruments[tr] === 'skick') continue; // don't displace an already-correctly-bottom-ranked kick
+        if (_emptyTrackIndices.has(tr) || trackSweep[tr] || trackInstruments[tr] === 'skick') continue; // don't displace an already-correctly-bottom-ranked kick
         target = tr; break;
       }
       if (target !== -1) {
@@ -12563,6 +12607,7 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   // overlapping partial swells landing on top of each other at once).
   let _spoolReleaseTid = null;
   document.addEventListener('touchmove', e => {
+    if (_isAnyOverlayOpen()) return;
     const touch = e.touches[0];
     if (!touch) return;
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -12996,6 +13041,7 @@ function fullReset() {
   let _swipeStartX = 0, _swipeStartY = 0, _swipeHandled = false;
 
   document.addEventListener('touchstart', e => {
+    if (_isAnyOverlayOpen()) return;
     const touch = e.touches[0];
     if (!touch) return;
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
