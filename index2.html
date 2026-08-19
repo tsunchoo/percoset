@@ -32,30 +32,6 @@ body {
   min-height: 100svh; overflow-y: auto; display: flex; flex-direction: column; align-items: center;
   padding: max(16px, env(safe-area-inset-top)) 4px 16px 4px; user-select: none; -webkit-user-select: none; box-sizing: border-box;
 }
-/* Definitive fix for buttons behind an open overlay still being
-   reachable — a JS event-based guard (stopPropagation on a capture-phase
-   document listener) turned out to be insufficient, since it only stops
-   an event from reaching OTHER nodes, not other listeners already
-   registered directly on document itself (like the drag-to-engage
-   system's own document-level listeners) — those still fired regardless.
-   This is browser-enforced instead: pointer-events is a rendering-layer
-   property, so nothing being reachable behind an open overlay is
-   guaranteed by the browser itself, not by any particular JS listener
-   correctly anticipating every path a touch could take. Each overlay
-   explicitly re-enables itself so its own content stays interactive. */
-body.any-overlay-open { pointer-events: none; }
-body.any-overlay-open #devMenuOverlay,
-body.any-overlay-open #instructionsOverlay,
-body.any-overlay-open #settingsOverlay,
-body.any-overlay-open #bpmOverlay,
-body.any-overlay-open #tempoScreenOverlay,
-body.any-overlay-open #beatVolOverlay,
-body.any-overlay-open #soundPicker,
-body.any-overlay-open #volOverlay,
-body.any-overlay-open #cmapOverlay,
-body.any-overlay-open #galaxyMapOverlay {
-  pointer-events: auto;
-}
 #landscapeBlock {
   display: none;
   position: fixed; inset: 0; z-index: 9999;
@@ -387,13 +363,12 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
-.fx-btn.porta-on { background: #0081FE; color: #fff; } /* same blue as the reverb (R) button's own engaged color — I had this wrong earlier (assumed var(--playhead)/red, which is actually a different button's color entirely) */
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
-/* Every engaged track button (FX, BLAST, PORTAMENTO, reverb, lock) pulses
-   in both size and color while active — previously these just had a
-   flat, static color swap with no animation at all. */
+/* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
+   size and color while active — previously these just had a flat, static
+   color swap with no animation at all. */
 @keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.3); } 100% { transform: scale(1); filter: brightness(1); } }
-.fx-btn.on, .fx-btn.blast-on, .fx-btn.porta-on, .track-ctrl-icon-btn.sweep-on {
+.fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on {
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
 }
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
@@ -765,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 07:27</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 07:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2233,98 +2208,6 @@ function getSynthConnectNode(tr) {
   }
   return node;
 }
-// ── PORTAMENTO FX mode ──────────────────────────────────────────────────
-// A single, continuously-running voice per track rather than a fresh
-// envelope-triggered voice per note — each new note bends the existing
-// oscillator's pitch smoothly to the new target instead of retriggering
-// an attack/decay shape, so the track just glides from note to note with
-// no per-hit enveloping at all. Routes through the exact same
-// getSynthConnectNode(tr) every other instrument uses, so volume, mute,
-// sidechain ducking, and the soft-clip safety net all keep working
-// exactly as they do for any other track.
-const _portamentoVoices = {}; // tr -> { osc, filter, gain }
-function _ensurePortamentoVoice(tr, freq, time) {
-  if (!ctx) return null;
-  let voice = _portamentoVoices[tr];
-  if (voice) return voice;
-  const _portaBassKeys = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
-  const isBassTrack = _portaBassKeys.has(trackInstruments[tr]);
-  const osc = ctx.createOscillator(); osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(Math.max(freq, 1), time);
-  const filter = ctx.createBiquadFilter(); filter.type = 'lowpass';
-  filter.frequency.value = isBassTrack ? 900 : 2200; // darker for bass — the bright sawtooth harmonics alone were reading as pitched noticeably higher than the actual fundamental, with nothing low reinforcing it
-  filter.Q.value = 0.6;
-  const gain = ctx.createGain(); gain.gain.setValueAtTime(0, time);
-  osc.connect(filter);
-  // Bass tracks get a sub-sine layered in underneath, same as every other
-  // bass synth in this app — the plain sawtooth alone had nothing
-  // reinforcing the fundamental's actual weight, which is what read as
-  // perceptually higher/thinner even though the pitch value itself was
-  // always correct.
-  let subOsc = null;
-  if (isBassTrack) {
-    subOsc = ctx.createOscillator(); subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(Math.max(freq, 1), time);
-    subOsc.connect(filter);
-    subOsc.start(time);
-  }
-  filter.connect(gain);
-  gain.connect(getSynthConnectNode(tr));
-  osc.start(time);
-  voice = { osc, subOsc, filter, gain };
-  _portamentoVoices[tr] = voice;
-  return voice;
-}
-function _portamentoNoteOn(freq, durSec, isAccent, time, tr) {
-  if (!ctx) return;
-  const voice = _ensurePortamentoVoice(tr, freq, time);
-  if (!voice) return;
-  // Audible slide between whichever pitch it was already sitting on and
-  // the new target — capped so it never overruns a short note's own
-  // duration and starts sliding into the note after it.
-  const glideTime = Math.min(durSec * 0.7, 0.35);
-  voice.osc.frequency.cancelScheduledValues(time);
-  voice.osc.frequency.setValueAtTime(Math.max(voice.osc.frequency.value, 1), time);
-  voice.osc.frequency.exponentialRampToValueAtTime(Math.max(freq, 1), time + glideTime);
-  if (voice.subOsc) {
-    voice.subOsc.frequency.cancelScheduledValues(time);
-    voice.subOsc.frequency.setValueAtTime(Math.max(voice.subOsc.frequency.value, 1), time);
-    voice.subOsc.frequency.exponentialRampToValueAtTime(Math.max(freq, 1), time + glideTime);
-  }
-  // No per-note attack/decay envelope — just a gentle level nudge on
-  // accents so they still read as more emphasized without retriggering a
-  // full shape, keeping the "no enveloping" character intact.
-  const targetGain = isAccent ? 0.1748 : 0.1271; // -2dB (was 0.22/0.16)
-  voice.gain.gain.cancelScheduledValues(time);
-  voice.gain.gain.setTargetAtTime(targetGain, time, 0.05);
-  // Decay scheduled at the end of THIS note's own duration — without
-  // this the voice just kept droning indefinitely between hits, sliding
-  // pitch on every new note but never actually stopping, which is
-  // audibly wrong for anything that isn't genuinely legato (a single
-  // struck note on every quarter, for instance, should sound like
-  // distinct sliding notes, not one continuous tone). If the NEXT note
-  // fires before this decay finishes, that call's own
-  // cancelScheduledValues(time) above removes this pending decay before
-  // it ever gets a chance to run, so back-to-back/legato notes still
-  // glide smoothly with no audible gap or restart.
-  const decayStart = time + Math.max(durSec, glideTime);
-  voice.gain.gain.setTargetAtTime(0, decayStart, 0.06);
-}
-function _resetPortamentoVoice(tr) {
-  _stopPortamentoVoice(tr); // clean slate whenever the mode first engages
-}
-function _stopPortamentoVoice(tr) {
-  const voice = _portamentoVoices[tr];
-  if (!voice) return;
-  if (ctx) {
-    const t = ctx.currentTime;
-    voice.gain.gain.cancelScheduledValues(t);
-    voice.gain.gain.setTargetAtTime(0, t, 0.08);
-    try { voice.osc.stop(t + 0.5); } catch (e) {}
-    if (voice.subOsc) { try { voice.subOsc.stop(t + 0.5); } catch (e) {} }
-  }
-  delete _portamentoVoices[tr];
-}
 // A gentle, transparent-until-needed soft-clip safety net — applied
 // universally, to every synthesized track, as the very first thing any
 // instrument's oscillators/noise sources actually connect into. Several
@@ -2560,7 +2443,6 @@ const trackDelay = new Array(NUM_TRACKS).fill(false);
 // track: sidechain pump (ducks with BEAT's kick+snare) -> sustain boost
 // (slow-release compressor) -> crunch (waveshaper). Off by default.
 const trackPump = new Array(NUM_TRACKS).fill(false);
-const trackPorta = new Array(NUM_TRACKS).fill(false); // portamento FX mode — 3rd press after BLAST, slides between notes instead of pumping
 const trackPumpNodes = {}; // tr -> { pumpGain, comp, crunch, crunchMakeup, dest }
 const _delayNodes = {}; // keyed by tr: { delay, feedback, wetGain }
 const trackFxMode = new Array(NUM_TRACKS).fill(0); // 0=CHOKE/SLAP, 1=CRUNCH/ENV
@@ -2880,15 +2762,6 @@ function fireStepAudio(step, t) {
           }
           // else: a plain manually-placed note — stays a single short step,
           // rather than inferring sustain from the gap to the next note.
-          // PORTAMENTO FX mode — bypasses the normal per-instrument
-          // synthesis and the FX envelope entirely (that's the
-          // "enveloping" being removed) in favor of one continuously
-          // running, gliding voice per track. Still counts as a genuine
-          // note for anything downstream that only cares whether one
-          // fired (32nd-split, etc.) — just via a different voice.
-          if (trackPorta[tr] && _renderThisTrack) {
-            _portamentoNoteOn(freq, dur, val === 2, t, tr);
-          } else {
           // Sidechain duck on accent
           if (val === 2 && window._duckGain) {
             const dg = window._duckGain;
@@ -2972,7 +2845,6 @@ function fireStepAudio(step, t) {
             ef.frequency.exponentialRampToValueAtTime(closeFreq, t + sweepDur);
             ef.frequency.setValueAtTime(22050, t + sweepDur + 0.01); // reopen instantly after
           }
-          } // end of the non-portamento branch opened above
 
         } else if (key === 'ngate') {
           if (_renderThisTrack) {
@@ -7498,25 +7370,16 @@ function buildUI() {
         trackFx[tr] = newVal;
         if (ctx) setFxActive(tr, newVal);
         fxBtn.classList.add('on');
-      } else if (!trackPump[tr] && !trackPorta[tr]) {
+      } else if (!trackPump[tr]) {
         // FX on -> FX+BLAST on
         trackPump[tr] = true;
         fxBtn.classList.add('blast-on');
-      } else if (trackPump[tr]) {
-        // FX+BLAST on -> FX+PORTAMENTO on
-        trackPump[tr] = false;
-        trackPorta[tr] = true;
-        _resetPortamentoVoice(tr);
-        fxBtn.classList.remove('blast-on');
-        fxBtn.classList.add('porta-on');
       } else {
-        // FX+PORTAMENTO on -> off
+        // FX+BLAST on -> off
         trackFx[tr] = { x: 0, y: 0 };
         if (ctx) setFxActive(tr, trackFx[tr]);
         trackPump[tr] = false;
-        trackPorta[tr] = false;
-        _stopPortamentoVoice(tr);
-        fxBtn.classList.remove('on', 'blast-on', 'porta-on');
+        fxBtn.classList.remove('on', 'blast-on');
       }
       markModified();
     };
@@ -7586,11 +7449,6 @@ function updateTrackMute(tr) {
   const vb = document.getElementById(`vbar-${tr}`); if (vb) vb.classList.toggle('muted', trackMuted[tr]);
   const row = document.getElementById(`ctrlrow-${tr}`); if (row) row.classList.toggle('row-muted', trackMuted[tr]);
   const lm = document.getElementById(`lane-${tr}`); if (lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
-  // A portamento voice is a continuously-running drone, not discrete
-  // per-note hits — muting only stops NEW notes from triggering it, so
-  // without this an already-running voice would keep audibly droning
-  // right through mute.
-  if (trackMuted[tr] && trackPorta[tr]) _stopPortamentoVoice(tr);
 }
 
 function attachVolBarEvents(bar, tr) {
@@ -7795,7 +7653,6 @@ function _applyDragStep(tr, s, cellEl, erase, isFirst) {
 }
 
 document.addEventListener('touchstart', e => {
-  if (_isAnyOverlayOpen()) return;
   const cell = e.target.closest('.step-cell');
   if (!cell) return;
   const tr = +cell.dataset.track, s = +cell.dataset.step;
@@ -7930,77 +7787,6 @@ document.addEventListener('mouseup', () => {
 // + buttons but is the BEAT menu's own "new beat type" control, a
 // different concept from "new notes", so it stays out of this generic
 // drag-across-tracks system.
-// Checked at the top of every global touch/drag handler that could
-// otherwise reach a button sitting behind an open overlay — the overlay
-// itself already blocks direct taps just by being on top of everything,
-// but the generic drag-to-engage system below dispatches synthetic
-// events based on screen coordinates via elementFromPoint(), which
-// operates independently of the DOM's own event-capturing hierarchy and
-// so was never actually stopped by an overlay just being visually on top.
-function _isAnyOverlayOpen() {
-  return !!_openOverlayEl();
-}
-// Returns the actual DOM element of whichever overlay is currently open,
-// or null if none are. Used by the global capture-phase guard below.
-function _openOverlayEl() {
-  const displayIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay'];
-  for (const id of displayIds) {
-    const el = document.getElementById(id);
-    if (el && el.style.display !== 'none') return el;
-  }
-  const visibleClassIds = ['soundPicker', 'volOverlay'];
-  for (const id of visibleClassIds) {
-    const el = document.getElementById(id);
-    if (el && el.classList.contains('visible')) return el;
-  }
-  // The star-map overlays (name-bar hold gesture) use their own separate
-  // .active class convention rather than either pattern above — these
-  // were entirely untracked before, so body.any-overlay-open never
-  // engaged at all while one of these was open, leaving every background
-  // button fully interactive underneath it.
-  const activeClassIds = ['cmapOverlay', 'galaxyMapOverlay'];
-  for (const id of activeClassIds) {
-    const el = document.getElementById(id);
-    if (el && el.classList.contains('active')) return el;
-  }
-  return null;
-}
-// Keeps body.any-overlay-open in sync with actual overlay visibility —
-// the CSS pointer-events block above is the definitive fix, but it needs
-// this class toggled correctly whenever any overlay shows or hides.
-// Watching each overlay element's own style/class directly (not the
-// whole document subtree) rather than hooking into every individual
-// show/hide function keeps this current automatically even if a new
-// overlay or a new way of opening one gets added later.
-function _updateOverlayPointerBlock() {
-  document.body.classList.toggle('any-overlay-open', !!_openOverlayEl());
-}
-(function() {
-  const watchIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay', 'soundPicker', 'volOverlay', 'cmapOverlay', 'galaxyMapOverlay'];
-  const observer = new MutationObserver(_updateOverlayPointerBlock);
-  watchIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
-  });
-  _updateOverlayPointerBlock();
-})();
-// Single, global, capture-phase guard — runs before any listener attached
-// directly to a button, regardless of what mechanism would otherwise fire
-// it (the coordinate-based drag-to-engage system, a direct listener on the
-// button itself, anything). Per-handler guards on the drag system alone
-// weren't catching every path a touch could still reach a background
-// button through, so this blocks everything outside the open overlay's
-// own content at the earliest possible point instead of trying to
-// anticipate every individual mechanism separately.
-['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(evt => {
-  document.addEventListener(evt, e => {
-    const openEl = _openOverlayEl();
-    if (!openEl) return;
-    if (openEl.contains(e.target)) return; // inside the open overlay's own content (including its backdrop) — let it through normally
-    e.stopPropagation();
-    e.preventDefault();
-  }, { capture: true, passive: false });
-});
 const DRAGGABLE_BTN_SELECTORS = [
   '.track-ctrl-icon-btn:not(#beatCtrlRand)',
   '.shift-btn',
@@ -8015,7 +7801,6 @@ function isDraggableBtn(el) {
 }
 let btnDragActive = false, btnDragVisited = new Set();
 document.addEventListener('touchstart', e => {
-  if (_isAnyOverlayOpen()) return;
   const btn = e.target.closest(DRAGGABLE_BTN_SELECTORS.join(','));
   if (!btn || btn.matches('.track-name-btn')) return;
   // step-cell has its own system
@@ -8029,7 +7814,6 @@ document.addEventListener('touchstart', e => {
 
 document.addEventListener('touchmove', e => {
   if (!btnDragActive) return;
-  if (_isAnyOverlayOpen()) return;
   const touch = e.touches[0];
   const el = document.elementFromPoint(touch.clientX, touch.clientY);
   const btn = el?.closest(DRAGGABLE_BTN_SELECTORS.join(','));
@@ -10684,25 +10468,12 @@ function randAll(mode, opts) {
       }
       const fb = document.getElementById(`fxbtn-${tr}`);
       if (fb) fb.classList.toggle('on', fxOn);
-      // PORTAMENTO and BLAST — genuinely tonal (pitched) instruments split
-      // between the two once the combined "move past plain FX" chance
-      // fires; unpitched ones (RIDE, CONGA/BONGO — sliding pitch makes no
-      // sense on an unpitched hit) get a separate, independent roll for
-      // whether that enhance chance actually becomes BLAST or just stays
-      // at plain FX, rather than an automatic escalation every time.
-      // JINX keeps its own existing special trigger (tied to its linked
-      // FX/reverb roll, no separate probabilistic check) but is just as
-      // tonal as anything else here, so it now gets a genuine shot at
-      // PORTAMENTO too instead of always defaulting to BLAST.
-      const hasNotesForFx = grid[tr].some(v => v > 0);
-      const portaEligible = TONAL_KEYS.has(trackInstruments[tr]);
-      const enhanceChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
-      const wantsEnhance = isJinx ? (fxOn && hasNotesForFx) : (fxOn && hasNotesForFx && Math.random() < enhanceChance);
-      const portaOn = portaEligible && wantsEnhance && Math.random() < 0.65; // weighted in its favor — only ever rolled among genuinely tonal/eligible tracks in the first place
-      const blastOn = wantsEnhance && !portaOn && (portaEligible || Math.random() < 0.5);
-      trackPorta[tr] = portaOn;
-      if (portaOn) _resetPortamentoVoice(tr); else _stopPortamentoVoice(tr);
-      if (fb) fb.classList.toggle('porta-on', portaOn);
+      // BLAST — sprinkled in more as the tier gets more hectic, capping out
+      // around FX's own normal (non-bass) rate rather than a flat chance.
+      // Never on a track with no actual notes in it.
+      const hasNotes = grid[tr].some(v => v > 0);
+      const blastChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
+      const blastOn = isJinx ? (fxOn && hasNotes) : (fxOn && hasNotes && Math.random() < blastChance); // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle. JINX: no separate roll — BLAST just follows its own linked FX roll directly
       trackPump[tr] = blastOn;
       if (fb) fb.classList.toggle('blast-on', blastOn);
     } else if (!trackSweep[tr]) {
@@ -10711,8 +10482,7 @@ function randAll(mode, opts) {
       // BLAST over from before this RAND pass — clear it like every other
       // unlocked track's FX state.
       trackPump[tr] = false;
-      trackPorta[tr] = false; _stopPortamentoVoice(tr);
-      const fb2 = document.getElementById(`fxbtn-${tr}`); if (fb2) { fb2.classList.remove('blast-on'); fb2.classList.remove('porta-on'); }
+      const fb2 = document.getElementById(`fxbtn-${tr}`); if (fb2) fb2.classList.remove('blast-on');
       const vb = document.getElementById(`vbar-${tr}`);
       if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, 0.5); }
       if (trackGainNodes[tr] && ctx) trackGainNodes[tr].gain.setValueAtTime(0.5, ctx.currentTime);
@@ -10981,7 +10751,6 @@ function snapshotState() {
     beatType: _beatType,
     trackDelay: [...trackDelay],
     trackPump: [...trackPump],
-    trackPorta: [...trackPorta],
     trackAutoRand: [...Array(NUM_TRACKS)].map((_, tr) => !!autoShiftStops[tr]),
     activeSlot: activeSlot,
     // Full color palette — TOP ROW, TRACK BUTTONS, HIGHLIGHT, HIGHLIGHT 2,
@@ -11063,13 +10832,6 @@ function restoreState(snap, opts) {
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
     if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) fb2.classList.toggle('blast-on', trackPump[tr]); }
-    // Older saves won't have trackPorta at all — defaults to off for
-    // those tracks, same as if the feature didn't exist yet for them.
-    // Always stops any currently-running voice regardless, since the
-    // whole pattern is changing out from under it either way.
-    trackPorta[tr] = snap.trackPorta ? !!snap.trackPorta[tr] : false;
-    _stopPortamentoVoice(tr);
-    { const fbPorta = document.getElementById(`fxbtn-${tr}`); if (fbPorta) fbPorta.classList.toggle('porta-on', trackPorta[tr]); }
     if (snap.trackFxMode) { trackFxMode[tr] = snap.trackFxMode[tr] || 0; }
     if (snap.trackSweep) { trackSweep[tr] = snap.trackSweep[tr] || false; }
     if (snap.trackChop)  { trackChop[tr]  = snap.trackChop[tr]  || false; }
@@ -12888,7 +12650,6 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   // overlapping partial swells landing on top of each other at once).
   let _spoolReleaseTid = null;
   document.addEventListener('touchmove', e => {
-    if (_isAnyOverlayOpen()) return;
     const touch = e.touches[0];
     if (!touch) return;
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -13123,7 +12884,6 @@ function hideInstructions() {
 // and leave the page blank, so the reset gesture must never depend on one.
 function fullReset() {
   if (playing) togglePlay();
-  for (let tr = 0; tr < NUM_TRACKS; tr++) { trackPorta[tr] = false; _stopPortamentoVoice(tr); }
   _recallSnapB = null;
   window._resetRecallAB?.();
   setTrackPulseMode('solid');
@@ -13323,7 +13083,6 @@ function fullReset() {
   let _swipeStartX = 0, _swipeStartY = 0, _swipeHandled = false;
 
   document.addEventListener('touchstart', e => {
-    if (_isAnyOverlayOpen()) return;
     const touch = e.touches[0];
     if (!touch) return;
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -13334,7 +13093,6 @@ function fullReset() {
     _swipeStartX = touch.clientX; _swipeStartY = touch.clientY; _swipeHandled = false;
     _nameHoldTimer = setTimeout(() => {
       _nameHoldTimer = null;
-      if (_isAnyOverlayOpen()) { _dragActive = false; return; } // same reasoning — a hold already in progress when an overlay opens shouldn't still open the sound picker underneath it
       if (!_isDragging) {
         openSoundPicker(_nameHoldTr);
         _dragActive = false; // picker is open now — any further finger movement is picking an instrument, not a mute-drag
@@ -13345,7 +13103,6 @@ function fullReset() {
 
   document.addEventListener('touchmove', e => {
     if (!_dragActive || _swipeHandled) return;
-    if (_isAnyOverlayOpen()) { _dragActive = false; _isDragging = false; _dragVisited = new Set(); if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; } return; } // an overlay can open mid-gesture (started before it appeared) — touchstart's own check only guards the very beginning of a touch sequence, not everything that happens for the rest of it
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
     if (!_isDragging) {
@@ -13396,11 +13153,6 @@ function fullReset() {
   }, { passive: true });
 
   const endDrag = () => {
-    if (_isAnyOverlayOpen()) { // same reasoning as the touchmove guard above — a gesture already in progress when the overlay opened would otherwise still fire its release action
-      if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; }
-      _dragActive = false; _isDragging = false; _dragVisited = new Set();
-      return;
-    }
     if (!_isDragging && _nameHoldTimer) {
       // Genuine quick tap, no drag — toggle just this one track.
       clearTimeout(_nameHoldTimer); _nameHoldTimer = null;
@@ -13425,19 +13177,13 @@ function fullReset() {
   document.addEventListener('touchstart', () => { _lastRealTouchTime = Date.now(); }, { passive: true });
   document.addEventListener('mousedown', e => {
     if (Date.now() - _lastRealTouchTime < 500) return; // ignore synthetic mousedown following a real touch
-    if (_isAnyOverlayOpen()) return;
     const btn = e.target.closest && e.target.closest('.track-name-btn');
     if (!btn) return;
     const tr = +btn.dataset.tr;
-    _mouseHoldTimer = setTimeout(() => {
-      _mouseHoldTimer = null;
-      if (_isAnyOverlayOpen()) return; // an overlay could open during the 400ms hold window itself
-      openSoundPicker(tr);
-    }, 400);
+    _mouseHoldTimer = setTimeout(() => { _mouseHoldTimer = null; openSoundPicker(tr); }, 400);
   });
   document.addEventListener('mouseup', e => {
     if (Date.now() - _lastRealTouchTime < 500) return; // ignore synthetic mouseup following a real touch
-    if (_isAnyOverlayOpen()) { clearTimeout(_mouseHoldTimer); _mouseHoldTimer = null; return; }
     const btn = e.target.closest && e.target.closest('.track-name-btn');
     if (!btn || !_mouseHoldTimer) return;
     const tr = +btn.dataset.tr;
