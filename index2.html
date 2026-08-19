@@ -763,7 +763,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 06:45</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 07:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -10649,22 +10649,22 @@ function randAll(mode, opts) {
       }
       const fb = document.getElementById(`fxbtn-${tr}`);
       if (fb) fb.classList.toggle('on', fxOn);
-      // PORTAMENTO and BLAST — a single, combined "move past plain FX"
-      // chance (same magnitude BLAST alone used to have), split evenly
-      // between the two once it fires, rather than PORTAMENTO being a
-      // rare afterthought layered on top of BLAST's own separate roll —
-      // both stages should be reachable at comparable rates. Only for
-      // genuinely tonal (pitched) instruments; RIDE and CONGA/BONGO get
-      // FX too but sliding pitch makes no sense on an unpitched hit, so
-      // the whole chance just goes to BLAST for them instead. JINX keeps
-      // its own existing special case — no separate roll, always BLAST
-      // when its own linked FX roll is on, never PORTAMENTO.
+      // PORTAMENTO and BLAST — genuinely tonal (pitched) instruments split
+      // between the two once the combined "move past plain FX" chance
+      // fires; unpitched ones (RIDE, CONGA/BONGO — sliding pitch makes no
+      // sense on an unpitched hit) get a separate, independent roll for
+      // whether that enhance chance actually becomes BLAST or just stays
+      // at plain FX, rather than an automatic escalation every time.
+      // JINX keeps its own existing special trigger (tied to its linked
+      // FX/reverb roll, no separate probabilistic check) but is just as
+      // tonal as anything else here, so it now gets a genuine shot at
+      // PORTAMENTO too instead of always defaulting to BLAST.
       const hasNotesForFx = grid[tr].some(v => v > 0);
       const portaEligible = TONAL_KEYS.has(trackInstruments[tr]);
       const enhanceChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
-      const wantsEnhance = fxOn && hasNotesForFx && Math.random() < enhanceChance;
-      const portaOn = !isJinx && portaEligible && wantsEnhance && Math.random() < 0.5;
-      const blastOn = isJinx ? (fxOn && hasNotesForFx) : (wantsEnhance && !portaOn); // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle. JINX: no separate roll — BLAST just follows its own linked FX roll directly
+      const wantsEnhance = isJinx ? (fxOn && hasNotesForFx) : (fxOn && hasNotesForFx && Math.random() < enhanceChance);
+      const portaOn = portaEligible && wantsEnhance && Math.random() < 0.65; // weighted in its favor — only ever rolled among genuinely tonal/eligible tracks in the first place
+      const blastOn = wantsEnhance && !portaOn && (portaEligible || Math.random() < 0.5);
       trackPorta[tr] = portaOn;
       if (portaOn) _resetPortamentoVoice(tr); else _stopPortamentoVoice(tr);
       if (fb) fb.classList.toggle('porta-on', portaOn);
@@ -13299,6 +13299,7 @@ function fullReset() {
     _swipeStartX = touch.clientX; _swipeStartY = touch.clientY; _swipeHandled = false;
     _nameHoldTimer = setTimeout(() => {
       _nameHoldTimer = null;
+      if (_isAnyOverlayOpen()) { _dragActive = false; return; } // same reasoning — a hold already in progress when an overlay opens shouldn't still open the sound picker underneath it
       if (!_isDragging) {
         openSoundPicker(_nameHoldTr);
         _dragActive = false; // picker is open now — any further finger movement is picking an instrument, not a mute-drag
@@ -13309,6 +13310,7 @@ function fullReset() {
 
   document.addEventListener('touchmove', e => {
     if (!_dragActive || _swipeHandled) return;
+    if (_isAnyOverlayOpen()) { _dragActive = false; _isDragging = false; _dragVisited = new Set(); if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; } return; } // an overlay can open mid-gesture (started before it appeared) — touchstart's own check only guards the very beginning of a touch sequence, not everything that happens for the rest of it
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
     if (!_isDragging) {
@@ -13359,6 +13361,11 @@ function fullReset() {
   }, { passive: true });
 
   const endDrag = () => {
+    if (_isAnyOverlayOpen()) { // same reasoning as the touchmove guard above — a gesture already in progress when the overlay opened would otherwise still fire its release action
+      if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; }
+      _dragActive = false; _isDragging = false; _dragVisited = new Set();
+      return;
+    }
     if (!_isDragging && _nameHoldTimer) {
       // Genuine quick tap, no drag — toggle just this one track.
       clearTimeout(_nameHoldTimer); _nameHoldTimer = null;
@@ -13383,13 +13390,19 @@ function fullReset() {
   document.addEventListener('touchstart', () => { _lastRealTouchTime = Date.now(); }, { passive: true });
   document.addEventListener('mousedown', e => {
     if (Date.now() - _lastRealTouchTime < 500) return; // ignore synthetic mousedown following a real touch
+    if (_isAnyOverlayOpen()) return;
     const btn = e.target.closest && e.target.closest('.track-name-btn');
     if (!btn) return;
     const tr = +btn.dataset.tr;
-    _mouseHoldTimer = setTimeout(() => { _mouseHoldTimer = null; openSoundPicker(tr); }, 400);
+    _mouseHoldTimer = setTimeout(() => {
+      _mouseHoldTimer = null;
+      if (_isAnyOverlayOpen()) return; // an overlay could open during the 400ms hold window itself
+      openSoundPicker(tr);
+    }, 400);
   });
   document.addEventListener('mouseup', e => {
     if (Date.now() - _lastRealTouchTime < 500) return; // ignore synthetic mouseup following a real touch
+    if (_isAnyOverlayOpen()) { clearTimeout(_mouseHoldTimer); _mouseHoldTimer = null; return; }
     const btn = e.target.closest && e.target.closest('.track-name-btn');
     if (!btn || !_mouseHoldTimer) return;
     const tr = +btn.dataset.tr;
