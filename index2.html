@@ -363,12 +363,13 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
+.fx-btn.porta-on { background: var(--playhead); color: #fff; } /* same as the reverb button's own engaged color, per request */
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
-/* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
-   size and color while active — previously these just had a flat, static
-   color swap with no animation at all. */
+/* Every engaged track button (FX, BLAST, PORTAMENTO, reverb, lock) pulses
+   in both size and color while active — previously these just had a
+   flat, static color swap with no animation at all. */
 @keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.3); } 100% { transform: scale(1); filter: brightness(1); } }
-.fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on {
+.fx-btn.on, .fx-btn.blast-on, .fx-btn.porta-on, .track-ctrl-icon-btn.sweep-on {
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
 }
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
@@ -740,7 +741,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">18Aug26 13:49</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 05:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2208,6 +2209,63 @@ function getSynthConnectNode(tr) {
   }
   return node;
 }
+// ── PORTAMENTO FX mode ──────────────────────────────────────────────────
+// A single, continuously-running voice per track rather than a fresh
+// envelope-triggered voice per note — each new note bends the existing
+// oscillator's pitch smoothly to the new target instead of retriggering
+// an attack/decay shape, so the track just glides from note to note with
+// no per-hit enveloping at all. Routes through the exact same
+// getSynthConnectNode(tr) every other instrument uses, so volume, mute,
+// sidechain ducking, and the soft-clip safety net all keep working
+// exactly as they do for any other track.
+const _portamentoVoices = {}; // tr -> { osc, filter, gain }
+function _ensurePortamentoVoice(tr, freq, time) {
+  if (!ctx) return null;
+  let voice = _portamentoVoices[tr];
+  if (voice) return voice;
+  const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(Math.max(freq, 1), time);
+  const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 2200; filter.Q.value = 0.6;
+  const gain = ctx.createGain(); gain.gain.setValueAtTime(0, time);
+  osc.connect(filter); filter.connect(gain);
+  gain.connect(getSynthConnectNode(tr));
+  osc.start(time);
+  voice = { osc, filter, gain };
+  _portamentoVoices[tr] = voice;
+  return voice;
+}
+function _portamentoNoteOn(freq, durSec, isAccent, time, tr) {
+  if (!ctx) return;
+  const voice = _ensurePortamentoVoice(tr, freq, time);
+  if (!voice) return;
+  // Audible slide between whichever pitch it was already sitting on and
+  // the new target — capped so it never overruns a short note's own
+  // duration and starts sliding into the note after it.
+  const glideTime = Math.min(durSec * 0.7, 0.35);
+  voice.osc.frequency.cancelScheduledValues(time);
+  voice.osc.frequency.setValueAtTime(Math.max(voice.osc.frequency.value, 1), time);
+  voice.osc.frequency.exponentialRampToValueAtTime(Math.max(freq, 1), time + glideTime);
+  // No per-note attack/decay envelope — just a gentle level nudge on
+  // accents so they still read as more emphasized without retriggering a
+  // full shape, keeping the "no enveloping" character intact.
+  const targetGain = isAccent ? 0.22 : 0.16;
+  voice.gain.gain.cancelScheduledValues(time);
+  voice.gain.gain.setTargetAtTime(targetGain, time, 0.05);
+}
+function _resetPortamentoVoice(tr) {
+  _stopPortamentoVoice(tr); // clean slate whenever the mode first engages
+}
+function _stopPortamentoVoice(tr) {
+  const voice = _portamentoVoices[tr];
+  if (!voice) return;
+  if (ctx) {
+    const t = ctx.currentTime;
+    voice.gain.gain.cancelScheduledValues(t);
+    voice.gain.gain.setTargetAtTime(0, t, 0.08);
+    try { voice.osc.stop(t + 0.5); } catch (e) {}
+  }
+  delete _portamentoVoices[tr];
+}
 // A gentle, transparent-until-needed soft-clip safety net — applied
 // universally, to every synthesized track, as the very first thing any
 // instrument's oscillators/noise sources actually connect into. Several
@@ -2443,6 +2501,7 @@ const trackDelay = new Array(NUM_TRACKS).fill(false);
 // track: sidechain pump (ducks with BEAT's kick+snare) -> sustain boost
 // (slow-release compressor) -> crunch (waveshaper). Off by default.
 const trackPump = new Array(NUM_TRACKS).fill(false);
+const trackPorta = new Array(NUM_TRACKS).fill(false); // portamento FX mode — 3rd press after BLAST, slides between notes instead of pumping
 const trackPumpNodes = {}; // tr -> { pumpGain, comp, crunch, crunchMakeup, dest }
 const _delayNodes = {}; // keyed by tr: { delay, feedback, wetGain }
 const trackFxMode = new Array(NUM_TRACKS).fill(0); // 0=CHOKE/SLAP, 1=CRUNCH/ENV
@@ -2762,6 +2821,15 @@ function fireStepAudio(step, t) {
           }
           // else: a plain manually-placed note — stays a single short step,
           // rather than inferring sustain from the gap to the next note.
+          // PORTAMENTO FX mode — bypasses the normal per-instrument
+          // synthesis and the FX envelope entirely (that's the
+          // "enveloping" being removed) in favor of one continuously
+          // running, gliding voice per track. Still counts as a genuine
+          // note for anything downstream that only cares whether one
+          // fired (32nd-split, etc.) — just via a different voice.
+          if (trackPorta[tr] && _renderThisTrack) {
+            _portamentoNoteOn(freq, dur, val === 2, t, tr);
+          } else {
           // Sidechain duck on accent
           if (val === 2 && window._duckGain) {
             const dg = window._duckGain;
@@ -2845,6 +2913,7 @@ function fireStepAudio(step, t) {
             ef.frequency.exponentialRampToValueAtTime(closeFreq, t + sweepDur);
             ef.frequency.setValueAtTime(22050, t + sweepDur + 0.01); // reopen instantly after
           }
+          } // end of the non-portamento branch opened above
 
         } else if (key === 'ngate') {
           if (_renderThisTrack) {
@@ -7370,16 +7439,25 @@ function buildUI() {
         trackFx[tr] = newVal;
         if (ctx) setFxActive(tr, newVal);
         fxBtn.classList.add('on');
-      } else if (!trackPump[tr]) {
+      } else if (!trackPump[tr] && !trackPorta[tr]) {
         // FX on -> FX+BLAST on
         trackPump[tr] = true;
         fxBtn.classList.add('blast-on');
+      } else if (trackPump[tr]) {
+        // FX+BLAST on -> FX+PORTAMENTO on
+        trackPump[tr] = false;
+        trackPorta[tr] = true;
+        _resetPortamentoVoice(tr);
+        fxBtn.classList.remove('blast-on');
+        fxBtn.classList.add('porta-on');
       } else {
-        // FX+BLAST on -> off
+        // FX+PORTAMENTO on -> off
         trackFx[tr] = { x: 0, y: 0 };
         if (ctx) setFxActive(tr, trackFx[tr]);
         trackPump[tr] = false;
-        fxBtn.classList.remove('on', 'blast-on');
+        trackPorta[tr] = false;
+        _stopPortamentoVoice(tr);
+        fxBtn.classList.remove('on', 'blast-on', 'porta-on');
       }
       markModified();
     };
@@ -7449,6 +7527,11 @@ function updateTrackMute(tr) {
   const vb = document.getElementById(`vbar-${tr}`); if (vb) vb.classList.toggle('muted', trackMuted[tr]);
   const row = document.getElementById(`ctrlrow-${tr}`); if (row) row.classList.toggle('row-muted', trackMuted[tr]);
   const lm = document.getElementById(`lane-${tr}`); if (lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
+  // A portamento voice is a continuously-running drone, not discrete
+  // per-note hits — muting only stops NEW notes from triggering it, so
+  // without this an already-running voice would keep audibly droning
+  // right through mute.
+  if (trackMuted[tr] && trackPorta[tr]) _stopPortamentoVoice(tr);
 }
 
 function attachVolBarEvents(bar, tr) {
@@ -7808,6 +7891,38 @@ function _isAnyOverlayOpen() {
   }
   return false;
 }
+// Returns the actual DOM element of whichever overlay is currently open,
+// or null if none are. Used by the global capture-phase guard below.
+function _openOverlayEl() {
+  const displayIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay'];
+  for (const id of displayIds) {
+    const el = document.getElementById(id);
+    if (el && el.style.display !== 'none') return el;
+  }
+  const visibleClassIds = ['soundPicker', 'volOverlay'];
+  for (const id of visibleClassIds) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('visible')) return el;
+  }
+  return null;
+}
+// Single, global, capture-phase guard — runs before any listener attached
+// directly to a button, regardless of what mechanism would otherwise fire
+// it (the coordinate-based drag-to-engage system, a direct listener on the
+// button itself, anything). Per-handler guards on the drag system alone
+// weren't catching every path a touch could still reach a background
+// button through, so this blocks everything outside the open overlay's
+// own content at the earliest possible point instead of trying to
+// anticipate every individual mechanism separately.
+['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(evt => {
+  document.addEventListener(evt, e => {
+    const openEl = _openOverlayEl();
+    if (!openEl) return;
+    if (openEl.contains(e.target)) return; // inside the open overlay's own content (including its backdrop) — let it through normally
+    e.stopPropagation();
+    e.preventDefault();
+  }, { capture: true, passive: false });
+});
 const DRAGGABLE_BTN_SELECTORS = [
   '.track-ctrl-icon-btn:not(#beatCtrlRand)',
   '.shift-btn',
@@ -9864,7 +9979,13 @@ function randAll(mode, opts) {
 
     // Everything else non-bass, non-lead fills next, shuffled — this is
     // the main supporting-instrument pool (pads, rhythm, texture, etc).
-    const nonLeadPool = tonalKeys.filter(k => !bassKeys.has(k) && !_leadKeysSet.has(k) && !currentDeck.has(k) && !nonBassShuffle.includes(k));
+    // MAGIC excluded outright unless there's room for it plus at least
+    // one other non-bass tonal track (3 total tonal slots: bass + MAGIC +
+    // 1 more) — rather than letting it get picked and then reconciling
+    // the fallout afterward, which is what silently broke the slider
+    // before: the "afterward" cap left tonal slots the slider had
+    // promised sitting unfilled.
+    const nonLeadPool = tonalKeys.filter(k => !bassKeys.has(k) && !_leadKeysSet.has(k) && !currentDeck.has(k) && !nonBassShuffle.includes(k) && (k !== 'magic' || tonalSlotsEff >= 3));
     const nonLeadShuffled = [...nonLeadPool].sort(() => Math.random() - 0.5);
     for (const k of nonLeadShuffled) {
       if (nonBassShuffle.length >= tonalSlotsEff) break;
@@ -9894,33 +10015,21 @@ function randAll(mode, opts) {
       }
     }
     // MAGIC caps the whole pattern's tonal variety to itself plus one
-    // other (bass stays separate, still guaranteed) — checked whether
-    // MAGIC was just picked this pass OR is already sitting on a locked
-    // track from before. A locked MAGIC track doesn't go through the
-    // pool at all, so without this second check it would be invisible
-    // here and this whole constraint would silently do nothing whenever
-    // MAGIC happened to already be locked in.
+    // other (bass stays separate, still guaranteed). The eligibility
+    // check above (tonalSlotsEff >= 3) already keeps MAGIC from ever
+    // being newly picked when there isn't room for it — this only
+    // still matters for a MAGIC track that's locked in from before,
+    // which the pool never sees since locked tracks skip the shuffle
+    // entirely.
     const magicAlreadyLocked = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && trackInstruments[tr] === 'magic');
-    let _magicShortfall = 0;
     if (magicAlreadyLocked || nonBassShuffle.includes('magic')) {
       const lockedOtherTonalCount = [...Array(NUM_TRACKS)].filter((_, tr) => trackSweep[tr] && TONAL_KEYS.has(trackInstruments[tr]) && !bassKeys.has(trackInstruments[tr]) && trackInstruments[tr] !== 'magic').length;
       const allowedOthers = Math.max(0, 1 - lockedOtherTonalCount);
       const magicInThisPass = nonBassShuffle.includes('magic');
       const others = nonBassShuffle.filter(k => k !== 'magic' && k !== 'boog'); // MAGIC is DREAM PIANO's own synthesis played as a chord — the two together would be redundant/clashing, so DREAM PIANO never gets to be the "one other" tonal slot alongside it
-      const _beforeCapLen = nonBassShuffle.length;
       nonBassShuffle.length = 0;
       if (magicInThisPass) nonBassShuffle.push('magic');
       nonBassShuffle.push(...others.slice(0, allowedOthers));
-      // MAGIC's own cap can leave the tonal side short of what the
-      // TONAL/PERC BALANCE slider actually asked for — without this,
-      // those now-unfilled slots would silently get handed to percussion
-      // instead (the slider's own promise broken), or worse, the pool
-      // itself would come up short and the assignment loop's own
-      // duplicate-avoiding fallback would just repeat the same
-      // instrument across multiple tracks. Left empty instead — MAGIC
-      // is already dense and heavy on its own, so fewer competing tracks
-      // is the right call anyway, not just the least-bad option.
-      _magicShortfall = Math.max(0, Math.min(tonalSlotsEff, _beforeCapLen) - nonBassShuffle.length);
     }
     const tPool = nonBassShuffle.slice(0, tonalSlotsEff);
 
@@ -10059,13 +10168,10 @@ function randAll(mode, opts) {
 
   // At the top intensity tier (level 4 of 0-4, i.e. the top 90%+ of the
   // range), it's fine — good, even — to leave one track completely silent
-  // rather than cramming an instrument into every single slot. Combined
-  // with however many slots MAGIC's own cap left unfilled above (see
-  // _magicShortfall) — both are independent reasons for a track to end up
-  // empty, so their counts just add together here.
+  // rather than cramming an instrument into every single slot.
   const _emptyTrackIndices = new Set();
   {
-    const _emptyNeeded = (level === 4 ? 1 : 0) + _magicShortfall;
+    const _emptyNeeded = level === 4 ? 1 : 0;
     if (_emptyNeeded > 0) {
       const _emptyCandidates = [];
       for (let tr = 1; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _emptyCandidates.push(tr);
@@ -10425,12 +10531,26 @@ function randAll(mode, opts) {
       }
       const fb = document.getElementById(`fxbtn-${tr}`);
       if (fb) fb.classList.toggle('on', fxOn);
+      // PORTAMENTO — only for genuinely tonal (pitched) instruments; RIDE
+      // and CONGA/BONGO get FX too but sliding pitch makes no sense on an
+      // unpitched hit, so they're excluded here even though they're
+      // eligible for FX/BLAST above. Rolled before BLAST so the two stay
+      // mutually exclusive, matching the button's own linear
+      // off->FX->BLAST->PORTAMENTO cycle where only one of the two can
+      // ever be engaged at once.
+      const hasNotesForFx = grid[tr].some(v => v > 0);
+      const portaEligible = TONAL_KEYS.has(trackInstruments[tr]);
+      const portaChance = Math.min(0.15, level * 0.03 + 0.02); // deliberately modest — a fairly dramatic character change
+      const portaOn = portaEligible && fxOn && hasNotesForFx && Math.random() < portaChance;
+      trackPorta[tr] = portaOn;
+      if (portaOn) _resetPortamentoVoice(tr); else _stopPortamentoVoice(tr);
+      if (fb) fb.classList.toggle('porta-on', portaOn);
       // BLAST — sprinkled in more as the tier gets more hectic, capping out
       // around FX's own normal (non-bass) rate rather than a flat chance.
       // Never on a track with no actual notes in it.
       const hasNotes = grid[tr].some(v => v > 0);
       const blastChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
-      const blastOn = isJinx ? (fxOn && hasNotes) : (fxOn && hasNotes && Math.random() < blastChance); // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle. JINX: no separate roll — BLAST just follows its own linked FX roll directly
+      const blastOn = !portaOn && (isJinx ? (fxOn && hasNotes) : (fxOn && hasNotes && Math.random() < blastChance)); // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle. JINX: no separate roll — BLAST just follows its own linked FX roll directly
       trackPump[tr] = blastOn;
       if (fb) fb.classList.toggle('blast-on', blastOn);
     } else if (!trackSweep[tr]) {
@@ -10439,7 +10559,8 @@ function randAll(mode, opts) {
       // BLAST over from before this RAND pass — clear it like every other
       // unlocked track's FX state.
       trackPump[tr] = false;
-      const fb2 = document.getElementById(`fxbtn-${tr}`); if (fb2) fb2.classList.remove('blast-on');
+      trackPorta[tr] = false; _stopPortamentoVoice(tr);
+      const fb2 = document.getElementById(`fxbtn-${tr}`); if (fb2) { fb2.classList.remove('blast-on'); fb2.classList.remove('porta-on'); }
       const vb = document.getElementById(`vbar-${tr}`);
       if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, 0.5); }
       if (trackGainNodes[tr] && ctx) trackGainNodes[tr].gain.setValueAtTime(0.5, ctx.currentTime);
@@ -10708,6 +10829,7 @@ function snapshotState() {
     beatType: _beatType,
     trackDelay: [...trackDelay],
     trackPump: [...trackPump],
+    trackPorta: [...trackPorta],
     trackAutoRand: [...Array(NUM_TRACKS)].map((_, tr) => !!autoShiftStops[tr]),
     activeSlot: activeSlot,
     // Full color palette — TOP ROW, TRACK BUTTONS, HIGHLIGHT, HIGHLIGHT 2,
@@ -10789,6 +10911,13 @@ function restoreState(snap, opts) {
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
     if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) fb2.classList.toggle('blast-on', trackPump[tr]); }
+    // Older saves won't have trackPorta at all — defaults to off for
+    // those tracks, same as if the feature didn't exist yet for them.
+    // Always stops any currently-running voice regardless, since the
+    // whole pattern is changing out from under it either way.
+    trackPorta[tr] = snap.trackPorta ? !!snap.trackPorta[tr] : false;
+    _stopPortamentoVoice(tr);
+    { const fbPorta = document.getElementById(`fxbtn-${tr}`); if (fbPorta) fbPorta.classList.toggle('porta-on', trackPorta[tr]); }
     if (snap.trackFxMode) { trackFxMode[tr] = snap.trackFxMode[tr] || 0; }
     if (snap.trackSweep) { trackSweep[tr] = snap.trackSweep[tr] || false; }
     if (snap.trackChop)  { trackChop[tr]  = snap.trackChop[tr]  || false; }
@@ -12842,6 +12971,7 @@ function hideInstructions() {
 // and leave the page blank, so the reset gesture must never depend on one.
 function fullReset() {
   if (playing) togglePlay();
+  for (let tr = 0; tr < NUM_TRACKS; tr++) { trackPorta[tr] = false; _stopPortamentoVoice(tr); }
   _recallSnapB = null;
   window._resetRecallAB?.();
   setTrackPulseMode('solid');
