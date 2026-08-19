@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:41</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:50</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -852,6 +852,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <span id="devOffsetStepReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">16TH</span>
       </div>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="devSwapSpools" onchange="setDevSwapSpools(this.checked)" style="width:14px;height:14px;cursor:pointer;">SWAP TAPE SPOOLS
+    </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" checked onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
@@ -10659,6 +10662,11 @@ function stopAllAutoRand() {
 
   const startAuto = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // holding again while already in auto stops it
+    // Same defensive reset as singleFire below — a fresh hold shouldn't
+    // inherit a stale visual state from some earlier, incomplete
+    // interaction.
+    btn.style.background = ''; btn.style.color = ''; btn.style.transform = ''; btn.style.transition = '';
+    btn.classList.remove('btn-flash-blue', 'rand-pending-fast');
     btn.classList.add('pulsing');
     btn.innerHTML = '<span class="glyph">+</span>';
     _autoRandLoopActive = true;
@@ -10667,6 +10675,18 @@ function stopAllAutoRand() {
 
   const singleFire = () => {
     if (_autoRandLoopActive) { stopAuto(); return; } // turning AUTO off doesn't need its own press-pulse
+    // Defensive reset before applying this press's own visual state — a
+    // prior interaction (e.g. the sweep-drag-onto-RAND gesture, or some
+    // other path not yet identified) has occasionally been observed
+    // leaving the button stuck mid-transition (scaled up, background
+    // black) with nothing left to ever clear it. Whatever the exact
+    // cause, a genuinely fresh press on the button itself should never
+    // inherit a stale visual state from before — clearing everything
+    // first guarantees this self-corrects the moment the button is
+    // actually used again, even if the original stuck-state cause is
+    // never pinned down.
+    btn.style.background = ''; btn.style.color = ''; btn.style.transform = ''; btn.style.transition = '';
+    btn.classList.remove('btn-flash-blue', 'rand-pending-fast');
     _pressPulse('randBtn');
     setBtnBlueHeld('randBtn'); queueRand();
   };
@@ -12780,6 +12800,30 @@ function setDevOffsetStepSize(idx) {
   _devOffsetStepSize = _DEV_OFFSET_STEP_SIZES[idx] ?? 1;
   const readout = document.getElementById('devOffsetStepReadout');
   if (readout) readout.textContent = _DEV_OFFSET_STEP_LABELS[idx] ?? '16TH';
+}
+// Swaps which physical spool (left/right) carries which behavior — the
+// right spool's own gesture handling (single tap: amalgam swell, double
+// tap: reset beat offset) and the left spool's role as SWEEP's own
+// pitch-redirect drag target were both bound directly to specific DOM
+// element references when the page first loaded, not to their ID
+// strings — so swapping IDs alone wouldn't actually move any of that
+// already-attached behavior. Physically reordering the two wrapper
+// elements within their shared flex container instead: each element
+// keeps its own id/listeners fully intact, and visually swaps position,
+// so the behavior genuinely follows it to the other side.
+function setDevSwapSpools(on) {
+  const container = document.getElementById('tapeReels');
+  const leftWrap = document.getElementById('leftReelWrap');
+  const rightWrap = document.getElementById('rightReelWrap');
+  const tapeWindowEl = document.getElementById('tapeWindow');
+  if (!container || !leftWrap || !rightWrap || !tapeWindowEl) return;
+  if (on) {
+    container.insertBefore(rightWrap, tapeWindowEl);
+    container.insertBefore(leftWrap, null); // append after tapeWindow, i.e. to the end
+  } else {
+    container.insertBefore(leftWrap, tapeWindowEl);
+    container.insertBefore(rightWrap, null);
+  }
 }
 // Overrides any instrument-group color-coding on the note markers —
 // applies via the same body.notes-grayscale class the existing
