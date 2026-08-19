@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 21:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:08</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12547,7 +12547,20 @@ function _playSpoolAmalgamSwell() {
   if (activeSteps.length === 0) return;
   const now = ctx.currentTime;
   const dur = stepDuration();
-  const dest = getSynthConnectNode(busiestTr); // routes through the source track's own volume/mute/FX chain, rather than an arbitrary unrelated one
+  const normalDest = getSynthConnectNode(busiestTr); // routes through the source track's own volume/mute/FX chain, rather than an arbitrary unrelated one
+  // Always sent through the shared reverb bus regardless of whether the
+  // source track's own reverb happens to be toggled on — a fan-out gain
+  // splitting to both destinations, same per-track send level everything
+  // else on the shared bus uses.
+  let dest = normalDest;
+  if (window._reverbSendBus) {
+    const fanOut = ctx.createGain(); fanOut.gain.value = 1;
+    fanOut.connect(normalDest);
+    const reverbSend = ctx.createGain(); reverbSend.gain.value = 0.35;
+    fanOut.connect(reverbSend);
+    reverbSend.connect(window._reverbSendBus);
+    dest = fanOut;
+  }
   activeSteps.forEach((s, i) => {
     let freq;
     if (isTonal && scale) {
@@ -12560,7 +12573,7 @@ function _playSpoolAmalgamSwell() {
     while (freq < 200) freq *= 2;
     const time = now + i * dur;
     const decay = Math.pow(0.82, i); // each successive note quieter than the last
-    _amalgamVolOverride = 0.1255 * decay; // +6dB more (was 0.0629, +4dB before that from TEXTURE's own 0.0397)
+    _amalgamVolOverride = 0.158 * decay; // +2dB more (was 0.1255, +6dB before that, +4dB before that from TEXTURE's own 0.0397)
     _playPhantomNote(busiestTr, key, freq, false, time, dest, dur);
     _amalgamVolOverride = null;
   });
@@ -13812,7 +13825,7 @@ async function hardResetAudioEngine() {
     if (target && !target.dataset.sweepTriggered) {
       target.dataset.sweepTriggered = '1';
       if (target.id === 'randBtn') { setBtnBlueHeld('randBtn'); queueRand(); }
-      if (target.id === 'scratchBtn') { if (_recallSnapB) { const _cur = snapshotState(); restoreState(_recallSnapB, { skipBeatState: true }); flashBtnOrange('scratchBtn'); _flashScratchBtnText(); window._reelReversePending = true; _recallSnapB = _cur; window._toggleRecallAB?.(); playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
+      if (target.id === 'scratchBtn') { if (_recallSnapB) { stopAllAutoRand(); const _cur = snapshotState(); restoreState(_recallSnapB, { skipBeatState: true }); flashBtnOrange('scratchBtn'); _flashScratchBtnText(); window._reelReversePending = true; _recallSnapB = _cur; window._toggleRecallAB?.(); playUiSound(Math.random() < 0.5 ? 'rewind' : 'rewind2'); } }
     }
   };
   btn.addEventListener('touchmove', sweepMoveHandler, { passive: false });
