@@ -32,6 +32,28 @@ body {
   min-height: 100svh; overflow-y: auto; display: flex; flex-direction: column; align-items: center;
   padding: max(16px, env(safe-area-inset-top)) 4px 16px 4px; user-select: none; -webkit-user-select: none; box-sizing: border-box;
 }
+/* Definitive fix for buttons behind an open overlay still being
+   reachable — a JS event-based guard (stopPropagation on a capture-phase
+   document listener) turned out to be insufficient, since it only stops
+   an event from reaching OTHER nodes, not other listeners already
+   registered directly on document itself (like the drag-to-engage
+   system's own document-level listeners) — those still fired regardless.
+   This is browser-enforced instead: pointer-events is a rendering-layer
+   property, so nothing being reachable behind an open overlay is
+   guaranteed by the browser itself, not by any particular JS listener
+   correctly anticipating every path a touch could take. Each overlay
+   explicitly re-enables itself so its own content stays interactive. */
+body.any-overlay-open { pointer-events: none; }
+body.any-overlay-open #devMenuOverlay,
+body.any-overlay-open #instructionsOverlay,
+body.any-overlay-open #settingsOverlay,
+body.any-overlay-open #bpmOverlay,
+body.any-overlay-open #tempoScreenOverlay,
+body.any-overlay-open #beatVolOverlay,
+body.any-overlay-open #soundPicker,
+body.any-overlay-open #volOverlay {
+  pointer-events: auto;
+}
 #landscapeBlock {
   display: none;
   position: fixed; inset: 0; z-index: 9999;
@@ -741,7 +763,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 06:06</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 06:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -945,13 +967,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+            <input type="radio" name="volSliderColor" value="1" checked onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="volSliderColor" value="2" onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="3" checked onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+            <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
         </div>
       </div>
@@ -2251,6 +2273,18 @@ function _portamentoNoteOn(freq, durSec, isAccent, time, tr) {
   const targetGain = isAccent ? 0.1748 : 0.1271; // -2dB (was 0.22/0.16)
   voice.gain.gain.cancelScheduledValues(time);
   voice.gain.gain.setTargetAtTime(targetGain, time, 0.05);
+  // Decay scheduled at the end of THIS note's own duration — without
+  // this the voice just kept droning indefinitely between hits, sliding
+  // pitch on every new note but never actually stopping, which is
+  // audibly wrong for anything that isn't genuinely legato (a single
+  // struck note on every quarter, for instance, should sound like
+  // distinct sliding notes, not one continuous tone). If the NEXT note
+  // fires before this decay finishes, that call's own
+  // cancelScheduledValues(time) above removes this pending decay before
+  // it ever gets a chance to run, so back-to-back/legato notes still
+  // glide smoothly with no audible gap or restart.
+  const decayStart = time + Math.max(durSec, glideTime);
+  voice.gain.gain.setTargetAtTime(0, decayStart, 0.06);
 }
 function _resetPortamentoVoice(tr) {
   _stopPortamentoVoice(tr); // clean slate whenever the mode first engages
@@ -7879,17 +7913,7 @@ document.addEventListener('mouseup', () => {
 // operates independently of the DOM's own event-capturing hierarchy and
 // so was never actually stopped by an overlay just being visually on top.
 function _isAnyOverlayOpen() {
-  const displayIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay'];
-  for (const id of displayIds) {
-    const el = document.getElementById(id);
-    if (el && el.style.display !== 'none') return true;
-  }
-  const visibleClassIds = ['soundPicker', 'volOverlay'];
-  for (const id of visibleClassIds) {
-    const el = document.getElementById(id);
-    if (el && el.classList.contains('visible')) return true;
-  }
-  return false;
+  return !!_openOverlayEl();
 }
 // Returns the actual DOM element of whichever overlay is currently open,
 // or null if none are. Used by the global capture-phase guard below.
@@ -7906,6 +7930,25 @@ function _openOverlayEl() {
   }
   return null;
 }
+// Keeps body.any-overlay-open in sync with actual overlay visibility —
+// the CSS pointer-events block above is the definitive fix, but it needs
+// this class toggled correctly whenever any overlay shows or hides.
+// Watching each overlay element's own style/class directly (not the
+// whole document subtree) rather than hooking into every individual
+// show/hide function keeps this current automatically even if a new
+// overlay or a new way of opening one gets added later.
+function _updateOverlayPointerBlock() {
+  document.body.classList.toggle('any-overlay-open', !!_openOverlayEl());
+}
+(function() {
+  const watchIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay', 'soundPicker', 'volOverlay'];
+  const observer = new MutationObserver(_updateOverlayPointerBlock);
+  watchIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+  });
+  _updateOverlayPointerBlock();
+})();
 // Single, global, capture-phase guard — runs before any listener attached
 // directly to a button, regardless of what mechanism would otherwise fire
 // it (the coordinate-based drag-to-engage system, a direct listener on the
@@ -9877,6 +9920,7 @@ function randAll(mode, opts) {
   const soloLeadKeys = new Set(['fflute', 'damask', 'yamask']); // max one of these
   const soloUniqueKeys = new Set(['jcmgtr','clar','boog']); // max one of these — JCX GUITAR / JENNY / BOOG
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
+  const snareKeys = new Set(['ssnare','snare2']); // SNARE and SNARE 2 are treated as the same instrument for pool purposes — never both at once
   const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/BOOBOO
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
   const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone', 'magic']); // max one PAD-classified instrument per pattern — HASSELL/STRINGS/etc. never together
@@ -9900,7 +9944,7 @@ function randAll(mode, opts) {
 
   function buildPool(keys) {
     const shuffled = [...keys].sort(() => Math.random() - 0.5);
-    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false; let jinxClashUsed = false; let padUsed = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && padKeys.has(trackInstruments[tr])); // only actually triggers for a locked track now — track 0 isn't special-cased anymore
+    const result = []; let bassUsed = false; let soloPercUsed = false; let soloLeadUsed = false; let soloUniqueUsed = false; let soloHatUsed = false; let soloRareLeadUsed = false; let jinxClashUsed = false; let snareUsed = false; let padUsed = [...Array(NUM_TRACKS)].some((_, tr) => trackSweep[tr] && padKeys.has(trackInstruments[tr])); // only actually triggers for a locked track now — track 0 isn't special-cased anymore
     // Bass is always included when available, rather than leaving it to
     // shuffle luck — with ~20 tonal options and only 5 basses, a plain
     // shuffle rarely happened to draw one.
@@ -9919,12 +9963,13 @@ function randAll(mode, opts) {
       if (soloHatKeys.has(k)) { if (soloHatUsed) continue; soloHatUsed = true; }
       if (soloRareLeadKeys.has(k)) { if (soloRareLeadUsed) continue; soloRareLeadUsed = true; }
       if (jinxClashKeys.has(k)) { if (jinxClashUsed) continue; jinxClashUsed = true; }
+      if (snareKeys.has(k)) { if (snareUsed) continue; snareUsed = true; }
       if (padKeys.has(k)) { if (padUsed) continue; padUsed = true; }
       result.push(k);
     }
     // Fill remaining from keys excluding solo perc/unique/hat if already used
     while (result.length < REAL_TRACK_COUNT) {
-      const fill = keys.filter(k => !result.includes(k) && !(soloPercUsed && soloPercKeys.has(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k)) && !(soloHatUsed && soloHatKeys.has(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k)) && !(jinxClashUsed && jinxClashKeys.has(k)) && !(padUsed && padKeys.has(k)));
+      const fill = keys.filter(k => !result.includes(k) && !(soloPercUsed && soloPercKeys.has(k)) && !(soloUniqueUsed && soloUniqueKeys.has(k)) && !(soloHatUsed && soloHatKeys.has(k)) && !(soloRareLeadUsed && soloRareLeadKeys.has(k)) && !(jinxClashUsed && jinxClashKeys.has(k)) && !(snareUsed && snareKeys.has(k)) && !(padUsed && padKeys.has(k)));
       if (fill.length === 0) { result.push(keys.find(k => !result.includes(k)) || keys[0]); continue; } // truly nothing left eligible — take any key not already used, or accept a rare duplicate as an absolute last resort rather than looping forever
       result.push(fill[Math.floor(Math.random() * fill.length)]);
     }
@@ -11964,7 +12009,7 @@ updateMasterVolCells();
 setTrackPulseMode('solid');
 setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
 setTrackTextPulseColor(3); // HIGHLIGHT 3 is the default text pulse color
-setVolSliderColor(3); // HIGHLIGHT 3 is the default vol slider color
+setVolSliderColor(1); // HIGHLIGHT is the default vol slider color
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -13023,8 +13068,8 @@ function fullReset() {
   const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="a"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
   setTrackTextPulseColor(3);
   const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="3"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
-  setVolSliderColor(3);
-  const _vscRadio = document.querySelector('input[name="volSliderColor"][value="3"]'); if (_vscRadio) _vscRadio.checked = true;
+  setVolSliderColor(1);
+  const _vscRadio = document.querySelector('input[name="volSliderColor"][value="1"]'); if (_vscRadio) _vscRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
