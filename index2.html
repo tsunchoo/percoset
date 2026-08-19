@@ -51,7 +51,9 @@ body.any-overlay-open #bpmOverlay,
 body.any-overlay-open #tempoScreenOverlay,
 body.any-overlay-open #beatVolOverlay,
 body.any-overlay-open #soundPicker,
-body.any-overlay-open #volOverlay {
+body.any-overlay-open #volOverlay,
+body.any-overlay-open #cmapOverlay,
+body.any-overlay-open #galaxyMapOverlay {
   pointer-events: auto;
 }
 #landscapeBlock {
@@ -763,7 +765,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 07:10</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 07:27</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2245,14 +2247,31 @@ function _ensurePortamentoVoice(tr, freq, time) {
   if (!ctx) return null;
   let voice = _portamentoVoices[tr];
   if (voice) return voice;
+  const _portaBassKeys = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
+  const isBassTrack = _portaBassKeys.has(trackInstruments[tr]);
   const osc = ctx.createOscillator(); osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(Math.max(freq, 1), time);
-  const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 2200; filter.Q.value = 0.6;
+  const filter = ctx.createBiquadFilter(); filter.type = 'lowpass';
+  filter.frequency.value = isBassTrack ? 900 : 2200; // darker for bass — the bright sawtooth harmonics alone were reading as pitched noticeably higher than the actual fundamental, with nothing low reinforcing it
+  filter.Q.value = 0.6;
   const gain = ctx.createGain(); gain.gain.setValueAtTime(0, time);
-  osc.connect(filter); filter.connect(gain);
+  osc.connect(filter);
+  // Bass tracks get a sub-sine layered in underneath, same as every other
+  // bass synth in this app — the plain sawtooth alone had nothing
+  // reinforcing the fundamental's actual weight, which is what read as
+  // perceptually higher/thinner even though the pitch value itself was
+  // always correct.
+  let subOsc = null;
+  if (isBassTrack) {
+    subOsc = ctx.createOscillator(); subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(Math.max(freq, 1), time);
+    subOsc.connect(filter);
+    subOsc.start(time);
+  }
+  filter.connect(gain);
   gain.connect(getSynthConnectNode(tr));
   osc.start(time);
-  voice = { osc, filter, gain };
+  voice = { osc, subOsc, filter, gain };
   _portamentoVoices[tr] = voice;
   return voice;
 }
@@ -2267,6 +2286,11 @@ function _portamentoNoteOn(freq, durSec, isAccent, time, tr) {
   voice.osc.frequency.cancelScheduledValues(time);
   voice.osc.frequency.setValueAtTime(Math.max(voice.osc.frequency.value, 1), time);
   voice.osc.frequency.exponentialRampToValueAtTime(Math.max(freq, 1), time + glideTime);
+  if (voice.subOsc) {
+    voice.subOsc.frequency.cancelScheduledValues(time);
+    voice.subOsc.frequency.setValueAtTime(Math.max(voice.subOsc.frequency.value, 1), time);
+    voice.subOsc.frequency.exponentialRampToValueAtTime(Math.max(freq, 1), time + glideTime);
+  }
   // No per-note attack/decay envelope — just a gentle level nudge on
   // accents so they still read as more emphasized without retriggering a
   // full shape, keeping the "no enveloping" character intact.
@@ -2297,6 +2321,7 @@ function _stopPortamentoVoice(tr) {
     voice.gain.gain.cancelScheduledValues(t);
     voice.gain.gain.setTargetAtTime(0, t, 0.08);
     try { voice.osc.stop(t + 0.5); } catch (e) {}
+    if (voice.subOsc) { try { voice.subOsc.stop(t + 0.5); } catch (e) {} }
   }
   delete _portamentoVoices[tr];
 }
@@ -7928,6 +7953,16 @@ function _openOverlayEl() {
     const el = document.getElementById(id);
     if (el && el.classList.contains('visible')) return el;
   }
+  // The star-map overlays (name-bar hold gesture) use their own separate
+  // .active class convention rather than either pattern above — these
+  // were entirely untracked before, so body.any-overlay-open never
+  // engaged at all while one of these was open, leaving every background
+  // button fully interactive underneath it.
+  const activeClassIds = ['cmapOverlay', 'galaxyMapOverlay'];
+  for (const id of activeClassIds) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('active')) return el;
+  }
   return null;
 }
 // Keeps body.any-overlay-open in sync with actual overlay visibility —
@@ -7941,7 +7976,7 @@ function _updateOverlayPointerBlock() {
   document.body.classList.toggle('any-overlay-open', !!_openOverlayEl());
 }
 (function() {
-  const watchIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay', 'soundPicker', 'volOverlay'];
+  const watchIds = ['devMenuOverlay', 'instructionsOverlay', 'settingsOverlay', 'bpmOverlay', 'tempoScreenOverlay', 'beatVolOverlay', 'soundPicker', 'volOverlay', 'cmapOverlay', 'galaxyMapOverlay'];
   const observer = new MutationObserver(_updateOverlayPointerBlock);
   watchIds.forEach(id => {
     const el = document.getElementById(id);
