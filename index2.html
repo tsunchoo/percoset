@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 21:53</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 21:57</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12560,7 +12560,7 @@ function _playSpoolAmalgamSwell() {
     while (freq < 200) freq *= 2;
     const time = now + i * dur;
     const decay = Math.pow(0.82, i); // each successive note quieter than the last
-    _amalgamVolOverride = 0.0629 * decay; // +4dB above TEXTURE's own normal level (was 0.0397)
+    _amalgamVolOverride = 0.1255 * decay; // +6dB more (was 0.0629, +4dB before that from TEXTURE's own 0.0397)
     _playPhantomNote(busiestTr, key, freq, false, time, dest, dur);
     _amalgamVolOverride = null;
   });
