@@ -101,7 +101,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   overflow: hidden;
 }
 .tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-end; margin-bottom: 10px; }
-.tape-window { width: 58.88px; height: 35.88px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
+.tape-window { width: 55.94px; height: 34.09px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
   25% { transform: translateX(-50%) translateX(-0.5px); }
@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:23</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12547,6 +12547,21 @@ function _playSpoolAmalgamSwell() {
   if (activeSteps.length === 0) return;
   const now = ctx.currentTime;
   const dur = stepDuration();
+  const totalDur = activeSteps.length * dur;
+  // Ducks the whole mix (including BEAT, which shares masterGain with
+  // every other source) by -3dB for the swell's own duration — makes
+  // room for it rather than letting it just pile on top and risk
+  // blowing up the mix. The swell's own volume gets compensated by the
+  // inverse amount below so it doesn't duck itself out along with
+  // everything else sharing that same bus.
+  const duckFactor = 0.7079; // -3dB
+  const compensateFactor = 1.4125; // +3dB, inverse of duckFactor
+  if (masterGain) {
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(masterVol, now);
+    masterGain.gain.setTargetAtTime(masterVol * duckFactor, now, 0.03);
+    masterGain.gain.setTargetAtTime(masterVol, now + totalDur, 0.15);
+  }
   const normalDest = getSynthConnectNode(busiestTr); // routes through the source track's own volume/mute/FX chain, rather than an arbitrary unrelated one
   // Always sent through the shared reverb bus regardless of whether the
   // source track's own reverb happens to be toggled on — a fan-out gain
@@ -12573,7 +12588,7 @@ function _playSpoolAmalgamSwell() {
     while (freq < 200) freq *= 2;
     const time = now + i * dur;
     const decay = Math.pow(0.82, i); // each successive note quieter than the last
-    _amalgamVolOverride = 0.2232 * decay; // +3dB more (was 0.158, +2dB before that, +6dB before that, +4dB before that from TEXTURE's own 0.0397)
+    _amalgamVolOverride = 0.2232 * decay * compensateFactor; // +3dB more (was 0.158, +2dB before that, +6dB before that, +4dB before that from TEXTURE's own 0.0397); compensateFactor cancels out the master duck above so this doesn't quiet itself along with everything else
     _playPhantomNote(busiestTr, key, freq, false, time, dest, dur);
     _amalgamVolOverride = null;
   });
