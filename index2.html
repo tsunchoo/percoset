@@ -363,7 +363,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
-.fx-btn.porta-on { background: var(--playhead); color: #fff; } /* same as the reverb button's own engaged color, per request */
+.fx-btn.porta-on { background: #0081FE; color: #fff; } /* same blue as the reverb (R) button's own engaged color — I had this wrong earlier (assumed var(--playhead)/red, which is actually a different button's color entirely) */
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
 /* Every engaged track button (FX, BLAST, PORTAMENTO, reverb, lock) pulses
    in both size and color while active — previously these just had a
@@ -741,7 +741,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 05:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 06:06</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2248,7 +2248,7 @@ function _portamentoNoteOn(freq, durSec, isAccent, time, tr) {
   // No per-note attack/decay envelope — just a gentle level nudge on
   // accents so they still read as more emphasized without retriggering a
   // full shape, keeping the "no enveloping" character intact.
-  const targetGain = isAccent ? 0.22 : 0.16;
+  const targetGain = isAccent ? 0.1748 : 0.1271; // -2dB (was 0.22/0.16)
   voice.gain.gain.cancelScheduledValues(time);
   voice.gain.gain.setTargetAtTime(targetGain, time, 0.05);
 }
@@ -9932,6 +9932,7 @@ function randAll(mode, opts) {
   }
 
   let pool;
+  let _poolShortfall = 0; // only ever set inside the default (non-tonal/non-perc mode) branch below; used further down to add matching empty tracks
   if (mode === 'perc') {
     pool = buildPool(percKeys);
   } else if (mode === 'tonal') {
@@ -10032,10 +10033,50 @@ function randAll(mode, opts) {
       nonBassShuffle.push(...others.slice(0, allowedOthers));
     }
     const tPool = nonBassShuffle.slice(0, tonalSlotsEff);
+    // MAGIC's cap (or solo-group exhaustion in general) can leave this
+    // short of what the slider actually asked for.
+    const tDeficit = Math.max(0, tonalSlotsEff - tPool.length);
 
     const percAvail = percKeys.filter(k => !currentDeck.has(k));
     const pShuffle = [...percAvail].sort(() => Math.random() - 0.5);
-    const pPool = percSlotsEff > 0 ? buildPool(pShuffle).slice(0, percSlotsEff) : [];
+    // buildPool() always pads itself out to a full REAL_TRACK_COUNT
+    // result (accepting a duplicate as an absolute last resort rather
+    // than ever coming up short), so there's always enough here to draw
+    // from — topping up the tonal side's shortfall with a bit more perc
+    // whenever the slider isn't pinned at all-tonal (tonalTarget === 6),
+    // in which case the deficit becomes empty tracks below instead —
+    // never crossing over into the one thing the slider explicitly
+    // promised wouldn't happen at that extreme. This is the actual root
+    // cause of several things at once: without this top-up, the pool
+    // itself came up short of 6 entries, and the assignment loop's
+    // per-track fallback (pool[poolIdx++] || pool[pool.length-1]) would
+    // then just repeat whatever the pool's own last entry happened to be
+    // for every remaining track — which, whenever JAZZ/DISCO's own
+    // forcing (further below) had landed percussion at the end of that
+    // short pool, meant several tracks all silently repeating the same
+    // percussion instrument regardless of the slider.
+    const pPoolTopUp = (tDeficit > 0 && tonalTarget < 6) ? tDeficit : 0;
+    const percPoolFull = buildPool(pShuffle);
+    const pPool = (percSlotsEff + pPoolTopUp) > 0 ? percPoolFull.slice(0, percSlotsEff + pPoolTopUp) : [];
+    // Perc coming up short of ITS own slider quota is far rarer (buildPool
+    // already guarantees a full result on its own), but handled the same
+    // way for symmetry — extra tonal instead, unless the slider is pinned
+    // at all-perc (tonalTarget === 0), where it becomes empty tracks too.
+    const pDeficit = Math.max(0, percSlotsEff - pPool.length);
+    const tPoolTopUp = (pDeficit > 0 && tonalTarget > 0) ? pDeficit : 0;
+    if (tPoolTopUp > 0) {
+      const extraTonalPool = tonalKeys.filter(k => !currentDeck.has(k));
+      const extraShuffled = [...extraTonalPool].sort(() => Math.random() - 0.5);
+      for (const k of extraShuffled) {
+        if (tPool.length >= tonalSlotsEff + tPoolTopUp) break;
+        if (!tPool.includes(k)) tPool.push(k);
+      }
+    }
+    // Whatever's still short after both top-ups above (only possible at
+    // the slider's own extremes, where crossing over is deliberately
+    // refused) becomes genuinely empty tracks instead — handled by
+    // _emptyTrackIndices below picking up the slack via _poolShortfall.
+    _poolShortfall = Math.max(0, (tonalSlotsEff + percSlotsEff) - (tPool.length + pPool.length));
 
     // Deduplicate and enforce max one bass
     const seenInPool = new Set();
@@ -10168,10 +10209,13 @@ function randAll(mode, opts) {
 
   // At the top intensity tier (level 4 of 0-4, i.e. the top 90%+ of the
   // range), it's fine — good, even — to leave one track completely silent
-  // rather than cramming an instrument into every single slot.
+  // rather than cramming an instrument into every single slot. Combined
+  // with _poolShortfall — whatever's still short after both top-ups
+  // above (only possible right at the slider's own extremes, where
+  // crossing over into the other side is deliberately refused).
   const _emptyTrackIndices = new Set();
   {
-    const _emptyNeeded = level === 4 ? 1 : 0;
+    const _emptyNeeded = (level === 4 ? 1 : 0) + _poolShortfall;
     if (_emptyNeeded > 0) {
       const _emptyCandidates = [];
       for (let tr = 1; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _emptyCandidates.push(tr);
@@ -10531,26 +10575,25 @@ function randAll(mode, opts) {
       }
       const fb = document.getElementById(`fxbtn-${tr}`);
       if (fb) fb.classList.toggle('on', fxOn);
-      // PORTAMENTO — only for genuinely tonal (pitched) instruments; RIDE
-      // and CONGA/BONGO get FX too but sliding pitch makes no sense on an
-      // unpitched hit, so they're excluded here even though they're
-      // eligible for FX/BLAST above. Rolled before BLAST so the two stay
-      // mutually exclusive, matching the button's own linear
-      // off->FX->BLAST->PORTAMENTO cycle where only one of the two can
-      // ever be engaged at once.
+      // PORTAMENTO and BLAST — a single, combined "move past plain FX"
+      // chance (same magnitude BLAST alone used to have), split evenly
+      // between the two once it fires, rather than PORTAMENTO being a
+      // rare afterthought layered on top of BLAST's own separate roll —
+      // both stages should be reachable at comparable rates. Only for
+      // genuinely tonal (pitched) instruments; RIDE and CONGA/BONGO get
+      // FX too but sliding pitch makes no sense on an unpitched hit, so
+      // the whole chance just goes to BLAST for them instead. JINX keeps
+      // its own existing special case — no separate roll, always BLAST
+      // when its own linked FX roll is on, never PORTAMENTO.
       const hasNotesForFx = grid[tr].some(v => v > 0);
       const portaEligible = TONAL_KEYS.has(trackInstruments[tr]);
-      const portaChance = Math.min(0.15, level * 0.03 + 0.02); // deliberately modest — a fairly dramatic character change
-      const portaOn = portaEligible && fxOn && hasNotesForFx && Math.random() < portaChance;
+      const enhanceChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
+      const wantsEnhance = fxOn && hasNotesForFx && Math.random() < enhanceChance;
+      const portaOn = !isJinx && portaEligible && wantsEnhance && Math.random() < 0.5;
+      const blastOn = isJinx ? (fxOn && hasNotesForFx) : (wantsEnhance && !portaOn); // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle. JINX: no separate roll — BLAST just follows its own linked FX roll directly
       trackPorta[tr] = portaOn;
       if (portaOn) _resetPortamentoVoice(tr); else _stopPortamentoVoice(tr);
       if (fb) fb.classList.toggle('porta-on', portaOn);
-      // BLAST — sprinkled in more as the tier gets more hectic, capping out
-      // around FX's own normal (non-bass) rate rather than a flat chance.
-      // Never on a track with no actual notes in it.
-      const hasNotes = grid[tr].some(v => v > 0);
-      const blastChance = Math.min(0.25, (level * 0.05 + 0.025) * 1.25) * 0.8; // 20% less often
-      const blastOn = !portaOn && (isJinx ? (fxOn && hasNotes) : (fxOn && hasNotes && Math.random() < blastChance)); // BLAST requires FX itself to be on — otherwise the button's off->on->on+blast->off cycle starts from an invalid combination and needs an extra click to untangle. JINX: no separate roll — BLAST just follows its own linked FX roll directly
       trackPump[tr] = blastOn;
       if (fb) fb.classList.toggle('blast-on', blastOn);
     } else if (!trackSweep[tr]) {
