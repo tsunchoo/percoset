@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 21:37</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 21:53</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9750,7 +9750,7 @@ function randAll(mode, opts) {
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
   const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
-  const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k) && k !== 'jcmgtr'); // JINX no longer eligible for RAND — still fully selectable manually from the sound picker
+  const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k) && k !== 'jcmgtr' && k !== 'dulc'); // JINX and BOOBOO no longer eligible for RAND — still fully selectable manually from the sound picker
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
     : percKeysAll;
@@ -12560,7 +12560,7 @@ function _playSpoolAmalgamSwell() {
     while (freq < 200) freq *= 2;
     const time = now + i * dur;
     const decay = Math.pow(0.82, i); // each successive note quieter than the last
-    _amalgamVolOverride = 0.0397 * decay; // same base level TEXTURE's own normal volume uses, just decaying across the sequence
+    _amalgamVolOverride = 0.0629 * decay; // +4dB above TEXTURE's own normal level (was 0.0397)
     _playPhantomNote(busiestTr, key, freq, false, time, dest, dur);
     _amalgamVolOverride = null;
   });
