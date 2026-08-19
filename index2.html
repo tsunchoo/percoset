@@ -740,7 +740,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:13</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -944,10 +944,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="1" checked onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+            <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="2" onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+            <input type="radio" name="volSliderColor" value="2" checked onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
@@ -11835,7 +11835,7 @@ updateMasterVolCells();
 setTrackPulseMode('solid');
 setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
 setTrackTextPulseColor(3); // HIGHLIGHT 3 is the default text pulse color
-setVolSliderColor(1); // HIGHLIGHT is the default vol slider color
+setVolSliderColor(2); // HIGHLIGHT 2 is the default vol slider color
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -12953,8 +12953,8 @@ function fullReset() {
   const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="a"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
   setTrackTextPulseColor(3);
   const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="3"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
-  setVolSliderColor(1);
-  const _vscRadio = document.querySelector('input[name="volSliderColor"][value="1"]'); if (_vscRadio) _vscRadio.checked = true;
+  setVolSliderColor(2);
+  const _vscRadio = document.querySelector('input[name="volSliderColor"][value="2"]'); if (_vscRadio) _vscRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
