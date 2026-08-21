@@ -252,7 +252,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   transform: translateY(60px);
 }
 .beat-ctrl-row { display: flex; gap: 6px; width: 100%; }
-.beat-ctrl-row .track-ctrl-icon-btn { width: auto; flex: 1; height: calc(40px * var(--track-btn-scale, 1)); }
+.beat-ctrl-row .track-ctrl-icon-btn { width: auto; flex: 1; height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); }
 .beat-ctrl-row .shift-btn { width: auto; flex: 1; height: 40px; }
 .beat-ctrl-row button.drag-hover { outline: 2px solid #adff00; outline-offset: -2px; }
 .beat-type-menu-grid {
@@ -333,7 +333,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   font-size: calc(clamp(0.64rem, 2.3vw, 0.86rem) * var(--track-name-font-scale, 1)); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   cursor: pointer; background: var(--neutral-track, #b0b0b0); color: var(--neutral-track-text, var(--text));
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
-  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: calc(clamp(78px, 22vw, 106px) * var(--track-btn-scale, 1)); height: calc(40px * var(--track-btn-scale, 1));
+  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: calc(clamp(78px, 22vw, 106px) * var(--track-btn-scale, 1)); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1));
   display: flex; align-items: center;
   touch-action: none; -webkit-tap-highlight-color: transparent;
   transition: background 0.06s, color 0.06s;
@@ -437,12 +437,12 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    rest of the per-track buttons — more specific than the generic
    .shift-btn rules above so it wins for these without touching the BEAT
    menu's own shift-btn instances, which aren't inside .track-ctrl-row. */
-.track-ctrl-row .shift-btn { width: calc(32px * var(--track-btn-scale, 1)); height: calc(40px * var(--track-btn-scale, 1)); font-size: calc(1rem * var(--track-btn-scale, 1)); }
+.track-ctrl-row .shift-btn { width: calc(32px * var(--track-btn-scale, 1)); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); font-size: calc(1rem * var(--track-btn-scale, 1)); }
+.track-ctrl-row .track-ctrl-icon-btn { height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); } /* the only height rule .track-ctrl-icon-btn itself ever had turned out to be scoped to .beat-ctrl-row, not the track row — this one never existed at all until now, which is why FX/lock/+ were still rendering full-size */
 .track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-scale, 1)); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   background: var(--neutral-top, #555); border: none;
-  height: 40px; /* explicit, so it doesn't shrink to match its now-shorter siblings via the row's align-items:stretch — the volume slider stays full-size per its own explicit exclusion from the 5% button scale-down */
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
@@ -750,7 +750,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 18:01</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 18:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12728,9 +12728,29 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
     try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
     onEngage();
   });
-  const release = e => { onRelease(); try { wrap.releasePointerCapture(e.pointerId); } catch (err) {} };
+  const release = e => { onRelease(); try { wrap.releasePointerCapture(e.pointerId); } catch (err) {} const bb = document.getElementById('beatBtn'); if (bb) delete bb.dataset.spoolDragTriggered; };
   wrap.addEventListener('pointerup', release);
   wrap.addEventListener('pointercancel', release);
+  // Dragged from the spool onto BEAT — toggles it directly, bypassing
+  // BEAT's own hold-to-open-menu gesture entirely (that stays intact for
+  // a direct press-and-hold on BEAT itself; this is a separate trigger
+  // path that only exists while the gesture originated here on the
+  // spool). Listened for on wrap itself rather than document, since
+  // setPointerCapture above guarantees every pointermove for this drag
+  // targets wrap regardless of where the finger physically is — far more
+  // reliable than trying to catch it via a document-wide touchmove,
+  // which never actually fired for this captured gesture.
+  wrap.addEventListener('pointermove', e => {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const beatTarget = el && el.closest('#beatBtn');
+    const bb = document.getElementById('beatBtn');
+    if (beatTarget && !beatTarget.dataset.spoolDragTriggered) {
+      beatTarget.dataset.spoolDragTriggered = '1';
+      toggleBeat();
+    } else if (!beatTarget && bb) {
+      delete bb.dataset.spoolDragTriggered; // reset once the finger leaves, so dragging back on toggles it again
+    }
+  });
   // Also listen for mousedown/mouseup specifically — the generic
   // drag-to-engage system (DRAGGABLE_BTN_SELECTORS) only ever dispatches
   // synthetic mousedown/mouseup, which the pointer-event listeners above
@@ -12765,20 +12785,6 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
       onEngage();
     } else if (_spoolEngaged && !_spoolReleaseTid) {
       _spoolReleaseTid = setTimeout(() => { _spoolReleaseTid = null; onRelease(); }, 100);
-    }
-    // Dragged from the spool onto BEAT — toggles it directly (not the
-    // usual hold-to-open-menu gesture, since BEAT only listens for its
-    // own touch events and wouldn't otherwise see this). One-shot per
-    // pass over the button so it doesn't rapid-fire every touchmove
-    // frame, but resets once the finger leaves so dragging off and back
-    // on again toggles it again, same as a real tap would each time.
-    const beatTarget = el && el.closest('#beatBtn');
-    if (beatTarget && _spoolEngaged && !beatTarget.dataset.spoolDragTriggered) {
-      beatTarget.dataset.spoolDragTriggered = '1';
-      toggleBeat();
-    } else if (!beatTarget) {
-      const bb = document.getElementById('beatBtn');
-      if (bb) delete bb.dataset.spoolDragTriggered;
     }
   }, { passive: true });
   document.addEventListener('touchend', () => { if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; } if (_spoolEngaged) onRelease(); const bb = document.getElementById('beatBtn'); if (bb) delete bb.dataset.spoolDragTriggered; });
