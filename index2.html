@@ -20,7 +20,8 @@
   --playhead: #ff2200; --muted-bg: #ff2200;
   --slot-saved: #f17d21; --slot-loaded: #f17d21;
   --neutral-top: #555; --neutral-track: #b0b0b0;
-  --track-btn-scale: 0.95; /* shrinks all per-track buttons (name button container, lock/FX/+/shift buttons) 5% — NOT the volume slider, which gets an explicit height below so it doesn't shrink along with its now-shorter siblings via the row's align-items:stretch */
+  --track-btn-scale: 0.9025; /* per-track button box size (width/height) — 0.95 * 0.95, two successive 5% reductions. Text is deliberately NOT scaled by this — see --track-btn-font-scale below, frozen at the first round's value so glyphs/labels stay exactly the size they already are */
+  --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -252,7 +253,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   transform: translateY(60px);
 }
 .beat-ctrl-row { display: flex; gap: 6px; width: 100%; }
-.beat-ctrl-row .track-ctrl-icon-btn { width: auto; flex: 1; height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); }
+.beat-ctrl-row .track-ctrl-icon-btn { width: auto; flex: 1; height: 40px; }
 .beat-ctrl-row .shift-btn { width: auto; flex: 1; height: 40px; }
 .beat-ctrl-row button.drag-hover { outline: 2px solid #adff00; outline-offset: -2px; }
 .beat-type-menu-grid {
@@ -352,7 +353,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn {
   width: calc(32px * var(--track-btn-scale, 1)); flex-shrink: 0;
   background: var(--neutral-track, #b0b0b0); border: none; color: var(--neutral-track-text, var(--text));
-  font-family: 'DM Sans', sans-serif; font-size: calc(1rem * var(--track-btn-scale, 1)); font-weight: 700;
+  font-family: 'DM Sans', sans-serif; font-size: calc(1rem * var(--track-btn-font-scale, 1)); font-weight: 700;
   letter-spacing: 0; text-transform: uppercase; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   touch-action: none; transition: background 0.1s;
@@ -362,7 +363,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    excludes #beatCtrlRand (the BEAT menu's own N/A, a different concept:
    new BEAT type, not new notes) even though it shares the .rand-btn
    class. Fixed 32px width/height box above is untouched either way. */
-.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: calc(1.7875rem * var(--track-btn-scale, 1)); font-weight: 400; }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: calc(1.7875rem * var(--track-btn-font-scale, 1)); font-weight: 400; }
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
@@ -437,9 +438,9 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    rest of the per-track buttons — more specific than the generic
    .shift-btn rules above so it wins for these without touching the BEAT
    menu's own shift-btn instances, which aren't inside .track-ctrl-row. */
-.track-ctrl-row .shift-btn { width: calc(32px * var(--track-btn-scale, 1)); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); font-size: calc(1rem * var(--track-btn-scale, 1)); }
+.track-ctrl-row .shift-btn { width: calc(32px * var(--track-btn-scale, 1)); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); font-size: calc(1rem * var(--track-btn-font-scale, 1)); }
 .track-ctrl-row .track-ctrl-icon-btn { height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); } /* the only height rule .track-ctrl-icon-btn itself ever had turned out to be scoped to .beat-ctrl-row, not the track row — this one never existed at all until now, which is why FX/lock/+ were still rendering full-size */
-.track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-scale, 1)); }
+.track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-font-scale, 1)); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   background: var(--neutral-top, #555); border: none;
@@ -750,7 +751,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 18:16</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 18:23</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
