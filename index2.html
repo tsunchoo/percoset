@@ -221,6 +221,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    of the actual solid HIGHLIGHT it's supposed to be. Keep the press
    scale-pulse but skip the dimming specifically for these. */
 .btn.btn-flash-blue:active { opacity: 1; }
+#clearBtn.active:active { opacity: 1; } /* same reasoning as btn-flash-blue above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey for the whole time it's actually held */
 
 #beatBtn.active:not(.beat-auto-active) { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
@@ -740,7 +741,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">19Aug26 22:50</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 17:23</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -13838,6 +13839,18 @@ async function hardResetAudioEngine() {
   btn.addEventListener('touchend', e => { e.preventDefault(); endPress(); }, { passive: false });
   btn.addEventListener('touchcancel', endPress);
   btn.addEventListener('mousedown', beginPress);
+  // Starting the gesture on the left spool itself works the same as
+  // starting it on SWEEP — previously this only ever fired if the touch
+  // began on SWEEP's own bounds, so dragging in from the spool instead
+  // never triggered anything at all until it happened to cross onto
+  // SWEEP, and even then there was nothing to pick up mid-gesture.
+  const leftSpoolEl = document.getElementById('leftReelWrap');
+  if (leftSpoolEl) {
+    leftSpoolEl.addEventListener('touchstart', e => { e.preventDefault(); beginPress(); }, { passive: false });
+    leftSpoolEl.addEventListener('touchend', e => { e.preventDefault(); endPress(); }, { passive: false });
+    leftSpoolEl.addEventListener('touchcancel', endPress);
+    leftSpoolEl.addEventListener('mousedown', beginPress);
+  }
   // Document-wide, not button-only — the pointer rolling off the button
   // while still held should NOT stop the effect, and a mouseup bound only
   // to the button would miss the release entirely if the pointer had
