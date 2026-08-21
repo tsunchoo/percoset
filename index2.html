@@ -741,7 +741,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 17:32</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 17:55</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12757,9 +12757,23 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
     } else if (_spoolEngaged && !_spoolReleaseTid) {
       _spoolReleaseTid = setTimeout(() => { _spoolReleaseTid = null; onRelease(); }, 100);
     }
+    // Dragged from the spool onto BEAT — toggles it directly (not the
+    // usual hold-to-open-menu gesture, since BEAT only listens for its
+    // own touch events and wouldn't otherwise see this). One-shot per
+    // pass over the button so it doesn't rapid-fire every touchmove
+    // frame, but resets once the finger leaves so dragging off and back
+    // on again toggles it again, same as a real tap would each time.
+    const beatTarget = el && el.closest('#beatBtn');
+    if (beatTarget && _spoolEngaged && !beatTarget.dataset.spoolDragTriggered) {
+      beatTarget.dataset.spoolDragTriggered = '1';
+      toggleBeat();
+    } else if (!beatTarget) {
+      const bb = document.getElementById('beatBtn');
+      if (bb) delete bb.dataset.spoolDragTriggered;
+    }
   }, { passive: true });
-  document.addEventListener('touchend', () => { if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; } if (_spoolEngaged) onRelease(); });
-  document.addEventListener('touchcancel', () => { if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; } if (_spoolEngaged) onRelease(); });
+  document.addEventListener('touchend', () => { if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; } if (_spoolEngaged) onRelease(); const bb = document.getElementById('beatBtn'); if (bb) delete bb.dataset.spoolDragTriggered; });
+  document.addEventListener('touchcancel', () => { if (_spoolReleaseTid) { clearTimeout(_spoolReleaseTid); _spoolReleaseTid = null; } if (_spoolEngaged) onRelease(); const bb = document.getElementById('beatBtn'); if (bb) delete bb.dataset.spoolDragTriggered; });
 })();
 // Older right tape spool (reel2) wiring — it used to proxy its
 // press/release directly onto SWEEP's own mousedown/mouseup (so touching
