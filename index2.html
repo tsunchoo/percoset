@@ -754,7 +754,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 18:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 19:54</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -12763,29 +12763,22 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   // BEAT's own hold-to-open-menu gesture entirely (that stays intact for
   // a direct press-and-hold on BEAT itself; this is a separate trigger
   // path that only exists while the gesture originated here on the
-  // spool). Listened for on wrap itself rather than document, since
-  // setPointerCapture above guarantees every pointermove for this drag
-  // targets wrap regardless of where the finger physically is — far more
-  // reliable than trying to catch it via a document-wide touchmove,
-  // which never actually fired for this captured gesture.
-  wrap.addEventListener('pointermove', e => {
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const beatTarget = el && el.closest('#beatBtn');
+  // spool). Modeled directly on SWEEP's own confirmed-working
+  // drag-detection below (sweepMoveHandler) rather than the pointer-event
+  // system above: a native touchstart seeds tracking, then the same
+  // handler is bound to both wrap and document for touchmove. Pointer
+  // events plus setPointerCapture turned out not to reliably deliver
+  // pointermove for this gesture on-device despite working in
+  // simulation — this sidesteps that entirely by never touching pointer
+  // events for this specific feature.
+  let _spoolToBeatActive = false;
+  wrap.addEventListener('touchstart', () => {
+    _spoolToBeatActive = true;
     const bb = document.getElementById('beatBtn');
-    if (beatTarget && !beatTarget.dataset.spoolDragTriggered) {
-      beatTarget.dataset.spoolDragTriggered = '1';
-      toggleBeat();
-    } else if (!beatTarget && bb) {
-      delete bb.dataset.spoolDragTriggered; // reset once the finger leaves, so dragging back on toggles it again
-    }
-  });
-  // Redundant fallback via native touchmove directly on wrap (the actual
-  // touch-start target, so this fires regardless of pointer-capture
-  // state) — pointer events and touch events are genuinely separate
-  // browser systems, and real device behavior around setPointerCapture
-  // has enough platform variance that it's worth not relying on only one
-  // of the two here.
-  wrap.addEventListener('touchmove', e => {
+    if (bb) delete bb.dataset.spoolDragTriggered;
+  }, { passive: true });
+  const spoolToBeatMoveHandler = e => {
+    if (!_spoolToBeatActive) return;
     const t = e.touches[0]; if (!t) return;
     const el = document.elementFromPoint(t.clientX, t.clientY);
     const beatTarget = el && el.closest('#beatBtn');
@@ -12794,9 +12787,14 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
       beatTarget.dataset.spoolDragTriggered = '1';
       toggleBeat();
     } else if (!beatTarget && bb) {
-      delete bb.dataset.spoolDragTriggered;
+      delete bb.dataset.spoolDragTriggered; // reset once the finger leaves, so dragging back on toggles it again
     }
-  }, { passive: true });
+  };
+  wrap.addEventListener('touchmove', spoolToBeatMoveHandler, { passive: true });
+  document.addEventListener('touchmove', spoolToBeatMoveHandler, { passive: true });
+  const spoolToBeatEnd = () => { _spoolToBeatActive = false; };
+  document.addEventListener('touchend', spoolToBeatEnd);
+  document.addEventListener('touchcancel', spoolToBeatEnd);
   // Also listen for mousedown/mouseup specifically — the generic
   // drag-to-engage system (DRAGGABLE_BTN_SELECTORS) only ever dispatches
   // synthetic mousedown/mouseup, which the pointer-event listeners above
