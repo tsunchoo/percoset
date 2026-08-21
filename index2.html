@@ -754,7 +754,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 18:33</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 18:57</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9749,23 +9749,8 @@ function randAll(mode, opts) {
     const tempoSlider = document.getElementById('tempoBar'); if (tempoSlider) tempoSlider.value = bpm;
   }
   if (!_beatTypeLocked) {
-    // JAZZ and SHUFFLE share the same underlying triplet-timing feel, so
-    // even under tempo lock they're allowed to swap between each other —
-    // just never out to any other type while tempo's locked. HALFTIME and
-    // DOUBLEDOWN stay fully frozen as before (no swap partner of their own).
-    const _jazzShuffleTypes = _beatType === 'jazz' || _beatType === 'boogie';
-    if (_tempoLocked && _jazzShuffleTypes) {
-      const other = _beatType === 'jazz' ? 'boogie' : 'jazz';
-      setBeatType(Math.random() < 0.5 ? _beatType : other);
-    } else {
-      const onHalfFeel = _tempoLocked && (_beatType === 'halftime' || _beatType === 'doubledown');
-      if (!onHalfFeel) {
-        let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
-        if (_tempoLocked) _beatTypes = _beatTypes.filter(b => b !== 'halftime' && b !== 'doubledown' && b !== 'boogie' && b !== 'jazz');
-        setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
-      }
-      // else: tempo locked and already on halftime/doubledown — leave the beat exactly as it is
-    }
+    const _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
+    setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
   }
 
   // Stop all auto-rand tracks and reset to R — except locked tracks, whose
@@ -12794,6 +12779,24 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
       delete bb.dataset.spoolDragTriggered; // reset once the finger leaves, so dragging back on toggles it again
     }
   });
+  // Redundant fallback via native touchmove directly on wrap (the actual
+  // touch-start target, so this fires regardless of pointer-capture
+  // state) — pointer events and touch events are genuinely separate
+  // browser systems, and real device behavior around setPointerCapture
+  // has enough platform variance that it's worth not relying on only one
+  // of the two here.
+  wrap.addEventListener('touchmove', e => {
+    const t = e.touches[0]; if (!t) return;
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const beatTarget = el && el.closest('#beatBtn');
+    const bb = document.getElementById('beatBtn');
+    if (beatTarget && !beatTarget.dataset.spoolDragTriggered) {
+      beatTarget.dataset.spoolDragTriggered = '1';
+      toggleBeat();
+    } else if (!beatTarget && bb) {
+      delete bb.dataset.spoolDragTriggered;
+    }
+  }, { passive: true });
   // Also listen for mousedown/mouseup specifically — the generic
   // drag-to-engage system (DRAGGABLE_BTN_SELECTORS) only ever dispatches
   // synthetic mousedown/mouseup, which the pointer-event listeners above
