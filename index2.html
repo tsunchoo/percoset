@@ -754,7 +754,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">22Aug26 00:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">22Aug26 00:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -958,21 +958,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="2" checked onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
           <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">42</span>
         </div>
@@ -1063,10 +1048,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+            <input type="radio" name="trackNamesMode" value="color" onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+            <input type="radio" name="trackNamesMode" value="uniform" checked onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
           </label>
         </div>
       </div>
@@ -1084,13 +1069,28 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="volSliderColor" value="2" checked onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="solid" checked onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+            <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="a" onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+            <input type="radio" name="trackTextPulseMode" value="a" checked onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
           </label>
         </div>
       </div>
@@ -1102,10 +1102,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
             <input type="radio" name="trackTextPulseColor" value="1" onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseColor" value="2" onchange="setTrackTextPulseColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+            <input type="radio" name="trackTextPulseColor" value="2" checked onchange="setTrackTextPulseColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseColor" value="3" checked onchange="setTrackTextPulseColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+            <input type="radio" name="trackTextPulseColor" value="3" onchange="setTrackTextPulseColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
         </div>
       </div>
@@ -7320,26 +7320,7 @@ function buildUI() {
     nameBtn.classList.toggle('muted', trackMuted[tr]);
     ctrlRow.appendChild(nameBtn);
 
-    // Vol bar
-    const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
-    volBar.classList.toggle('muted', trackMuted[tr]);
-    const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
-    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
-    volBar.appendChild(volFill);
-    attachVolBarEvents(volBar, tr);
-    ctrlRow.appendChild(volBar);
-
-    // L button — lock track from RAND (far left, before offset buttons)
-    const soloBtn = document.createElement('button'); soloBtn.className = 'track-ctrl-icon-btn solo-btn'; soloBtn.id = `solobtn-${tr}`;
-    soloBtn.dataset.tr = tr;
-    soloBtn.textContent = 'S';
-    soloBtn.classList.toggle('solo-on', !!trackSolo[tr]);
-    soloBtn.addEventListener('mouseup', (e) => {
-      if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
-      toggleSolo(tr);
-    });
-    ctrlRow.appendChild(soloBtn);
-
+    // L button — lock track from RAND (moved here, between name and vol bar)
     const sweepBtnL = document.createElement('button'); sweepBtnL.className = 'track-ctrl-icon-btn lock-btn'; sweepBtnL.id = `swpbtn-${tr}`;
     sweepBtnL.dataset.tr = tr;
     sweepBtnL.textContent = 'L';
@@ -7362,6 +7343,26 @@ function buildUI() {
       markModified();
     });
     ctrlRow.appendChild(sweepBtnL);
+
+    // Vol bar
+    const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
+    volBar.classList.toggle('muted', trackMuted[tr]);
+    const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
+    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
+    volBar.appendChild(volFill);
+    attachVolBarEvents(volBar, tr);
+    ctrlRow.appendChild(volBar);
+
+    // S button — solo track
+    const soloBtn = document.createElement('button'); soloBtn.className = 'track-ctrl-icon-btn solo-btn'; soloBtn.id = `solobtn-${tr}`;
+    soloBtn.dataset.tr = tr;
+    soloBtn.textContent = 'S';
+    soloBtn.classList.toggle('solo-on', !!trackSolo[tr]);
+    soloBtn.addEventListener('mouseup', (e) => {
+      if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
+      toggleSolo(tr);
+    });
+    ctrlRow.appendChild(soloBtn);
 
     // Shift left
     const btnL = document.createElement('button'); btnL.className = 'shift-btn'; btnL.innerHTML = '<span class="glyph">&lt;</span>';
@@ -11906,13 +11907,13 @@ function wireRandomizeButton(btn, tr) {
   btn.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
 }
 
-window._trackNamesUniform = false; // COLOR-CODED is now the pre-selected radio at startup — track names start out colored by instrument group, not TOP-ROW uniform
+window._trackNamesUniform = true; // DEFAULT (uniform) is now the pre-selected radio at startup — track names start out uniform, not color-coded by instrument group
 document.body.classList.add('notes-grayscale'); // grayscale note markers is now the default at startup, matching the DEV menu checkbox's own default checked state
 buildUI();
 updateMasterVolCells();
 setTrackPulseMode('solid');
-setTrackTextPulseMode('solid'); // SOLID is now the default for text too — neither background nor text pulses at startup
-setTrackTextPulseColor(3); // HIGHLIGHT 3 is the default text pulse color
+setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
+setTrackTextPulseColor(2); // HIGHLIGHT 2 is the default text pulse color
 setVolSliderColor(2); // HIGHLIGHT 2 is the default vol slider color
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
@@ -13123,10 +13124,12 @@ function fullReset() {
   window._resetRecallAB?.();
   setTrackPulseMode('solid');
   const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="solid"]'); if (_tpmRadio) _tpmRadio.checked = true;
-  setTrackTextPulseMode('solid');
-  const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="solid"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
-  setTrackTextPulseColor(3);
-  const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="3"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
+  setTrackTextPulseMode('a');
+  const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="a"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
+  setTrackTextPulseColor(2);
+  const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="2"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
+  setTrackNamesUniform(true);
+  const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="uniform"]'); if (_tnmRadio) _tnmRadio.checked = true;
   setVolSliderColor(2);
   const _vscRadio = document.querySelector('input[name="volSliderColor"][value="2"]'); if (_vscRadio) _vscRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
