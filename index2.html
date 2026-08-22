@@ -860,7 +860,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <!-- Dev menu — small, separate from the performance-lock title gesture -->
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
-    <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DEV MENU</div>
+    <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLOR</div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
       <label class="wild-toggle">
@@ -868,31 +868,15 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <span class="wild-toggle-slider"></span>
       </label>
     </div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" style="flex:1;">
-        <span id="devOffsetStepReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">16TH</span>
-      </div>
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="devSwapSpools" onchange="setDevSwapSpools(this.checked)" style="width:14px;height:14px;cursor:pointer;">SWAP TAPE SPOOLS
-    </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" checked onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
-    </label>
 
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLORS</div>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
-        <button id="saveThemeBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE THEME</button>
-        <button id="loadThemeBtn" class="rec-mode-btn" onclick="document.getElementById('themeFileInput').click()">LOAD THEME</button>
-        <input type="file" id="themeFileInput" accept=".SiFiTheme,.json,application/json" style="display:none;" onchange="importThemeFile(this.files[0])">
-      </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
+      <button id="saveThemeBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE THEME</button>
+      <button id="loadThemeBtn" class="rec-mode-btn" onclick="document.getElementById('themeFileInput').click()">LOAD THEME</button>
+      <input type="file" id="themeFileInput" accept=".SiFiTheme,.json,application/json" style="display:none;" onchange="importThemeFile(this.files[0])">
     </div>
 
     <div id="devMorePanel" style="display:none;flex-direction:column;gap:12px;">
@@ -1114,6 +1098,20 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" style="flex:1;">
+          <span id="devOffsetStepReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">16TH</span>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="swapSpoolsToggle" onchange="setSwapSpools(this.checked)" style="width:14px;height:14px;cursor:pointer;">SWAP TAPE SPOOLS
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
+      </label>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RECORDING</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <button id="recMode_realtime" class="rec-mode-btn" onclick="setRecordMode('realtime')">REALTIME</button>
@@ -1291,14 +1289,15 @@ document.addEventListener('touchstart', () => { _lastRealTouchTimeGlobal = Date.
 // them. Deliberate exceptions: the sound picker's own scrollable list,
 // every settings slider (input[type=range], which relies entirely on
 // the browser's own native touch-drag to move their thumb), and the
-// settings panel and instructions/performance-lock panel themselves —
-// both scroll their own content and were just as broken as the sliders
-// were for the same reason.
+// settings panel, instructions/performance-lock panel, and COLOR (dev)
+// menu themselves — all three scroll their own content and were just as
+// broken as the sliders were for the same reason.
 document.addEventListener('touchmove', e => {
   if (e.target.closest('.sound-picker-inner')) return;
   if (e.target.closest('input[type="range"]')) return;
   if (e.target.closest('#settingsPanel')) return;
   if (e.target.closest('#instructionsOverlay')) return;
+  if (e.target.closest('#devMenuOverlay')) return;
   e.preventDefault();
 }, { passive: false });
 let masterVol = 0.8; // actual master output volume
@@ -2535,6 +2534,21 @@ function scheduler() {
     // with the existing per-beat scale-pulse (slot-pulse), including that
     // pulse's own fixed 0.44s timing — exactly the kind of interference
     // that must not happen to it.
+    // Flip reels forward the moment the recalled pattern is actually
+    // playing again — checked on every step (not just step===0/next
+    // downbeat) so there's no waiting window for anything (a second
+    // recall landing mid-bar, a burst of touchmove events during a
+    // dragged gesture, etc.) to race against and leave the reels stuck
+    // reversed until the following bar.
+    if (window._reelReversePending) {
+      window._reelReversePending = false;
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.reel-wrap').forEach(r => {
+          r.classList.remove('spinning-reverse');
+          r.classList.add('spinning');
+        });
+      });
+    }
     // Fire pending auto-rand on downbeat
     if (step === 0) {
       // RECALL only ever gets updated at two explicit moments — a new
@@ -2553,16 +2567,6 @@ function scheduler() {
           rb.style.animationDuration = ((60 / bpm) * 2) + 's'; // twice as fast — half a measure instead of a full one
           rb.classList.remove('rand-color-pulse'); void rb.offsetWidth; rb.classList.add('rand-color-pulse');
         }
-      }
-      // Flip reels forward when recalled pattern starts playing
-      if (window._reelReversePending) {
-        window._reelReversePending = false;
-        requestAnimationFrame(() => {
-          document.querySelectorAll('.reel-wrap').forEach(r => {
-            r.classList.remove('spinning-reverse');
-            r.classList.add('spinning');
-          });
-        });
       }
       if (_autoRandPending) {
         _autoRandPending = false;
@@ -12948,7 +12952,7 @@ function setDevOffsetStepSize(idx) {
 // elements within their shared flex container instead: each element
 // keeps its own id/listeners fully intact, and visually swaps position,
 // so the behavior genuinely follows it to the other side.
-function setDevSwapSpools(on) {
+function setSwapSpools(on) {
   const container = document.getElementById('tapeReels');
   const leftWrap = document.getElementById('leftReelWrap');
   const rightWrap = document.getElementById('rightReelWrap');
