@@ -861,6 +861,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DEV MENU</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
+      <label class="wild-toggle">
+        <input type="checkbox" id="wildColorsToggle" checked>
+        <span class="wild-toggle-slider"></span>
+      </label>
+    </div>
     <div style="display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
       <div style="display:flex;align-items:center;gap:10px;">
@@ -877,17 +884,166 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
     </label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="devMonoColorToggle" checked onchange="setDevMonoColorMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">MONOCHROME COLORS
-    </label>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">MONOCHROME BASE COLOR</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <input type="color" id="devMonoBaseColorPicker" value="#f5f0e8" oninput="setDevMonoBaseColor(this.value)" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#devMonoBaseColorPicker::-webkit-color-swatch-wrapper{padding:0;}#devMonoBaseColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#devMonoBaseColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-        <span style="font-size:0.6rem;color:var(--dim);line-height:1.3;">Picks the hue every color derives from</span>
+
+    <div style="display:flex;flex-direction:column;gap:15px;">
+      <div style="display:flex;justify-content:space-between;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RANDOM BALANCE</div>
+        <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
+      </div>
+      <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
+      <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
+        <span>DRUMS</span>
+        <span>MUSIC</span>
       </div>
     </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;justify-content:space-between;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
+        <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
+      </div>
+      <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
+      <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">42</span>
+      </div>
+      <input type="range" id="reverbIntensityBar" min="0" max="100" value="42" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">25</span>
+      </div>
+      <input type="range" id="delayMixBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLORS</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW</div>
+            <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Top row buttons, plus the volume slider background and border</div>
+          </div>
+          <input type="color" id="topColorPicker" value="#555555" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <style>#topColorPicker::-webkit-color-swatch-wrapper{padding:0;}#topColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#topColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS</div>
+            <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Default state of the track buttons</div>
+          </div>
+          <input type="color" id="trackColorPicker" value="#b0b0b0" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <style>#trackColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT</div>
+            <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Track name pulse, the note marker sweeping through the lines, and the volume slider fill</div>
+          </div>
+          <input type="color" id="highlightColorPicker" value="#f8ff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <style>#highlightColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlightColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlightColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 2</div>
+            <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">NEW/AUTO's pulse, BEAT in auto mode, the N track buttons in auto mode, and the N buttons' single-click flash</div>
+          </div>
+          <input type="color" id="highlight2ColorPicker" value="#0078ff" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <style>#highlight2ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight2ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight2ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 3</div>
+            <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">PLAY's icon, and BEAT/SWEEP/RECALL's text when active or flashed</div>
+          </div>
+          <input type="color" id="highlight3ColorPicker" value="#adff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <style>#highlight3ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight3ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight3ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">BACKGROUND</div>
+            <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">The page background only — menus keep their own color</div>
+          </div>
+          <input type="color" id="bgColorPicker" value="#f5f0e8" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackNamesMode" value="color" onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackNamesMode" value="uniform" checked onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+        </label>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackPulseMode" value="solid" checked onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+        </label>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="volSliderColor" value="2" checked onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+        </label>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackTextPulseMode" value="a" checked onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+        </label>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TEXT PULSE COLOR</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackTextPulseColor" value="1" onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackTextPulseColor" value="2" checked onchange="setTrackTextPulseColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+          <input type="radio" name="trackTextPulseColor" value="3" onchange="setTrackTextPulseColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+        </label>
+      </div>
+    </div>
+
     <button onclick="hideDevMenu()" class="rec-mode-btn">CLOSE</button>
   </div>
 </div>
@@ -935,18 +1091,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <!-- Sliders -->
     <div style="display:flex;flex-direction:column;gap:24px;">
 
-      <div style="display:flex;flex-direction:column;gap:15px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RANDOM BALANCE</div>
-          <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
-        </div>
-        <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
-        <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
-          <span>DRUMS</span>
-          <span>MUSIC</span>
-        </div>
-      </div>
-
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
@@ -957,171 +1101,16 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
-          <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
-        </div>
-        <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
-        <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">42</span>
-        </div>
-        <input type="range" id="reverbIntensityBar" min="0" max="100" value="42" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">25</span>
-        </div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
-      </div>
-
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLORS</div>
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <div id="moreSettingsPanel" style="display:none;flex-direction:column;gap:12px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW</div>
-              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Top row buttons, plus the volume slider background and border</div>
-            </div>
-            <input type="color" id="topColorPicker" value="#555555" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-            <style>#topColorPicker::-webkit-color-swatch-wrapper{padding:0;}#topColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#topColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS</div>
-              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Default state of the track buttons</div>
-            </div>
-            <input type="color" id="trackColorPicker" value="#b0b0b0" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-            <style>#trackColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT</div>
-              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Track name pulse, the note marker sweeping through the lines, and the volume slider fill</div>
-            </div>
-            <input type="color" id="highlightColorPicker" value="#f8ff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-            <style>#highlightColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlightColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlightColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 2</div>
-              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">NEW/AUTO's pulse, BEAT in auto mode, the N track buttons in auto mode, and the N buttons' single-click flash</div>
-            </div>
-            <input type="color" id="highlight2ColorPicker" value="#0078ff" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-            <style>#highlight2ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight2ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight2ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 3</div>
-              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">PLAY's icon, and BEAT/SWEEP/RECALL's text when active or flashed</div>
-            </div>
-            <input type="color" id="highlight3ColorPicker" value="#adff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-            <style>#highlight3ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight3ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight3ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">BACKGROUND</div>
-              <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">The page background only — menus keep their own color</div>
-            </div>
-            <input type="color" id="bgColorPicker" value="#f5f0e8" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-            <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-          </div>
-
-          </div>
-                    <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
+          <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
           <button id="saveThemeBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE THEME</button>
           <button id="loadThemeBtn" class="rec-mode-btn" onclick="document.getElementById('themeFileInput').click()">LOAD THEME</button>
           <input type="file" id="themeFileInput" accept=".SiFiTheme,.json,application/json" style="display:none;" onchange="importThemeFile(this.files[0])">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
-            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
-            <label class="wild-toggle">
-              <input type="checkbox" id="wildColorsToggle" checked>
-              <span class="wild-toggle-slider"></span>
-            </label>
-          </div>
-
-          <button id="moreSettingsToggleBtn" class="rec-mode-btn" onclick="toggleMoreSettings()" style="margin-top:4px;">MORE</button>
         </div>
-      </div>
-
-      <div id="moreSettingsPanel2" style="display:none;flex-direction:column;gap:10px;">
-        <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" checked onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="solid" checked onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="2" checked onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="a" checked onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TEXT PULSE COLOR</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseColor" value="1" onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseColor" value="2" checked onchange="setTrackTextPulseColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseColor" value="3" onchange="setTrackTextPulseColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-        </div>
-      </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1492,7 +1481,6 @@ function _applyHighlight3Color(hex) {
 function _applyBgColor(hex) {
   document.documentElement.style.setProperty('--bg', hex);
   const el = document.getElementById('bgColorPicker'); if (el) el.value = hex;
-  const devEl = document.getElementById('devMonoBaseColorPicker'); if (devEl) devEl.value = hex;
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 }
 // The six default colors the app ships with — used to restore the
@@ -1622,42 +1610,6 @@ function randomizeAppColors() {
   _applyHighlight3Color(_hslToHex(Math.random() * 360, 0.65 + Math.random() * 0.35, 0.55 + Math.random() * 0.2));
   _applyBgColor(_hslToHex(Math.random() * 360, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
 }
-// MONOCHROME mode — same per-role saturation/lightness formulas as
-// randomizeAppColors() above (so relative brightness/contrast between
-// roles stays the same), but every role shares one hue instead of each
-// rolling its own. That shared hue comes from BACKGROUND: either a
-// freshly-rolled random background (same S/L range as the multi-hue
-// mode, so it stays just as light as before) or a manually-chosen color
-// from the DEV menu picker, in which case its hue is pulled out and reused
-// everywhere while BACKGROUND itself becomes exactly the picked color.
-// Defaults on (see devMonoColorToggle in the DEV menu) — this is the
-// initialized color mode.
-window._monoColorEnabled = true;
-function randomizeAppColorsMono(manualHex) {
-  let bgHex;
-  if (manualHex) {
-    bgHex = manualHex;
-  } else {
-    const bgH = Math.random() * 360, bgS = 0.15 + Math.random() * 0.25, bgL = 0.82 + Math.random() * 0.13;
-    bgHex = _hslToHex(bgH, bgS, bgL);
-  }
-  const [baseHue] = _hexToHsl(bgHex);
-  _applyBgColor(bgHex);
-  const _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
-  _applyTopColor(_hslToHex(baseHue, _topS, _topL));
-  _applyTrackColor(_hslToHex(baseHue, _topS, Math.min(0.95, _topL + 0.26)));
-  _applyHighlightColor(_hslToHex(baseHue, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
-  _applyHighlight2Color(_hslToHex(baseHue, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
-  _applyHighlight3Color(_hslToHex(baseHue, 0.65 + Math.random() * 0.35, 0.55 + Math.random() * 0.2));
-}
-function setDevMonoColorMode(on) {
-  window._monoColorEnabled = !!on;
-}
-function setDevMonoBaseColor(hex) {
-  window._monoColorEnabled = true;
-  const cb = document.getElementById('devMonoColorToggle'); if (cb) cb.checked = true;
-  randomizeAppColorsMono(hex);
-}
 (function() {
   const topPicker = document.getElementById('topColorPicker');
   if (topPicker) topPicker.addEventListener('input', () => _applyTopColor(topPicker.value));
@@ -1680,8 +1632,7 @@ function setDevMonoBaseColor(hex) {
     // coordinates. A genuine, deliberate press on this button will always
     // happen well after the panel has actually opened.
     if (Date.now() - _settingsOpenedAt < 350) return;
-    _pressPulse('randomizeColorsBtn');
-    if (window._monoColorEnabled) randomizeAppColorsMono(); else randomizeAppColors();
+    _pressPulse('randomizeColorsBtn'); randomizeAppColors();
   });
   const saveThemeBtn = document.getElementById('saveThemeBtn');
   if (saveThemeBtn) saveThemeBtn.addEventListener('click', saveTheme);
@@ -8482,15 +8433,6 @@ function getExportSnaps() {
 // FLASH mode's per-note trigger — called once per real note hit, from the
 // live scheduler only. Timed to when the note actually sounds (t is a
 // Web-Audio-scheduled, possibly-lookahead time), not when this JS runs.
-function toggleMoreSettings() {
-  const p1 = document.getElementById('moreSettingsPanel');
-  const p2 = document.getElementById('moreSettingsPanel2');
-  const btn = document.getElementById('moreSettingsToggleBtn');
-  const showing = p1 && p1.style.display !== 'none';
-  if (p1) p1.style.display = showing ? 'none' : 'flex';
-  if (p2) p2.style.display = showing ? 'none' : 'flex';
-  if (btn) btn.textContent = showing ? 'MORE' : 'LESS';
-}
 function setTrackPulseMode(mode) {
   document.body.classList.remove('track-pulse-a', 'track-pulse-solid');
   // 'solid' intentionally matches no CSS selector at all — the background
@@ -9783,13 +9725,8 @@ function randAll(mode, opts) {
   // default palette is what's actually visible when the app first loads,
   // even with WILD on by default; the first real + press or auto-rand
   // cycle after that is where WILD actually starts taking effect.
-  // MONOCHROME (DEV menu) drives this independently of the WILD toggle —
-  // selecting it in DEV means every + press picks a fresh color in that
-  // mode from then on, regardless of whether WILD itself is on, and that
-  // stays true until the DEV toggle is switched off again.
-  if (window._wildColorsEnabled || window._monoColorEnabled) {
+  if (window._wildColorsEnabled) {
     if (window._wildColorsSkipNext) window._wildColorsSkipNext = false;
-    else if (window._monoColorEnabled) randomizeAppColorsMono();
     else randomizeAppColors();
   }
   _split32CycleCount = 0;
