@@ -754,7 +754,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">21Aug26 19:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">22Aug26 00:01</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -864,13 +864,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="display:flex;align-items:center;gap:10px;">
         <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" style="flex:1;">
         <span id="devOffsetStepReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">16TH</span>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">PATTERN SWAP PAUSE</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <input type="range" id="devSwapPauseSlider" min="0" max="1" step="0.05" value="0.6" oninput="setDevSwapPauseSec(this.value)" style="flex:1;">
-        <span id="devSwapPauseReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:44px;text-align:right;">0.60s</span>
       </div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
@@ -2583,17 +2576,7 @@ function scheduler() {
           rbClear.style.color = '';
         }
         _recallSnapB = snapshotState(); // save current as previous, right before this new whole-pattern RAND lands
-        const _bpmBeforeRand = bpm; // captured before randAll() so we can tell below whether the incoming tempo actually changed
         randAll(_autoRandMode); _autoRandMode = undefined;
-        // Only worth masking the swap with a pause if the incoming
-        // pattern's tempo is actually different — same tempo means
-        // there's no audible seam (tempo jump) to hide. Uses the same
-        // shared, DEV-menu-configurable duration as RECALL's rewind duck.
-        if (bpm !== _bpmBeforeRand && ctx && masterGain && _swapPauseSec > 0) {
-          masterGain.gain.cancelScheduledValues(t);
-          masterGain.gain.setTargetAtTime(0.0, t, 0.01);
-          masterGain.gain.setTargetAtTime(masterVol, t + _swapPauseSec, 0.04);
-        }
         clearBtnBlueHeld('randBtn');
         playRandReleaseSweep(t);
       }
@@ -12970,17 +12953,6 @@ window._devRandOffsetEnabled = false;
 function setDevRandOffset(on) {
   window._devRandOffsetEnabled = !!on;
 }
-// Shared pause duration for pattern-swap transitions — used both by
-// RECALL's rewind duck (was previously tied to the rewind sample's own
-// length) and the tempo-change dip when a pending + lands a new pattern
-// at a different BPM while playing (see the _autoRandPending block in
-// scheduler()). DEV-menu-configurable, 0 to 1 second.
-let _swapPauseSec = 0.6;
-function setDevSwapPauseSec(v) {
-  _swapPauseSec = Math.max(0, Math.min(1, parseFloat(v) || 0));
-  const readout = document.getElementById('devSwapPauseReadout');
-  if (readout) readout.textContent = _swapPauseSec.toFixed(2) + 's';
-}
 window._tonalPercBalance = 3; // 0-6 — how many of the 6 tracks RAND aims for tonal, the rest going to percussion
 function setTonalPercBalance(v) {
   window._tonalPercBalance = +v;
@@ -14126,11 +14098,9 @@ function stopRecallLoop() {
     _pressPulse('scratchBtn');
     stopAllAutoRand();
     const rewindName = Math.random() < 0.5 ? 'rewind' : 'rewind2';
-    // Duck master mix for the shared, DEV-menu-configurable swap pause
-    // (0-1s, see _swapPauseSec) rather than the rewind sample's own
-    // length — the mask duration is now independent of whichever sample
-    // happens to get picked.
-    const rewindDur = _swapPauseSec;
+    // Duck master mix for a fixed 0.25s pause, independent of whichever
+    // rewind sample happens to get picked.
+    const rewindDur = 0.25;
     if (ctx && masterGain) {
       const t = ctx.currentTime;
       masterGain.gain.cancelScheduledValues(t);
