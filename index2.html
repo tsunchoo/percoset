@@ -297,10 +297,9 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn.rec-active #recBtnImg { opacity: 0; }
 #saveBtn.rec-beat-pulse { animation: top-row-pulse 0.44s ease-out; }
 /* Shared beat-synced scale-pulse for the top transport row (PLAY, BEAT,
-   REC). Peak scale is 1 + --top-row-pulse-amt, exposed via a DEV menu
-   slider (see setTopRowPulseScale) so the pulse strength is adjustable;
-   the fallback of 0.18 is the original hardcoded amount. */
-@keyframes top-row-pulse { 0% { transform: scale(1); } 40% { transform: scale(calc(1 + var(--top-row-pulse-amt, 0.18))); } 100% { transform: scale(1); } }
+   REC). Hardcoded at half the original pulse strength (was 1.18 peak
+   scale / 0.18 extra, now 0.09 extra). */
+@keyframes top-row-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.09); } 100% { transform: scale(1); } }
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
 @keyframes rec-icon-pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.1); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
@@ -867,13 +866,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="display:flex;align-items:center;gap:10px;">
         <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" style="flex:1;">
         <span id="devOffsetStepReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">16TH</span>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">TOP ROW PULSE</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <input type="range" id="devTopRowPulseSlider" min="0" max="200" step="1" value="100" oninput="setTopRowPulseScale(this.value)" style="flex:1;">
-        <span id="devTopRowPulseReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">100%</span>
       </div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
@@ -12927,19 +12919,6 @@ function setDevOffsetStepSize(idx) {
   const readout = document.getElementById('devOffsetStepReadout');
   if (readout) readout.textContent = _DEV_OFFSET_STEP_LABELS[idx] ?? '16TH';
 }
-// Beat-synced scale-pulse strength for the top transport row (PLAY, BEAT,
-// REC) — see the shared top-row-pulse keyframe. 100% on the slider = the
-// original hardcoded amount (0.18 extra scale, i.e. peak scale 1.18);
-// the slider scales that amount linearly, so 0% = no pulse and 200% =
-// double the original punch.
-const _DEV_TOP_ROW_PULSE_BASE = 0.18;
-function setTopRowPulseScale(pct) {
-  pct = +pct;
-  const amt = (pct / 100) * _DEV_TOP_ROW_PULSE_BASE;
-  document.documentElement.style.setProperty('--top-row-pulse-amt', amt);
-  const readout = document.getElementById('devTopRowPulseReadout');
-  if (readout) readout.textContent = pct + '%';
-}
 // Swaps which physical spool (left/right) carries which behavior — the
 // right spool's own gesture handling (single tap: amalgam swell, double
 // tap: reset beat offset) and the left spool's role as SWEEP's own
@@ -14016,19 +13995,20 @@ async function hardResetAudioEngine() {
       _leftSpoolRelease();
       _sweepPitchRedirect(true); // back over SWEEP — resume rising in pitch from wherever it currently is
     }
-    // Dragging onto BEAT (or into its open dropdown) drives the same
-    // drag-to-select menu as holding BEAT directly, instead of an instant toggle.
-    const onBeatArea = !!el.closest('#beatBtn, #beatTypeMenu');
-    if (onBeatArea && !_beatMenuOpen) {
-      openBeatMenu();
-    } else if (!onBeatArea && _beatMenuOpen && window._sweepOpenedBeatMenu) {
-      // Dragged away without releasing — cancel rather than commit
-      closeBeatMenu();
-      window._sweepOpenedBeatMenu = false;
-    }
-    if (onBeatArea) {
-      window._sweepOpenedBeatMenu = true;
-      beatMenuHighlightUnder(touch.clientX, touch.clientY);
+    // Dragging onto BEAT toggles it directly — same instant-toggle
+    // behavior as the right tape spool's own drag-to-BEAT gesture
+    // (spoolToBeatMoveHandler above). This should never open BEAT's
+    // hold-to-select beat-type menu when arrived at via a drag that
+    // started elsewhere (SWEEP) — that menu stays reserved for a direct
+    // press-and-hold on BEAT itself.
+    const onBeatArea = !!el.closest('#beatBtn');
+    const beatBtnEl = document.getElementById('beatBtn');
+    if (onBeatArea && beatBtnEl && !beatBtnEl.dataset.sweepBeatTriggered) {
+      beatBtnEl.dataset.sweepBeatTriggered = '1';
+      if (_beatMenuOpen) closeBeatMenu(); // override — force shut rather than let this land on it
+      toggleBeat();
+    } else if (!onBeatArea && beatBtnEl) {
+      delete beatBtnEl.dataset.sweepBeatTriggered; // reset once the finger leaves, so dragging back on toggles it again
     }
     // Only act if finger is over SWEEP or dragging across transport buttons
     const onSweep = el.closest('#clearBtn');
@@ -14045,17 +14025,9 @@ async function hardResetAudioEngine() {
   document.addEventListener('touchmove', sweepMoveHandler, { passive: false });
   const sweepEndCleanup = e => {
     document.querySelectorAll('[data-sweep-triggered]').forEach(el => delete el.dataset.sweepTriggered);
+    const beatBtnEl = document.getElementById('beatBtn');
+    if (beatBtnEl) delete beatBtnEl.dataset.sweepBeatTriggered;
     if (window._sweepOnSpool) { window._sweepOnSpool = false; _leftSpoolRelease(); }
-    if (window._sweepOpenedBeatMenu) {
-      window._sweepOpenedBeatMenu = false;
-      if (_beatMenuOpen) {
-        const t = e.changedTouches && e.changedTouches[0];
-        const item = t ? beatMenuHighlightUnder(t.clientX, t.clientY) : null;
-        commitBeatMenuSelection(item);
-        closeBeatMenu();
-        if (!beatPlaying && !_beatPending) toggleBeat();
-      }
-    }
   };
   btn.addEventListener('touchend', sweepEndCleanup, { passive: false });
   // The menu can get opened by this document-wide touchmove handler even
