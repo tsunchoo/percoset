@@ -9783,7 +9783,11 @@ function randAll(mode, opts) {
   // default palette is what's actually visible when the app first loads,
   // even with WILD on by default; the first real + press or auto-rand
   // cycle after that is where WILD actually starts taking effect.
-  if (window._wildColorsEnabled) {
+  // MONOCHROME (DEV menu) drives this independently of the WILD toggle —
+  // selecting it in DEV means every + press picks a fresh color in that
+  // mode from then on, regardless of whether WILD itself is on, and that
+  // stays true until the DEV toggle is switched off again.
+  if (window._wildColorsEnabled || window._monoColorEnabled) {
     if (window._wildColorsSkipNext) window._wildColorsSkipNext = false;
     else if (window._monoColorEnabled) randomizeAppColorsMono();
     else randomizeAppColors();
