@@ -3398,10 +3398,12 @@ function playSludgeBass(freq, durSec, isAccent, time, tr) {
   const vel = isAccent ? 1.3438 : 0.9487;
   const startFreq = _bassGlideState[tr] || freq;
   _bassGlideState[tr] = freq;
-  let dest = (tr !== undefined && trackFxNodes[tr])
-    ? (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0) ? trackFxNodes[tr].fxSend : trackFxNodes[tr].dryGain)
-    : (trackGainNodes[tr] || masterGain);
-  if (ctx && _duckEligible(tr)) dest = getSidechainDuckGain(tr, dest);
+  // Was hand-resolving dest (FX routing + duck) itself, which meant this
+  // voice — alone among every synth in the file — skipped the shared
+  // per-track trim gain AND the universal soft-clip safety net that
+  // getSynthConnectNode() gives every other instrument. That, combined
+  // with the over-unity pump below, is what was actually clipping.
+  const dest = getSynthConnectNode(tr);
 
   const saw = ctx.createOscillator(); saw.type = 'sawtooth';
   const saw2 = ctx.createOscillator(); saw2.type = 'sawtooth'; saw2.detune.value = 17; // slightly out of tune second layer — the "messy" part
@@ -3431,9 +3433,15 @@ function playSludgeBass(freq, durSec, isAccent, time, tr) {
 
   // Grumble — fast LFO pumping the voice's own gain, standing in for a
   // hard, fast sidechain duck without needing a full envelope-follower.
+  // Base/depth rebalanced so this only ever DUCKS (stays at or below
+  // unity, 0.3–1.0) instead of the old base 1 ± 0.35, which swung up to
+  // 1.35x on every cycle — an actual amplitude boost baked into every
+  // note, on top of the accent envelope reaching 1.34x of its own. That
+  // stacked headroom overshoot, with nothing downstream to catch it
+  // (see dest fix above), is what was clipping.
   const grumbleLfo = ctx.createOscillator(); grumbleLfo.type = 'sine'; grumbleLfo.frequency.value = 11;
   const grumbleDepth = ctx.createGain(); grumbleDepth.gain.value = 0.35;
-  const pumpGain = ctx.createGain(); pumpGain.gain.value = 1;
+  const pumpGain = ctx.createGain(); pumpGain.gain.value = 0.65;
   grumbleLfo.connect(grumbleDepth); grumbleDepth.connect(pumpGain.gain);
   grumbleLfo.start(time); grumbleLfo.stop(time + durSec + 0.05);
 
@@ -9311,7 +9319,13 @@ function _precomputeLoopSequence(numLoops) {
   const sequence = [original];
   for (let i = 1; i < numLoops; i++) {
     for (let tr = 0; tr < NUM_TRACKS; tr++) {
-      if (autoShiftStops[tr]) randomizeTrack(tr);
+      // Per-track Auto-New tracks always evolve. When the whole-pattern
+      // RAND auto-loop (press-and-hold on RAND, _autoRandLoopActive) is
+      // running instead, every track evolves the same way it would live —
+      // approximated here with the lightweight per-track randomize rather
+      // than the full randAll() (which carries invasive live-UI/BPM/color
+      // side effects that have no place in this offline precompute pass).
+      if (autoShiftStops[tr] || _autoRandLoopActive) randomizeTrack(tr);
     }
     sequence.push(_capturePlaybackState());
   }
@@ -9392,7 +9406,10 @@ async function bounceLoop() {
   if (!hasNotes) return;
   if (playing) togglePlay(); // stop first, per spec
 
-  const hasAutoRand = Object.keys(autoShiftStops).length > 0;
+  // Either per-track Auto-New or the whole-pattern RAND auto-loop means
+  // the pattern keeps evolving bar to bar — both should trigger the
+  // loop-count prompt, not just the per-track case.
+  const hasAutoRand = Object.keys(autoShiftStops).length > 0 || _autoRandLoopActive;
   let numLoops = 1;
   if (hasAutoRand) {
     numLoops = _askLoopCount();
@@ -9430,7 +9447,10 @@ async function bounceLoopStems() {
   if (!hasNotes) return;
   if (playing) togglePlay(); // stop first, per spec
 
-  const hasAutoRand = Object.keys(autoShiftStops).length > 0;
+  // Either per-track Auto-New or the whole-pattern RAND auto-loop means
+  // the pattern keeps evolving bar to bar — both should trigger the
+  // loop-count prompt, not just the per-track case.
+  const hasAutoRand = Object.keys(autoShiftStops).length > 0 || _autoRandLoopActive;
   let numLoops = 1;
   if (hasAutoRand) {
     numLoops = _askLoopCount();
@@ -12776,23 +12796,35 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
     _spoolToBeatActive = true;
     const bb = document.getElementById('beatBtn');
     if (bb) delete bb.dataset.spoolDragTriggered;
+    // Override, not merge: this gesture always means "toggle BEAT", never
+    // "open the beat-type menu" — if the menu is somehow already open when
+    // the drag starts, close it rather than let this drag interact with it.
+    if (_beatMenuOpen) closeBeatMenu();
   }, { passive: true });
   const spoolToBeatMoveHandler = e => {
     if (!_spoolToBeatActive) return;
     const t = e.touches[0]; if (!t) return;
-    const el = document.elementFromPoint(t.clientX, t.clientY);
-    const beatTarget = el && el.closest('#beatBtn');
     const bb = document.getElementById('beatBtn');
-    if (beatTarget && !beatTarget.dataset.spoolDragTriggered) {
-      beatTarget.dataset.spoolDragTriggered = '1';
+    if (!bb) return;
+    // Hit-test BEAT's own bounding rect directly instead of
+    // document.elementFromPoint — elementFromPoint returns whatever's
+    // topmost at that point, and the full-screen beat-type menu overlay
+    // (position:fixed, inset:0) sits right on top of BEAT the instant it's
+    // open, which silently broke this gesture. Checking BEAT's geometry
+    // directly can't be blocked by anything drawn over it.
+    const r = bb.getBoundingClientRect();
+    const over = t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom;
+    if (over && !bb.dataset.spoolDragTriggered) {
+      bb.dataset.spoolDragTriggered = '1';
+      if (_beatMenuOpen) closeBeatMenu(); // override — force the menu shut rather than let this land on it
       toggleBeat();
-    } else if (!beatTarget && bb) {
+    } else if (!over) {
       delete bb.dataset.spoolDragTriggered; // reset once the finger leaves, so dragging back on toggles it again
     }
   };
   wrap.addEventListener('touchmove', spoolToBeatMoveHandler, { passive: true });
   document.addEventListener('touchmove', spoolToBeatMoveHandler, { passive: true });
-  const spoolToBeatEnd = () => { _spoolToBeatActive = false; };
+  const spoolToBeatEnd = () => { _spoolToBeatActive = false; if (_beatMenuOpen) closeBeatMenu(); };
   document.addEventListener('touchend', spoolToBeatEnd);
   document.addEventListener('touchcancel', spoolToBeatEnd);
   // Also listen for mousedown/mouseup specifically — the generic
@@ -13927,6 +13959,15 @@ async function hardResetAudioEngine() {
   // as long as the finger stays over it (matches the direct hold gesture).
   // Also fire on document touchmove so drag works even if touchstart hit the loading overlay
   const sweepMoveHandler = e => {
+    // Guard against firing for touchmoves that have nothing to do with
+    // SWEEP: this handler is bound to `document` (see comment above) so it
+    // used to run on EVERY drag anywhere on the page, including the right
+    // tape spool's own "drag onto BEAT to toggle it" gesture. Once the
+    // finger crossed BEAT it would open the full-screen beat-type menu
+    // here, which then covered BEAT itself, so the spool's handler could
+    // no longer find #beatBtn under the finger and the direct toggle never
+    // fired. Only let this run for a touch that actually began on SWEEP.
+    if (!window._sweepGestureActive) return;
     const touch = e.touches[0];
     const el = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
     if (!el) return;
