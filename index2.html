@@ -12824,7 +12824,16 @@ function playAmalgamStep(isAccent, time, tr, durSec) {
   };
   wrap.addEventListener('touchmove', spoolToBeatMoveHandler, { passive: true });
   document.addEventListener('touchmove', spoolToBeatMoveHandler, { passive: true });
-  const spoolToBeatEnd = () => { _spoolToBeatActive = false; if (_beatMenuOpen) closeBeatMenu(); };
+  const spoolToBeatEnd = () => {
+    // Was unconditionally closing the beat menu on any touchend anywhere
+    // on the page (this listener is on `document`), which meant it also
+    // slammed shut BEAT's own legitimate hold-to-open menu the instant you
+    // released — the menu no longer "held". Only override/close the menu
+    // when this release actually belongs to the spool-drag gesture itself.
+    const wasSpoolDrag = _spoolToBeatActive;
+    _spoolToBeatActive = false;
+    if (wasSpoolDrag && _beatMenuOpen) closeBeatMenu();
+  };
   document.addEventListener('touchend', spoolToBeatEnd);
   document.addEventListener('touchcancel', spoolToBeatEnd);
   // Also listen for mousedown/mouseup specifically — the generic
