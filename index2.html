@@ -859,7 +859,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 <!-- Dev menu — small, separate from the performance-lock title gesture -->
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">DEV MENU</div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
@@ -884,45 +884,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
     </label>
-
-    <div style="display:flex;flex-direction:column;gap:15px;">
-      <div style="display:flex;justify-content:space-between;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RANDOM BALANCE</div>
-        <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
-      </div>
-      <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
-      <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
-        <span>DRUMS</span>
-        <span>MUSIC</span>
-      </div>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:5px;">
-      <div style="display:flex;justify-content:space-between;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
-        <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
-      </div>
-      <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:5px;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
-      <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">42</span>
-      </div>
-      <input type="range" id="reverbIntensityBar" min="0" max="100" value="42" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">25</span>
-      </div>
-      <input type="range" id="delayMixBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
-    </div>
 
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLORS</div>
@@ -1091,6 +1052,18 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <!-- Sliders -->
     <div style="display:flex;flex-direction:column;gap:24px;">
 
+      <div style="display:flex;flex-direction:column;gap:15px;">
+        <div style="display:flex;justify-content:space-between;">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">RANDOM BALANCE</div>
+          <div id="tonalPercBalanceReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">3 / 3</div>
+        </div>
+        <input type="range" id="tonalPercBalanceSlider" min="0" max="6" step="1" value="3" oninput="setTonalPercBalance(this.value)" class="master-vol-slider" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
+          <span>DRUMS</span>
+          <span>MUSIC</span>
+        </div>
+      </div>
+
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1099,6 +1072,33 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
           <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain" style="display:none;" onchange="importTapeFile(this.files[0])">
         </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;justify-content:space-between;">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
+          <div id="swingReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">25ms</div>
+        </div>
+        <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
+        <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+          <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">42</span>
+        </div>
+        <input type="range" id="reverbIntensityBar" min="0" max="100" value="42" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">25</span>
+        </div>
+        <input type="range" id="delayMixBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
