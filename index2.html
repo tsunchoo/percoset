@@ -781,7 +781,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 <header>
   <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">Si•Fi</h1>
-  <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:2px;right:2px;font-size:0.55rem;font-weight:700;letter-spacing:1px;background:none;border:none;color:var(--dim);padding:4px;cursor:pointer;">DEV</button>
+  <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:2px;right:2px;font-size:0.85rem;line-height:1;letter-spacing:1px;background:none;border:none;color:var(--dim);padding:4px;cursor:pointer;">🌈</button>
   <div id="tapeReels" class="tape-reels">
     <div class="reel-wrap" id="leftReelWrap" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
       <img class="reel" id="reel1" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">
@@ -877,6 +877,17 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
     </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="devMonoColorToggle" checked onchange="setDevMonoColorMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">MONOCHROME COLORS
+    </label>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">MONOCHROME BASE COLOR</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="color" id="devMonoBaseColorPicker" value="#f5f0e8" oninput="setDevMonoBaseColor(this.value)" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+        <style>#devMonoBaseColorPicker::-webkit-color-swatch-wrapper{padding:0;}#devMonoBaseColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#devMonoBaseColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+        <span style="font-size:0.6rem;color:var(--dim);line-height:1.3;">Picks the hue every color derives from</span>
+      </div>
+    </div>
     <button onclick="hideDevMenu()" class="rec-mode-btn">CLOSE</button>
   </div>
 </div>
@@ -1481,6 +1492,7 @@ function _applyHighlight3Color(hex) {
 function _applyBgColor(hex) {
   document.documentElement.style.setProperty('--bg', hex);
   const el = document.getElementById('bgColorPicker'); if (el) el.value = hex;
+  const devEl = document.getElementById('devMonoBaseColorPicker'); if (devEl) devEl.value = hex;
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
 }
 // The six default colors the app ships with — used to restore the
@@ -1610,6 +1622,42 @@ function randomizeAppColors() {
   _applyHighlight3Color(_hslToHex(Math.random() * 360, 0.65 + Math.random() * 0.35, 0.55 + Math.random() * 0.2));
   _applyBgColor(_hslToHex(Math.random() * 360, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
 }
+// MONOCHROME mode — same per-role saturation/lightness formulas as
+// randomizeAppColors() above (so relative brightness/contrast between
+// roles stays the same), but every role shares one hue instead of each
+// rolling its own. That shared hue comes from BACKGROUND: either a
+// freshly-rolled random background (same S/L range as the multi-hue
+// mode, so it stays just as light as before) or a manually-chosen color
+// from the DEV menu picker, in which case its hue is pulled out and reused
+// everywhere while BACKGROUND itself becomes exactly the picked color.
+// Defaults on (see devMonoColorToggle in the DEV menu) — this is the
+// initialized color mode.
+window._monoColorEnabled = true;
+function randomizeAppColorsMono(manualHex) {
+  let bgHex;
+  if (manualHex) {
+    bgHex = manualHex;
+  } else {
+    const bgH = Math.random() * 360, bgS = 0.15 + Math.random() * 0.25, bgL = 0.82 + Math.random() * 0.13;
+    bgHex = _hslToHex(bgH, bgS, bgL);
+  }
+  const [baseHue] = _hexToHsl(bgHex);
+  _applyBgColor(bgHex);
+  const _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
+  _applyTopColor(_hslToHex(baseHue, _topS, _topL));
+  _applyTrackColor(_hslToHex(baseHue, _topS, Math.min(0.95, _topL + 0.26)));
+  _applyHighlightColor(_hslToHex(baseHue, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
+  _applyHighlight2Color(_hslToHex(baseHue, 0.6 + Math.random() * 0.35, 0.35 + Math.random() * 0.4));
+  _applyHighlight3Color(_hslToHex(baseHue, 0.65 + Math.random() * 0.35, 0.55 + Math.random() * 0.2));
+}
+function setDevMonoColorMode(on) {
+  window._monoColorEnabled = !!on;
+}
+function setDevMonoBaseColor(hex) {
+  window._monoColorEnabled = true;
+  const cb = document.getElementById('devMonoColorToggle'); if (cb) cb.checked = true;
+  randomizeAppColorsMono(hex);
+}
 (function() {
   const topPicker = document.getElementById('topColorPicker');
   if (topPicker) topPicker.addEventListener('input', () => _applyTopColor(topPicker.value));
@@ -1632,7 +1680,8 @@ function randomizeAppColors() {
     // coordinates. A genuine, deliberate press on this button will always
     // happen well after the panel has actually opened.
     if (Date.now() - _settingsOpenedAt < 350) return;
-    _pressPulse('randomizeColorsBtn'); randomizeAppColors();
+    _pressPulse('randomizeColorsBtn');
+    if (window._monoColorEnabled) randomizeAppColorsMono(); else randomizeAppColors();
   });
   const saveThemeBtn = document.getElementById('saveThemeBtn');
   if (saveThemeBtn) saveThemeBtn.addEventListener('click', saveTheme);
@@ -9736,6 +9785,7 @@ function randAll(mode, opts) {
   // cycle after that is where WILD actually starts taking effect.
   if (window._wildColorsEnabled) {
     if (window._wildColorsSkipNext) window._wildColorsSkipNext = false;
+    else if (window._monoColorEnabled) randomizeAppColorsMono();
     else randomizeAppColors();
   }
   _split32CycleCount = 0;
