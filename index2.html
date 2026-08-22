@@ -336,7 +336,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f1
   font-size: calc(clamp(0.64rem, 2.3vw, 0.86rem) * var(--track-name-font-scale, 1)); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   cursor: pointer; background: var(--neutral-track, #b0b0b0); color: var(--neutral-track-text, var(--text));
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
-  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: calc(clamp(78px, 22vw, 106px) * var(--track-btn-scale, 1)); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1));
+  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: calc(clamp(78px, 22vw, 106px) * var(--track-btn-scale, 1) * 1.1); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1));
   display: flex; align-items: center;
   touch-action: none; -webkit-tap-highlight-color: transparent;
   transition: background 0.06s, color 0.06s;
@@ -754,7 +754,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">22Aug26 00:01</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">22Aug26 00:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1087,10 +1087,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+            <input type="radio" name="trackTextPulseMode" value="solid" checked onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="a" checked onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+            <input type="radio" name="trackTextPulseMode" value="a" onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
           </label>
         </div>
       </div>
@@ -2418,10 +2418,10 @@ const trackVolume = [0.0501, 0.505, 0.8, 0.8, 0.8, 0.8];
 // slider actually does something audible.
 const VOL_MIN_DB = -40;
 // Discrete stop positions instead of a fully continuous slider — clustered
-// densely near the bottom (fine control at quiet levels) and sparse near
-// the top (coarser control near full volume), via a power curve.
+// densely near the top (fine control near full volume) and sparse near
+// the bottom (coarser control at quiet levels), via a power curve.
 const VOL_STEP_COUNT = 18;
-const _volStepPositions = Array.from({ length: VOL_STEP_COUNT }, (_, i) => Math.pow(i / (VOL_STEP_COUNT - 1), 1.2));
+const _volStepPositions = Array.from({ length: VOL_STEP_COUNT }, (_, i) => 1 - Math.pow(1 - i / (VOL_STEP_COUNT - 1), 1.2));
 function snapVolPos(pos) {
   let best = _volStepPositions[0], bestDist = Infinity;
   for (const p of _volStepPositions) {
@@ -11911,7 +11911,7 @@ document.body.classList.add('notes-grayscale'); // grayscale note markers is now
 buildUI();
 updateMasterVolCells();
 setTrackPulseMode('solid');
-setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
+setTrackTextPulseMode('solid'); // SOLID is now the default for text too — neither background nor text pulses at startup
 setTrackTextPulseColor(3); // HIGHLIGHT 3 is the default text pulse color
 setVolSliderColor(2); // HIGHLIGHT 2 is the default vol slider color
 // BEAT is on by default — sync the button's visible state to match, since
@@ -13123,8 +13123,8 @@ function fullReset() {
   window._resetRecallAB?.();
   setTrackPulseMode('solid');
   const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="solid"]'); if (_tpmRadio) _tpmRadio.checked = true;
-  setTrackTextPulseMode('a');
-  const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="a"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
+  setTrackTextPulseMode('solid');
+  const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="solid"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
   setTrackTextPulseColor(3);
   const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="3"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
   setVolSliderColor(2);
