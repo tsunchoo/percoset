@@ -769,7 +769,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 11:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 11:56</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2427,6 +2427,11 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 }
 
 const NUM_TRACKS = 6, NUM_STEPS = 16, VOL_NODES_COUNT = 10;
+// Padlock icon for the per-track lock (L) buttons — replaces the plain
+// "L" text everywhere it gets (re)assigned below. currentColor picks up
+// whatever text color the button already has (white, per its grayscale
+// styling), so it doesn't need its own color logic.
+const LOCK_ICON_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
 
 const trackInstruments = [(Math.random() < 0.5 ? 'drone' : 'amlgm'),'sleg','sparkle','sbass3','congHi','congLo']; // DRONE/TEXTURE share slot 0, 50/50
 const grid        = Array.from({length: NUM_TRACKS}, () => new Array(NUM_STEPS).fill(0));
@@ -2733,7 +2738,7 @@ function scheduler() {
           const tb = document.getElementById(`tbtn-${tr}`);
           if (tb) { tb.classList.toggle('muted', trackMuted[tr]); setTrackNameColor(tr, trackInstruments[tr]); }
           const sb = document.getElementById(`swpbtn-${tr}`);
-          if (sb) { sb.textContent = 'L'; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
+          if (sb) { sb.innerHTML = LOCK_ICON_SVG; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
           const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.toggle('on', trackFx[tr].x > 0 || trackFx[tr].y > 0);
           const row = document.getElementById(`ctrlrow-${tr}`); if (row) row.classList.toggle('row-muted', trackMuted[tr]);
           const lm = document.getElementById(`lane-${tr}`); if (lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
@@ -7256,7 +7261,7 @@ function selectSound(tr, k) {
   const sb = document.getElementById(`swpbtn-${tr}`);
   if (sb) {
     const tonal = TONAL_KEYS.has(k);
-    sb.textContent = 'L'; sb.classList.toggle('sweep-on', !!trackSweep[tr]);
+    sb.innerHTML = LOCK_ICON_SVG; sb.classList.toggle('sweep-on', !!trackSweep[tr]);
   }
   closeSoundPicker();
   markModified();
@@ -7367,7 +7372,7 @@ function buildUI() {
     // L button — lock track from RAND (between name and vol bar)
     const sweepBtnL = document.createElement('button'); sweepBtnL.className = 'track-ctrl-icon-btn lock-btn'; sweepBtnL.id = `swpbtn-${tr}`;
     sweepBtnL.dataset.tr = tr;
-    sweepBtnL.textContent = 'L';
+    sweepBtnL.innerHTML = LOCK_ICON_SVG;
     sweepBtnL.classList.toggle('sweep-on', !!trackSweep[tr]);
     sweepBtnL.addEventListener('mouseup', (e) => {
       if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
@@ -7687,6 +7692,59 @@ let dragWriteTrack = -1, dragStartStep = -1, dragStartCellEl = null, dragStartWa
 let dragWrittenSteps = new Set();
 let dragTrimOwnerGs = -1; // gs of the note being trimmed/extended, or -1 if this drag isn't a trim gesture
 
+// Press-and-hold on an existing note gathers every other note on that
+// track toward it — one step closer each, every 0.25s, along whichever
+// direction around the 16-step circle is shorter, until each has settled
+// immediately adjacent to the held note (never onto it — grid only holds
+// one value per step) or the press ends. A note blocked this tick by
+// another note still occupying its target step just waits and tries
+// again next tick, which naturally reads as notes bunching up together
+// rather than overlapping.
+let gatherHoldTimer = null, gatherIntervalId = null, gatherTrackIdx = -1, gatherHeldStep = -1, gatherEngaged = false;
+function _clearGatherHoldTimer() {
+  if (gatherHoldTimer) { clearTimeout(gatherHoldTimer); gatherHoldTimer = null; }
+}
+function _stopGathering() {
+  _clearGatherHoldTimer();
+  if (gatherIntervalId) { clearInterval(gatherIntervalId); gatherIntervalId = null; }
+  gatherTrackIdx = -1; gatherHeldStep = -1; gatherEngaged = false;
+}
+function _startGatherHold(tr, heldGs) {
+  gatherEngaged = true;
+  gatherTrackIdx = tr; gatherHeldStep = heldGs;
+  _gatherTick();
+  gatherIntervalId = setInterval(_gatherTick, 250);
+}
+function _gatherTick() {
+  const tr = gatherTrackIdx, heldGs = gatherHeldStep;
+  if (tr < 0) return;
+  const movers = [];
+  for (let s = 0; s < NUM_STEPS; s++) {
+    if (s === heldGs || grid[tr][s] <= 0) continue;
+    const cw = (heldGs - s + NUM_STEPS) % NUM_STEPS;
+    const ccw = (s - heldGs + NUM_STEPS) % NUM_STEPS;
+    const dist = Math.min(cw, ccw);
+    if (dist <= 1) continue; // already settled adjacent to the held note
+    const dir = cw < ccw ? 1 : -1;
+    movers.push({ oldPos: s, newPos: (s + dir + NUM_STEPS) % NUM_STEPS, dist, val: grid[tr][s] });
+  }
+  if (movers.length === 0) { _stopGathering(); return; } // everything has settled — done
+  const occupied = new Set();
+  for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) occupied.add(s);
+  movers.sort((a, b) => a.dist - b.dist); // closest to the target claims its spot first
+  const moved = [];
+  movers.forEach(m => {
+    if (occupied.has(m.newPos)) return; // blocked this tick — retry next tick
+    moved.push(m);
+    occupied.delete(m.oldPos);
+    occupied.add(m.newPos);
+  });
+  if (moved.length === 0) return; // everyone blocked this tick — try again next tick without redrawing
+  moved.forEach(m => { grid[tr][m.oldPos] = 0; grid[tr][m.newPos] = m.val; });
+  redrawTrackCells(tr);
+  markModified();
+}
+
 const trackLegatoLen = {}; // tr -> { gs: intended sustain length in steps }, set explicitly by drag-legato
 const trackPitchOverride = {}; // tr -> { gs: frequency } — pitch is normally derived live from grid position, so a downbeat-reset rotation would otherwise scramble tonal melodies; this pins the exact frequency each rotated note had before the shift
 const LEGATO_CAP_STEPS = 6; // the single hard limit on legato phrase length, shared by write, playback, and display
@@ -7771,6 +7829,14 @@ document.addEventListener('touchstart', e => {
   dragTrimOwnerGs = dragStartWasOn ? -1 : _findLegatoOwner(tr, gs);
   dragMoved = false;
   dragWrittenSteps = new Set();
+  _stopGathering();
+  if (dragStartWasOn) {
+    gatherHoldTimer = setTimeout(() => {
+      gatherHoldTimer = null;
+      if (dragMoved) return; // real movement happened — this is a drag-write gesture, not a hold
+      _startGatherHold(tr, gs);
+    }, 350);
+  }
   e.preventDefault();
 }, { passive: false });
 
@@ -7791,6 +7857,7 @@ document.addEventListener('touchmove', e => {
   }
   if (!dragMoved) {
     dragMoved = true;
+    _clearGatherHoldTimer();
     _applyDragStep(dragWriteTrack, dragStartStep, dragStartCellEl, dragStartWasOn, true);
     if (!dragStartWasOn) previewNote(dragWriteTrack, true);
   }
@@ -7801,7 +7868,7 @@ document.addEventListener('touchmove', e => {
 }, { passive: false });
 
 document.addEventListener('touchend', () => {
-  if (dragWriteTrack >= 0 && !dragMoved) {
+  if (dragWriteTrack >= 0 && !dragMoved && !gatherEngaged) {
     // Stationary tap — cycle the single cell through off/soft/accent/split.
     // Legato-owning notes get their own cycle instead: accented is the
     // default, a tap drops it to unaccented (keeping the phrase), and only
@@ -7828,6 +7895,7 @@ document.addEventListener('touchend', () => {
     markModified();
   }
   dragWriteTrack = -1; dragStartStep = -1; dragStartCellEl = null; dragMoved = false; dragWrittenSteps.clear(); dragTrimOwnerGs = -1;
+  _stopGathering();
 });
 
 // Mouse drag-to-write / drag-to-clear (desktop/simulator)
@@ -7841,6 +7909,14 @@ document.addEventListener('mousedown', e => {
   dragTrimOwnerGs = dragStartWasOn ? -1 : _findLegatoOwner(tr, gs);
   dragMoved = false;
   dragWrittenSteps = new Set();
+  _stopGathering();
+  if (dragStartWasOn) {
+    gatherHoldTimer = setTimeout(() => {
+      gatherHoldTimer = null;
+      if (dragMoved) return;
+      _startGatherHold(tr, gs);
+    }, 350);
+  }
 });
 document.addEventListener('mousemove', e => {
   if (dragWriteTrack < 0 || !(e.buttons & 1)) return;
@@ -7857,6 +7933,7 @@ document.addEventListener('mousemove', e => {
   }
   if (!dragMoved) {
     dragMoved = true;
+    _clearGatherHoldTimer();
     _applyDragStep(dragWriteTrack, dragStartStep, dragStartCellEl, dragStartWasOn, true);
     if (!dragStartWasOn) previewNote(dragWriteTrack, true);
   }
@@ -7865,7 +7942,7 @@ document.addEventListener('mousemove', e => {
   if (!dragStartWasOn) previewNote(tr, true);
 });
 document.addEventListener('mouseup', () => {
-  if (dragWriteTrack >= 0 && !dragMoved) {
+  if (dragWriteTrack >= 0 && !dragMoved && !gatherEngaged) {
     const tr = dragWriteTrack, s = dragStartStep;
     const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
     const isLegatoOwner = trackLegatoLen[tr] && trackLegatoLen[tr][gs] > 1;
@@ -7888,6 +7965,15 @@ document.addEventListener('mouseup', () => {
     markModified();
   }
   dragWriteTrack = -1; dragStartStep = -1; dragStartCellEl = null; dragMoved = false; dragWrittenSteps.clear(); dragTrimOwnerGs = -1;
+  _stopGathering();
+});
+
+// A stray touchcancel (OS interrupting mid-press) still needs to clear
+// the gather state the same as a normal touchend would, or the interval
+// would keep pulling notes together with no way left to stop it.
+document.addEventListener('touchcancel', () => {
+  dragWriteTrack = -1; dragStartStep = -1; dragStartCellEl = null; dragMoved = false; dragWrittenSteps.clear(); dragTrimOwnerGs = -1;
+  _stopGathering();
 });
 
 // ── Drag-to-engage for icon buttons (L, <, R, FX, + and slot buttons) ──
@@ -9647,7 +9733,7 @@ function fullClear() {
     if (tb) { tb.textContent = 'EMPTY'; tb.classList.remove('muted','has-notes','shifting'); setTrackNameColor(tr, trackInstruments[tr]); }
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
     const sb = document.getElementById(`swpbtn-${tr}`);
-    if (sb) { sb.textContent = 'L'; sb.classList.remove('sweep-on'); }
+    if (sb) { sb.innerHTML = LOCK_ICON_SVG; sb.classList.remove('sweep-on'); }
     const rb = document.getElementById(`randbtn-${tr}`); if (rb) rb.classList.remove('pulsing');
     const cr = document.getElementById(`ctrlrow-${tr}`); if (cr) cr.classList.remove('row-muted');
     const vb = document.getElementById(`vbar-${tr}`);
@@ -10307,7 +10393,7 @@ function randAll(mode, opts) {
     const tb = document.getElementById(`tbtn-${tr}`); if (tb) tb.textContent = INSTRUMENTS[k]?.name || k;
     setTrackNameColor(tr, k);
     const sb = document.getElementById(`swpbtn-${tr}`);
-    if (sb) { sb.textContent = 'L'; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
+    if (sb) { sb.innerHTML = LOCK_ICON_SVG; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
     trackRLevel[tr] = Math.min(level, 2);
     const _tr = tr; const _lv = Math.min(level, 2);
     const _tracksLeft = NUM_TRACKS - tr;
@@ -11011,7 +11097,7 @@ function restoreState(snap, opts) {
     if (snap.trackSweep) { trackSweep[tr] = snap.trackSweep[tr] || false; }
     if (snap.trackChop)  { trackChop[tr]  = snap.trackChop[tr]  || false; }
     const sb=document.getElementById(`swpbtn-${tr}`);
-    if (sb) { sb.textContent = 'L'; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
+    if (sb) { sb.innerHTML = LOCK_ICON_SVG; sb.classList.toggle('sweep-on', !!trackSweep[tr]); }
     const tb=document.getElementById(`tbtn-${tr}`);
     if(tb) {
       tb.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name||(tr+1)) : 'EMPTY';
