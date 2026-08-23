@@ -390,7 +390,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
 @keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.3); } 100% { transform: scale(1); filter: brightness(1); } }
-.fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on {
+.fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on:not(.lock-btn) {
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
 }
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
@@ -769,7 +769,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 10:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 11:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3819,7 +3819,7 @@ function randomizeBassTrack(tr, level) {
     } else {
       // mode 2 — random placement, note count already constrained to
       // 2-4 so no separate thinning pass is needed for this branch.
-      const _magicCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
+      const _magicCount = Math.max(1, Math.min(NUM_STEPS, Math.round((2 + Math.floor(Math.random() * 2)) * intensityMult()))); // scaled by INTENSITY — was flat 2-3
       placeNotes(tr, _magicCount, 0.4, level);
     }
     // Thin down to 2-4 hits for modes 0/1/3, which otherwise place on
@@ -3827,7 +3827,7 @@ function randomizeBassTrack(tr, level) {
     if (mode !== 2) {
       const onsets = [];
       for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
-      const keepCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
+      const keepCount = Math.max(1, Math.min(NUM_STEPS, Math.round((2 + Math.floor(Math.random() * 2)) * intensityMult()))); // scaled by INTENSITY — was flat 2-3
       if (onsets.length > keepCount) {
         const accented = onsets.filter(s => grid[tr][s] === 2);
         const soft = onsets.filter(s => grid[tr][s] === 1);
@@ -10347,7 +10347,7 @@ function randAll(mode, opts) {
       } else if (_beatType === 'jazz' && (trackInstruments[_tr] === 'sidestick' || trackInstruments[_tr] === 'snare2')) {
         grid[_tr].fill(0);
         const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]; // never on the downbeats — comping stays out of the way of the main beat
-        const _ghostCount = 2 + Math.floor(Math.random() * 4); // 2-5 spontaneous hits
+        const _ghostCount = Math.max(1, Math.min(_offBeatSteps.length, Math.round((2 + Math.floor(Math.random() * 4)) * intensityMult()))); // scaled by INTENSITY — was flat 2-5
         const _shuffledOff = [..._offBeatSteps].sort(() => Math.random() - 0.5);
         _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[_tr][s] = Math.random() < 0.2 ? 2 : 1; }); // mostly quiet ghost notes, occasional accent
         redrawTrackCells(_tr); markModified();
@@ -10360,7 +10360,7 @@ function randAll(mode, opts) {
       // somehow ended up with zero notes, force a small fallback pattern
       // instead of leaving the track silent.
       if (grid[_tr].every(v => v === 0)) {
-        const _fallbackCount = 3 + Math.floor(Math.random() * 3); // 3-5
+        const _fallbackCount = Math.max(1, Math.min(NUM_STEPS, Math.round((3 + Math.floor(Math.random() * 3)) * intensityMult()))); // scaled by INTENSITY — was flat 3-5
         placeNotes(_tr, _fallbackCount, 0.3, Math.min(_lv, 2));
         redrawTrackCells(_tr);
       }
@@ -10502,7 +10502,7 @@ function randAll(mode, opts) {
     const _bassCheckTid = setTimeout(() => {
       for (let tr = 1; tr < NUM_TRACKS; tr++) {
         if (bassKeys.has(trackInstruments[tr]) && grid[tr].every(v => v === 0)) {
-          placeNotes(tr, 4 + Math.floor(Math.random() * 3), 0.3, Math.min(level, 2));
+          placeNotes(tr, Math.max(1, Math.min(NUM_STEPS, Math.round((4 + Math.floor(Math.random() * 3)) * intensityMult()))), 0.3, Math.min(level, 2)); // scaled by INTENSITY — was flat 4-6
           redrawTrackCells(tr); markModified();
         }
       }
@@ -11410,7 +11410,7 @@ function randomizeTrack(tr) {
       const positions = onUpbeat ? [2, 6, 10, 14] : [0, 4, 8, 12];
       positions.forEach(s => { const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS; grid[tr][gs] = 2; });
     } else {
-      const noteCount = 2 + Math.floor(Math.random() * 5); // 2-6 inclusive
+      const noteCount = Math.max(1, Math.min(NUM_STEPS, Math.round((2 + Math.floor(Math.random() * 5)) * intensityMult()))); // scaled by INTENSITY — was flat 2-6
       placeNotes(tr, noteCount, 0.3, level);
     }
     if (trackLegatoLen[tr]) trackLegatoLen[tr] = {};
@@ -11582,8 +11582,12 @@ function randomizeTrack(tr) {
   // lower floor of 4 — they read fine sparser than congas/bongos do.
   const _noteFloorKeys = new Set(['shak', 'shihat']);
   const _congaBongoKeys = new Set(['congHi', 'congLo', 'bongHi', 'bongLo']);
-  if (_congaBongoKeys.has(key)) noteCount = Math.max(6, noteCount);
-  else if (_noteFloorKeys.has(key)) noteCount = Math.max(4, noteCount);
+  // These two floors used to be flat numbers from before INTENSITY
+  // existed — completely unscaled, so they silently overrode the slider
+  // at the low end no matter how far down it was set. Now scaled by the
+  // same intensityMult() as everything else.
+  if (_congaBongoKeys.has(key)) noteCount = Math.max(Math.round(6 * intensityMult()), noteCount);
+  else if (_noteFloorKeys.has(key)) noteCount = Math.max(Math.round(4 * intensityMult()), noteCount);
   // KICK: placeNotes below unconditionally zeroes out steps 0 and 8 right
   // after placing notes (those belong to the BEAT engine, not RAND) — up
   // to 2 of whatever just got placed can land there and silently vanish,
@@ -11656,7 +11660,7 @@ function randomizeTrack(tr) {
     } else {
       // mode 2 — random placement, note count already constrained to
       // 2-4 so no separate thinning pass is needed for this branch.
-      const _magicCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
+      const _magicCount = Math.max(1, Math.min(NUM_STEPS, Math.round((2 + Math.floor(Math.random() * 2)) * intensityMult()))); // scaled by INTENSITY — was flat 2-3
       placeNotes(tr, _magicCount, 0.4, level);
     }
     // Thin down to 2-4 hits for modes 0/1/3, which otherwise place on
@@ -11664,7 +11668,7 @@ function randomizeTrack(tr) {
     if (mode !== 2) {
       const onsets = [];
       for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
-      const keepCount = 2 + Math.floor(Math.random() * 2); // 2-3, 3 max per measure
+      const keepCount = Math.max(1, Math.min(NUM_STEPS, Math.round((2 + Math.floor(Math.random() * 2)) * intensityMult()))); // scaled by INTENSITY — was flat 2-3
       if (onsets.length > keepCount) {
         const accented = onsets.filter(s => grid[tr][s] === 2);
         const soft = onsets.filter(s => grid[tr][s] === 1);
@@ -14661,9 +14665,13 @@ function setBeatType(type) {
 // track auto-rand mode (holding its + would do the same thing manually) —
 // used specifically for JAZZ's forced RIDE/SIDESTICK tracks, both when
 // RAND generates a fresh pattern and when JAZZ gets picked straight from
-// the BEAT menu onto the current one.
+// the BEAT menu onto the current one. The chance passed in is itself
+// scaled by INTENSITY here at the source, so every caller gets it for
+// free — this was a completely separate auto-rand trigger from the main
+// autoCount-driven selection above, with its own fixed probability that
+// never had anything to do with the slider at all.
 function _maybeEngageJazzAutoRand(tr, chance) {
-  if (Math.random() >= chance) return;
+  if (Math.random() >= chance * 2 * (_intensitySliderVal / 100)) return; // 0% at the very bottom, matches the main AUTO NOTES quota reaching genuine zero there too
   const rb = document.getElementById(`randbtn-${tr}`);
   if (rb && rb._restartAuto) {
     if (autoShiftStops[tr]) autoShiftStops[tr]();
@@ -14742,7 +14750,7 @@ function _applyJazzTracksToCurrentPattern() {
     } else {
       grid[tr].fill(0);
       const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
-      const _ghostCount = 2 + Math.floor(Math.random() * 4); // 2-5 inclusive
+      const _ghostCount = Math.max(1, Math.min(_offBeatSteps.length, Math.round((2 + Math.floor(Math.random() * 4)) * intensityMult()))); // scaled by INTENSITY — was flat 2-5
       const _shuffledOff = [..._offBeatSteps].sort(() => Math.random() - 0.5);
       _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[tr][s] = Math.random() < 0.2 ? 2 : 1; });
     }
