@@ -374,7 +374,14 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    here, so the "L" stays the same size while its box shrinks around it.
    .track-vol-bar next to it is flex:1, so the freed-up width goes
    straight to the volume slider with no other change needed. */
-.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(22px * var(--track-btn-scale, 1)); }
+/* Lock button — fixed grayscale, deliberately outside the COLOR-mode
+   palette (no var() references here at all), using the same two grays
+   already established for NOTE MARKERS GRAYSCALE mode: #999 unlocked,
+   #333 (darker) locked. Specificity here (three classes) beats the
+   shared .track-ctrl-icon-btn.sweep-on rule further down (two classes)
+   regardless of source order. */
+.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(22px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
+.track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
@@ -762,7 +769,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 09:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 10:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7344,15 +7351,8 @@ function buildUI() {
     // ── Control row ──
     const ctrlRow = document.createElement('div'); ctrlRow.className = 'track-ctrl-row'; ctrlRow.id = `ctrlrow-${tr}`;
 
-    // Name button (click=mute, hold=sound picker)
-    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
-    nameBtn.dataset.tr = tr;
-    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
-    setTrackNameColor(tr, trackInstruments[tr]);
-    nameBtn.classList.toggle('muted', trackMuted[tr]);
-    ctrlRow.appendChild(nameBtn);
-
-    // L button — lock track from RAND (moved here, between name and vol bar)
+    // L button — lock track from RAND (moved to the left of the track
+    // name button, ahead of it in the row).
     const sweepBtnL = document.createElement('button'); sweepBtnL.className = 'track-ctrl-icon-btn lock-btn'; sweepBtnL.id = `swpbtn-${tr}`;
     sweepBtnL.dataset.tr = tr;
     sweepBtnL.textContent = 'L';
@@ -7375,6 +7375,14 @@ function buildUI() {
       markModified();
     });
     ctrlRow.appendChild(sweepBtnL);
+
+    // Name button (click=mute, hold=sound picker)
+    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
+    nameBtn.dataset.tr = tr;
+    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
+    setTrackNameColor(tr, trackInstruments[tr]);
+    nameBtn.classList.toggle('muted', trackMuted[tr]);
+    ctrlRow.appendChild(nameBtn);
 
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
