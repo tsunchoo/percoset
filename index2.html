@@ -756,7 +756,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 08:14</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 08:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3578,8 +3578,13 @@ function _writeArpeggioPattern(tr, scale) {
   if (!trackPitchOverride[tr]) trackPitchOverride[tr] = {};
   const period = Math.max(2, (scaleLen - 1) * 2);
   // Leave a few notes out — a dead-straight unbroken run stops sounding like
-  // a played arpeggio and starts sounding like a machine-gun.
-  const restCount = useSixteenth ? (2 + Math.floor(Math.random() * 3)) : (1 + Math.floor(Math.random() * 2));
+  // a played arpeggio and starts sounding like a machine-gun. How many
+  // extra rests get added/removed is now also driven by INTENSITY — this
+  // pattern is otherwise a fixed, near-solid run of notes that never went
+  // through noteCount/placeNotes at all, so it used to completely ignore
+  // the slider. At the default (50) this shift is 0, identical to before.
+  const _intensityRestShift = Math.round((50 - _intensitySliderVal) / 50 * (useSixteenth ? 4 : 2));
+  const restCount = Math.max(1, (useSixteenth ? (2 + Math.floor(Math.random() * 3)) : (1 + Math.floor(Math.random() * 2))) + _intensityRestShift);
   const restIdx = new Set();
   while (restIdx.size < restCount) restIdx.add(Math.floor(Math.random() * allSteps.length));
   allSteps.forEach((s, i) => {
@@ -9740,6 +9745,15 @@ function setIntensity(v) { _intensitySliderVal = +v; }
 function intensityMult() {
   return 0.3 + 1.4 * (_intensitySliderVal / 100);
 }
+// Same INTENSITY slider also raises the ceiling on how many tracks can
+// have FX, REVERB, or per-track AUTO NOTES active at once — 3 tracks at
+// MELLOW up to 10 at MENTAL. There are only NUM_TRACKS (6) tracks total,
+// so anything from about 7 up is already effectively no restriction at
+// all — which is the point: MENTAL should let the natural per-track odds
+// stand completely unrestricted, while MELLOW visibly thins them down.
+function intensityQuota() {
+  return Math.round(3 + (_intensitySliderVal / 100) * 7);
+}
 // Higher tempo → fewer notes. No reduction at/below 70bpm, full -20% at/above 140bpm, linear between.
 function tempoNoteFactor() {
   const lo = 70, hi = 140;
@@ -10485,7 +10499,7 @@ function randAll(mode, opts) {
   }
   // Levels 3+4: activate auto-rand on some tracks and boost FX
   if (level >= 3) {
-    const autoCount = level === 3 ? 1 : 2; // hard cap to limit node load
+    const autoCount = Math.min(NUM_TRACKS, intensityQuota()); // hard cap to limit node load — now driven by INTENSITY (3-10, naturally capped at NUM_TRACKS)
     // Use actual track indices, not pool indices
     const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== 0);
     // Lead instruments are most likely to be picked, other tonal tracks a
@@ -10658,6 +10672,36 @@ function randAll(mode, opts) {
       if (s % 2 !== 0) grid[tr][s] = 0; // drop every other step — falls back to straight 8ths
     }
     redrawTrackCells(tr);
+  }
+  // INTENSITY also caps how many tracks can end up with FX or REVERB on
+  // at once — each track above still rolled its own independent chance,
+  // this just trims the excess back off afterward if too many landed on
+  // together, picking which ones to drop at random rather than always
+  // favoring lower track numbers.
+  const _fxQuota = intensityQuota();
+  const _fxOnTracks = [];
+  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    if (trackFx[tr] && (trackFx[tr].x > 0 || trackFx[tr].y > 0)) _fxOnTracks.push(tr);
+  }
+  if (_fxOnTracks.length > _fxQuota) {
+    _fxOnTracks.sort(() => Math.random() - 0.5).slice(_fxQuota).forEach(tr => {
+      trackFx[tr] = { x: 0, y: 0 };
+      if (ctx) setFxActive(tr, trackFx[tr]);
+      const fb = document.getElementById(`fxbtn-${tr}`);
+      if (fb) { fb.classList.remove('on'); fb.classList.remove('blast-on'); }
+    });
+  }
+  const _reverbQuota = intensityQuota();
+  const _reverbOnTracks = [];
+  for (let tr = 0; tr < NUM_TRACKS; tr++) {
+    if (trackDelay[tr]) _reverbOnTracks.push(tr);
+  }
+  if (_reverbOnTracks.length > _reverbQuota) {
+    _reverbOnTracks.sort(() => Math.random() - 0.5).slice(_reverbQuota).forEach(tr => {
+      trackDelay[tr] = false;
+      const db = document.getElementById(`delaybtn-${tr}`);
+      if (db) db.classList.toggle('on', false);
+    });
   }
   _regenerateAmalgamChord();
   if (ctx) _fireAmalgamEcho();
@@ -11430,14 +11474,21 @@ function randomizeTrack(tr) {
     // an indefinite streak.
     window._lastWasRegularPattern[tr] = goRegular && !forceRegularAgain;
     if (goRegular) {
+      // Which subdivision gets picked is now biased by INTENSITY instead
+      // of a flat 1/3 each — this is the one path where notes were
+      // getting placed as a fixed straight subdivision instead of going
+      // through noteCount/placeNotes at all, so it was completely
+      // ignoring the slider before. At the default (50), the thresholds
+      // land back on an even 1/3 split, identical to before.
+      const _shift = (_intensitySliderVal - 50) / 150;
       const roll = Math.random();
-      const subdivStep = roll < 1 / 3 ? 4 : (roll < 2 / 3 ? 2 : 1); // quarters : 8ths : 16ths
+      const subdivStep = roll < (1 / 3 - _shift) ? 4 : (roll < (2 / 3 - _shift) ? 2 : 1); // quarters : 8ths : 16ths
       for (let s = 0; s < NUM_STEPS; s++) {
         const gs = (s - trackOffset[tr] + NUM_STEPS) % NUM_STEPS;
         grid[tr][gs] = (s % subdivStep === 0) ? (s % 4 === 0 ? 2 : 1) : 0;
       }
     } else {
-      placeNotes(tr, 6 + Math.floor(Math.random() * 7), 0.3, level); // genuinely organic — same generous note range NOISE used to use on its own
+      placeNotes(tr, Math.min(NUM_STEPS, Math.round((6 + Math.floor(Math.random() * 7)) * intensityMult())), 0.3, level); // genuinely organic — same generous note range NOISE used to use on its own, now also scaled by INTENSITY
     }
     redrawTrackCells(tr); markModified(); return;
   }
