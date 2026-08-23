@@ -769,7 +769,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 10:33</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 10:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3731,7 +3731,7 @@ function randomizeBassTrack(tr, level) {
   // only maxN was scaled, so a low RNG roll at MAX intensity could still
   // land on the exact same sparse minimum as MELLOW. Now the whole random
   // range shifts up together.
-  const _minN = Math.max(1, Math.round(minN * intensityMult()));
+  const _minN = Math.min(NUM_STEPS, Math.max(1, Math.round(minN * intensityMult())));
   const maxN = Math.min(NUM_STEPS, Math.max(_minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
   window._lastNoteMaxUsed = maxN;
   let noteCount = _minN + Math.floor(Math.random() * (maxN - _minN + 1));
@@ -9673,7 +9673,7 @@ function _writeTrack0Pattern() {
   const minGap = isDrone ? 2 : 4;
   // INTENSITY scales the floor too now — see the matching comment in
   // randomizeBassTrack() for why.
-  const _minN = Math.max(1, Math.round(minN * intensityMult()));
+  const _minN = Math.min(NUM_STEPS, Math.max(1, Math.round(minN * intensityMult())));
   const maxN = Math.min(NUM_STEPS, Math.max(_minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
   const noteCount = _minN + Math.floor(Math.random() * (maxN - _minN + 1));
   placeNotes(tr, noteCount, accentRatio, 0);
@@ -11572,7 +11572,7 @@ function randomizeTrack(tr) {
   // own unscaled minimum for a track processed late in the budget's
   // sequential per-track split, silently undercutting everything above
   // regardless of what INTENSITY was set to.
-  const _minN = Math.max(1, Math.round(minN * intensityMult()));
+  const _minN = Math.min(NUM_STEPS, Math.max(1, Math.round(minN * intensityMult())));
   const maxN = Math.min(NUM_STEPS, Math.max(_minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
   const _cap = Math.max(_minN, window._randNoteMax || maxN);
   window._lastNoteMaxUsed = _cap;
