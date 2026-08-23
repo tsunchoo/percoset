@@ -374,7 +374,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    here, so the "L" stays the same size while its box shrinks around it.
    .track-vol-bar next to it is flex:1, so the freed-up width goes
    straight to the volume slider with no other change needed. */
-.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(16px * var(--track-btn-scale, 1)); }
+.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(22px * var(--track-btn-scale, 1)); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
@@ -762,7 +762,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 09:38</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 09:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9758,7 +9758,7 @@ function intensityMult() {
 // all — which is the point: MENTAL should let the natural per-track odds
 // stand completely unrestricted, while MELLOW visibly thins them down.
 function intensityQuota() {
-  return Math.round(3 + (_intensitySliderVal / 100) * 7);
+  return Math.round((_intensitySliderVal / 100) * 10); // 0 at the bottom — no FX/REVERB tracks at all — up to 10 at the top (naturally capped at NUM_TRACKS)
 }
 // Higher tempo → fewer notes. No reduction at/below 70bpm, full -20% at/above 140bpm, linear between.
 function tempoNoteFactor() {
