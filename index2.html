@@ -321,7 +321,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: 
 input[type=range]::-moz-range-track { background: #555; height: 4px; border-radius: 0; }
 input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f17d21; cursor: pointer; border-radius: 0; border: none; }
 .vol-wrap { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 960px; margin-top: 6px; padding: 6px 0; }
-.master-vol-slider { flex: 1; }
+.master-vol-slider { flex: 1; accent-color: var(--neutral-top, #555); }
 #bpmSettingsSlider.tempo-locked::-webkit-slider-thumb { background: #b0b0b0; }
 #bpmSettingsSlider.tempo-locked::-moz-range-thumb { background: #b0b0b0; }
 .vol-section { width: 100%; max-width: 960px; margin-top: 12px; display: flex; align-items: center; gap: 6px; }
@@ -380,7 +380,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    #333 (darker) locked. Specificity here (three classes) beats the
    shared .track-ctrl-icon-btn.sweep-on rule further down (two classes)
    regardless of source order. */
-.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(22px * var(--track-btn-scale, 1)); background: #999; color: #fff; margin-right: calc(-1 * clamp(2px, 1vw, 5px)); }
+.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(22px * var(--track-btn-scale, 1)); background: #999; color: #fff; margin-left: calc(-1 * clamp(2px, 1vw, 5px)); }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
@@ -769,7 +769,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 12:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 12:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7361,8 +7361,17 @@ function buildUI() {
     // ── Control row ──
     const ctrlRow = document.createElement('div'); ctrlRow.className = 'track-ctrl-row'; ctrlRow.id = `ctrlrow-${tr}`;
 
-    // L button — lock track from RAND (moved to the left of the track
-    // name button, ahead of it in the row, flush against it with no gap).
+    // Name button (click=mute, hold=sound picker)
+    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
+    nameBtn.dataset.tr = tr;
+    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
+    setTrackNameColor(tr, trackInstruments[tr]);
+    nameBtn.classList.toggle('muted', trackMuted[tr]);
+    ctrlRow.appendChild(nameBtn);
+
+    // L button — lock track from RAND (back to its original spot, right
+    // after the name button and before the vol bar — well to the left of
+    // SOLO either way).
     const sweepBtnL = document.createElement('button'); sweepBtnL.className = 'track-ctrl-icon-btn lock-btn'; sweepBtnL.id = `swpbtn-${tr}`;
     sweepBtnL.dataset.tr = tr;
     sweepBtnL.innerHTML = LOCK_ICON_SVG;
@@ -7385,14 +7394,6 @@ function buildUI() {
       markModified();
     });
     ctrlRow.appendChild(sweepBtnL);
-
-    // Name button (click=mute, hold=sound picker)
-    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
-    nameBtn.dataset.tr = tr;
-    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
-    setTrackNameColor(tr, trackInstruments[tr]);
-    nameBtn.classList.toggle('muted', trackMuted[tr]);
-    ctrlRow.appendChild(nameBtn);
 
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
