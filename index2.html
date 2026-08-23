@@ -756,7 +756,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 07:41</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 08:14</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -781,7 +781,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 <header>
   <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">Si•Fi</h1>
-  <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:2px;right:2px;font-size:0.85rem;line-height:1;letter-spacing:1px;background:none;border:none;color:var(--dim);padding:4px;cursor:pointer;">🌈</button>
+  <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:2px;right:2px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;">
+    <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 13a10 10 0 0 1 20 0" stroke="#e0524d" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M3.6 13a7.4 7.4 0 0 1 14.8 0" stroke="#f0b429" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M6.2 13a4.8 4.8 0 0 1 9.6 0" stroke="#4d9de0" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>
+  </button>
   <div id="tapeReels" class="tape-reels">
     <div class="reel-wrap" id="leftReelWrap" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
       <img class="reel" id="reel1" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">
@@ -3703,7 +3709,7 @@ function randomizeBassTrack(tr, level) {
     [8, 13, 0.60],
   ];
   const [minN, maxN0, accentRatio] = levelTable[Math.min(level, 2)];
-  const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult()));
+  const maxN = Math.min(NUM_STEPS, Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
   window._lastNoteMaxUsed = maxN;
   let noteCount = minN + Math.floor(Math.random() * (maxN - minN + 1));
   if (key === 'jcmgtr' && window._isAutoBarRand) noteCount = Math.max(1, Math.round(noteCount * 0.75)); // auto mode — 25% fewer notes
@@ -9642,7 +9648,7 @@ function _writeTrack0Pattern() {
   const isDrone = trackInstruments[0] === 'drone';
   const [minN, maxN0, accentRatio] = (isDrone ? [5, 10, 0.25] : [2, 6, 0.20]);
   const minGap = isDrone ? 2 : 4;
-  const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult()));
+  const maxN = Math.min(NUM_STEPS, Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
   const noteCount = minN + Math.floor(Math.random() * (maxN - minN + 1));
   placeNotes(tr, noteCount, accentRatio, 0);
   let run = 0;
@@ -10265,7 +10271,7 @@ function randAll(mode, opts) {
     trackRLevel[tr] = Math.min(level, 2);
     const _tr = tr; const _lv = Math.min(level, 2);
     const _tracksLeft = NUM_TRACKS - tr;
-    const _maxForThisTrack = Math.max(1, Math.ceil(_noteBudget.remaining / Math.max(1, _tracksLeft)));
+    const _maxForThisTrack = Math.min(NUM_STEPS, Math.max(1, Math.ceil(_noteBudget.remaining / Math.max(1, _tracksLeft))));
     _noteBudget.remaining = Math.max(0, _noteBudget.remaining - Math.round(_maxForThisTrack * 0.6));
     window._randNoteMax = _maxForThisTrack;
     const _tid = setTimeout(() => {
