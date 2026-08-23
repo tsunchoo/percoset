@@ -756,7 +756,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 07:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 07:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1060,7 +1060,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
       <div style="display:flex;flex-direction:column;gap:15px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">INTENSITY</div>
-        <input type="range" id="intensitySlider" min="0" max="100" step="1" value="75" oninput="setIntensity(this.value)" class="master-vol-slider" style="width:100%;">
+        <input type="range" id="intensitySlider" min="0" max="100" step="1" value="50" oninput="setIntensity(this.value)" class="master-vol-slider" style="width:100%;">
         <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
           <span>MELLOW</span>
           <span>MENTAL</span>
@@ -3703,11 +3703,10 @@ function randomizeBassTrack(tr, level) {
     [8, 13, 0.60],
   ];
   const [minN, maxN0, accentRatio] = levelTable[Math.min(level, 2)];
-  const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor()));
+  const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult()));
   window._lastNoteMaxUsed = maxN;
   let noteCount = minN + Math.floor(Math.random() * (maxN - minN + 1));
   if (key === 'jcmgtr' && window._isAutoBarRand) noteCount = Math.max(1, Math.round(noteCount * 0.75)); // auto mode — 25% fewer notes
-  noteCount = Math.min(noteCount, intensityCap()); // INTENSITY slider — hard cap on notes per track
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
   // BOOBOO — with fewer notes now, connect most of its onsets into short
@@ -9643,8 +9642,8 @@ function _writeTrack0Pattern() {
   const isDrone = trackInstruments[0] === 'drone';
   const [minN, maxN0, accentRatio] = (isDrone ? [5, 10, 0.25] : [2, 6, 0.20]);
   const minGap = isDrone ? 2 : 4;
-  const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor()));
-  const noteCount = Math.min(intensityCap(), minN + Math.floor(Math.random() * (maxN - minN + 1))); // INTENSITY slider — hard cap on notes per track
+  const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult()));
+  const noteCount = minN + Math.floor(Math.random() * (maxN - minN + 1));
   placeNotes(tr, noteCount, accentRatio, 0);
   let run = 0;
   for (let s = 0; s < NUM_STEPS * 2; s++) {
@@ -9724,15 +9723,16 @@ function handleRandTap() {
 }
 
 let _split32CycleCount = 0; // resets each RAND cycle, caps flam-promoted splits across the whole pattern
-// INTENSITY slider (0-100, default 75) — a simple, direct cap on how many
-// notes any one track can get when + (RAND) fires. Nothing to do with
-// tempo or any other multiplier — just: MELLOW caps every track at 2
-// notes max, MENTAL caps it at 20 (above every per-instrument table's own
-// natural ceiling, so effectively no restriction at all at the top end).
-let _intensitySliderVal = 75;
+// INTENSITY slider (0-100, default 50) — a straight multiplier on the
+// note counts RAND rolls, applied at the actual source: the shared
+// note-budget pool most percussion tracks draw from, plus the two other
+// per-instrument note-count formulas (bass/tonal tracks, and track 0's
+// own pattern). MELLOW (0) = half as many notes, MENTAL (100) = 70% more,
+// dead center (50, the default) = unchanged from today.
+let _intensitySliderVal = 50;
 function setIntensity(v) { _intensitySliderVal = +v; }
-function intensityCap() {
-  return Math.round(2 + (_intensitySliderVal / 100) * 18);
+function intensityMult() {
+  return 0.3 + 1.4 * (_intensitySliderVal / 100);
 }
 // Higher tempo → fewer notes. No reduction at/below 70bpm, full -20% at/above 140bpm, linear between.
 function tempoNoteFactor() {
@@ -10201,7 +10201,7 @@ function randAll(mode, opts) {
 
   // Assign sorted pool sequentially to unlocked tracks
   // Note budget: total notes spread across all tracks — busy tracks leave less for others
-  const _noteBudget = { remaining: Math.round([7, 10, 13][Math.min(level, 2)] * tempoNoteFactor()), tracks: REAL_TRACK_COUNT };
+  const _noteBudget = { remaining: Math.round([7, 10, 13][Math.min(level, 2)] * tempoNoteFactor() * intensityMult()), tracks: REAL_TRACK_COUNT };
 
   let poolIdx = 0;
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
@@ -11472,7 +11472,6 @@ function randomizeTrack(tr) {
   const _cap = window._randNoteMax || maxN;
   window._lastNoteMaxUsed = _cap;
   let noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
-  noteCount = Math.min(noteCount, intensityCap()); // INTENSITY slider — hard cap on notes per track
   // CONGA/BONGO: never fewer than 6 notes a measure (per-track minimum
   // requested specifically for these two). SHAKER/HIHAT keep their own,
   // lower floor of 4 — they read fine sparser than congas/bongos do.
