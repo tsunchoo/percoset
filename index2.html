@@ -369,6 +369,12 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    class. Fixed 32px width/height box above is untouched either way. */
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: calc(1.7875rem * var(--track-btn-font-scale, 1)); font-weight: 400; }
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
+/* Lock (L) button — half the width of the other track-ctrl-icon-btns.
+   Font-size is inherited from .track-ctrl-icon-btn above and untouched
+   here, so the "L" stays the same size while its box shrinks around it.
+   .track-vol-bar next to it is flex:1, so the freed-up width goes
+   straight to the volume slider with no other change needed. */
+.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(16px * var(--track-btn-scale, 1)); }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
@@ -756,7 +762,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 09:11</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 09:38</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -10273,8 +10279,13 @@ function randAll(mode, opts) {
     if (ctx) setFxActive(tr, trackFx[tr]);
     const fb2 = document.getElementById(`fxbtn-${tr}`);
     if (fb2) { fb2.classList.remove('on'); fb2.classList.remove('blast-on'); }
-    // JENNY usually arrives with per-track auto-randomization engaged
-    if (k === 'clar' && Math.random() < 0.6 && !autoShiftStops[tr]) {
+    // JENNY usually arrives with per-track auto-randomization engaged —
+    // this was a completely separate, unconditional roll that never went
+    // through the INTENSITY-driven autoCount system above at all, so it
+    // could (and did) add auto-mode tracks even with INTENSITY at zero.
+    // Now scaled the same way: 0% at the very bottom, up to the original
+    // 60% at the top.
+    if (k === 'clar' && Math.random() < 0.6 * (_intensitySliderVal / 100) && !autoShiftStops[tr]) {
       const _erb = document.getElementById(`randbtn-${tr}`);
       if (_erb && _erb._restartAuto) setTimeout(() => { if (!autoShiftStops[tr]) _erb._restartAuto(); }, 50);
     }
@@ -10499,7 +10510,7 @@ function randAll(mode, opts) {
   }
   // Levels 3+4: activate auto-rand on some tracks and boost FX
   if (level >= 3) {
-    const autoCount = Math.min(NUM_TRACKS, intensityQuota()); // hard cap to limit node load — now driven by INTENSITY (3-10, naturally capped at NUM_TRACKS)
+    const autoCount = Math.min(NUM_TRACKS, Math.round((_intensitySliderVal / 100) * 4)); // driven by INTENSITY — 0 at the bottom (genuinely zero auto-note tracks), up to 4 at the top
     // Use actual track indices, not pool indices
     const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== 0);
     // Lead instruments are most likely to be picked, other tonal tracks a
