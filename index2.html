@@ -769,7 +769,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 10:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 10:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3727,9 +3727,14 @@ function randomizeBassTrack(tr, level) {
     [8, 13, 0.60],
   ];
   const [minN, maxN0, accentRatio] = levelTable[Math.min(level, 2)];
-  const maxN = Math.min(NUM_STEPS, Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
+  // INTENSITY now scales the FLOOR too, not just the ceiling — previously
+  // only maxN was scaled, so a low RNG roll at MAX intensity could still
+  // land on the exact same sparse minimum as MELLOW. Now the whole random
+  // range shifts up together.
+  const _minN = Math.max(1, Math.round(minN * intensityMult()));
+  const maxN = Math.min(NUM_STEPS, Math.max(_minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
   window._lastNoteMaxUsed = maxN;
-  let noteCount = minN + Math.floor(Math.random() * (maxN - minN + 1));
+  let noteCount = _minN + Math.floor(Math.random() * (maxN - _minN + 1));
   if (key === 'jcmgtr' && window._isAutoBarRand) noteCount = Math.max(1, Math.round(noteCount * 0.75)); // auto mode — 25% fewer notes
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
@@ -7351,8 +7356,15 @@ function buildUI() {
     // ── Control row ──
     const ctrlRow = document.createElement('div'); ctrlRow.className = 'track-ctrl-row'; ctrlRow.id = `ctrlrow-${tr}`;
 
-    // L button — lock track from RAND (moved to the left of the track
-    // name button, ahead of it in the row).
+    // Name button (click=mute, hold=sound picker)
+    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
+    nameBtn.dataset.tr = tr;
+    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
+    setTrackNameColor(tr, trackInstruments[tr]);
+    nameBtn.classList.toggle('muted', trackMuted[tr]);
+    ctrlRow.appendChild(nameBtn);
+
+    // L button — lock track from RAND (between name and vol bar)
     const sweepBtnL = document.createElement('button'); sweepBtnL.className = 'track-ctrl-icon-btn lock-btn'; sweepBtnL.id = `swpbtn-${tr}`;
     sweepBtnL.dataset.tr = tr;
     sweepBtnL.textContent = 'L';
@@ -7375,14 +7387,6 @@ function buildUI() {
       markModified();
     });
     ctrlRow.appendChild(sweepBtnL);
-
-    // Name button (click=mute, hold=sound picker)
-    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
-    nameBtn.dataset.tr = tr;
-    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
-    setTrackNameColor(tr, trackInstruments[tr]);
-    nameBtn.classList.toggle('muted', trackMuted[tr]);
-    ctrlRow.appendChild(nameBtn);
 
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
@@ -9667,8 +9671,11 @@ function _writeTrack0Pattern() {
   const isDrone = trackInstruments[0] === 'drone';
   const [minN, maxN0, accentRatio] = (isDrone ? [5, 10, 0.25] : [2, 6, 0.20]);
   const minGap = isDrone ? 2 : 4;
-  const maxN = Math.min(NUM_STEPS, Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
-  const noteCount = minN + Math.floor(Math.random() * (maxN - minN + 1));
+  // INTENSITY scales the floor too now — see the matching comment in
+  // randomizeBassTrack() for why.
+  const _minN = Math.max(1, Math.round(minN * intensityMult()));
+  const maxN = Math.min(NUM_STEPS, Math.max(_minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
+  const noteCount = _minN + Math.floor(Math.random() * (maxN - _minN + 1));
   placeNotes(tr, noteCount, accentRatio, 0);
   let run = 0;
   for (let s = 0; s < NUM_STEPS * 2; s++) {
@@ -11558,10 +11565,18 @@ function randomizeTrack(tr) {
     [7, 11, 0.40],
     [11, 16, 0.60],
   ][Math.min(level, 2)];
-  const maxN = Math.min(NUM_STEPS, Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
-  const _cap = window._randNoteMax || maxN;
+  // INTENSITY scales the floor too now (see randomizeBassTrack for why),
+  // and — critically — that floor now also overrides the shared
+  // note-budget's per-track cap (_cap below) rather than being clamped
+  // out by it. Previously _cap could land below even the instrument's
+  // own unscaled minimum for a track processed late in the budget's
+  // sequential per-track split, silently undercutting everything above
+  // regardless of what INTENSITY was set to.
+  const _minN = Math.max(1, Math.round(minN * intensityMult()));
+  const maxN = Math.min(NUM_STEPS, Math.max(_minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
+  const _cap = Math.max(_minN, window._randNoteMax || maxN);
   window._lastNoteMaxUsed = _cap;
-  let noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
+  let noteCount = Math.min(_cap, _minN + Math.floor(Math.random() * (maxN - _minN + 1)));
   // CONGA/BONGO: never fewer than 6 notes a measure (per-track minimum
   // requested specifically for these two). SHAKER/HIHAT keep their own,
   // lower floor of 4 — they read fine sparser than congas/bongos do.
@@ -11569,6 +11584,12 @@ function randomizeTrack(tr) {
   const _congaBongoKeys = new Set(['congHi', 'congLo', 'bongHi', 'bongLo']);
   if (_congaBongoKeys.has(key)) noteCount = Math.max(6, noteCount);
   else if (_noteFloorKeys.has(key)) noteCount = Math.max(4, noteCount);
+  // KICK: placeNotes below unconditionally zeroes out steps 0 and 8 right
+  // after placing notes (those belong to the BEAT engine, not RAND) — up
+  // to 2 of whatever just got placed can land there and silently vanish,
+  // so the audible count can end up well under noteCount. Requesting 2
+  // extra up front compensates for that guaranteed loss.
+  if (key === 'skick') noteCount = Math.min(NUM_STEPS, noteCount + 2);
   placeNotes(tr, noteCount, accentRatio, Math.min(level, 2));
 
   // Rhythm guitar: all downbeats, all upbeats, or random pattern
