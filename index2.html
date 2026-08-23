@@ -756,7 +756,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 09:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 09:11</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11539,7 +11539,7 @@ function randomizeTrack(tr) {
     [7, 11, 0.40],
     [11, 16, 0.60],
   ][Math.min(level, 2)];
-  const maxN = Math.max(minN, Math.round(maxN0 * tempoNoteFactor()));
+  const maxN = Math.min(NUM_STEPS, Math.max(minN, Math.round(maxN0 * tempoNoteFactor() * intensityMult())));
   const _cap = window._randNoteMax || maxN;
   window._lastNoteMaxUsed = _cap;
   let noteCount = Math.min(_cap, minN + Math.floor(Math.random() * (maxN - minN + 1)));
