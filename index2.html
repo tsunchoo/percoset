@@ -778,7 +778,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 15:31</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">23Aug26 15:48</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1087,8 +1087,11 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:15px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">INTENSITY</div>
-        <input type="range" id="intensitySlider" min="0" max="100" step="1" value="50" oninput="setIntensity(this.value)" class="master-vol-slider" style="width:100%;">
+        <div style="display:flex;justify-content:space-between;">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">INTENSITY</div>
+          <div id="intensityReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">MEDIUM</div>
+        </div>
+        <input type="range" id="intensitySlider" min="0" max="100" step="25" value="50" oninput="setIntensity(this.value)" class="master-vol-slider" style="width:100%;">
         <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
           <span>MELLOW</span>
           <span>MENTAL</span>
@@ -1374,6 +1377,12 @@ function syncSettingsPanel() {
   if (rib) {
     rib.value = Math.round((window._reverbIntensity !== undefined ? window._reverbIntensity : 0.425) * 100);
     const riv = document.getElementById('reverbIntensityVal'); if (riv) riv.textContent = rib.value;
+  }
+  const is = document.getElementById('intensitySlider');
+  if (is) {
+    is.value = _intensitySliderVal;
+    const ir = document.getElementById('intensityReadout');
+    if (ir) ir.textContent = _intensityLevelNames[_intensitySliderVal] || (_intensitySliderVal + '%');
   }
   updateSwingReadout();
 }
@@ -9839,8 +9848,18 @@ let _split32CycleCount = 0; // resets each RAND cycle, caps flam-promoted splits
 // per-instrument note-count formulas (bass/tonal tracks, and track 0's
 // own pattern). MELLOW (0) = half as many notes, MENTAL (100) = 70% more,
 // dead center (50, the default) = unchanged from today.
+// Snapped to 5 discrete stops (step="25" on the HTML slider itself) —
+// back to picking from 5 fixed levels instead of a continuous 0-100
+// range, per direct request. All the downstream math below is untouched
+// and still scales the same way; only the number of values the slider
+// can actually land on changed.
 let _intensitySliderVal = 50;
-function setIntensity(v) { _intensitySliderVal = +v; }
+const _intensityLevelNames = { 0: 'MELLOW', 25: 'LOW', 50: 'MEDIUM', 75: 'HIGH', 100: 'MENTAL' };
+function setIntensity(v) {
+  _intensitySliderVal = +v;
+  const readout = document.getElementById('intensityReadout');
+  if (readout) readout.textContent = _intensityLevelNames[_intensitySliderVal] || (_intensitySliderVal + '%');
+}
 function intensityMult() {
   // Piecewise linear — MELLOW (0) and the default (50) stay exactly where
   // they were, only the very top end changed: MENTAL (100) brought down
