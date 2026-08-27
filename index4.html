@@ -406,7 +406,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    #333 (darker) locked. Specificity here (three classes) beats the
    shared .track-ctrl-icon-btn.sweep-on rule further down (two classes)
    regardless of source order. */
-.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(22px * var(--track-btn-scale, 1)); background: #999; color: #fff; margin-right: calc(-1 * clamp(2px, 1vw, 5px)); }
+.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; margin-right: calc(-1 * clamp(2px, 1vw, 5px)); }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
@@ -796,7 +796,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 13:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 14:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -982,7 +982,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
     <div id="devMorePanel2" style="display:none;flex-direction:column;gap:10px;">
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
@@ -994,7 +994,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTON PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackPulseMode" value="solid" checked onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
@@ -1006,7 +1006,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK VOLUME COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
@@ -1021,7 +1021,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK TEXT PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
@@ -1033,7 +1033,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TEXT PULSE COLOR</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TEXT PULSE COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackTextPulseColor" value="1" checked onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
