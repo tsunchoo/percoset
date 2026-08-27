@@ -160,7 +160,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 
 .transport {
   width: 100%; max-width: 960px; display: flex; align-items: stretch;
-  gap: 4px; margin-bottom: 4px;
+  gap: 4px; margin-top: 4px; margin-bottom: 0;
   touch-action: none;
 }
 .transport .btn {
@@ -796,7 +796,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 11:50</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 12:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -843,6 +843,8 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:calc(100% + 5px);right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
   </div>
 </header>
+
+<div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:46.08px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 <div class="transport">
   <button class="btn" id="randBtn"><span class="glyph">+</span></button>
@@ -898,8 +900,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
   </div>
 </div>
-
-<div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:46.08px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 
 
