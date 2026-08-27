@@ -63,7 +63,7 @@ header {
   margin-bottom: 5px; padding-bottom: 5px;
   display: flex; align-items: stretch;
 }
-header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.82952rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
+header h1 { font-family: 'DM Sans', sans-serif; font-size: 2.04906rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
 /* Logo cycles through the app's accent colors while playing — one full
    trip through all four takes exactly one measure (set via JS below,
    tied to bpm), so it stays a musically-timed pulse rather than a fixed
@@ -118,7 +118,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   display: block;
   overflow: hidden;
 }
-.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.82952rem + 10px); margin-bottom: 0; }
+.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(2.04906rem + 10px); margin-bottom: 0; }
 .tape-window { width: 54.26px; height: 33.07px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
@@ -794,7 +794,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 06:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 06:30</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -818,7 +818,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 </div>
 
 <header>
-  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">Si<span style="vertical-align:middle;">*</span>Fi</h1>
+  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">Si<span style="vertical-align:middle;position:relative;top:0.2em;">*</span>Fi</h1>
   <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:2px;right:2px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;">
     <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M1 13a10 10 0 0 1 20 0" stroke="#e0524d" stroke-width="2.6" stroke-linecap="round"/>
@@ -835,7 +835,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <img class="reel" id="reel2" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;-webkit-user-drag:none;">
     </div>
   </div>
-  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(1.82952rem + 10px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
+  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(2.04906rem + 10px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:calc(100% + 5px);right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
@@ -12532,7 +12532,7 @@ function _leftSpoolRelease() {
     r.classList.add(wasReverse ? 'spinning-reverse' : 'spinning');
   });
   currentStep = -1;
-  nextStepTime = ctx.currentTime + 0.05;
+  nextStepTime = ctx.currentTime; // was +0.05 — that 50ms buffer read as an audible gap on release; Web Audio's .start() clamps an overdue time to "now" rather than dropping the note, so zero extra delay here is safe
   // Refiring from step 0 here is a manual replay, not a bar actually
   // elapsing — don't let it feed the RAND button's 4-bar auto-regenerate count.
   window._spoolBarCreditSkip = true;
