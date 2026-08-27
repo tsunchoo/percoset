@@ -795,7 +795,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 09:42</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 09:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11019,21 +11019,33 @@ function stopAllAutoRand() {
     setBtnBlueHeld('randBtn'); queueRand();
   };
 
-  let holdTimer = null, holdFired = false;
+  let holdTimer = null, holdFired = false, _pressActive = false;
   const beginPress = () => {
     if (!ctx) initAudio(); else ctx.resume().catch(()=>{});
     holdFired = false;
+    _pressActive = true;
     clearTimeout(holdTimer);
     btn.classList.add('rand-holding'); // fast pulse while held, so it's clear the press is registering
     holdTimer = setTimeout(() => { holdFired = true; startAuto(); }, HOLD_MS);
   };
   const endPress = () => {
+    if (!_pressActive) return; // nothing actually held on this button — don't let an unrelated mouseup elsewhere on the page fire a RAND
+    _pressActive = false;
     clearTimeout(holdTimer);
     btn.classList.remove('rand-holding');
     if (!holdFired) singleFire(); // only a plain tap fires the single rand, and only on release
   };
 
   let _lastTouchTime = 0;
+  const cancelPress = () => {
+    // A cancelled gesture (touch interrupted, or the pointer released
+    // somewhere the button never sees) isn't a genuine release — clean up
+    // the held-down state without treating it as a completed tap (which
+    // would wrongly fire a single RAND).
+    _pressActive = false;
+    clearTimeout(holdTimer);
+    btn.classList.remove('rand-holding');
+  };
   btn.addEventListener('touchstart', e => {
     e.preventDefault();
     _lastTouchTime = Date.now();
@@ -11043,12 +11055,21 @@ function stopAllAutoRand() {
     e.preventDefault();
     endPress();
   }, { passive: false });
-  btn.addEventListener('touchcancel', () => { clearTimeout(holdTimer); });
+  btn.addEventListener('touchcancel', cancelPress);
   btn.addEventListener('mousedown', () => {
     if (Date.now() - _lastTouchTime < 500) return; // ignore synthetic mouse events following a real touch
     beginPress();
   });
-  btn.addEventListener('mouseup', () => {
+  // Document-wide, not button-only — mouseup fires on whatever element is
+  // currently under the pointer at release time (unlike touchend, which
+  // stays bound to wherever the touch started), so if the pointer drifted
+  // off the button before release, a listener bound only to the button
+  // would miss it entirely, leaving the hold state (and its pulse
+  // animation) stuck on indefinitely. Same reasoning SWEEP's own hold
+  // gesture already accounts for. Guarded by _pressActive above so an
+  // unrelated mouseup anywhere else on the page (this listener fires for
+  // all of them) can't spuriously fire a RAND.
+  document.addEventListener('mouseup', () => {
     if (Date.now() - _lastTouchTime < 500) return;
     endPress();
   });
