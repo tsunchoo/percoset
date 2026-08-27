@@ -732,10 +732,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
   touch-action: manipulation; transition: background 0.1s;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
-.slot-btn.saved  { border: none; }
+.slot-btn.saved  {}
 .slot-btn.pending { animation: slot-pending 0.4s infinite alternate; color: #fff; }
-@keyframes slot-pending { from { background: var(--slot-saved); } to { background: #f5f0e8; } }
-.slot-btn.loaded { border: none; }
+@keyframes slot-pending { from { background: var(--slot-saved); border-color: var(--slot-saved); } to { background: #f5f0e8; border-color: #f5f0e8; } }
+.slot-btn.loaded {}
 .slot-btn.beat-pulse { animation: slot-pulse 0.22s ease-out; }
 @keyframes slot-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 #playBtn.btn-beat-pulse { animation: top-row-pulse 0.44s ease-out; }
@@ -796,7 +796,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 12:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 12:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -11436,11 +11436,11 @@ function updateSlotButtons() {
       if (i === activeSlot) {
         btn.classList.add('loaded');
         btn.style.color = barTextColor(color);
-        btn.style.border = 'none';
+        btn.style.borderColor = color;
       } else {
         btn.classList.add('saved');
         btn.style.color = barTextColor(color);
-        btn.style.border = 'none';
+        btn.style.borderColor = color;
       }
     } else {
       btn.style.background = 'transparent';
