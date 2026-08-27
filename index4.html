@@ -61,7 +61,7 @@ header {
   width: 100%; max-width: 960px; position: sticky; top: 0; z-index: 100;
   background: transparent;
   margin-top: 6px;
-  margin-bottom: 5px; padding-bottom: 5px;
+  margin-bottom: 15px; padding-bottom: 5px;
   display: flex; align-items: stretch;
 }
 header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.63925rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
@@ -795,7 +795,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 10:10</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 10:25</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -820,7 +820,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 <header>
   <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">JBX<span style="margin:0 -0.08em;">-</span>84</h1>
-  <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:2px;right:2px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;">
+  <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:calc((1.63925rem - 22px) / 2);right:2px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;">
     <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M1 13a10 10 0 0 1 20 0" stroke="#e0524d" stroke-width="2.6" stroke-linecap="round"/>
       <path d="M3.6 13a7.4 7.4 0 0 1 14.8 0" stroke="#f0b429" stroke-width="2.6" stroke-linecap="round"/>
