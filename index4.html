@@ -80,7 +80,7 @@ header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.63925rem; line-heig
   75%  { color: var(--highlight3-color, #adff00); }
   100% { color: var(--neutral-top, #555); }
 }
-body.seq-playing #siFiTitle { animation: logo-color-cycle 4s linear infinite; }
+body.seq-playing:not(.logo-note-jump-mode) #siFiTitle { animation: logo-color-cycle 4s linear infinite; }
 header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; }
 #cmapOverlay {
   display: block;
@@ -794,7 +794,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 07:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 08:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -912,6 +912,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <span class="wild-toggle-slider"></span>
       </label>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="logoNoteJumpToggle" onchange="setLogoNoteJump(this.checked)" style="width:14px;height:14px;cursor:pointer;">LOGO NOTE JUMP
+    </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
@@ -1643,6 +1646,25 @@ async function importThemeFile(file) {
 // saved-theme-else-shipped-defaults check internally, so it's reused
 // directly here rather than duplicating that logic.
 _resetAppColorsToDefault();
+// LOGO NOTE JUMP — an alternate mode to the default measure-long color
+// cycle above. Instead of smoothly transitioning through all four accent
+// colors once per bar, the logo instantly jumps to a random one of them
+// every time any track actually plays a note. Mutually exclusive with the
+// CSS cycle (see body.logo-note-jump-mode in the stylesheet) since both
+// drive the same element's color and would otherwise fight each other.
+window._logoNoteJumpEnabled = false;
+function setLogoNoteJump(on) {
+  window._logoNoteJumpEnabled = !!on;
+  document.body.classList.toggle('logo-note-jump-mode', window._logoNoteJumpEnabled);
+  const el = document.getElementById('siFiTitle');
+  if (el) el.style.color = ''; // clear any leftover jump color (or let the CSS cycle take back over) on every mode switch
+}
+const _LOGO_JUMP_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)', 'var(--highlight3-color)'];
+function _jumpLogoColor() {
+  const el = document.getElementById('siFiTitle');
+  if (!el) return;
+  el.style.color = _LOGO_JUMP_VARS[Math.floor(Math.random() * _LOGO_JUMP_VARS.length)];
+}
 function randomizeAppColors() {
   // Lightness ranges are constrained per-role only for TOP ROW / TRACK
   // BUTTONS, since those two use a fixed label-text color elsewhere too
@@ -2816,6 +2838,16 @@ function scheduler() {
     const _muteForTransition = _randTransitionWindow && t >= _randTransitionWindow.start && t < _randTransitionWindow.end;
     if (!_muteForTransition) {
     fireStepAudio(step, t);
+    // LOGO NOTE JUMP — decoupled from fireStepAudio's own (already
+    // complex) internals; just re-checks the same grid data it uses to
+    // decide whether anything actually played this step.
+    if (window._logoNoteJumpEnabled) {
+      for (let _tr = 0; _tr < NUM_TRACKS; _tr++) {
+        if (trackMuted[_tr]) continue;
+        const _gs = (step - trackOffset[_tr] + NUM_STEPS) % NUM_STEPS;
+        if (grid[_tr][_gs] > 0) { _jumpLogoColor(); break; }
+      }
+    }
     } // end !_muteForTransition
     nextStepTime += stepDuration();
   }
@@ -3257,6 +3289,10 @@ function togglePlay() {
     if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = 'paused'; } catch (e) {} }
     clearInterval(scheduleInterval); scheduleInterval = null;
     btn.classList.remove('playing');
+    // Clear any color LOGO NOTE JUMP left set inline — otherwise the logo
+    // stays stuck on whatever it last jumped to instead of reverting to
+    // its normal resting color once playback stops.
+    if (window._logoNoteJumpEnabled) { const _logoStop = document.getElementById('siFiTitle'); if (_logoStop) _logoStop.style.color = ''; }
     // If a + press was mid-buildup toward the next bar (the gradual
     // HIGHLIGHT-2 color/scale transition queueRand starts while playing),
     // stopping here means the scheduler that would have applied it and
@@ -7441,46 +7477,6 @@ function buildUI() {
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
 
-    // S button — solo track
-    const soloBtn = document.createElement('button'); soloBtn.className = 'track-ctrl-icon-btn solo-btn'; soloBtn.id = `solobtn-${tr}`;
-    soloBtn.dataset.tr = tr;
-    soloBtn.textContent = 'S';
-    soloBtn.classList.toggle('solo-on', !!trackSolo[tr]);
-    soloBtn.addEventListener('mouseup', (e) => {
-      if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
-      toggleSolo(tr);
-    });
-    ctrlRow.appendChild(soloBtn);
-
-    // Shift left
-    const btnL = document.createElement('button'); btnL.className = 'shift-btn'; btnL.innerHTML = '<span class="glyph">&lt;</span>';
-    wireShiftButton(btnL, tr, -1);
-    ctrlRow.appendChild(btnL);
-
-    // Shift right (kept for later use)
-    // const btnR = document.createElement('button'); btnR.className = 'shift-btn right'; btnR.textContent = '>';
-    // wireShiftButton(btnR, tr, +1);
-    // ctrlRow.appendChild(btnR);
-
-    // Delay toggle button
-    const delayBtn = document.createElement('button');
-    delayBtn.className = 'shift-btn right'; delayBtn.textContent = 'R';
-    delayBtn.id = `delaybtn-${tr}`;
-    delayBtn.classList.toggle('on', trackDelay[tr]);
-    // Uses mouseup (not click) specifically because the drag-to-engage
-    // system (DRAGGABLE_BTN_SELECTORS, which includes .shift-btn) only
-    // ever dispatches synthetic mousedown/mouseup — never an actual click
-    // event — so a click-based listener here could never be reached by
-    // it at all. This was the real reason dragging across REVERB buttons
-    // never worked: not a double-fire bug like the other buttons had, but
-    // this one never being wired to the drag system's event type in the
-    // first place.
-    delayBtn.addEventListener('mouseup', e => {
-      if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
-      toggleTrackDelay(tr);
-    });
-    ctrlRow.appendChild(delayBtn);
-
     // FX button — simple toggle, crunch on/off. Double-tap toggles BLAST
     // (the pump/sustain/crunch FX) instead, without disturbing the FX state.
     // FX button — 3-state cycle: off -> FX on (orange) -> FX+BLAST (red) -> off
@@ -7529,11 +7525,51 @@ function buildUI() {
     fxBtn.addEventListener('touchend', e => { e.preventDefault(); _fxTouchJustHandled = true; setTimeout(() => { _fxTouchJustHandled = false; }, 700); cycleFxBtn(); }, { passive: false });
     ctrlRow.appendChild(fxBtn);
 
+    // Delay toggle button
+    const delayBtn = document.createElement('button');
+    delayBtn.className = 'shift-btn right'; delayBtn.textContent = 'R';
+    delayBtn.id = `delaybtn-${tr}`;
+    delayBtn.classList.toggle('on', trackDelay[tr]);
+    // Uses mouseup (not click) specifically because the drag-to-engage
+    // system (DRAGGABLE_BTN_SELECTORS, which includes .shift-btn) only
+    // ever dispatches synthetic mousedown/mouseup — never an actual click
+    // event — so a click-based listener here could never be reached by
+    // it at all. This was the real reason dragging across REVERB buttons
+    // never worked: not a double-fire bug like the other buttons had, but
+    // this one never being wired to the drag system's event type in the
+    // first place.
+    delayBtn.addEventListener('mouseup', e => {
+      if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
+      toggleTrackDelay(tr);
+    });
+    ctrlRow.appendChild(delayBtn);
+
+    // Shift left
+    const btnL = document.createElement('button'); btnL.className = 'shift-btn'; btnL.innerHTML = '<span class="glyph">&lt;</span>';
+    wireShiftButton(btnL, tr, -1);
+    ctrlRow.appendChild(btnL);
+
+    // Shift right (kept for later use)
+    // const btnR = document.createElement('button'); btnR.className = 'shift-btn right'; btnR.textContent = '>';
+    // wireShiftButton(btnR, tr, +1);
+    // ctrlRow.appendChild(btnR);
+
     // R button — randomize notes across the track, regenerating every 4 bars while held
     const randBtn = document.createElement('button'); randBtn.className = 'track-ctrl-icon-btn rand-btn'; randBtn.id = `randbtn-${tr}`;
     randBtn.innerHTML = '<span class="glyph">+</span>';
     wireRandomizeButton(randBtn, tr);
     ctrlRow.appendChild(randBtn);
+
+    // S button — solo track
+    const soloBtn = document.createElement('button'); soloBtn.className = 'track-ctrl-icon-btn solo-btn'; soloBtn.id = `solobtn-${tr}`;
+    soloBtn.dataset.tr = tr;
+    soloBtn.textContent = 'S';
+    soloBtn.classList.toggle('solo-on', !!trackSolo[tr]);
+    soloBtn.addEventListener('mouseup', (e) => {
+      if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
+      toggleSolo(tr);
+    });
+    ctrlRow.appendChild(soloBtn);
 
 
     trackWrap.appendChild(ctrlRow);
@@ -7578,8 +7614,9 @@ function updateTrackMute(tr) {
 // was actually muted before the first SOLO engages gets remembered and
 // restored once the last one disengages, rather than just unmuting
 // everything (which would lose any mutes the person had set manually
-// before reaching for SOLO). BEAT is untouched either way — it isn't one
-// of the NUM_TRACKS tracks this loop ever reaches.
+// before reaching for SOLO). BEAT isn't one of the NUM_TRACKS tracks this
+// loop reaches, but it gets silenced right alongside them below — SOLO
+// means "only this," and BEAT isn't part of that selection either.
 function toggleSolo(tr) {
   const wasAnySoloed = trackSolo.some(x => x);
   trackSolo[tr] = !trackSolo[tr];
@@ -7593,6 +7630,8 @@ function toggleSolo(tr) {
     for (let t = 0; t < NUM_TRACKS; t++) trackMuted[t] = _preSoloMuteState[t];
     _preSoloMuteState = null;
   }
+  _beatSoloMuted = isAnySoloed;
+  _applyBeatVolWithDuck();
   for (let t = 0; t < NUM_TRACKS; t++) {
     updateTrackMute(t);
     const sb = document.getElementById(`solobtn-${t}`);
@@ -13564,6 +13603,8 @@ function fullReset() {
   // solo that was active when reset was pressed.
   for (let t = 0; t < NUM_TRACKS; t++) { trackSolo[t] = false; }
   _preSoloMuteState = null;
+  _beatSoloMuted = false;
+  _applyBeatVolWithDuck(); // don't leave BEAT stuck silenced from a solo that was active when reset was pressed
 
   // Stop every per-track auto-rand loop and the RAND auto-mode loop
   Object.keys(autoShiftStops).forEach(tr => { try { autoShiftStops[tr](); } catch(e) {} });
@@ -14709,10 +14750,11 @@ function startHiss() {
 // whenever FX or BLAST is engaged on BEAT, so the dial itself always
 // reflects what the user set rather than the post-duck level.
 let _beatVolRaw = 0.4283;
+let _beatSoloMuted = false; // true whenever any track is soloed — SOLO should silence BEAT too, same as every un-soloed track
 function _applyBeatVolWithDuck() {
   if (!window._beatGain) return;
   const duck = (_beatFx || _beatPump) ? Math.pow(10, -1.5 / 20) : 1;
-  const target = _beatVolRaw * duck;
+  const target = _beatSoloMuted ? 0 : _beatVolRaw * duck;
   if (ctx) window._beatGain.gain.setTargetAtTime(target, ctx.currentTime, 0.01);
   else window._beatGain.gain.value = target;
 }
