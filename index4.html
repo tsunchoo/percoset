@@ -66,19 +66,20 @@ header {
 }
 header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.63925rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
 /* Logo cycles through the app's accent colors while playing — one full
-   trip through all four takes exactly one measure (set via JS below,
+   trip through all colors takes exactly one measure (set via JS below,
    tied to bpm), so it stays a musically-timed pulse rather than a fixed
-   arbitrary speed. Uses the four "used" accent colors (TOP, HIGHLIGHT,
-   HIGHLIGHT2, HIGHLIGHT3) — BACKGROUND is deliberately excluded since
-   it's a pale wash color, not something meant to read as a distinct
-   accent when cycled through as text. Gated on body.seq-playing, the
-   same class togglePlay() already adds/removes at exactly the right
+   arbitrary speed. Uses TOP, HIGHLIGHT, and HIGHLIGHT2 — BACKGROUND is
+   deliberately excluded since it's a pale wash color, not something
+   meant to read as a distinct accent when cycled through as text, and
+   HIGHLIGHT 3 is excluded since it's now a fixed constant (always red)
+   rather than a varying accent, so including it would mean passing
+   through the same fixed red every single cycle. Gated on body.seq-playing,
+   the same class togglePlay() already adds/removes at exactly the right
    moments, so no separate play/stop hook is needed here. */
 @keyframes logo-color-cycle {
   0%   { color: var(--neutral-top, #555); }
-  25%  { color: var(--playhead-color, #f8ff00); }
-  50%  { color: var(--highlight2-color, #0078ff); }
-  75%  { color: var(--highlight3-color, #adff00); }
+  33%  { color: var(--playhead-color, #f8ff00); }
+  66%  { color: var(--highlight2-color, #0078ff); }
   100% { color: var(--neutral-top, #555); }
 }
 body.seq-playing:not(.logo-note-jump-mode) #siFiTitle { animation: logo-color-cycle 4s linear infinite; }
@@ -120,7 +121,14 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   overflow: hidden;
 }
 .tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.63925rem + 24px); margin-bottom: 0; transform: scale(0.98); }
-.tape-window { width: 54.26px; height: 33.07px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
+.tape-window { width: 54.26px; height: 33.07px; flex-shrink: 0; background: var(--bg, #f5f0e8); border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
+/* The tape reel graphic's own near-white background pixels (~240,245,249)
+   are made to take on the app's current --bg color, while its near-black
+   reel graphics (~10-13) stay dark — mix-blend-mode:multiply does this:
+   near-white × any color ≈ that color unchanged (white is the
+   multiplicative identity), near-black × anything ≈ still near-black
+   regardless of the second color. */
+#tapeWindowImg { mix-blend-mode: multiply; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
   25% { transform: translateX(-50%) translateX(-0.5px); }
@@ -406,7 +414,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    #333 (darker) locked. Specificity here (three classes) beats the
    shared .track-ctrl-icon-btn.sweep-on rule further down (two classes)
    regardless of source order. */
-.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; margin-right: calc(-1 * clamp(2px, 1vw, 5px)); }
+.track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: #f17d21; color: #fff; }
 .fx-btn.blast-on { background: var(--playhead); color: #fff; }
@@ -796,7 +804,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 14:38</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 15:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -914,9 +922,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <span class="wild-toggle-slider"></span>
       </label>
     </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="logoNoteJumpToggle" onchange="setLogoNoteJump(this.checked)" style="width:14px;height:14px;cursor:pointer;">LOGO NOTE JUMP
-    </label>
+    <!-- LOGO NOTE JUMP checkbox removed from the UI per direct request — the
+         toggle function (setLogoNoteJump) and its checkbox ID are kept
+         intact elsewhere for this reason, in case it's reinstated later. -->
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
@@ -978,9 +986,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <input type="color" id="bgColorPicker" value="#f5f0e8" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
         <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
       </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="checkbox" id="bgFollowsBarColorToggle" onchange="setBgFollowsBarColor(this.checked)" style="width:14px;height:14px;cursor:pointer;">BG = SONG NAME COLOR
-      </label>
+      <!-- BG = SONG NAME COLOR checkbox removed from the UI per direct
+           request — setBgFollowsBarColor and its applyBarColor() hook are
+           kept intact elsewhere for this reason. -->
     </div>
 
     <div id="devMorePanel2" style="display:none;flex-direction:column;gap:10px;">
@@ -1651,20 +1659,31 @@ async function importThemeFile(file) {
 // saved-theme-else-shipped-defaults check internally, so it's reused
 // directly here rather than duplicating that logic.
 _resetAppColorsToDefault();
-// LOGO NOTE JUMP — an alternate mode to the default measure-long color
-// cycle above. Instead of smoothly transitioning through all four accent
+// LOGO NOTE JUMP — an alternate mode to the measure-long color cycle
+// below. Instead of smoothly transitioning through all four accent
 // colors once per bar, the logo instantly jumps to a random one of them
 // every time any track actually plays a note. Mutually exclusive with the
 // CSS cycle (see body.logo-note-jump-mode in the stylesheet) since both
 // drive the same element's color and would otherwise fight each other.
-window._logoNoteJumpEnabled = false;
+// Now the default/initialized mode instead of the smooth cycle, per
+// direct request — the logo tap still toggles between the two exactly
+// as before, this only changes which one the app starts on.
+setLogoNoteJump(true);
+// Colors otherwise stay at the CSS :root defaults (plain gray/green/etc.)
+// until the first RAND/WILD press, since that's the only place
+// randomizeAppColors() was ever called from — settings sliders and
+// buttons tied to these variables (e.g. --neutral-top) would look
+// unstyled on a fresh load even though the tie-in itself was correct.
+// Running it once here means everything (including the fixed red
+// HIGHLIGHT 3) is live from the very first paint.
+randomizeAppColors();
 function setLogoNoteJump(on) {
   window._logoNoteJumpEnabled = !!on;
   document.body.classList.toggle('logo-note-jump-mode', window._logoNoteJumpEnabled);
   const el = document.getElementById('siFiTitle');
   if (el) el.style.color = ''; // clear any leftover jump color (or let the CSS cycle take back over) on every mode switch
 }
-const _LOGO_JUMP_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)', 'var(--highlight3-color)'];
+const _LOGO_JUMP_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)']; // HIGHLIGHT 3 excluded — same reasoning as the smooth cycle above: it's now a fixed constant (always red), not a varying accent, so leaving it in would mean 1-in-4 jumps always landing on the same red
 function _jumpLogoColor() {
   const el = document.getElementById('siFiTitle');
   if (!el) return;
@@ -4964,7 +4983,7 @@ function playStab(freq, durSec, isAccent, time, tr) {
 function playChug(freq, durSec, isAccent, time, tr) {
   if (!ctx || !freq) return;
   const dest = getSynthConnectNode(tr);
-  const vel = isAccent ? 0.282 : 0.189; // +2dB on top of the earlier +3.5dB (was 0.224/0.150)
+  const vel = isAccent ? 0.3352 : 0.2246; // +1.5dB more (was 0.282/0.189, +2dB on top of the earlier +3.5dB before that, was 0.224/0.150)
 
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.8;
   lp.frequency.setValueAtTime(isAccent ? 2600 : 1900, time);
@@ -8322,7 +8341,7 @@ async function renderSlotToWav(snap) {
 
         } else if (key === 'chug') {
           // Match playChug exactly
-          const vel = isAccent ? 0.282 : 0.189; // +2dB on top of the earlier +3.5dB (was 0.224/0.150)
+          const vel = isAccent ? 0.3352 : 0.2246; // +1.5dB more (was 0.282/0.189, +2dB on top of the earlier +3.5dB before that, was 0.224/0.150)
           const lp = o.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=1.8;
           lp.frequency.setValueAtTime(isAccent?2600:1900,t); lp.frequency.exponentialRampToValueAtTime(220,t+0.055);
           const peak = o.createBiquadFilter(); peak.type='peaking'; peak.frequency.value=900; peak.Q.value=1.0; peak.gain.value=5;
@@ -8739,6 +8758,7 @@ function _offerToLoadTapePayload(payload) {
     stopAllAutoRand();
     if (playing) togglePlay();
     restoreState(payload.state);
+    if (ctx) playRandReleaseSweep(ctx.currentTime); // same landing cue RAND uses, so loading a tape reads as a real "new pattern" moment too
     activeSlot = -1;
     updateSlotButtons();
     markModified();
@@ -8797,6 +8817,7 @@ async function importTapeFile(file) {
     stopAllAutoRand();
     if (playing) togglePlay();
     restoreState(payload.state);
+    if (ctx) playRandReleaseSweep(ctx.currentTime); // same landing cue RAND uses, so loading a tape reads as a real "new pattern" moment too
     activeSlot = -1; // a loaded tape is new content — no slot claims to match it
     updateSlotButtons();
     markModified();
