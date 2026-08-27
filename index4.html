@@ -721,10 +721,11 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 /* ── Slot bar ── */
 .slot-bar {
-  width: 100%; max-width: 960px; display: grid;
-  grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 4px; margin-bottom: 0;
+  width: 100%; max-width: 960px; display: flex;
+  gap: 4px; margin-top: 4px; margin-bottom: 0;
 }
 .slot-btn {
+  flex: 1; min-width: 0;
   background: transparent; border: 2px solid #555; color: #b0b0b0;
   font-family: 'DM Sans', sans-serif; font-size: 1.6rem; font-weight: 700; letter-spacing: 0;
   height: var(--top-row-btn-height); display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-align: center;
@@ -795,7 +796,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 10:25</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 10:45</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
