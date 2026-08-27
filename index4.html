@@ -63,7 +63,7 @@ header {
   margin-bottom: 5px; padding-bottom: 5px;
   display: flex; align-items: stretch;
 }
-header h1 { font-family: 'DM Sans', sans-serif; font-size: 2.04906rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
+header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.63925rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
 /* Logo cycles through the app's accent colors while playing — one full
    trip through all four takes exactly one measure (set via JS below,
    tied to bpm), so it stays a musically-timed pulse rather than a fixed
@@ -118,7 +118,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   display: block;
   overflow: hidden;
 }
-.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(2.04906rem + 10px); margin-bottom: 0; }
+.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.63925rem + 10px); margin-bottom: 0; }
 .tape-window { width: 54.26px; height: 33.07px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
@@ -794,7 +794,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 07:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 07:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -835,7 +835,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <img class="reel" id="reel2" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;-webkit-user-drag:none;">
     </div>
   </div>
-  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(2.04906rem + 10px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
+  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(1.63925rem + 10px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.1rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.8rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:calc(100% + 5px);right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
@@ -1651,40 +1651,39 @@ function randomizeAppColors() {
   // "light-ish" still reads fine. HIGHLIGHT and BACKGROUND get their own
   // contrast-safe text color computed fresh, so they're free to roam the
   // full range.
-  // TOP ROW is now a hardcoded fixed red (#FF0000) — it no longer
+  // HIGHLIGHT 3 — the top-row buttons' own highlight/active color (what
+  // RAND/SWEEP/RECALL/BEAT switch to when engaged, not their resting
+  // background) — is now a hardcoded fixed red (#FF0000). It no longer
   // randomizes at all. Every other role's hue comes from a single random
   // rotation off that same fixed red reference point (the "root"), then
-  // sits at a fixed step around the wheel from there — same structure as
-  // the previous version, except the anchor itself (TOP ROW) no longer
-  // moves. Every saturation/lightness formula below is exactly what it
-  // always was — only where each role's hue comes from changed.
+  // sits at a fixed step around the wheel from there. Every saturation/
+  // lightness formula below is exactly what it always was — only where
+  // each role's hue comes from changed.
   const RED_HUE = 0, RED_SAT = 1, RED_LIGHT = 0.5; // pure red, #FF0000
-  _applyTopColor(_hslToHex(RED_HUE, RED_SAT, RED_LIGHT));
-  // TRACK BUTTONS is still no independent roll — TOP ROW's own (now
-  // fixed) hue/saturation with lightness pushed up, same relationship as
-  // the two default greys (#555555 at ~33% lightness, #b0b0b0 at ~69%: a
-  // ~0.357 delta), so the pair always reads as "the same color, lighter"
-  // rather than two unrelated colors. Trimmed to ~0.26 — a little
-  // darker/closer to TOP ROW than the original delta.
-  _applyTrackColor(_hslToHex(RED_HUE, RED_SAT, Math.min(0.95, RED_LIGHT + 0.26)));
+  _applyHighlight3Color(_hslToHex(RED_HUE, RED_SAT, RED_LIGHT));
   // Random rotation off the fixed red anchor — the shared root the other
   // four roles step around the wheel from.
   const rootHue = (RED_HUE + Math.random() * 360) % 360;
-  const STEP = 72; // 360° / 5 points on the wheel — red itself is the 5th, fixed point; these four step around from the random root
-  // HIGHLIGHT sits at the root itself.
-  const highlightHue = rootHue;
+  const STEP = 72; // 360° / 5 points on the wheel — red (HIGHLIGHT 3) itself is the 5th, fixed point; these four step around from the random root
+  // TOP ROW sits at the root itself.
+  const _topH = rootHue, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
+  _applyTopColor(_hslToHex(_topH, _topS, _topL));
+  // TRACK BUTTONS is still no independent roll — TOP ROW's own hue/saturation
+  // with lightness pushed up, same relationship as the two default greys
+  // (#555555 at ~33% lightness, #b0b0b0 at ~69%: a ~0.357 delta), so the
+  // pair always reads as "the same color, lighter" rather than two
+  // unrelated colors. Trimmed to ~0.26 — a little darker/closer to TOP
+  // ROW than the original delta.
+  _applyTrackColor(_hslToHex(_topH, _topS, Math.min(0.95, _topL + 0.26)));
+  // HIGHLIGHT: root + 1 step.
+  const highlightHue = (rootHue + STEP) % 360;
   const highlightSat = 0.6 + Math.random() * 0.35;
   const highlightLight = 0.35 + Math.random() * 0.4;
   _applyHighlightColor(_hslToHex(highlightHue, highlightSat, highlightLight));
-  // HIGHLIGHT 2: root + 1 step — same saturation/lightness recipe as
+  // HIGHLIGHT 2: root + 2 steps — same saturation/lightness recipe as
   // HIGHLIGHT (unchanged).
-  const highlight2Hue = (rootHue + STEP) % 360;
+  const highlight2Hue = (rootHue + STEP * 2) % 360;
   _applyHighlight2Color(_hslToHex(highlight2Hue, highlightSat, highlightLight));
-  // HIGHLIGHT 3: root + 2 steps. Sits as text on a fixed dark (#111)
-  // background wherever it's used, so it stays in a bright/vivid range
-  // regardless of hue — same "LED" character as the default green.
-  const highlight3Hue = (rootHue + STEP * 2) % 360;
-  _applyHighlight3Color(_hslToHex(highlight3Hue, 0.65 + Math.random() * 0.35, 0.55 + Math.random() * 0.2));
   // BACKGROUND: root + 3 steps.
   const bgHue = (rootHue + STEP * 3) % 360;
   _applyBgColor(_hslToHex(bgHue, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
