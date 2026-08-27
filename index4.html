@@ -796,7 +796,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 13:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 13:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -923,6 +923,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
+      <button id="devMoreToggleBtn" class="rec-mode-btn" onclick="toggleDevMore()">MORE</button>
       <button id="saveThemeBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE THEME</button>
       <button id="loadThemeBtn" class="rec-mode-btn" onclick="document.getElementById('themeFileInput').click()">LOAD THEME</button>
       <input type="file" id="themeFileInput" accept=".SiFiTheme,.json,application/json" style="display:none;" onchange="importThemeFile(this.files[0])">
@@ -981,7 +982,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
     <div id="devMorePanel2" style="display:none;flex-direction:column;gap:10px;">
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
@@ -993,7 +994,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK BUTTON PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackPulseMode" value="solid" checked onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
@@ -1005,7 +1006,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK VOLUME COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
@@ -1020,7 +1021,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TRACK TEXT PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
@@ -1032,7 +1033,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TEXT PULSE COLOR</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TEXT PULSE COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackTextPulseColor" value="1" checked onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
@@ -1047,7 +1048,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
     </div>
 
-    <button id="devMoreToggleBtn" class="rec-mode-btn" onclick="toggleDevMore()" style="margin-top:4px;">MORE</button>
     <button onclick="hideDevMenu()" class="rec-mode-btn">CLOSE</button>
   </div>
 </div>
@@ -13607,7 +13607,7 @@ function fullReset() {
   const _bpmSettingsSliderEl = document.getElementById('bpmSettingsSlider'); if (_bpmSettingsSliderEl) _bpmSettingsSliderEl.value = bpm;
   _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.24; _beatFx = false; _beatPump = false;
   _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
-  _beatVolRaw = 0.4283; _applyBeatVolWithDuck();
+  _beatVolRaw = 0.4043; _applyBeatVolWithDuck();
   const _bbFullReset = document.getElementById('beatBtn'); if (_bbFullReset) _bbFullReset.classList.remove('beat-auto-active');
   if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setValueAtTime(_beatReverbGainForMix(_beatReverbMix), ctx.currentTime); // on by default now, not silenced
   if (window._beatCrunchSend && ctx) window._beatCrunchSend.gain.setValueAtTime(0, ctx.currentTime);
@@ -14700,7 +14700,7 @@ function startHiss() {
 // the gain actually applied to the node also folds in a -1.5dB duck
 // whenever FX or BLAST is engaged on BEAT, so the dial itself always
 // reflects what the user set rather than the post-duck level.
-let _beatVolRaw = 0.4283;
+let _beatVolRaw = 0.4043; // -0.5dB more (was 0.4283)
 let _beatSoloMuted = false; // true whenever any track is soloed — SOLO should silence BEAT too, same as every un-soloed track
 function _applyBeatVolWithDuck() {
   if (!window._beatGain) return;
