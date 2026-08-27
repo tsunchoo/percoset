@@ -796,7 +796,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 11:32</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 11:50</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -13435,69 +13435,14 @@ function hideInstructions() {
 (function() {
   const title = document.getElementById('siFiTitle');
   if (!title) return;
-  const ARM_GRACE_MS = 350;   // how long "armed" survives after finger drifts off the button
-  const HIT_PAD = 22;         // px of forgiveness around the visual button edges
-  const CONFIRM_HOLD_MS = 220; // pause before the panel disappears, so the catch is visible
-
-  let holding = false;
-  let lastArmedAt = 0;
-
-  title.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    holding = true;
-    lastArmedAt = 0;
-    showInstructions();
-    try { title.setPointerCapture(e.pointerId); } catch (err) {}
+  // Used to open the instructions/performance-lock panel on press-and-hold
+  // over an on-screen lock icon — replaced with a plain tap toggling LOGO
+  // NOTE JUMP directly, per direct request.
+  title.addEventListener('click', () => {
+    setLogoNoteJump(!window._logoNoteJumpEnabled);
+    const cb = document.getElementById('logoNoteJumpToggle');
+    if (cb) cb.checked = window._logoNoteJumpEnabled;
   });
-
-  title.addEventListener('pointermove', e => {
-    if (!holding) return;
-    e.preventDefault();
-    const lockBtn = document.getElementById('instructionsLockBtn');
-    if (!lockBtn) return;
-    const r = lockBtn.getBoundingClientRect();
-    const over = e.clientX >= r.left - HIT_PAD && e.clientX <= r.right + HIT_PAD &&
-                 e.clientY >= r.top - HIT_PAD && e.clientY <= r.bottom + HIT_PAD;
-    const now = performance.now();
-    if (over) lastArmedAt = now;
-    const armed = (now - lastArmedAt) < ARM_GRACE_MS;
-    lockBtn.style.background = armed ? '#f17d21' : 'var(--panel)';
-    lockBtn.style.color = armed ? '#111' : 'var(--dim)';
-    lockBtn.style.transform = armed ? 'scale(1.15)' : 'scale(1)';
-  });
-
-  function release(e) {
-    if (!holding) return;
-    holding = false;
-    const lockBtn = document.getElementById('instructionsLockBtn');
-    const armed = lockBtn && (performance.now() - lastArmedAt) < ARM_GRACE_MS;
-    try { title.releasePointerCapture(e.pointerId); } catch (err) {}
-
-    if (armed && lockBtn) {
-      // Hold the panel visible for a beat so the catch reads clearly.
-      lockBtn.style.background = '#f17d21';
-      lockBtn.style.color = '#111';
-      lockBtn.style.transform = 'scale(1.15)';
-      setTimeout(() => {
-        lockBtn.style.transform = 'scale(1)';
-        if (_performanceLocked) {
-          disengagePerformanceLock(); // also hides the panel
-        } else {
-          engagePerformanceLock(); // panel stays visible, icon inverts, screen dims
-        }
-      }, CONFIRM_HOLD_MS);
-    } else {
-      if (_performanceLocked) {
-        if (lockBtn) lockBtn.style.transform = 'scale(1)';
-        updateLockIconState(); // undo any drag-preview color change, restore locked look
-        return;
-      }
-      if (lockBtn) { lockBtn.style.background = 'var(--panel)'; lockBtn.style.color = 'var(--dim)'; lockBtn.style.transform = 'scale(1)'; }
-      hideInstructions();
-    }
-  }
-  title.addEventListener('pointerup', release);
-  title.addEventListener('pointercancel', release);
 })();
 
 // ── Name bar → star map hold, plus swipe left/right for RECALL / next slot,
