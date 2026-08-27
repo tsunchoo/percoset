@@ -22,6 +22,7 @@
   --neutral-top: #555; --neutral-track: #b0b0b0;
   --track-btn-scale: 0.9025; /* per-track button box size (width/height) — 0.95 * 0.95, two successive 5% reductions. Text is deliberately NOT scaled by this — see --track-btn-font-scale below, frozen at the first round's value so glyphs/labels stay exactly the size they already are */
   --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
+  --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -170,7 +171,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   background: var(--neutral-top, #555); border: none; color: var(--neutral-track-text, #fff);
   font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700;
   letter-spacing: 0.5px; padding: 0 10px; cursor: pointer; text-transform: uppercase;
-  transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: 46.08px; flex-shrink: 0; white-space: nowrap;
+  transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: var(--top-row-btn-height); flex-shrink: 0; white-space: nowrap;
   touch-action: manipulation;
 }
 .btn.active { background: #111; color: #fff; }
@@ -726,7 +727,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 .slot-btn {
   background: transparent; border: 2px solid #555; color: #b0b0b0;
   font-family: 'DM Sans', sans-serif; font-size: 1.6rem; font-weight: 700; letter-spacing: 0;
-  height: 46.08px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-align: center;
+  height: var(--top-row-btn-height); display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-align: center;
   touch-action: manipulation; transition: background 0.1s;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
@@ -794,7 +795,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 09:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 09:42</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
