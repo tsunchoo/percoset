@@ -119,7 +119,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   display: block;
   overflow: hidden;
 }
-.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.63925rem + 20px); margin-bottom: 0; transform: scale(0.98); }
+.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.63925rem + 24px); margin-bottom: 0; transform: scale(0.98); }
 .tape-window { width: 54.26px; height: 33.07px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
@@ -160,7 +160,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 
 .transport {
   width: 100%; max-width: 960px; display: flex; align-items: stretch;
-  gap: 4px; margin-top: 4px; margin-bottom: 0;
+  gap: 4px; margin-bottom: 4px;
   touch-action: none;
 }
 .transport .btn {
@@ -796,7 +796,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 12:32</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 13:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -820,7 +820,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 </div>
 
 <header>
-  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;">JBX<span style="margin:0 -0.08em;">-</span>84</h1>
+  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;"><span style="display:inline-block;background:#000;padding:2px 4px;">JBX<span style="margin:0 -0.08em;">-</span>84</span></h1>
   <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:calc((1.63925rem - 22px) / 2);right:2px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;">
     <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M1 13a10 10 0 0 1 20 0" stroke="#e0524d" stroke-width="2.6" stroke-linecap="round"/>
@@ -837,14 +837,12 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <img class="reel" id="reel2" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;-webkit-user-drag:none;">
     </div>
   </div>
-  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(1.63925rem + 20px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
+  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(1.63925rem + 24px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.016rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.768rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:calc(100% + 5px);right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
   </div>
 </header>
-
-<div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:46.08px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 <div class="transport">
   <button class="btn" id="randBtn"><span class="glyph">+</span></button>
@@ -900,6 +898,8 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
   </div>
 </div>
+
+<div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:46.08px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 
 
