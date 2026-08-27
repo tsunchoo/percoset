@@ -710,7 +710,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 .slot-btn {
   background: transparent; border: 2px solid #555; color: #b0b0b0;
   font-family: 'DM Sans', sans-serif; font-size: 1.6rem; font-weight: 700; letter-spacing: 0;
-  height: 54px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-align: center;
+  height: 46.08px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; text-align: center;
   touch-action: manipulation; transition: background 0.1s;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
@@ -778,7 +778,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 04:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">26Aug26 05:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9168,6 +9168,19 @@ function _analogousToHighlightColor() {
   const offset = (20 + Math.random() * 25) * (Math.random() < 0.5 ? -1 : 1);
   return _hslToHex(h + offset, s, l);
 }
+// Same idea, but keyed to the top-row buttons' own color (--neutral-top)
+// instead of HIGHLIGHT 3, and deliberately using a different offset range
+// (60-90° instead of 20-45°) plus a lightness boost — so a name-bar color
+// derived this way reads as clearly related to the buttons without ever
+// landing close enough to be mistaken for them, and doesn't collide with
+// whatever _analogousToHighlightColor above might independently produce.
+function _analogousToNeutralTopColor() {
+  const topHex = getComputedStyle(document.documentElement).getPropertyValue('--neutral-top').trim() || '#555555';
+  const [h, s, l] = _hexToHsl(topHex);
+  const offset = (60 + Math.random() * 30) * (Math.random() < 0.5 ? -1 : 1);
+  const lighter = Math.min(0.85, l + 0.18);
+  return _hslToHex(h + offset, s, lighter);
+}
 
 document.documentElement.style.setProperty('--bar-color', _currentBarColor);
 // 80s sci-fi movie character names (not actors) — a database roughly matching the scale of the celestial objects list above (~240 entries), drawn from Star Wars, Blade Runner, Aliens, The Terminator, Back to the Future, RoboCop, Predator, The Thing, Tron, Flash Gordon, Dune, Star Trek II-IV, and many more.
@@ -10743,7 +10756,7 @@ function randAll(mode, opts) {
   }
 
   _currentSpecies = getSpeciesName();
-  applyBarColor(_analogousToHighlightColor());
+  applyBarColor(_analogousToNeutralTopColor());
   // Update key/scale display
   const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = (_currentSpecies || '');
   const kd = document.getElementById('keyDisplay');
