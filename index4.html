@@ -446,10 +446,10 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    regardless of source order. */
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
-.fx-btn.on { background: #f17d21; color: #fff; }
-.fx-btn.blast-on { background: var(--playhead); color: #fff; }
+.fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: var(--track-btn-on-text, #fff); }
+.fx-btn.blast-on { background: var(--track-btn-on-color, var(--playhead)); color: var(--track-btn-on-text, #fff); }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
-.track-ctrl-icon-btn.solo-on { background: #FFA700; color: #111; } /* chrome yellow */
+.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: var(--track-btn-on-text, #111); } /* chrome yellow */
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
@@ -462,7 +462,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--top-row-highlight-color, #0078ff) !important; color: var(--top-row-highlight-text, #fff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--top-row-highlight-color, #0078ff) !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
 /* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
@@ -507,7 +507,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 }
 .shift-btn:active { opacity: 0.4; }
 .shift-btn.on { background: #f17d21; color: #fff; }
-.shift-btn.right.on { background: #0081FE; color: #fff; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.shift-btn.right.on { background: var(--track-btn-on-color, #0081FE); color: var(--track-btn-on-text, #fff); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* The "<" offset button specifically (not the "R" reverb toggle, which
    also uses .shift-btn but always carries .right) — bigger text, same
    button size. The larger size exaggerates how low the glyph sits within
@@ -840,7 +840,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 20:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 21:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1108,6 +1108,24 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackCtrlBtnColor" value="top" checked onchange="setTrackCtrlBtnColor('top')" style="width:15px;height:15px;cursor:pointer;">TOP ROW BUTTON COLOR
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTON ON (FX/REVERB/SOLO)</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnOnColor" value="1" onchange="setTrackBtnOnColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnOnColor" value="2" onchange="setTrackBtnOnColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnOnColor" value="3" onchange="setTrackBtnOnColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnOnColor" value="top" checked onchange="setTrackBtnOnColor('top')" style="width:15px;height:15px;cursor:pointer;">TOP ROW BUTTON COLOR
           </label>
         </div>
       </div>
@@ -8947,6 +8965,17 @@ function setTrackCtrlBtnColor(n) {
   document.documentElement.style.setProperty('--track-ctrl-btn-color', map[n] || map.top);
   document.documentElement.style.setProperty('--track-ctrl-btn-text', textMap[n] || textMap.top);
 }
+// TRACK BUTTON ON (FX/REVERB/SOLO) — previously 3 independent hardcoded
+// colors (orange for FX, blue for reverb, yellow for SOLO) for what's
+// really the same concept on each button: "this is currently engaged."
+// Unified via --track-btn-on-color/-text, same 4-option pattern as the
+// other track/top-row pickers.
+function setTrackBtnOnColor(n) {
+  const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)', top: 'var(--neutral-top, #555)' };
+  const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111', top: 'var(--neutral-top-text, #fff)' };
+  document.documentElement.style.setProperty('--track-btn-on-color', map[n] || map.top);
+  document.documentElement.style.setProperty('--track-btn-on-text', textMap[n] || textMap.top);
+}
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
   for (let tr = 0; tr < NUM_TRACKS; tr++) setTrackNameColor(tr, trackInstruments[tr]);
@@ -12562,6 +12591,7 @@ setTrackTextPulseColor(1); // HIGHLIGHT is the default text pulse color
 setVolSliderColor(2); // HIGHLIGHT 2 is the default vol slider color
 setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — picks whichever highlight actually reads clearly against the button color, rather than a fixed choice that could land close to it
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
+setTrackBtnOnColor('top'); // matches --neutral-top-text's own prior default appearance most closely, same reasoning as above
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -13893,6 +13923,8 @@ function fullReset() {
   const _trhRadio = document.querySelector('input[name="topRowHighlightColor"][value="auto"]'); if (_trhRadio) _trhRadio.checked = true;
   setTrackCtrlBtnColor('top');
   const _tcbcRadio = document.querySelector('input[name="trackCtrlBtnColor"][value="top"]'); if (_tcbcRadio) _tcbcRadio.checked = true;
+  setTrackBtnOnColor('top');
+  const _tboRadio = document.querySelector('input[name="trackBtnOnColor"][value="top"]'); if (_tboRadio) _tboRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
