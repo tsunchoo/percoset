@@ -64,7 +64,7 @@ header {
   margin-bottom: 5px; padding-bottom: 5px;
   display: flex; align-items: stretch;
 }
-header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.63925rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
+header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.59007rem; line-height: 1; letter-spacing: 0.5px; margin: 0; padding-left: 6px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex: 1 1 0; min-width: 0; align-self: flex-start; color: var(--header-text-color, #4a4a4a); }
 /* Logo cycles through the app's accent colors while playing — one full
    trip through all colors takes exactly one measure (set via JS below,
    tied to bpm), so it stays a musically-timed pulse rather than a fixed
@@ -126,7 +126,7 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
   display: block;
   overflow: hidden;
 }
-.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.63925rem + 24px); margin-bottom: 0; transform: scale(0.98); }
+.tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.59007rem + 24px); margin-bottom: 0; transform: scale(0.98); }
 .tape-window { width: 54.26px; height: 33.07px; flex-shrink: 0; background: #000; border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
 /* Tape reel graphic's white/light areas are recolored to match the app's
    current --bg via direct pixel remapping (see recolorTapeWindowImg() in
@@ -615,26 +615,26 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    away from itself. */
 .sound-option.hover-preview:not(.current-instrument) { outline: 3px solid #ffe033; outline-offset: -3px; }
 /* Instrument group colours */
-.inst-kit   { background: #0b5394; color: #fff; }
-.inst-perc  { background: #7baa17; color: #fff; }
-.inst-tonal { background: #fd475d; color: #fff; }
-.inst-kit:hover   { background: #083d70; color: #fff; }
-.inst-perc:hover  { background: #5e8712; color: #fff; }
-.inst-tonal:hover { background: #fd475d; color: #fff; }
+.inst-kit   { background: var(--lane-color-kit, #0b5394); color: var(--lane-color-kit-text, #fff); }
+.inst-perc  { background: var(--lane-color-perc, #7baa17); color: var(--lane-color-perc-text, #fff); }
+.inst-tonal { background: var(--lane-color-tonal, #fd475d); color: var(--lane-color-tonal-text, #fff); }
+.inst-kit:hover   { background: var(--lane-color-kit, #083d70); color: var(--lane-color-kit-text, #fff); }
+.inst-perc:hover  { background: var(--lane-color-perc, #5e8712); color: var(--lane-color-perc-text, #fff); }
+.inst-tonal:hover { background: var(--lane-color-tonal, #fd475d); color: var(--lane-color-tonal-text, #fff); }
 /* Basses and pads get their own colors within the tonal group */
-.sound-option.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
-.sound-option.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
+.sound-option.inst-tonal.inst-bass { background: var(--lane-color-bass, #8d3ba8); color: var(--lane-color-bass-text, #fff); }
+.sound-option.inst-tonal.inst-pad  { background: var(--lane-color-pad, #FFFF39); color: var(--lane-color-pad-text, #111); }
 /* Track name buttons keep their static base background (instrument-group
    color, or --neutral-top when DEFAULT names mode is on) — no background
    pulsing at all. The only thing that pulses is the TEXT color, between
    HIGHLIGHT 3 (the same color the top row's own highlighted state uses)
    and the track button's normal default text color, and only while a
    track actually has notes and the sequencer is playing. */
-.track-name-btn.inst-kit   { background: #0b5394; color: #fff; }
-.track-name-btn.inst-perc  { background: #7baa17; color: #fff; }
-.track-name-btn.inst-tonal { background: #fd475d; color: #fff; }
-.track-name-btn.inst-tonal.inst-bass { background: #8d3ba8; color: #fff; }
-.track-name-btn.inst-tonal.inst-pad  { background: #FFFF39; color: #111; }
+.track-name-btn.inst-kit   { background: var(--lane-color-kit, #0b5394); color: var(--lane-color-kit-text, #fff); }
+.track-name-btn.inst-perc  { background: var(--lane-color-perc, #7baa17); color: var(--lane-color-perc-text, #fff); }
+.track-name-btn.inst-tonal { background: var(--lane-color-tonal, #fd475d); color: var(--lane-color-tonal-text, #fff); }
+.track-name-btn.inst-tonal.inst-bass { background: var(--lane-color-bass, #8d3ba8); color: var(--lane-color-bass-text, #fff); }
+.track-name-btn.inst-tonal.inst-pad  { background: var(--lane-color-pad, #FFFF39); color: var(--lane-color-pad-text, #111); }
 .track-name-btn.names-uniform { background: var(--neutral-top, #555); color: #fff; }
 
 /* ── Vol overlay ── */
@@ -834,7 +834,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 17:12</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 17:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -875,7 +875,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <img class="reel" id="reel2" src="tape_spool.png" alt="" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;-webkit-user-drag:none;">
     </div>
   </div>
-  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(1.63925rem + 24px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
+  <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(1.59007rem + 24px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.016rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
     <span id="topTempoBpmLabel" style="font-size:0.768rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:calc(100% + 5px);right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
@@ -1557,6 +1557,33 @@ function _applyTopColor(hex) {
   document.documentElement.style.setProperty('--neutral-top', hex);
   document.documentElement.style.setProperty('--neutral-top-text', _contrastText(hex));
   const el = document.getElementById('topColorPicker'); if (el) el.value = hex;
+  _deriveInstrumentColorsFromTop(hex);
+}
+// Instrument lane colors (KIT/PERC/TONAL/BASS/PAD) — previously five
+// independent hardcoded hex constants, unrelated to the rest of the app's
+// color system. Now derived from TOP ROW's own hue instead, at five
+// angles around the wheel that sit exactly between the existing UI roles
+// (TOP/HIGHLIGHT/HIGHLIGHT2/BG land on 0°/72°/144°/216° from the same
+// root — these five sit at the 36°-offset midpoints: 36/108/180/252/324),
+// so every instrument color stays maximally separated from every UI
+// accent color, while the whole palette still visibly shares TOP ROW's
+// hue family. Saturation/lightness are fixed per role rather than wheel-
+// derived, matched roughly to the original hardcoded set's own vividness
+// so track name buttons stay equally readable regardless of hue.
+function _deriveInstrumentColorsFromTop(topHex) {
+  const [topH] = _hexToHsl(topHex);
+  const roles = [
+    ['kit',   36,  0.55, 0.38],
+    ['perc',  108, 0.45, 0.45],
+    ['tonal', 180, 0.65, 0.55],
+    ['bass',  252, 0.5,  0.4],
+    ['pad',   324, 0.75, 0.65],
+  ];
+  for (const [name, offset, sat, light] of roles) {
+    const hex = _hslToHex(topH + offset, sat, light);
+    document.documentElement.style.setProperty(`--lane-color-${name}`, hex);
+    document.documentElement.style.setProperty(`--lane-color-${name}-text`, _contrastText(hex));
+  }
 }
 function _applyTrackColor(hex) {
   document.documentElement.style.setProperty('--neutral-track', hex);
@@ -7378,12 +7405,17 @@ function setTrackNameColor(tr, key) {
   const btn = document.getElementById(`tbtn-${tr}`); if (!btn) return;
   btn.classList.remove('inst-kit','inst-perc','inst-tonal','inst-bass','inst-pad','names-uniform');
   const g = INSTRUMENTS[key]?.group || 'perc';
-  const _laneColors = {'kit':'#0b5394','perc':'#85A838','tonal':'#fd475d'};
+  const _cs = getComputedStyle(document.documentElement);
+  const _laneColors = {
+    'kit':   _cs.getPropertyValue('--lane-color-kit').trim()   || '#0b5394',
+    'perc':  _cs.getPropertyValue('--lane-color-perc').trim()  || '#85A838',
+    'tonal': _cs.getPropertyValue('--lane-color-tonal').trim() || '#fd475d',
+  };
   const isBass = ['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge'].includes(key);
   const isPad = ['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone', 'magic'].includes(key);
   let laneColor = _laneColors[g] || 'var(--text)';
-  if (isBass) laneColor = '#8d3ba8';
-  else if (isPad) laneColor = '#FFFF39';
+  if (isBass) laneColor = _cs.getPropertyValue('--lane-color-bass').trim() || '#8d3ba8';
+  else if (isPad) laneColor = _cs.getPropertyValue('--lane-color-pad').trim() || '#FFFF39';
   const lane = document.getElementById(`lane-${tr}`);
   if (lane) lane.style.setProperty('--track-color', laneColor);
   // TRACK NAMES setting: skip the instrument-group color classes entirely
