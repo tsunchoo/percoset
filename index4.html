@@ -458,7 +458,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
 }
 body.no-fx-reverb-pulse .fx-btn.on, body.no-fx-reverb-pulse .fx-btn.blast-on, body.no-fx-reverb-pulse .shift-btn.right.on { animation: none; }
-body.top-row-black .btn { background: #000; }
+body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0); }
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
@@ -836,7 +836,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 17:55</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 18:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1605,6 +1605,60 @@ function _applyTrackColor(hex) {
   // sync with track-button text color rather than TOP ROW's own.
   document.documentElement.style.setProperty('--track-text-invert', trackText === '#111111' ? '1' : '0');
   const el = document.getElementById('trackColorPicker'); if (el) el.value = hex;
+  // TOP ROW BLACK mode needs the icons precisely matching TRACK BUTTONS
+  // COLOR, not just a black/white approximation — if it's currently
+  // active, keep the icons in sync as track color itself changes (RAND/WILD).
+  if (document.body.classList.contains('top-row-black')) recolorTopRowIcons(hex);
+}
+// PLAY/RECORD icon recoloring for TOP ROW BLACK — these are simple
+// single-color (white) PNGs with binary alpha (fully transparent or fully
+// opaque, no anti-aliasing), so exact recoloring is just: keep each
+// pixel's own alpha, replace its RGB outright with the target color.
+// Captured once from the untouched embedded images so every recolor
+// always starts from the pristine source, same approach as the tape
+// window graphic.
+let _iconOrigImageData = {};
+let _iconOrigSrc = {};
+function _captureIconOriginal(id) {
+  const img = document.getElementById(id);
+  if (!img) return;
+  const capture = () => {
+    _iconOrigSrc[id] = img.src;
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const cctx = canvas.getContext('2d');
+    cctx.drawImage(img, 0, 0);
+    _iconOrigImageData[id] = cctx.getImageData(0, 0, canvas.width, canvas.height);
+  };
+  if (img.complete && img.naturalWidth > 0) capture();
+  else img.addEventListener('load', capture);
+}
+['playBtnImg', 'recBtnImg'].forEach(_captureIconOriginal);
+function recolorTopRowIcons(hex) {
+  ['playBtnImg', 'recBtnImg'].forEach(id => {
+    const src = _iconOrigImageData[id];
+    const img = document.getElementById(id);
+    if (!src || !img) return;
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
+    const canvas = document.createElement('canvas');
+    canvas.width = src.width; canvas.height = src.height;
+    const cctx = canvas.getContext('2d');
+    const out = cctx.createImageData(src.width, src.height);
+    const sd = src.data, od = out.data;
+    for (let i = 0; i < sd.length; i += 4) {
+      od[i] = r; od[i+1] = g; od[i+2] = b; od[i+3] = sd[i+3]; // keep original alpha exactly, replace color outright
+    }
+    cctx.putImageData(out, 0, 0);
+    img.src = canvas.toDataURL('image/png');
+    img.style.filter = 'none'; // the base invert filter no longer applies once precisely recolored
+  });
+}
+function restoreTopRowIcons() {
+  ['playBtnImg', 'recBtnImg'].forEach(id => {
+    const img = document.getElementById(id);
+    if (img && _iconOrigSrc[id]) { img.src = _iconOrigSrc[id]; img.style.filter = ''; }
+  });
 }
 function _applyHighlightColor(hex) {
   document.documentElement.style.setProperty('--playhead-color', hex);
@@ -13568,6 +13622,12 @@ function setDevNotesGrayscale(on) {
 // values those states still derive from).
 function setTopRowBlack(on) {
   document.body.classList.toggle('top-row-black', !!on);
+  if (on) {
+    const trackHex = getComputedStyle(document.documentElement).getPropertyValue('--neutral-track').trim();
+    recolorTopRowIcons(trackHex || '#b0b0b0');
+  } else {
+    restoreTopRowIcons();
+  }
 }
 // FX/REVERB PULSE — the scale+brightness pulse (engaged-btn-pulse) FX and
 // REVERB already share when engaged. Checked by default since pulsing is
