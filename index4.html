@@ -420,7 +420,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-name-btn.shifting { background: var(--playhead) !important; color: #fff !important; animation: pulse 0.5s infinite alternate; }
 .track-ctrl-icon-btn {
   width: calc(32px * var(--track-btn-scale, 1)); flex-shrink: 0;
-  background: var(--neutral-track, #b0b0b0); border: none; color: var(--neutral-track-text, var(--text));
+  background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0)); border: none; color: var(--track-ctrl-btn-text, var(--neutral-track-text, var(--text)));
   font-family: 'DM Sans', sans-serif; font-size: calc(1rem * var(--track-btn-font-scale, 1)); font-weight: 700;
   letter-spacing: 0; text-transform: uppercase; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -498,9 +498,9 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
 .shift-btn {
-  width: 32px; flex-shrink: 0; background: var(--neutral-track, #b0b0b0);
+  width: 32px; flex-shrink: 0; background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0));
   border: none;
-  color: var(--neutral-track-text, var(--text)); font-family: 'DM Sans', sans-serif;
+  color: var(--track-ctrl-btn-text, var(--neutral-track-text, var(--text))); font-family: 'DM Sans', sans-serif;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   font-size: 1rem; font-weight: 700; transition: opacity 0.1s; padding: 0;
   touch-action: none;
@@ -719,13 +719,13 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    of one consistent pair. This throws the color away entirely instead,
    so accent state is the only thing distinguishing the two levels. */
 body.notes-grayscale .step-cell.soft:not(.playing)::after { background: #999 !important; opacity: 1 !important; filter: none; }
-body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #333 !important; opacity: 1 !important; filter: none; }
+body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #555 !important; opacity: 1 !important; filter: none; }
 /* split32 and legato-tail both pull --track-color directly, independent
    of the .on/.soft classes above, so they slipped through untouched —
    32nds showing striped color, and the back half of a legato note (its
    sustain "tail") showing solid color, even with grayscale on. */
 body.notes-grayscale .step-cell.split32::after {
-  background: repeating-linear-gradient(to right, #333 0%, #333 45%, transparent 45%, transparent 55%, #333 55%, #333 100%) !important;
+  background: repeating-linear-gradient(to right, #555 0%, #555 45%, transparent 45%, transparent 55%, #555 55%, #555 100%) !important;
   filter: none;
 }
 body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important; filter: none; }
@@ -836,7 +836,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 19:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 19:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1080,6 +1080,24 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="topRowHighlightColor" value="3" checked onchange="setTopRowHighlightColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS COLOR (FX/R/&lt;/+/SOLO)</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackCtrlBtnColor" value="1" onchange="setTrackCtrlBtnColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackCtrlBtnColor" value="2" onchange="setTrackCtrlBtnColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackCtrlBtnColor" value="3" onchange="setTrackCtrlBtnColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackCtrlBtnColor" value="top" checked onchange="setTrackCtrlBtnColor('top')" style="width:15px;height:15px;cursor:pointer;">TOP ROW BUTTON COLOR
           </label>
         </div>
       </div>
@@ -8867,6 +8885,21 @@ function setTopRowHighlightColor(n) {
   document.documentElement.style.setProperty('--top-row-highlight-color', map[n] || map[3]);
   document.documentElement.style.setProperty('--top-row-highlight-text', textMap[n] || textMap[3]);
 }
+// TRACK BUTTONS COLOR (FX/R/</+/SOLO) — the per-track control buttons
+// (excluding the name button, which has its own separate instrument/
+// uniform coloring, and the lock button, which already has its own fixed
+// gray/dark toggle look unrelated to --neutral-track entirely) default to
+// --neutral-track. This picker overrides just that shared default via a
+// --track-ctrl-btn-color variable with --neutral-track as its own
+// fallback — engaged/active states (FX .on, reverb .on, SOLO .solo-on,
+// etc.) all use entirely separate colors already and are untouched by
+// this, since they never read from --neutral-track in the first place.
+function setTrackCtrlBtnColor(n) {
+  const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)', top: 'var(--neutral-top, #555)' };
+  const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111', top: 'var(--neutral-top-text, #fff)' };
+  document.documentElement.style.setProperty('--track-ctrl-btn-color', map[n] || map.top);
+  document.documentElement.style.setProperty('--track-ctrl-btn-text', textMap[n] || textMap.top);
+}
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
   for (let tr = 0; tr < NUM_TRACKS; tr++) setTrackNameColor(tr, trackInstruments[tr]);
@@ -12481,6 +12514,7 @@ setTrackTextPulseMode('a'); // PULSING is the default for text — background st
 setTrackTextPulseColor(1); // HIGHLIGHT is the default text pulse color
 setVolSliderColor(2); // HIGHLIGHT 2 is the default vol slider color
 setTopRowHighlightColor(3); // HIGHLIGHT 3 is the default — matches what most of these states already used before this was a shared, unified setting
+setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -13804,6 +13838,8 @@ function fullReset() {
   const _vscRadio = document.querySelector('input[name="volSliderColor"][value="2"]'); if (_vscRadio) _vscRadio.checked = true;
   setTopRowHighlightColor(3);
   const _trhRadio = document.querySelector('input[name="topRowHighlightColor"][value="3"]'); if (_trhRadio) _trhRadio.checked = true;
+  setTrackCtrlBtnColor('top');
+  const _tcbcRadio = document.querySelector('input[name="trackCtrlBtnColor"][value="top"]'); if (_tcbcRadio) _tcbcRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
