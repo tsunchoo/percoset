@@ -230,7 +230,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    spans have their own explicit color rules above, which take precedence
    over anything set on the parent — so that flash was never actually
    visible on the "A"/"B" text itself. This class overrides it directly. */
-#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: var(--highlight3-color, #adff00) !important; }
+#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: var(--top-row-highlight-color, #adff00) !important; }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; font-size: 1.23rem; }
 #scratchBtnA:not(.ab-current), #scratchBtnB:not(.ab-current) { font-size: 1.005rem; }
@@ -279,7 +279,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .btn.btn-flash-blue:active { opacity: 1; }
 #clearBtn.active:active { opacity: 1; } /* same reasoning as btn-flash-blue above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey for the whole time it's actually held */
 
-#beatBtn.active:not(.beat-auto-active) { background: #000 !important; color: var(--highlight3-color, #adff00) !important; }
+#beatBtn.active:not(.beat-auto-active) { background: #000 !important; color: var(--top-row-highlight-color, #adff00) !important; }
 #beatBtn.active:not(.beat-auto-active):active { opacity: 1; } /* same reasoning as #clearBtn.active:active above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey while actually held */
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
 @keyframes beat-text-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
@@ -358,7 +358,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
 @keyframes rec-icon-pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.1); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
-.btn-flash-blue { background: #0b5394 !important; color: var(--highlight3-color, #adff00) !important; border: none !important; transition: none !important; }
+.btn-flash-blue { background: #0b5394 !important; color: var(--top-row-highlight-color, #adff00) !important; border: none !important; transition: none !important; }
 .rand-overlay-btn {
   font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
@@ -462,7 +462,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--highlight2-color, #0078ff) !important; color: var(--highlight2-text, #fff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--top-row-highlight-color, #0078ff) !important; color: var(--top-row-highlight-text, #fff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
 /* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
@@ -470,11 +470,11 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    color PLAY and BEAT use for their own active states, instead of
    changing with the pulse. */
 /* #randBtn.pulsing { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); } */
-#randBtn.pulsing { background: #111; color: var(--highlight3-color, #adff00); }
+#randBtn.pulsing { background: #111; color: var(--top-row-highlight-color, #adff00); }
 /* rand-pulse and beat-auto-color-only alternate between HIGHLIGHT and
    HIGHLIGHT 2 — the two intentionally stay separate variables so this
    two-color flash keeps working; unifying them would flatten it. */
-@keyframes rand-pulse { 0% { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); transform: scale(1.08); } 100% { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); transform: scale(1); } }
+@keyframes rand-pulse { 0% { background: var(--top-row-highlight-color, #f8ff00); color: var(--top-row-highlight-text, #000); transform: scale(1); } 50% { background: var(--top-row-highlight-color, #0078ff); color: var(--top-row-highlight-text, #fff); transform: scale(1.08); } 100% { background: var(--top-row-highlight-color, #f8ff00); color: var(--top-row-highlight-text, #000); transform: scale(1); } }
 /* #randBtn.pulsing.rand-color-pulse { animation-name: rand-pulse; animation-timing-function: ease-in-out; } */
 /* BEAT's own auto-mode color cycle — deliberately a SEPARATE, color-only
    keyframe (never touches transform at all), so it genuinely cannot
@@ -485,16 +485,16 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    shorthand replaces its whole animation list per rule, it doesn't merge
    across separate rules, so without this explicit combined rule whichever
    one happened to win the cascade would silently drop the other. */
-@keyframes beat-auto-color-only { from { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); } to { background: var(--playhead-color, #f8ff00); color: var(--highlight-text, #000); } }
+@keyframes beat-auto-color-only { from { background: var(--top-row-highlight-color, #0078ff); color: var(--top-row-highlight-text, #fff); } to { background: var(--top-row-highlight-color, #f8ff00); color: var(--top-row-highlight-text, #000); } }
 #beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 #beatBtn.btn-beat-pulse.beat-auto-active { animation: top-row-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
-@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--highlight2-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
+@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--top-row-highlight-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
-#randBtn.btn-flash-blue { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
-#clearBtn.active { background: #000 !important; color: var(--highlight3-color, #adff00) !important; }
-#scratchBtn.active { background: #111 !important; color: var(--highlight3-color, #adff00) !important; }
+#randBtn.btn-flash-blue { background: #111 !important; color: var(--top-row-highlight-color, #adff00) !important; }
+#clearBtn.active { background: #000 !important; color: var(--top-row-highlight-color, #adff00) !important; }
+#scratchBtn.active { background: #111 !important; color: var(--top-row-highlight-color, #adff00) !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
 .shift-btn {
@@ -836,7 +836,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 18:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 18:45</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1065,6 +1065,21 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW HIGHLIGHT</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowHighlightColor" value="1" onchange="setTopRowHighlightColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowHighlightColor" value="2" onchange="setTopRowHighlightColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowHighlightColor" value="3" checked onchange="setTopRowHighlightColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
         </div>
       </div>
@@ -1506,6 +1521,10 @@ function _highlight2Color() {
 // use a different color entirely).
 function _highlight3Color() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--highlight3-color').trim();
+  return v || '#adff00';
+}
+function _topRowHighlightColor() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--top-row-highlight-color').trim();
   return v || '#adff00';
 }
 // ── Shared color helpers for the consolidated COLORS settings section ──
@@ -8757,7 +8776,11 @@ function concatAudioBuffers(buffers, sampleRate) {
 
 function flashBtnOrange(id) {
   const btn = document.getElementById(id); if (!btn) return;
-  btn.style.background = '#111'; btn.style.color = _highlight3Color();
+  // Shared by both top-row buttons (scratchBtn) and non-top-row ones
+  // (beatCtrlShift, inside the BEAT overlay) — only the top-row ones
+  // should follow the new unified TOP ROW HIGHLIGHT picker.
+  const isTopRowBtn = ['randBtn','clearBtn','playBtn','beatBtn','scratchBtn','saveBtn'].includes(id);
+  btn.style.background = '#111'; btn.style.color = isTopRowBtn ? _topRowHighlightColor() : _highlight3Color();
   setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
 }
 function _flashScratchBtnText() {
@@ -8770,7 +8793,7 @@ function setBtnBlueHeld(id) {
   b.classList.add('btn-flash-blue');
   if (id === 'randBtn') {
     b.style.setProperty('background', '#111', 'important');
-    b.style.setProperty('color', _highlight3Color(), 'important');
+    b.style.setProperty('color', _topRowHighlightColor(), 'important');
   }
 }
 function clearBtnBlueHeld(id) {
@@ -8830,6 +8853,19 @@ function setTrackTextPulseColor(n) {
 function setVolSliderColor(n) {
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
   document.documentElement.style.setProperty('--vol-slider-color', map[n] || map[3]);
+}
+// TOP ROW HIGHLIGHT — previously the 6 top-row buttons' various engaged/
+// active/flash/auto states pulled from all 3 highlight colors
+// inconsistently depending on which specific state fired. This picker
+// (same 3-option pattern as TRACK VOLUME COLOR above) unifies all of them
+// onto one chosen highlight, applied via --top-row-highlight-color/-text
+// custom properties that every one of those rules now reads from instead
+// of a hardcoded highlight variable.
+function setTopRowHighlightColor(n) {
+  const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
+  const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111' };
+  document.documentElement.style.setProperty('--top-row-highlight-color', map[n] || map[3]);
+  document.documentElement.style.setProperty('--top-row-highlight-text', textMap[n] || textMap[3]);
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
@@ -12444,6 +12480,7 @@ setTrackPulseMode('solid');
 setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
 setTrackTextPulseColor(1); // HIGHLIGHT is the default text pulse color
 setVolSliderColor(2); // HIGHLIGHT 2 is the default vol slider color
+setTopRowHighlightColor(3); // HIGHLIGHT 3 is the default — matches what most of these states already used before this was a shared, unified setting
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -13765,6 +13802,8 @@ function fullReset() {
   const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="color"]'); if (_tnmRadio) _tnmRadio.checked = true;
   setVolSliderColor(2);
   const _vscRadio = document.querySelector('input[name="volSliderColor"][value="2"]'); if (_vscRadio) _vscRadio.checked = true;
+  setTopRowHighlightColor(3);
+  const _trhRadio = document.querySelector('input[name="topRowHighlightColor"][value="3"]'); if (_trhRadio) _trhRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
   if (_rbReset) {
     _rbReset.classList.remove('rand-pending-fast', 'rand-holding');
