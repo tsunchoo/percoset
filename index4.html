@@ -122,13 +122,10 @@ header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-t
 }
 .tape-reels { display: flex; gap: 0px; align-items: center; align-self: flex-start; margin-top: calc(1.63925rem + 24px); margin-bottom: 0; transform: scale(0.98); }
 .tape-window { width: 54.26px; height: 33.07px; flex-shrink: 0; background: var(--bg, #f5f0e8); border: 2px solid #000; box-sizing: border-box; overflow: hidden; position: relative; margin-left: 12px; margin-right: 11px; }
-/* The tape reel graphic's own near-white background pixels (~240,245,249)
-   are made to take on the app's current --bg color, while its near-black
-   reel graphics (~10-13) stay dark — mix-blend-mode:multiply does this:
-   near-white × any color ≈ that color unchanged (white is the
-   multiplicative identity), near-black × anything ≈ still near-black
-   regardless of the second color. */
-#tapeWindowImg { mix-blend-mode: multiply; }
+/* Tape reel graphic's white/light areas are recolored to match the app's
+   current --bg via direct pixel remapping (see recolorTapeWindowImg() in
+   the script) rather than a CSS blend mode — more predictable across
+   browsers than relying on compositing behavior. */
 @keyframes tape-wobble {
   0%, 100% { transform: translateX(-50%) translateX(0); }
   25% { transform: translateX(-50%) translateX(-0.5px); }
@@ -804,7 +801,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 15:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 16:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1172,7 +1169,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" style="flex:1;">
+          <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" class="master-vol-slider" style="flex:1;">
           <span id="devOffsetStepReadout" style="font-size:0.62rem;font-weight:700;color:#111;min-width:74px;text-align:right;">16TH</span>
         </div>
       </div>
@@ -1558,10 +1555,55 @@ function _applyHighlight3Color(hex) {
   document.documentElement.style.setProperty('--highlight3-color', hex);
   const el = document.getElementById('highlight3ColorPicker'); if (el) el.value = hex;
 }
+// Tape window graphic recoloring — direct pixel remapping (mathematically
+// the same as a multiply blend: new = original × bg/255 per channel) done
+// once via canvas rather than relying on CSS mix-blend-mode compositing,
+// which wasn't rendering consistently. The original pixel data is
+// captured once from the untouched embedded image and kept in memory, so
+// every recolor always starts from the pristine source rather than
+// compounding on a previously-recolored version.
+let _tapeWindowOrigImageData = null;
+let _tapeWindowPendingBg = null;
+function recolorTapeWindowImg(bgHex) {
+  if (!_tapeWindowOrigImageData) { _tapeWindowPendingBg = bgHex; return; } // original not captured yet — apply once it is
+  const img = document.getElementById('tapeWindowImg');
+  if (!img) return;
+  const hex = bgHex.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+  const src = _tapeWindowOrigImageData;
+  const canvas = document.createElement('canvas');
+  canvas.width = src.width; canvas.height = src.height;
+  const cctx = canvas.getContext('2d');
+  const out = cctx.createImageData(src.width, src.height);
+  const sd = src.data, od = out.data;
+  for (let i = 0; i < sd.length; i += 4) {
+    od[i]   = sd[i]   * r / 255;
+    od[i+1] = sd[i+1] * g / 255;
+    od[i+2] = sd[i+2] * b / 255;
+    od[i+3] = sd[i+3];
+  }
+  cctx.putImageData(out, 0, 0);
+  img.src = canvas.toDataURL('image/png');
+}
+(function() {
+  const img = document.getElementById('tapeWindowImg');
+  if (!img) return;
+  const capture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const cctx = canvas.getContext('2d');
+    cctx.drawImage(img, 0, 0);
+    _tapeWindowOrigImageData = cctx.getImageData(0, 0, canvas.width, canvas.height);
+    if (_tapeWindowPendingBg) { recolorTapeWindowImg(_tapeWindowPendingBg); _tapeWindowPendingBg = null; }
+  };
+  if (img.complete && img.naturalWidth > 0) capture();
+  else img.addEventListener('load', capture);
+})();
 function _applyBgColor(hex) {
   document.documentElement.style.setProperty('--bg', hex);
   const el = document.getElementById('bgColorPicker'); if (el) el.value = hex;
   if (window._applyEmptyCellColor) window._applyEmptyCellColor();
+  recolorTapeWindowImg(hex);
 }
 // The six default colors the app ships with — used to restore the
 // palette when WILD gets switched off.
