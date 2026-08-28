@@ -840,7 +840,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 21:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 21:12</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1933,17 +1933,17 @@ function randomizeAppColors() {
   // full range.
   // HIGHLIGHT 3 — the top-row buttons' own highlight/active color (what
   // RAND/SWEEP/RECALL/BEAT switch to when engaged, not their resting
-  // background) — is now a hardcoded fixed red (#FF0000). It no longer
-  // randomizes at all. Every other role's hue comes from a single random
-  // rotation off that same fixed red reference point (the "root"), then
-  // sits at a fixed step around the wheel from there. Every saturation/
-  // lightness formula below is exactly what it always was — only where
-  // each role's hue comes from changed.
-  const RED_HUE = 0, RED_SAT = 1, RED_LIGHT = 0.5; // pure red, #FF0000
-  _applyHighlight3Color(_hslToHex(RED_HUE, RED_SAT, RED_LIGHT));
-  // Random rotation off the fixed red anchor — the shared root the other
-  // four roles step around the wheel from.
-  const rootHue = (RED_HUE + Math.random() * 360) % 360;
+  // background) — used to be hardcoded to pure red every time. Now it's a
+  // random hue at that same saturation/lightness red always had (100%
+  // saturated, 50% lightness), so it varies like every other role while
+  // still anchoring the wheel the other colors rotate from. Every
+  // saturation/lightness formula below is exactly what it always was —
+  // only where each role's hue comes from changed.
+  const ANCHOR_HUE = Math.random() * 360, ANCHOR_SAT = 1, ANCHOR_LIGHT = 0.5;
+  _applyHighlight3Color(_hslToHex(ANCHOR_HUE, ANCHOR_SAT, ANCHOR_LIGHT));
+  // Random rotation off the (also random) anchor hue — the shared root
+  // the other four roles step around the wheel from.
+  const rootHue = (ANCHOR_HUE + Math.random() * 360) % 360;
   const STEP = 72; // 360° / 5 points on the wheel — red (HIGHLIGHT 3) itself is the 5th, fixed point; these four step around from the random root
   // TOP ROW sits at the root itself.
   const _topH = rootHue, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
