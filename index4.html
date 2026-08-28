@@ -713,6 +713,10 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .step-cell.soft::after { background: var(--track-color, var(--text)); opacity: 0.4; }
 .step-cell.on::after   { background: var(--track-color, var(--text)); opacity: 1; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
+/* Hides only genuinely empty cells' resting marker — .soft/.on (actual
+   notes) are untouched, and :not(.playing) keeps the playhead sweep
+   visible as it passes over empty steps even with this on. */
+body.empty-cells-invisible .step-cell:not(.soft):not(.on):not(.playing)::after { opacity: 0 !important; }
 /* Two fixed gray levels, not a per-track filter — a grayscale() filter
    preserves each original color's own luminance, so different track
    colors were converting to genuinely different shades of gray instead
@@ -836,7 +840,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 20:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 20:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -959,6 +963,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
          intact elsewhere for this reason, in case it's reinstated later. -->
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="emptyCellsInvisibleToggle" onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
@@ -13689,6 +13696,12 @@ function setDevNotesGrayscale(on) {
   document.body.classList.toggle('notes-grayscale', on);
   const otherCb = document.getElementById('notesGrayscaleEnable');
   if (otherCb) otherCb.checked = on;
+}
+// NOTE MARKERS INVISIBLE — hides only empty cells' resting marker; actual
+// notes and the playhead sweep over empty steps stay fully visible (see
+// the :not(.soft):not(.on):not(.playing) scoping on the CSS rule itself).
+function setEmptyCellsInvisible(on) {
+  document.body.classList.toggle('empty-cells-invisible', !!on);
 }
 // TOP ROW BLACK — pins the top-row buttons' resting background to black
 // via a CSS override class, without touching anything else about them
