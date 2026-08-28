@@ -457,6 +457,8 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on:not(.lock-btn) {
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
 }
+body.no-fx-reverb-pulse .fx-btn.on, body.no-fx-reverb-pulse .fx-btn.blast-on, body.no-fx-reverb-pulse .shift-btn.right.on { animation: none; }
+body.top-row-black .btn { background: #000; }
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
@@ -834,7 +836,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 17:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 17:55</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -957,6 +959,12 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
          intact elsewhere for this reason, in case it's reinstated later. -->
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="fxReverbPulseToggle" checked onchange="setFxReverbPulse(this.checked)" style="width:14px;height:14px;cursor:pointer;">FX/REVERB PULSE
     </label>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -13553,6 +13561,22 @@ function setDevNotesGrayscale(on) {
   document.body.classList.toggle('notes-grayscale', on);
   const otherCb = document.getElementById('notesGrayscaleEnable');
   if (otherCb) otherCb.checked = on;
+}
+// TOP ROW BLACK — pins the top-row buttons' resting background to black
+// via a CSS override class, without touching anything else about them
+// (text color, hover/active states, sizing, or the underlying color-wheel
+// values those states still derive from).
+function setTopRowBlack(on) {
+  document.body.classList.toggle('top-row-black', !!on);
+}
+// FX/REVERB PULSE — the scale+brightness pulse (engaged-btn-pulse) FX and
+// REVERB already share when engaged. Checked by default since pulsing is
+// the existing behavior; unchecking just removes the animation via a CSS
+// override, leaving the color swap when engaged untouched. Scoped to only
+// FX/REVERB specifically — the lock/sweep button uses the same animation
+// elsewhere and isn't affected by this toggle.
+function setFxReverbPulse(on) {
+  document.body.classList.toggle('no-fx-reverb-pulse', !on);
 }
 window._devRandOffsetEnabled = false;
 function setDevRandOffset(on) {
