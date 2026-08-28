@@ -432,7 +432,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    new BEAT type, not new notes) even though it shares the .rand-btn
    class. Fixed 32px width/height box above is untouched either way. */
 .track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) { font-size: calc(1.7875rem * var(--track-btn-font-scale, 1)); font-weight: 400; }
-.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-2px); }
+.track-ctrl-icon-btn.rand-btn:not(#beatCtrlRand) .glyph { display: inline-block; transform: translateY(-1.5px); }
 /* Lock (L) button — half the width of the other track-ctrl-icon-btns.
    Font-size is inherited from .track-ctrl-icon-btn above and untouched
    here, so the "L" stays the same size while its box shrinks around it.
@@ -517,7 +517,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    button's box/layout/position is completely untouched.
    */
 .shift-btn:not(.right) { font-size: calc(1rem + 0.5em); }
-.shift-btn .glyph { display: inline-block; transform: translateY(-2px); }
+.shift-btn .glyph { display: inline-block; transform: translateY(-1.25px); }
 /* Track-row shift buttons ("<"/N/">") scale 5% smaller along with the
    rest of the per-track buttons — more specific than the generic
    .shift-btn rules above so it wins for these without touching the BEAT
@@ -836,7 +836,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 19:50</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 20:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
