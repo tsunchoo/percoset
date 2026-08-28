@@ -840,7 +840,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 20:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 20:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1080,13 +1080,16 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW HIGHLIGHT</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowHighlightColor" value="auto" checked onchange="setTopRowHighlightColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="topRowHighlightColor" value="1" onchange="setTopRowHighlightColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="topRowHighlightColor" value="2" onchange="setTopRowHighlightColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowHighlightColor" value="3" checked onchange="setTopRowHighlightColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+            <input type="radio" name="topRowHighlightColor" value="3" onchange="setTopRowHighlightColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
         </div>
       </div>
@@ -1558,6 +1561,11 @@ function _relLuminance(hex) {
   const lin = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
+function _contrastRatio(hexA, hexB) {
+  const lA = _relLuminance(hexA), lB = _relLuminance(hexB);
+  const lighter = Math.max(lA, lB), darker = Math.min(lA, lB);
+  return (lighter + 0.05) / (darker + 0.05);
+}
 function _contrastText(hex) { return _relLuminance(hex) < 0.5 ? '#ffffff' : '#111111'; }
 function _hslToHex(h, s, l) {
   h = ((h % 360) + 360) % 360 / 360;
@@ -1941,6 +1949,10 @@ function randomizeAppColors() {
   // BACKGROUND: root + 3 steps.
   const bgHue = (rootHue + STEP * 3) % 360;
   _applyBgColor(_hslToHex(bgHue, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
+  // Re-pick the best-contrast highlight now that TOP ROW and all 3
+  // highlights have fresh values — a manual pick (1/2/3) stays exactly
+  // where the user left it and isn't touched here.
+  if (window._topRowHighlightMode === 'auto') _autoPickTopRowHighlight();
 }
 (function() {
   const topPicker = document.getElementById('topColorPicker');
@@ -8889,11 +8901,36 @@ function setVolSliderColor(n) {
 // onto one chosen highlight, applied via --top-row-highlight-color/-text
 // custom properties that every one of those rules now reads from instead
 // of a hardcoded highlight variable.
+window._topRowHighlightMode = 'auto';
 function setTopRowHighlightColor(n) {
+  window._topRowHighlightMode = n;
+  if (n === 'auto') { _autoPickTopRowHighlight(); return; }
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
   const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111' };
   document.documentElement.style.setProperty('--top-row-highlight-color', map[n] || map[3]);
   document.documentElement.style.setProperty('--top-row-highlight-text', textMap[n] || textMap[3]);
+}
+// AUTO (BEST CONTRAST) — picks whichever of the 3 highlights has the
+// highest contrast ratio against the top-row buttons' own background
+// (--neutral-top), recomputed fresh every time colors are randomized
+// (hooked at the end of randomizeAppColors() below) instead of staying on
+// a fixed choice that can land close to the button color by chance. Just
+// three luminance calculations done once per randomize — negligible cost.
+function _autoPickTopRowHighlight() {
+  const cs = getComputedStyle(document.documentElement);
+  const bg = cs.getPropertyValue('--neutral-top').trim() || '#555555';
+  const candidates = [
+    { hex: cs.getPropertyValue('--playhead-color').trim() || '#f8ff00', text: 'var(--highlight-text, #000)' },
+    { hex: cs.getPropertyValue('--highlight2-color').trim() || '#0078ff', text: 'var(--highlight2-text, #fff)' },
+    { hex: cs.getPropertyValue('--highlight3-color').trim() || '#adff00', text: '#111' },
+  ];
+  let best = candidates[0], bestRatio = -1;
+  for (const c of candidates) {
+    const ratio = _contrastRatio(c.hex, bg);
+    if (ratio > bestRatio) { bestRatio = ratio; best = c; }
+  }
+  document.documentElement.style.setProperty('--top-row-highlight-color', best.hex);
+  document.documentElement.style.setProperty('--top-row-highlight-text', best.text);
 }
 // TRACK BUTTONS COLOR (FX/R/</+/SOLO) — the per-track control buttons
 // (excluding the name button, which has its own separate instrument/
@@ -12523,7 +12560,7 @@ setTrackPulseMode('solid');
 setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
 setTrackTextPulseColor(1); // HIGHLIGHT is the default text pulse color
 setVolSliderColor(2); // HIGHLIGHT 2 is the default vol slider color
-setTopRowHighlightColor(3); // HIGHLIGHT 3 is the default — matches what most of these states already used before this was a shared, unified setting
+setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — picks whichever highlight actually reads clearly against the button color, rather than a fixed choice that could land close to it
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
@@ -13852,8 +13889,8 @@ function fullReset() {
   const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="color"]'); if (_tnmRadio) _tnmRadio.checked = true;
   setVolSliderColor(2);
   const _vscRadio = document.querySelector('input[name="volSliderColor"][value="2"]'); if (_vscRadio) _vscRadio.checked = true;
-  setTopRowHighlightColor(3);
-  const _trhRadio = document.querySelector('input[name="topRowHighlightColor"][value="3"]'); if (_trhRadio) _trhRadio.checked = true;
+  setTopRowHighlightColor('auto');
+  const _trhRadio = document.querySelector('input[name="topRowHighlightColor"][value="auto"]'); if (_trhRadio) _trhRadio.checked = true;
   setTrackCtrlBtnColor('top');
   const _tcbcRadio = document.querySelector('input[name="trackCtrlBtnColor"][value="top"]'); if (_tcbcRadio) _tcbcRadio.checked = true;
   const _rbReset = document.getElementById('randBtn');
