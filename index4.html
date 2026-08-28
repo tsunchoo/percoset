@@ -82,7 +82,13 @@ header h1 { font-family: 'DM Sans', sans-serif; font-size: 1.63925rem; line-heig
   66%  { color: var(--highlight2-color, #0078ff); }
   100% { color: var(--neutral-top, #555); }
 }
-body.seq-playing:not(.logo-note-jump-mode) #siFiTitle { animation: logo-color-cycle 4s linear infinite; }
+@keyframes logo-wobble {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-0.5px); }
+  75% { transform: translateX(0.5px); }
+}
+body.seq-playing:not(.logo-note-jump-mode) #siFiTitle { animation: logo-color-cycle 4s linear infinite, logo-wobble 1.4s ease-in-out infinite; }
+body.seq-playing.logo-note-jump-mode #siFiTitle { animation: logo-wobble 1.4s ease-in-out infinite; }
 header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; }
 #cmapOverlay {
   display: block;
@@ -801,7 +807,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 16:45</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 17:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
