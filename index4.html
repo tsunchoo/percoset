@@ -426,7 +426,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-name-btn.shifting { background: var(--playhead) !important; color: #fff !important; animation: pulse 0.5s infinite alternate; }
 .track-ctrl-icon-btn {
   width: calc(32px * var(--track-btn-scale, 1)); flex-shrink: 0;
-  background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0)); border: none; color: var(--track-ctrl-btn-text, var(--neutral-track-text, var(--text)));
+  background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0)); border: none; color: #fff;
   font-family: 'DM Sans', sans-serif; font-size: calc(1rem * var(--track-btn-font-scale, 1)); font-weight: 700;
   letter-spacing: 0; text-transform: uppercase; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -452,10 +452,10 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    regardless of source order. */
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
-.fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: var(--track-btn-on-text, #fff); }
-.fx-btn.blast-on { background: var(--track-btn-on-color, var(--playhead)); color: var(--track-btn-on-text, #fff); }
+.fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: #fff; }
+.fx-btn.blast-on { background: var(--track-btn-on-color, var(--playhead)); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
-.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: var(--track-btn-on-text, #111); } /* chrome yellow */
+.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: #fff; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
@@ -506,14 +506,14 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .shift-btn {
   width: 32px; flex-shrink: 0; background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0));
   border: none;
-  color: var(--track-ctrl-btn-text, var(--neutral-track-text, var(--text))); font-family: 'DM Sans', sans-serif;
+  color: #fff; font-family: 'DM Sans', sans-serif;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   font-size: 1rem; font-weight: 700; transition: opacity 0.1s; padding: 0;
   touch-action: none;
 }
 .shift-btn:active { opacity: 0.4; }
 .shift-btn.on { background: #f17d21; color: #fff; }
-.shift-btn.right.on { background: var(--track-btn-on-color, #0081FE); color: var(--track-btn-on-text, #fff); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.shift-btn.right.on { background: var(--track-btn-on-color, #0081FE); color: #fff; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* The "<" offset button specifically (not the "R" reverb toggle, which
    also uses .shift-btn but always carries .right) — bigger text, same
    button size. The larger size exaggerates how low the glyph sits within
@@ -860,7 +860,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 23:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 23:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
