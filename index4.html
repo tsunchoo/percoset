@@ -454,7 +454,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: #fff; }
-.fx-btn.blast-on { background: var(--track-btn-on-color, var(--playhead)); color: #fff; }
+.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: #fff; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
@@ -861,7 +861,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 21:53</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 21:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9177,6 +9177,8 @@ function setTrackBtnOnColor(n) {
   const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111', top: 'var(--neutral-top-text, #fff)' };
   document.documentElement.style.setProperty('--track-btn-on-color', map[n] || map.top);
   document.documentElement.style.setProperty('--track-btn-on-text', textMap[n] || textMap.top);
+  const resolvedHex = getComputedStyle(document.documentElement).getPropertyValue('--track-btn-on-color').trim();
+  _applyBlastColorFrom(resolvedHex);
 }
 // AUTO (BEST CONTRAST) — checked against the button's own resting
 // background (--track-ctrl-btn-color), since the point of an "on" color
@@ -9184,6 +9186,22 @@ function setTrackBtnOnColor(n) {
 // contrast against the page in general. Considers all 4 sources
 // (HIGHLIGHT/2/3 and TOP ROW BUTTON COLOR), same _ensureContrast fallback
 // as the other two auto-pickers.
+// FX 2 (BLAST) gets its own, more extreme color derived from whatever
+// TRACK BUTTON ON color is chosen — BLAST is the harder/crunchier of the
+// two FX levels, so it needs to visually read as more intense than FX 1,
+// not just share its color. Rotated further around the wheel and
+// lightened more (clamped so it can't wash all the way out to white).
+function _deriveBlastColor(baseHex) {
+  const [h, s, l] = _hexToHsl(baseHex);
+  const newHue = (h + 55) % 360;
+  const newLight = Math.min(0.85, l + 0.22);
+  return _hslToHex(newHue, s, newLight);
+}
+function _applyBlastColorFrom(onColorHex) {
+  const blastHex = _deriveBlastColor(onColorHex);
+  document.documentElement.style.setProperty('--track-btn-blast-color', blastHex);
+  document.documentElement.style.setProperty('--track-btn-blast-text', _contrastText(blastHex));
+}
 function _autoPickTrackBtnOnColor() {
   const cs = getComputedStyle(document.documentElement);
   const bg = cs.getPropertyValue('--track-ctrl-btn-color').trim() || cs.getPropertyValue('--neutral-track').trim() || '#b0b0b0';
@@ -9201,6 +9219,7 @@ function _autoPickTrackBtnOnColor() {
   const finalHex = _ensureContrast(best, bg);
   document.documentElement.style.setProperty('--track-btn-on-color', finalHex);
   document.documentElement.style.setProperty('--track-btn-on-text', _contrastText(finalHex));
+  _applyBlastColorFrom(finalHex);
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
