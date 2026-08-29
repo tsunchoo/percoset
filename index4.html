@@ -23,6 +23,7 @@
   --track-btn-scale: 0.9025; /* per-track button box size (width/height) — 0.95 * 0.95, two successive 5% reductions. Text is deliberately NOT scaled by this — see --track-btn-font-scale below, frozen at the first round's value so glyphs/labels stay exactly the size they already are */
   --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
+  --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 80%, black); /* pressed/engaged state for every top-row button — a slightly darker version of the button's own resting color, replacing the old separate highlight-color system */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -218,7 +219,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: var(--top-row-btn-height); flex-shrink: 0; white-space: nowrap;
   touch-action: manipulation;
 }
-.btn.active { background: var(--neutral-top, #555); color: #fff; }
+.btn.active { background: var(--top-row-pressed-bg); color: #fff; }
 /* NEW/AUTO's label is now a single "+" for both states (color/pulse
    already carries the on/off distinction) — sized up well past the base
    .btn font-size so it reads with the same visual weight the word used
@@ -231,12 +232,12 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #scratchBtn { font-size: 1.08rem; }
 /* All glyphs are always HIGHLIGHT-3 colored — only which letter is bold
    changes as RECALL toggles between the two patterns. */
-#scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: var(--top-row-highlight-color, #adff00); }
+#scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: #fff; }
 /* flashBtnOrange('scratchBtn') sets color on the outer button, but these
    spans have their own explicit color rules above, which take precedence
    over anything set on the parent — so that flash was never actually
    visible on the "A"/"B" text itself. This class overrides it directly. */
-#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: var(--top-row-highlight-color, #adff00) !important; }
+#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: #fff !important; }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; font-size: 1.23rem; }
 #scratchBtnA:not(.ab-current), #scratchBtnB:not(.ab-current) { font-size: 1.005rem; }
@@ -258,7 +259,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    stays there permanently (not a pulse that reverts) — same trigger
    applies whether it's a single press or entering AUTO mode. */
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
-#playBtn.playing { background: var(--neutral-top, #555); }
+#playBtn.playing { background: var(--top-row-pressed-bg); }
 #playBtn { position: relative; }
 #saveBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
@@ -285,7 +286,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .btn.btn-flash-blue:active { opacity: 1; }
 #clearBtn.active:active { opacity: 1; } /* same reasoning as btn-flash-blue above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey for the whole time it's actually held */
 
-#beatBtn.active:not(.beat-auto-active) { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
+#beatBtn.active:not(.beat-auto-active) { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
 #beatBtn.active:not(.beat-auto-active):active { opacity: 1; } /* same reasoning as #clearBtn.active:active above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey while actually held */
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
 @keyframes beat-text-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
@@ -329,7 +330,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   touch-action: manipulation;
 }
 .beat-type-item.current, .beat-type-item.drag-hover { background: #111; color: #adff00; }
-#beatBtn.menu-open { background: var(--neutral-top, #555) !important; }
+#beatBtn.menu-open { background: var(--top-row-pressed-bg) !important; }
 #beatBtn.menu-open:active { opacity: 1; } /* same reasoning as the other two black-on-hold fixes above */
 #turboBtn.boost-on { animation: boost-red 0.5s infinite alternate; }
 .rec-mode-btn { width:100%; background:#ddd; color:#111; border:none; font-family:'DM Sans',sans-serif; font-size:0.68rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:12px 0; cursor:pointer; }
@@ -348,7 +349,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .wild-toggle input:checked + .wild-toggle-slider { background: var(--playhead-color, #f8ff00); }
 .wild-toggle input:checked + .wild-toggle-slider::before { transform: translateX(20px); }
 @keyframes boost-red { from { background: #e0142c; color: #fff; } to { background: #7a0016; color: #ffb3bb; } }
-#saveBtn.rec-active { background: var(--neutral-top, #555); }
+#saveBtn.rec-active { background: var(--top-row-pressed-bg); }
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
 #randomizeColorsBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
 @keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.85); } 100% { transform: scale(1); } }
@@ -364,7 +365,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
 @keyframes rec-icon-pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.1); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
-.btn-flash-blue { background: #0b5394 !important; color: var(--top-row-highlight-color, #adff00) !important; border: none !important; transition: none !important; }
+.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: #fff !important; border: none !important; transition: none !important; }
 .rand-overlay-btn {
   font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
@@ -468,7 +469,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--top-row-highlight-color, #0078ff) !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--top-row-pressed-bg) !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
 /* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
@@ -476,7 +477,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    color PLAY and BEAT use for their own active states, instead of
    changing with the pulse. */
 /* #randBtn.pulsing { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); } */
-#randBtn.pulsing { background: var(--neutral-top, #555); color: var(--top-row-highlight-color, #adff00); }
+#randBtn.pulsing { background: var(--top-row-pressed-bg); color: #fff; }
 /* rand-pulse and beat-auto-color-only alternate between HIGHLIGHT and
    HIGHLIGHT 2 — the two intentionally stay separate variables so this
    two-color flash keeps working; unifying them would flatten it. */
@@ -491,16 +492,16 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    shorthand replaces its whole animation list per rule, it doesn't merge
    across separate rules, so without this explicit combined rule whichever
    one happened to win the cascade would silently drop the other. */
-@keyframes beat-auto-color-only { from { background: var(--top-row-highlight-color, #0078ff); color: var(--top-row-highlight-text, #fff); } to { background: var(--top-row-highlight-color, #f8ff00); color: var(--top-row-highlight-text, #000); } }
+@keyframes beat-auto-color-only { from { background: var(--neutral-top, #555); color: #fff; } to { background: var(--top-row-pressed-bg); color: #fff; } }
 #beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 #beatBtn.btn-beat-pulse.beat-auto-active { animation: top-row-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
-@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--top-row-highlight-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
+@keyframes rand-pending-fast-pulse { 0% { background: var(--neutral-top, #555); transform: scale(1); } 50% { background: var(--top-row-pressed-bg); transform: scale(1.06); } 100% { background: var(--neutral-top, #555); transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
-#randBtn.btn-flash-blue { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
-#clearBtn.active { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
-#scratchBtn.active { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
+#randBtn.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
+#clearBtn.active { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
+#scratchBtn.active { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
 .shift-btn {
@@ -533,7 +534,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-font-scale, 1)); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: var(--neutral-top, #555); border: none;
+  background: var(--top-row-pressed-bg); border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
@@ -730,7 +731,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    .soft (it's its own note-value class, val===3), since without that
    exclusion an actual 32nd-note split would incorrectly get treated as
    empty here too. */
-.step-cell:not(.soft):not(.on):not(.split32)::after { border: 4px solid color-mix(in srgb, var(--empty-cell-border-color, #ccc) 50%, transparent); }
+.step-cell:not(.soft):not(.on):not(.split32)::after { border: 3px solid color-mix(in srgb, var(--empty-cell-border-color, #ccc) 50%, transparent); }
 body.empty-cell-bg-transparent .step-cell:not(.soft):not(.on):not(.split32)::after { background: transparent !important; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
 /* Hides only genuinely empty cells' resting marker — .soft/.on (actual
@@ -860,7 +861,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 21:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 21:38</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1059,7 +1060,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <style>#emptyCellBorderColorPicker::-webkit-color-swatch-wrapper{padding:0;}#emptyCellBorderColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#emptyCellBorderColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="checkbox" id="emptyCellBgTransparentToggle" onchange="setEmptyCellBgTransparent(this.checked)" style="width:14px;height:14px;cursor:pointer;">EMPTY CELL BG TRANSPARENT
+        <input type="checkbox" id="emptyCellBgTransparentToggle" checked onchange="setEmptyCellBgTransparent(this.checked)" style="width:14px;height:14px;cursor:pointer;">EMPTY CELL BG TRANSPARENT
       </label>
       <!-- BG = SONG NAME COLOR checkbox removed from the UI per direct
            request — setBgFollowsBarColor and its applyBarColor() hook are
@@ -1109,23 +1110,12 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW HIGHLIGHT</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowHighlightColor" value="auto" checked onchange="setTopRowHighlightColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowHighlightColor" value="1" onchange="setTopRowHighlightColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowHighlightColor" value="2" onchange="setTopRowHighlightColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowHighlightColor" value="3" onchange="setTopRowHighlightColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-        </div>
-      </div>
+      <!-- TOP ROW HIGHLIGHT picker removed from the UI — the top-row
+           buttons' pressed/engaged state is now a simple darker version
+           of the button's own resting color (--top-row-pressed-bg),
+           replacing the separate highlight-color system this picker
+           controlled. setTopRowHighlightColor()/_autoPickTopRowHighlight()
+           are kept intact for this reason. -->
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS COLOR (FX/R/&lt;/+/SOLO)</div>
@@ -2374,14 +2364,6 @@ async function loadSamples() {
   await new Promise(r => setTimeout(r, 1000));
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('status').textContent = '';
-  // The startup pattern (a deferred randAll() call, so it never delays this
-  // screen's own first paint) lands well before this point, but it's a
-  // direct call rather than going through the scheduler's own "pending
-  // RAND lands on a bar boundary" path — which is what actually triggers
-  // this cascade for a normal + press. It also couldn't have played
-  // earlier regardless, since ctx doesn't exist until the user's tap gets
-  // us here in the first place.
-  if (ctx) scheduleRandTransition(); // matches exactly what a normal + press does while stopped — playRandReleaseSweep alone was just the noise sweep, missing the actual per-track instrument flourish
 }
 
 
@@ -9027,12 +9009,11 @@ function flashBtnOrange(id) {
   const btn = document.getElementById(id); if (!btn) return;
   // Shared by both top-row buttons (scratchBtn) and non-top-row ones
   // (beatCtrlShift, inside the BEAT overlay) — only the top-row ones
-  // should follow the new unified TOP ROW HIGHLIGHT picker, and only the
-  // top-row ones should keep their resting background instead of going
-  // black — beatCtrlShift isn't in scope for either.
+  // get the new unified "slightly darker when pressed" treatment;
+  // beatCtrlShift isn't in scope for that.
   const isTopRowBtn = ['randBtn','clearBtn','playBtn','beatBtn','scratchBtn','saveBtn'].includes(id);
-  btn.style.background = isTopRowBtn ? (getComputedStyle(document.documentElement).getPropertyValue('--neutral-top').trim() || '#555') : '#111';
-  btn.style.color = isTopRowBtn ? _topRowHighlightColor() : _highlight3Color();
+  btn.style.background = isTopRowBtn ? (getComputedStyle(document.documentElement).getPropertyValue('--top-row-pressed-bg').trim() || '#333') : '#111';
+  btn.style.color = isTopRowBtn ? '#fff' : _highlight3Color();
   setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
 }
 function _flashScratchBtnText() {
@@ -9044,8 +9025,8 @@ function setBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
   b.classList.add('btn-flash-blue');
   if (id === 'randBtn') {
-    b.style.setProperty('background', getComputedStyle(document.documentElement).getPropertyValue('--neutral-top').trim() || '#555', 'important');
-    b.style.setProperty('color', _topRowHighlightColor(), 'important');
+    b.style.setProperty('background', getComputedStyle(document.documentElement).getPropertyValue('--top-row-pressed-bg').trim() || '#333', 'important');
+    b.style.setProperty('color', '#fff', 'important');
   }
 }
 function clearBtnBlueHeld(id) {
@@ -12840,6 +12821,7 @@ setVolSliderColor('auto'); // AUTO (best contrast) is the default
 setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — picks whichever highlight actually reads clearly against the button color, rather than a fixed choice that could land close to it
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
 setTrackBtnOnColor('auto'); // AUTO (best contrast) is the default — checked against the button's own resting color, so ON always reads as clearly different from OFF
+setEmptyCellBgTransparent(true); // EMPTY CELL BG TRANSPARENT is checked by default
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
