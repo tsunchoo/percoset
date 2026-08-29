@@ -730,7 +730,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    .soft (it's its own note-value class, val===3), since without that
    exclusion an actual 32nd-note split would incorrectly get treated as
    empty here too. */
-.step-cell:not(.soft):not(.on):not(.split32)::after { border: 1px solid var(--empty-cell-border-color, #ccc); }
+.step-cell:not(.soft):not(.on):not(.split32)::after { border: 4px solid color-mix(in srgb, var(--empty-cell-border-color, #ccc) 50%, transparent); }
 body.empty-cell-bg-transparent .step-cell:not(.soft):not(.on):not(.split32)::after { background: transparent !important; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
 /* Hides only genuinely empty cells' resting marker — .soft/.on (actual
@@ -860,7 +860,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 23:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Aug26 00:25</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7507,12 +7507,25 @@ function _pressPulse(id) {
   b.classList.remove('press-pulse'); void b.offsetWidth; b.classList.add('press-pulse');
 }
 
+let _beatIncludedInSolo = false; // set when BEAT is explicitly clicked while solo is active — see toggleBeat()/toggleSolo()
 function toggleBeat() {
   if (ctx) ctx.resume();
   const btn = document.getElementById('beatBtn');
+  const soloActive = trackSolo.some(x => x);
+  // BEAT is already on but currently suppressed by an active solo (not
+  // yet explicitly included) — a click here means "add it to the mix,"
+  // not "turn it off," since it's already conceptually on underneath.
+  if ((beatPlaying || _beatPending) && soloActive && !_beatIncludedInSolo) {
+    _beatIncludedInSolo = true;
+    _beatSoloMuted = false;
+    _applyBeatVolWithDuck();
+    btn.classList.add('active');
+    return;
+  }
   if (beatPlaying || _beatPending) {
     // Turn off immediately
     beatPlaying = false; _beatPending = false;
+    _beatIncludedInSolo = false; // no longer relevant once actually off
     btn.classList.remove('active');
     updateBeatPulse();
   } else {
@@ -7526,6 +7539,13 @@ function toggleBeat() {
       beatPlaying = true;
       btn.classList.add('active');
       updateBeatPulse();
+    }
+    // Turning BEAT on while solo is active also counts as deliberately
+    // including it — same "clicked while solo is on" reasoning as above.
+    if (soloActive) {
+      _beatIncludedInSolo = true;
+      _beatSoloMuted = false;
+      _applyBeatVolWithDuck();
     }
   }
 }
@@ -7958,8 +7978,13 @@ function _clearAllSolo() {
     for (let t = 0; t < NUM_TRACKS; t++) trackMuted[t] = _preSoloMuteState[t];
     _preSoloMuteState = null;
   }
+  _beatIncludedInSolo = false;
   _beatSoloMuted = false;
   _applyBeatVolWithDuck();
+  if (beatPlaying || _beatPending) {
+    const bb = document.getElementById('beatBtn');
+    if (bb) bb.classList.add('active');
+  }
   for (let t = 0; t < NUM_TRACKS; t++) {
     updateTrackMute(t);
     const sb = document.getElementById(`solobtn-${t}`);
@@ -7979,7 +8004,23 @@ function toggleSolo(tr) {
     for (let t = 0; t < NUM_TRACKS; t++) trackMuted[t] = _preSoloMuteState[t];
     _preSoloMuteState = null;
   }
-  _beatSoloMuted = isAnySoloed;
+  // BEAT — silenced (and visually reverted to its non-active look) while
+  // solo is engaged, unless the user has explicitly clicked it to add it
+  // to the solo mix (_beatIncludedInSolo, set by toggleBeat()). Restored
+  // to its normal active look the moment the last solo disengages.
+  if (!wasAnySoloed && isAnySoloed) {
+    if ((beatPlaying || _beatPending) && !_beatIncludedInSolo) {
+      const bb = document.getElementById('beatBtn');
+      if (bb) bb.classList.remove('active');
+    }
+  } else if (wasAnySoloed && !isAnySoloed) {
+    _beatIncludedInSolo = false;
+    if (beatPlaying || _beatPending) {
+      const bb = document.getElementById('beatBtn');
+      if (bb) bb.classList.add('active');
+    }
+  }
+  _beatSoloMuted = isAnySoloed && !_beatIncludedInSolo;
   _applyBeatVolWithDuck();
   for (let t = 0; t < NUM_TRACKS; t++) {
     updateTrackMute(t);
@@ -14126,6 +14167,7 @@ function fullReset() {
   // solo that was active when reset was pressed.
   for (let t = 0; t < NUM_TRACKS; t++) { trackSolo[t] = false; }
   _preSoloMuteState = null;
+  _beatIncludedInSolo = false;
   _beatSoloMuted = false;
   _applyBeatVolWithDuck(); // don't leave BEAT stuck silenced from a solo that was active when reset was pressed
 
