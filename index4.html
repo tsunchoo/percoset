@@ -672,6 +672,13 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 /* ── Sequencer grid (middle) ── */
 .seq-wrap { width: 100%; max-width: 960px; margin-top: 4px; margin-bottom: 0; display: flex; flex-direction: column; gap: clamp(4px, 2vw, 10px); }
 .track-wrap { display: flex; flex-direction: column; gap: 4px; }
+/* Empty tracks (no notes at all) sort to the bottom via the order style
+   _updateEmptyTrackVisuals() sets in JS, and hide everything except the
+   name button — visibility:hidden rather than display:none, so the row
+   doesn't collapse and cause the rest of the layout to jump every time a
+   track empties or fills back in. */
+.track-wrap.track-empty .track-ctrl-row > *:not(.track-name-btn) { visibility: hidden; }
+.track-wrap.track-empty .track-row { visibility: hidden; }
 .track-row {
   display: flex; align-items: stretch;
 }
@@ -846,7 +853,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 21:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 22:08</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7718,7 +7725,7 @@ function buildUI() {
   // Sequencer rows — each track has: [ctrl-row] + [step-row]
   const seqWrap = document.getElementById('seqWrap'); seqWrap.innerHTML = '';
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    const trackWrap = document.createElement('div'); trackWrap.className = 'track-wrap';
+    const trackWrap = document.createElement('div'); trackWrap.className = 'track-wrap'; trackWrap.id = `trackwrap-${tr}`;
 
     // ── Control row ──
     const ctrlRow = document.createElement('div'); ctrlRow.className = 'track-ctrl-row'; ctrlRow.id = `ctrlrow-${tr}`;
@@ -7887,6 +7894,7 @@ function buildUI() {
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     setTrackNameColor(tr, trackInstruments[tr]);
   }
+  _updateEmptyTrackVisuals(); // correct sort/visibility from the very first render, not just after the first redrawTrackCells() call
 
   buildSlotBar();
 }
@@ -7905,6 +7913,24 @@ function updateTrackMute(tr) {
 // before reaching for SOLO). BEAT isn't one of the NUM_TRACKS tracks this
 // loop reaches, but it gets silenced right alongside them below — SOLO
 // means "only this," and BEAT isn't part of that selection either.
+// Shared by toggleSolo (un-soloing the last track) and a fresh whole-
+// pattern generation (RAND/WILD) — solo state from the old pattern isn't
+// meaningful once the tracks underneath it are replaced entirely.
+function _clearAllSolo() {
+  if (!trackSolo.some(x => x)) return; // nothing soloed, nothing to do
+  for (let t = 0; t < NUM_TRACKS; t++) trackSolo[t] = false;
+  if (_preSoloMuteState) {
+    for (let t = 0; t < NUM_TRACKS; t++) trackMuted[t] = _preSoloMuteState[t];
+    _preSoloMuteState = null;
+  }
+  _beatSoloMuted = false;
+  _applyBeatVolWithDuck();
+  for (let t = 0; t < NUM_TRACKS; t++) {
+    updateTrackMute(t);
+    const sb = document.getElementById(`solobtn-${t}`);
+    if (sb) sb.classList.remove('solo-on');
+  }
+}
 function toggleSolo(tr) {
   const wasAnySoloed = trackSolo.some(x => x);
   trackSolo[tr] = !trackSolo[tr];
@@ -7981,6 +8007,23 @@ function redrawTrackCells(tr) {
     // doing anything — recomputed from trackInstruments each time so it
     // comes back correctly the moment notes are added again.
     tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : 'EMPTY';
+  }
+  _updateEmptyTrackVisuals();
+}
+// Empty tracks always sort to the bottom, and everything but their name
+// button hides (see .track-wrap.track-empty in the stylesheet). Checks
+// all NUM_TRACKS every time rather than just the one track that changed,
+// since one track's emptiness flipping can shift where every other
+// already-empty track should sit relative to it — cheap (a handful of
+// .some() checks plus a style write each), so doing this on every redraw
+// rather than trying to track it incrementally is simplest and safest.
+function _updateEmptyTrackVisuals() {
+  for (let t = 0; t < NUM_TRACKS; t++) {
+    const wrap = document.getElementById(`trackwrap-${t}`);
+    if (!wrap) continue;
+    const isEmpty = !grid[t].some(v => v > 0);
+    wrap.classList.toggle('track-empty', isEmpty);
+    wrap.style.order = isEmpty ? (100 + t) : t;
   }
 }
 function previewNote(tr, isAccent) {
@@ -10393,6 +10436,7 @@ function tempoNoteFactor() {
 }
 function randAll(mode, opts) {
   opts = opts || {};
+  _clearAllSolo(); // a new pattern replaces every track — solo state from the old one isn't meaningful anymore
   // WILD mode — colors randomize right along with the pattern every time
   // a whole new one gets generated via this function (the top-row + button,
   // both a single press and its held auto-mode loop). Skipped exactly once
@@ -11577,6 +11621,7 @@ function snapshotState() {
 }
 function restoreState(snap, opts) {
   opts = opts || {};
+  _clearAllSolo(); // a restored pattern (RECALL, save slots, LOAD TAPE) replaces every track — same reasoning as randAll()
   globalScaleRoot = snap.globalScaleRoot ?? null;
   if (snap.currentScaleName) { currentScaleName = snap.currentScaleName; PENTA_MINOR = SCALES[currentScaleName] || PENTA_MINOR; }
   if (snap.currentScaleName) { currentScaleName = snap.currentScaleName; PENTA_MINOR = SCALES[currentScaleName] || PENTA_MINOR; }
