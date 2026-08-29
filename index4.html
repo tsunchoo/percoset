@@ -725,6 +725,13 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 }
 .step-cell.soft::after { background: var(--track-color, var(--text)); opacity: 0.4; }
 .step-cell.on::after   { background: var(--track-color, var(--text)); opacity: 1; }
+/* Empty cell marker gets a light border of its own, separate from its
+   fill color — .split32 is excluded even though it has neither .on nor
+   .soft (it's its own note-value class, val===3), since without that
+   exclusion an actual 32nd-note split would incorrectly get treated as
+   empty here too. */
+.step-cell:not(.soft):not(.on):not(.split32)::after { border: 1px solid var(--empty-cell-border-color, #ccc); }
+body.empty-cell-bg-transparent .step-cell:not(.soft):not(.on):not(.split32)::after { background: transparent !important; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
 /* Hides only genuinely empty cells' resting marker — .soft/.on (actual
    notes) are untouched, and :not(.playing) keeps the playhead sweep
@@ -853,7 +860,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 22:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 23:08</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1044,6 +1051,16 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <input type="color" id="bgColorPicker" value="#f5f0e8" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
         <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">EMPTY CELL BORDER</div>
+        </div>
+        <input type="color" id="emptyCellBorderColorPicker" value="#cccccc" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+        <style>#emptyCellBorderColorPicker::-webkit-color-swatch-wrapper{padding:0;}#emptyCellBorderColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#emptyCellBorderColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="emptyCellBgTransparentToggle" onchange="setEmptyCellBgTransparent(this.checked)" style="width:14px;height:14px;cursor:pointer;">EMPTY CELL BG TRANSPARENT
+      </label>
       <!-- BG = SONG NAME COLOR checkbox removed from the UI per direct
            request — setBgFollowsBarColor and its applyBarColor() hook are
            kept intact elsewhere for this reason. -->
@@ -2030,6 +2047,10 @@ function randomizeAppColors() {
   if (highlight3Picker) highlight3Picker.addEventListener('input', () => _applyHighlight3Color(highlight3Picker.value));
   const bgPicker = document.getElementById('bgColorPicker');
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
+  const emptyCellBorderPicker = document.getElementById('emptyCellBorderColorPicker');
+  if (emptyCellBorderPicker) emptyCellBorderPicker.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--empty-cell-border-color', emptyCellBorderPicker.value);
+  });
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => {
     // Guards against a ghost-click landing here right as settings opens —
@@ -13915,6 +13936,9 @@ function setDevNotesGrayscale(on) {
   document.body.classList.toggle('notes-grayscale', on);
   const otherCb = document.getElementById('notesGrayscaleEnable');
   if (otherCb) otherCb.checked = on;
+}
+function setEmptyCellBgTransparent(on) {
+  document.body.classList.toggle('empty-cell-bg-transparent', !!on);
 }
 // NOTE MARKERS INVISIBLE — hides only empty cells' resting marker; actual
 // notes and the playhead sweep over empty steps stay fully visible (see
