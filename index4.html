@@ -454,7 +454,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: #fff; }
-.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: #fff; }
+.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: #fff; font-size: calc(2rem * var(--track-btn-font-scale, 1)); overflow: hidden; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: #fff; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
@@ -861,7 +861,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 21:58</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 22:05</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -986,7 +986,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="emptyCellsInvisibleToggle" onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
+      <input type="checkbox" id="emptyCellsInvisibleToggle" checked onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
@@ -9193,8 +9193,8 @@ function setTrackBtnOnColor(n) {
 // lightened more (clamped so it can't wash all the way out to white).
 function _deriveBlastColor(baseHex) {
   const [h, s, l] = _hexToHsl(baseHex);
-  const newHue = (h + 55) % 360;
-  const newLight = Math.min(0.85, l + 0.22);
+  const newHue = (h + 130) % 360; // was +55 — still read as too similar, pushed much further around the wheel
+  const newLight = Math.min(0.85, l + 0.3); // was +0.22
   return _hslToHex(newHue, s, newLight);
 }
 function _applyBlastColorFrom(onColorHex) {
@@ -12841,6 +12841,7 @@ setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — pick
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
 setTrackBtnOnColor('auto'); // AUTO (best contrast) is the default — checked against the button's own resting color, so ON always reads as clearly different from OFF
 setEmptyCellBgTransparent(true); // EMPTY CELL BG TRANSPARENT is checked by default
+setEmptyCellsInvisible(true); // NOTE MARKERS INVISIBLE is checked by default
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
