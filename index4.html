@@ -860,7 +860,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 23:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 23:48</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7939,6 +7939,18 @@ function updateTrackMute(tr) {
 // Shared by toggleSolo (un-soloing the last track) and a fresh whole-
 // pattern generation (RAND/WILD) — solo state from the old pattern isn't
 // meaningful once the tracks underneath it are replaced entirely.
+// Shared by every mute-toggle path (mouse tap, touch tap, touch drag
+// start/continue) — while solo is active, manually unmuting a track that
+// isn't already soloed needs to also solo it, or the mute/solo state
+// stops making sense (something audible that solo's own logic would
+// otherwise re-mute the next time it runs).
+function _syncSoloOnUnmute(tr) {
+  if (!trackMuted[tr] && trackSolo.some(x => x) && !trackSolo[tr]) {
+    trackSolo[tr] = true;
+    const sb = document.getElementById(`solobtn-${tr}`);
+    if (sb) sb.classList.add('solo-on');
+  }
+}
 function _clearAllSolo() {
   if (!trackSolo.some(x => x)) return; // nothing soloed, nothing to do
   for (let t = 0; t < NUM_TRACKS; t++) trackSolo[t] = false;
@@ -14351,6 +14363,7 @@ function fullReset() {
       _isDragging = true;
       if (_nameHoldTimer) { clearTimeout(_nameHoldTimer); _nameHoldTimer = null; }
       trackMuted[_nameHoldTr] = !trackMuted[_nameHoldTr];
+      _syncSoloOnUnmute(_nameHoldTr);
       updateTrackMute(_nameHoldTr);
       markModified();
       _dragTargetState = trackMuted[_nameHoldTr];
@@ -14362,6 +14375,7 @@ function fullReset() {
     if (_dragVisited.has(tr)) return;
     _dragVisited.add(tr);
     trackMuted[tr] = _dragTargetState;
+    _syncSoloOnUnmute(tr);
     updateTrackMute(tr);
     markModified();
   }, { passive: true });
@@ -14371,6 +14385,7 @@ function fullReset() {
       // Genuine quick tap, no drag — toggle just this one track.
       clearTimeout(_nameHoldTimer); _nameHoldTimer = null;
       trackMuted[_nameHoldTr] = !trackMuted[_nameHoldTr];
+      _syncSoloOnUnmute(_nameHoldTr);
       updateTrackMute(_nameHoldTr);
       markModified();
     }
@@ -14402,7 +14417,13 @@ function fullReset() {
     if (!btn || !_mouseHoldTimer) return;
     const tr = +btn.dataset.tr;
     clearTimeout(_mouseHoldTimer); _mouseHoldTimer = null;
-    trackMuted[tr] = !trackMuted[tr]; updateTrackMute(tr); markModified();
+    trackMuted[tr] = !trackMuted[tr];
+    // Solo active elsewhere, and this track was just manually unmuted —
+    // unmuted while solo is on should mean "audible," which requires
+    // being part of the solo group too, not just un-muted (otherwise
+    // regular solo logic re-mutes it right back the next time it runs).
+    _syncSoloOnUnmute(tr);
+    updateTrackMute(tr); markModified();
   });
 })();
 // (Name bar's amalgam-sound trigger removed — it was firing alongside the
