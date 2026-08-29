@@ -853,7 +853,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 22:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">27Aug26 22:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7612,6 +7612,7 @@ function setTrackNameColor(tr, key) {
 
 function selectSound(tr, k) {
   const prevKey = trackInstruments[tr];
+  _trackInstrumentTouched[tr] = true; // deliberately picked, even before any notes exist — see _updateEmptyTrackVisuals
   if (trackInstruments[tr] === 'ngate' && k !== 'ngate' && _noiseGateNodes[tr]) {
     try { _noiseGateNodes[tr].src.stop(); } catch(e) {} delete _noiseGateNodes[tr];
   }
@@ -7625,7 +7626,7 @@ function selectSound(tr, k) {
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.add('on');
   }
   if (ctx && trackFx[tr]) setFxActive(tr, trackFx[tr]);
-  const btn = document.getElementById(`tbtn-${tr}`); if (btn) btn.textContent = grid[tr].some(v => v > 0) ? INSTRUMENTS[k].name : 'EMPTY';
+  const btn = document.getElementById(`tbtn-${tr}`); if (btn) btn.textContent = INSTRUMENTS[k].name;
   setTrackNameColor(tr, k);
   const sb = document.getElementById(`swpbtn-${tr}`);
   if (sb) {
@@ -7634,6 +7635,7 @@ function selectSound(tr, k) {
   }
   closeSoundPicker();
   markModified();
+  _updateEmptyTrackVisuals();
 }
 function closeSoundPicker() {
   document.getElementById('soundPicker').classList.remove('visible');
@@ -8006,7 +8008,7 @@ function redrawTrackCells(tr) {
     // than showing an instrument name for a track that isn't actually
     // doing anything — recomputed from trackInstruments each time so it
     // comes back correctly the moment notes are added again.
-    tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : 'EMPTY';
+    tbtn.textContent = INSTRUMENTS[trackInstruments[tr]]?.name || '';
   }
   _updateEmptyTrackVisuals();
 }
@@ -8017,11 +8019,26 @@ function redrawTrackCells(tr) {
 // already-empty track should sit relative to it — cheap (a handful of
 // .some() checks plus a style write each), so doing this on every redraw
 // rather than trying to track it incrementally is simplest and safest.
+// "Empty" means no notes AND no instrument deliberately picked yet
+// (_trackInstrumentTouched) — otherwise picking an instrument before
+// drawing any notes (the completely normal order of operations) left the
+// track sorted to the bottom and out of view, even though it now has a
+// correctly-labeled name button sitting there unseen.
+// If literally every track is empty (a fresh reset), none of them get the
+// empty treatment — de-emphasizing an empty track only makes sense
+// relative to other tracks that actually have something in them. Hiding
+// every row's controls and grid simultaneously left nothing usable on
+// screen right after a reset.
+let _trackInstrumentTouched = new Array(NUM_TRACKS).fill(false);
 function _updateEmptyTrackVisuals() {
+  let anyActive = false;
+  for (let t = 0; t < NUM_TRACKS; t++) {
+    if (grid[t].some(v => v > 0) || _trackInstrumentTouched[t]) { anyActive = true; break; }
+  }
   for (let t = 0; t < NUM_TRACKS; t++) {
     const wrap = document.getElementById(`trackwrap-${t}`);
     if (!wrap) continue;
-    const isEmpty = !grid[t].some(v => v > 0);
+    const isEmpty = anyActive && !grid[t].some(v => v > 0) && !_trackInstrumentTouched[t];
     wrap.classList.toggle('track-empty', isEmpty);
     wrap.style.order = isEmpty ? (100 + t) : t;
   }
@@ -8083,7 +8100,7 @@ function tapStep(tr, s, cell) {
   const hasNotes = grid[tr].some(v => v > 0);
   if (tbtn) {
     tbtn.classList.toggle('has-notes', hasNotes);
-    tbtn.textContent = hasNotes ? (INSTRUMENTS[trackInstruments[tr]]?.name || '') : 'EMPTY';
+    tbtn.textContent = INSTRUMENTS[trackInstruments[tr]]?.name || '';
   }
   if (val > 0 && ctx) previewNote(tr, val === 2);
   markModified();
@@ -10282,6 +10299,7 @@ function fullClear() {
       if (trackGainNodes[tr]) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr], ctx.currentTime, 0.01);
     }
     const tb = document.getElementById(`tbtn-${tr}`);
+    _trackInstrumentTouched[tr] = false; // back to pristine, matching the fresh grid[tr].fill(0) above — same reasoning as fullReset()
     if (tb) { tb.textContent = 'EMPTY'; tb.classList.remove('muted','has-notes','shifting'); setTrackNameColor(tr, trackInstruments[tr]); }
     const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.remove('on');
     const sb = document.getElementById(`swpbtn-${tr}`);
@@ -14095,6 +14113,7 @@ function fullReset() {
     trackChop[tr] = false;
     trackVolume[tr] = defaultVolumes[tr];
     trackInstruments[tr] = defaultInstruments[tr];
+    _trackInstrumentTouched[tr] = false; // back to pristine — matches the fresh grid[tr].fill(0) above, so this track sorts/hides as empty again until touched anew
     trackFx[tr] = { x: 0, y: 0 }; // no longer forced on for track 0 — same default as everyone else now
     _setTrackReverb(tr, false);
     trackPump[tr] = false;
