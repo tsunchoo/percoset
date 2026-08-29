@@ -861,7 +861,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 22:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 22:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1977,22 +1977,23 @@ function randomizeAppColors() {
   // "light-ish" still reads fine. HIGHLIGHT and BACKGROUND get their own
   // contrast-safe text color computed fresh, so they're free to roam the
   // full range.
-  // HIGHLIGHT 3 — the top-row buttons' own highlight/active color (what
-  // RAND/SWEEP/RECALL/BEAT switch to when engaged, not their resting
-  // background) — used to be hardcoded to pure red every time. Now it's a
-  // random hue at that same saturation/lightness red always had (100%
-  // saturated, 50% lightness), so it varies like every other role while
-  // still anchoring the wheel the other colors rotate from. Every
-  // saturation/lightness formula below is exactly what it always was —
-  // only where each role's hue comes from changed.
-  const ANCHOR_HUE = Math.random() * 360, ANCHOR_SAT = 1, ANCHOR_LIGHT = 0.5;
-  _applyHighlight3Color(_hslToHex(ANCHOR_HUE, ANCHOR_SAT, ANCHOR_LIGHT));
-  // Random rotation off the (also random) anchor hue — the shared root
-  // the other four roles step around the wheel from.
-  const rootHue = (ANCHOR_HUE + Math.random() * 360) % 360;
-  const STEP = 72; // 360° / 5 points on the wheel — red (HIGHLIGHT 3) itself is the 5th, fixed point; these four step around from the random root
-  // TOP ROW sits at the root itself.
-  const _topH = rootHue, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
+  // SONG NAME BAR is now the primary anchor — picked first, at a
+  // completely free random hue, with every other role (TOP ROW,
+  // HIGHLIGHT, HIGHLIGHT 2, HIGHLIGHT 3, BACKGROUND) stepping around the
+  // wheel from THAT hue instead. Same "one shared hue + fixed offsets"
+  // structure the whole system already used — only which role sits at
+  // the anchor point changed. HIGHLIGHT 3 used to be its own independent
+  // anchor (fixed saturation/lightness, random hue, no relation to
+  // anything else) — it's now just another offset from the bar like
+  // everyone else, keeping its own saturation/lightness recipe (100%/50%)
+  // unchanged.
+  const barHue = Math.random() * 360;
+  const barSat = 0.5 + Math.random() * 0.3;
+  const barLight = 0.55 + Math.random() * 0.2;
+  applyBarColor(_hslToHex(barHue, barSat, barLight));
+  const STEP = 60; // 360° / 6 points on the wheel — the bar itself is the 6th, anchor point; these five step around from it
+  // TOP ROW: bar + 1 step.
+  const _topH = (barHue + STEP) % 360, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
   _applyTopColor(_hslToHex(_topH, _topS, _topL));
   // TRACK BUTTONS is still no independent roll — TOP ROW's own hue/saturation
   // with lightness pushed up, same relationship as the two default greys
@@ -2001,17 +2002,22 @@ function randomizeAppColors() {
   // unrelated colors. Trimmed to ~0.26 — a little darker/closer to TOP
   // ROW than the original delta.
   _applyTrackColor(_hslToHex(_topH, _topS, Math.min(0.95, _topL + 0.26)));
-  // HIGHLIGHT: root + 1 step.
-  const highlightHue = (rootHue + STEP) % 360;
+  // HIGHLIGHT: bar + 2 steps.
+  const highlightHue = (barHue + STEP * 2) % 360;
   const highlightSat = 0.6 + Math.random() * 0.35;
   const highlightLight = 0.35 + Math.random() * 0.4;
   _applyHighlightColor(_hslToHex(highlightHue, highlightSat, highlightLight));
-  // HIGHLIGHT 2: root + 2 steps — same saturation/lightness recipe as
+  // HIGHLIGHT 2: bar + 3 steps — same saturation/lightness recipe as
   // HIGHLIGHT (unchanged).
-  const highlight2Hue = (rootHue + STEP * 2) % 360;
+  const highlight2Hue = (barHue + STEP * 3) % 360;
   _applyHighlight2Color(_hslToHex(highlight2Hue, highlightSat, highlightLight));
-  // BACKGROUND: root + 3 steps.
-  const bgHue = (rootHue + STEP * 3) % 360;
+  // HIGHLIGHT 3: bar + 4 steps — same fixed 100%/50% saturation/lightness
+  // it always had, just deriving its hue from the bar now instead of
+  // being its own independent random anchor.
+  const highlight3Hue = (barHue + STEP * 4) % 360;
+  _applyHighlight3Color(_hslToHex(highlight3Hue, 1, 0.5));
+  // BACKGROUND: bar + 5 steps.
+  const bgHue = (barHue + STEP * 5) % 360;
   _applyBgColor(_hslToHex(bgHue, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
   // Re-pick each auto-contrast highlight now that TOP ROW and all 3
   // highlights have fresh values — a manual pick (1/2/3/top) stays
@@ -9783,7 +9789,7 @@ function updateRecBtn() {
 
 
 const BAR_COLORS = ['#aa64a6', '#c44b8a', '#8b3fa8', '#d45ca3', '#7b2d8b', '#c0392b', '#e67e22', '#d35400', '#a93226', '#e74c3c', '#d4ac0d', '#b7950b', '#f0b429', '#c9970c', '#e2b007', '#1e8449', '#27ae60', '#1a6b3a', '#229954', '#0e6655', '#1a5276', '#2471a3', '#1f618d', '#154360', '#117a65', '#0e7f7f', '#148f8f', '#0d6e6e', '#1a8f8f', '#0b7070', '#4a235a', '#6c3483', '#512e5f', '#7d3c98', '#5b2c6f', '#943126', '#7b241c', '#a04000', '#873600', '#922b21', '#2e4057', '#1c3144', '#2c3e6d', '#1f3a6e', '#253561', '#935116', '#784212', '#6e2f0c'];
-let _currentBarColor = "#aa64a6";
+var _currentBarColor = "#aa64a6"; // var, not let — randomizeAppColors() now sets this as its very first action (bar color is the primary anchor everything else derives from), and that function is called once very early at startup (before this declaration's own line would otherwise run), so this needs to be hoisted rather than sitting in a temporal dead zone
 function barTextColor(hex) {
   const c = hex.replace('#','');
   const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
@@ -11406,7 +11412,11 @@ function randAll(mode, opts) {
   }
 
   _currentSpecies = getSpeciesName();
-  applyBarColor(_analogousToNeutralTopColor());
+  // Song name bar color no longer gets its own independent pick here —
+  // it's now the PRIMARY color everything else derives from (see
+  // randomizeAppColors()), so it only changes when WILD mode actually
+  // randomizes colors, same as every other role, rather than on every
+  // single RAND press regardless of WILD.
   // Update key/scale display
   const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = (_currentSpecies || '');
   const kd = document.getElementById('keyDisplay');
