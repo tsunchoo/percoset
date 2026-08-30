@@ -454,7 +454,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: #fff; }
-.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: #fff; font-size: calc(2rem * var(--track-btn-font-scale, 1)); overflow: hidden; }
+.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: #fff; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
@@ -720,7 +720,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   content: '';
   position: absolute;
   background: var(--empty-cell-color, #DCD7D0);
-  opacity: 0.15;
+  opacity: 0.2;
   pointer-events: none;
   transition: background 0.05s, opacity 0.05s;
   top: 0; bottom: 0; left: 1px; right: 1px;
@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 16:46</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 17:08</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7825,6 +7825,7 @@ function buildUI() {
     fxBtn.textContent = 'FX';
     const fxVal = trackFx[tr]; fxBtn.classList.toggle('on', fxVal && (fxVal.x > 0 || fxVal.y > 0));
     fxBtn.classList.toggle('blast-on', !!trackPump[tr]);
+    fxBtn.textContent = trackPump[tr] ? 'X' : 'FX'; // BLAST shows as a single X instead of the normal FX label
     const cycleFxBtn = () => {
       const cur = trackFx[tr], fxIsOn = cur && (cur.x > 0 || cur.y > 0);
       if (!fxIsOn) {
@@ -7837,12 +7838,14 @@ function buildUI() {
         // FX on -> FX+BLAST on
         trackPump[tr] = true;
         fxBtn.classList.add('blast-on');
+        fxBtn.textContent = 'X';
       } else {
         // FX+BLAST on -> off
         trackFx[tr] = { x: 0, y: 0 };
         if (ctx) setFxActive(tr, trackFx[tr]);
         trackPump[tr] = false;
         fxBtn.classList.remove('on', 'blast-on');
+        fxBtn.textContent = 'FX';
       }
       markModified();
     };
@@ -9034,6 +9037,10 @@ function _flashScratchBtnText() {
   btn.classList.add('ab-flash');
   setTimeout(() => btn.classList.remove('ab-flash'), 300);
 }
+function _syncFxBtnText(tr) {
+  const fb = document.getElementById(`fxbtn-${tr}`);
+  if (fb) fb.textContent = trackPump[tr] ? 'X' : 'FX';
+}
 function setBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
   b.classList.add('btn-flash-blue');
@@ -9230,10 +9237,15 @@ function setTrackBtnOnColor(n) {
 // not just share its color. Rotated further around the wheel and
 // lightened more (clamped so it can't wash all the way out to white).
 function _deriveBlastColor(baseHex) {
-  const [h, s, l] = _hexToHsl(baseHex);
-  const newHue = (h + 130) % 360; // was +55 — still read as too similar, pushed much further around the wheel
-  const newLight = Math.min(0.85, l + 0.3); // was +0.22
-  return _hslToHex(newHue, s, newLight);
+  // True RGB inverse (photo-negative) of FX 1's color — not just a hue
+  // rotation. Also inverts lightness (light becomes dark, dark becomes
+  // light), giving BLAST a starker, higher-contrast look befitting the
+  // harder/crunchier of the two FX levels.
+  const hex = baseHex.replace('#', '');
+  const r = 255 - parseInt(hex.substr(0, 2), 16);
+  const g = 255 - parseInt(hex.substr(2, 2), 16);
+  const b = 255 - parseInt(hex.substr(4, 2), 16);
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 function _applyBlastColorFrom(onColorHex) {
   const blastHex = _deriveBlastColor(onColorHex);
@@ -11100,7 +11112,7 @@ function randAll(mode, opts) {
     if (ctx) setFxActive(tr, trackFx[tr]);
     const fb2 = document.getElementById(`fxbtn-${tr}`);
     if (fb2) { fb2.classList.remove('on'); fb2.classList.remove('blast-on'); }
-    // JENNY usually arrives with per-track auto-randomization engaged —
+    _syncFxBtnText(tr);
     // this was a completely separate, unconditional roll that never went
     // through the INTENSITY-driven autoCount system above at all, so it
     // could (and did) add auto-mode tracks even with INTENSITY at zero.
@@ -11838,7 +11850,7 @@ function restoreState(snap, opts) {
     } catch (err) { console.error('restoreState: pitch/legato restore failed for track', tr, err); }
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
-    if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) fb2.classList.toggle('blast-on', trackPump[tr]); }
+    if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) { fb2.classList.toggle('blast-on', trackPump[tr]); fb2.textContent = trackPump[tr] ? 'X' : 'FX'; } }
     if (snap.trackFxMode) { trackFxMode[tr] = snap.trackFxMode[tr] || 0; }
     if (snap.trackSweep) { trackSweep[tr] = snap.trackSweep[tr] || false; }
     if (snap.trackChop)  { trackChop[tr]  = snap.trackChop[tr]  || false; }
