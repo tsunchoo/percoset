@@ -545,13 +545,15 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-vol-fill {
   position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
   display: flex; gap: 2px;
+  background: var(--top-row-pressed-bg); /* solid, continuous groove — only the segments below get split into lines, not this */
   pointer-events: none;
 }
 .vol-segment {
-  flex: 1; background: var(--top-row-pressed-bg); transition: background 0.05s;
+  flex: 1; background: transparent; transition: background 0.05s;
 }
 .vol-segment.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); }
 .track-vol-bar.muted { background: #ccc; }
+.track-vol-bar.muted .track-vol-fill { background: transparent; }
 .track-vol-bar.muted .vol-segment { background: transparent !important; }
 .row-muted .track-ctrl-icon-btn,
 .row-muted .shift-btn {
@@ -863,7 +865,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 18:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 18:51</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2839,7 +2841,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.2228 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +2dB (was 0.177)
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.25 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +1dB more (was 0.2228, +2dB before that, was 0.177)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
