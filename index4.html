@@ -456,7 +456,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: var(--track-btn-text-color, #fff); }
 .fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: var(--track-btn-text-color, #fff); }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: var(--track-btn-text-color, #fff); }
-.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: var(--track-btn-text-color, #fff); }
+.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
@@ -865,7 +865,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 22:34</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 22:45</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
