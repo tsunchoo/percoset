@@ -534,16 +534,14 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-font-scale, 1)); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  padding: 4px;
-  display: flex; /* the groove is a normal flex child now, not an absolutely-positioned pseudo-element — flex children always respect the parent's own padding correctly and universally, sidestepping whatever cross-browser difference the previous absolute-inset approach was hitting */
-  background: var(--bg); /* shows through the 4px inset on all sides */
+  background: var(--bg); /* shows through the 4px inset on all sides — inset applied via a direct inline style on .track-vol-groove itself (see buildUI()), not CSS padding, so there's no cascade/CSS-interpretation question about whether it applies */
   border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
 }
 .track-vol-groove {
-  position: relative; flex: 1;
+  position: absolute;
   background: var(--top-row-pressed-bg);
 }
 .track-vol-fill {
@@ -864,7 +862,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 23:06</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 23:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -7870,6 +7868,7 @@ function buildUI() {
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
     const volGroove = document.createElement('div'); volGroove.className = 'track-vol-groove';
+    volGroove.style.top = '4px'; volGroove.style.left = '4px'; volGroove.style.right = '4px'; volGroove.style.bottom = '4px';
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
     _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
     volGroove.appendChild(volFill);
