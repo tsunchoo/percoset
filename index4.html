@@ -860,7 +860,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Aug26 01:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Aug26 00:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2381,7 +2381,7 @@ async function loadSamples() {
   // this cascade for a normal + press. It also couldn't have played
   // earlier regardless, since ctx doesn't exist until the user's tap gets
   // us here in the first place.
-  if (ctx) scheduleRandTransition(); // matches exactly what a normal + press does while stopped — playRandReleaseSweep alone was just the noise sweep, missing the actual per-track instrument flourish
+  if (ctx) playRandReleaseSweep(ctx.currentTime);
 }
 
 
@@ -9303,7 +9303,7 @@ function _offerToLoadTapePayload(payload) {
     stopAllAutoRand();
     if (playing) togglePlay();
     restoreState(payload.state);
-    if (ctx) scheduleRandTransition(); // matches exactly what a normal + press does while stopped (which loading a tape always is, per the togglePlay() call above) — playRandReleaseSweep alone was just the noise sweep, missing the actual per-track instrument flourish
+    if (ctx) playRandReleaseSweep(ctx.currentTime); // same landing cue RAND uses, so loading a tape reads as a real "new pattern" moment too
     activeSlot = -1;
     updateSlotButtons();
     markModified();
@@ -9362,7 +9362,7 @@ async function importTapeFile(file) {
     stopAllAutoRand();
     if (playing) togglePlay();
     restoreState(payload.state);
-    if (ctx) scheduleRandTransition(); // matches exactly what a normal + press does while stopped (which loading a tape always is, per the togglePlay() call above) — playRandReleaseSweep alone was just the noise sweep, missing the actual per-track instrument flourish
+    if (ctx) playRandReleaseSweep(ctx.currentTime); // same landing cue RAND uses, so loading a tape reads as a real "new pattern" moment too
     activeSlot = -1; // a loaded tape is new content — no slot claims to match it
     updateSlotButtons();
     markModified();
