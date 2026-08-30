@@ -864,7 +864,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 21:11</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 21:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2920,7 +2920,14 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  el.style.width = Math.round(pct * 100) + '%';
+  // Percentage width alone is relative to the FULL padding-box, not the
+  // space actually available once the 4px right-side inset is accounted
+  // for — at high volume the fill's right edge was extending past the
+  // groove and touching the outer border-box edge directly, since a plain
+  // percentage never subtracts for that. calc() against the available
+  // width (100% minus both the 4px this element is offset left by, and a
+  // matching 4px it must stop short of on the right) fixes that exactly.
+  el.style.width = `calc((100% - 8px) * ${pct})`;
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
