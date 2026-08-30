@@ -535,6 +535,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   padding: 4px;
+  display: flex; /* the groove is a normal flex child now, not an absolutely-positioned pseudo-element — flex children always respect the parent's own padding correctly and universally, sidestepping whatever cross-browser difference the previous absolute-inset approach was hitting */
   background: var(--bg); /* shows through the 4px inset on all sides */
   border: none;
   cursor: ew-resize; touch-action: none;
@@ -543,17 +544,17 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   border-bottom: 10px solid var(--bg);
   height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); /* matches .track-name-btn's own height exactly */
 }
-.track-vol-bar::before {
-  content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
-  background: var(--top-row-pressed-bg); /* the groove — kept as its own layer since background-clip can't apply differently to two background layers on the same element */
+.track-vol-groove {
+  position: relative; flex: 1;
+  background: var(--top-row-pressed-bg);
 }
 .track-vol-fill {
-  position: absolute; top: 4px; left: 4px; bottom: 4px; z-index: 1;
+  position: absolute; top: 0; left: 0; bottom: 0;
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
   pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
-.track-vol-bar.muted::before { background: transparent; }
+.track-vol-bar.muted .track-vol-groove { background: transparent; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
 .row-muted .track-ctrl-icon-btn,
 .row-muted .shift-btn {
@@ -865,7 +866,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 22:45</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 22:58</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2921,14 +2922,10 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  // Percentage width alone is relative to the FULL padding-box, not the
-  // space actually available once the 4px right-side inset is accounted
-  // for — at high volume the fill's right edge was extending past the
-  // groove and touching the outer border-box edge directly, since a plain
-  // percentage never subtracts for that. calc() against the available
-  // width (100% minus both the 4px this element is offset left by, and a
-  // matching 4px it must stop short of on the right) fixes that exactly.
-  el.style.width = `calc((100% - 8px) * ${pct})`;
+  // Plain percentage — the fill's parent (.track-vol-groove) has no
+  // padding of its own now, so 0-100% already correctly spans exactly the
+  // inset area with no extra math needed.
+  el.style.width = Math.round(pct * 100) + '%';
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
@@ -7874,9 +7871,11 @@ function buildUI() {
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
+    const volGroove = document.createElement('div'); volGroove.className = 'track-vol-groove';
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
     _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
-    volBar.appendChild(volFill);
+    volGroove.appendChild(volFill);
+    volBar.appendChild(volGroove);
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
 
