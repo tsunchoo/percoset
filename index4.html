@@ -535,7 +535,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   padding: 4px;
-  background: red; /* TEMPORARY DIAGNOSTIC — should be var(--bg); switched to a stark, unmissable color so this is visible regardless of what the app's own colors happen to randomize to right now */
+  background: var(--bg); /* shows through the 4px inset on all sides */
   border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
@@ -864,7 +864,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 21:33</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 21:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
