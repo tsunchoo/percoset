@@ -23,7 +23,6 @@
   --track-btn-scale: 0.9025; /* per-track button box size (width/height) — 0.95 * 0.95, two successive 5% reductions. Text is deliberately NOT scaled by this — see --track-btn-font-scale below, frozen at the first round's value so glyphs/labels stay exactly the size they already are */
   --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
-  --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 80%, black); /* pressed/engaged state for every top-row button — a slightly darker version of the button's own resting color, replacing the old separate highlight-color system */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -219,7 +218,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: var(--top-row-btn-height); flex-shrink: 0; white-space: nowrap;
   touch-action: manipulation;
 }
-.btn.active { background: var(--top-row-pressed-bg); color: #fff; }
+.btn.active { background: var(--neutral-top, #555); color: #fff; }
 /* NEW/AUTO's label is now a single "+" for both states (color/pulse
    already carries the on/off distinction) — sized up well past the base
    .btn font-size so it reads with the same visual weight the word used
@@ -232,12 +231,12 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #scratchBtn { font-size: 1.08rem; }
 /* All glyphs are always HIGHLIGHT-3 colored — only which letter is bold
    changes as RECALL toggles between the two patterns. */
-#scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: #fff; }
+#scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: var(--top-row-highlight-color, #adff00); }
 /* flashBtnOrange('scratchBtn') sets color on the outer button, but these
    spans have their own explicit color rules above, which take precedence
    over anything set on the parent — so that flash was never actually
    visible on the "A"/"B" text itself. This class overrides it directly. */
-#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: #fff !important; }
+#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: var(--top-row-highlight-color, #adff00) !important; }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; font-size: 1.23rem; }
 #scratchBtnA:not(.ab-current), #scratchBtnB:not(.ab-current) { font-size: 1.005rem; }
@@ -259,7 +258,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
    stays there permanently (not a pulse that reverts) — same trigger
    applies whether it's a single press or entering AUTO mode. */
 #randBtn .glyph { display: inline-block; transform: translateY(-2px); }
-#playBtn.playing { background: var(--top-row-pressed-bg); }
+#playBtn.playing { background: var(--neutral-top, #555); }
 #playBtn { position: relative; }
 #saveBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
@@ -286,7 +285,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .btn.btn-flash-blue:active { opacity: 1; }
 #clearBtn.active:active { opacity: 1; } /* same reasoning as btn-flash-blue above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey for the whole time it's actually held */
 
-#beatBtn.active:not(.beat-auto-active) { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
+#beatBtn.active:not(.beat-auto-active) { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
 #beatBtn.active:not(.beat-auto-active):active { opacity: 1; } /* same reasoning as #clearBtn.active:active above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey while actually held */
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
 @keyframes beat-text-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
@@ -330,7 +329,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   touch-action: manipulation;
 }
 .beat-type-item.current, .beat-type-item.drag-hover { background: #111; color: #adff00; }
-#beatBtn.menu-open { background: var(--top-row-pressed-bg) !important; }
+#beatBtn.menu-open { background: var(--neutral-top, #555) !important; }
 #beatBtn.menu-open:active { opacity: 1; } /* same reasoning as the other two black-on-hold fixes above */
 #turboBtn.boost-on { animation: boost-red 0.5s infinite alternate; }
 .rec-mode-btn { width:100%; background:#ddd; color:#111; border:none; font-family:'DM Sans',sans-serif; font-size:0.68rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:12px 0; cursor:pointer; }
@@ -349,7 +348,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .wild-toggle input:checked + .wild-toggle-slider { background: var(--playhead-color, #f8ff00); }
 .wild-toggle input:checked + .wild-toggle-slider::before { transform: translateX(20px); }
 @keyframes boost-red { from { background: #e0142c; color: #fff; } to { background: #7a0016; color: #ffb3bb; } }
-#saveBtn.rec-active { background: var(--top-row-pressed-bg); }
+#saveBtn.rec-active { background: var(--neutral-top, #555); }
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
 #randomizeColorsBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
 @keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.85); } 100% { transform: scale(1); } }
@@ -365,7 +364,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
 @keyframes rec-icon-pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.1); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
-.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: #fff !important; border: none !important; transition: none !important; }
+.btn-flash-blue { background: #0b5394 !important; color: var(--top-row-highlight-color, #adff00) !important; border: none !important; transition: none !important; }
 .rand-overlay-btn {
   font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
@@ -454,13 +453,13 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: #fff; }
-.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: #fff; font-size: calc(2rem * var(--track-btn-font-scale, 1)); overflow: hidden; }
+.fx-btn.blast-on { background: var(--track-btn-on-color, var(--playhead)); color: #fff; }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
 .track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: #fff; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
-@keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); color: #fff; } 50% { transform: scale(1.1); filter: brightness(1.3); color: #333; } 100% { transform: scale(1); filter: brightness(1); color: #fff; } }
+@keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.3); } 100% { transform: scale(1); filter: brightness(1); } }
 .fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on:not(.lock-btn) {
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
 }
@@ -469,7 +468,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--top-row-pressed-bg) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--top-row-highlight-color, #0078ff) !important; color: #fff !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
 /* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
@@ -477,7 +476,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    color PLAY and BEAT use for their own active states, instead of
    changing with the pulse. */
 /* #randBtn.pulsing { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); } */
-#randBtn.pulsing { background: var(--top-row-pressed-bg); color: #fff; }
+#randBtn.pulsing { background: var(--neutral-top, #555); color: var(--top-row-highlight-color, #adff00); }
 /* rand-pulse and beat-auto-color-only alternate between HIGHLIGHT and
    HIGHLIGHT 2 — the two intentionally stay separate variables so this
    two-color flash keeps working; unifying them would flatten it. */
@@ -492,16 +491,16 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    shorthand replaces its whole animation list per rule, it doesn't merge
    across separate rules, so without this explicit combined rule whichever
    one happened to win the cascade would silently drop the other. */
-@keyframes beat-auto-color-only { from { background: var(--neutral-top, #555); color: #fff; } to { background: var(--top-row-pressed-bg); color: #fff; } }
+@keyframes beat-auto-color-only { from { background: var(--top-row-highlight-color, #0078ff); color: var(--top-row-highlight-text, #fff); } to { background: var(--top-row-highlight-color, #f8ff00); color: var(--top-row-highlight-text, #000); } }
 #beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 #beatBtn.btn-beat-pulse.beat-auto-active { animation: top-row-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
-@keyframes rand-pending-fast-pulse { 0% { background: var(--neutral-top, #555); transform: scale(1); } 50% { background: var(--top-row-pressed-bg); transform: scale(1.06); } 100% { background: var(--neutral-top, #555); transform: scale(1); } }
+@keyframes rand-pending-fast-pulse { 0% { background: #555; transform: scale(1); } 50% { background: var(--top-row-highlight-color, #0078ff); transform: scale(1.06); } 100% { background: #555; transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
-#randBtn.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
-#clearBtn.active { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
-#scratchBtn.active { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
+#randBtn.btn-flash-blue { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
+#clearBtn.active { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
+#scratchBtn.active { background: var(--neutral-top, #555) !important; color: var(--top-row-highlight-color, #adff00) !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
 .shift-btn {
@@ -514,7 +513,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 }
 .shift-btn:active { opacity: 0.4; }
 .shift-btn.on { background: #f17d21; color: #fff; }
-.shift-btn.right.on { background: var(--track-btn-on-color, #0081FE); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.shift-btn.right.on { background: var(--track-btn-on-color, #0081FE); color: #fff; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* The "<" offset button specifically (not the "R" reverb toggle, which
    also uses .shift-btn but always carries .right) — bigger text, same
    button size. The larger size exaggerates how low the glyph sits within
@@ -534,7 +533,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-font-scale, 1)); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: var(--top-row-pressed-bg); border: none;
+  background: var(--neutral-top, #555); border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
@@ -731,7 +730,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    .soft (it's its own note-value class, val===3), since without that
    exclusion an actual 32nd-note split would incorrectly get treated as
    empty here too. */
-.step-cell:not(.soft):not(.on):not(.split32)::after { border: 3px solid color-mix(in srgb, var(--empty-cell-border-color, #ccc) 50%, transparent); }
+.step-cell:not(.soft):not(.on):not(.split32)::after { border: 4px solid color-mix(in srgb, var(--empty-cell-border-color, #ccc) 50%, transparent); }
 body.empty-cell-bg-transparent .step-cell:not(.soft):not(.on):not(.split32)::after { background: transparent !important; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
 /* Hides only genuinely empty cells' resting marker — .soft/.on (actual
@@ -861,7 +860,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 04:17</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">28Aug26 00:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -908,8 +907,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:calc(100% + 5px);right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
   </div>
 </header>
-
-<canvas id="eqMeter" width="960" height="24" style="width:100%;max-width:960px;height:24px;display:block;margin-bottom:4px;pointer-events:none;"></canvas>
 
 <div class="transport">
   <button class="btn" id="randBtn"><span class="glyph">+</span></button>
@@ -988,7 +985,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="emptyCellsInvisibleToggle" checked onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
+      <input type="checkbox" id="emptyCellsInvisibleToggle" onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
@@ -1062,7 +1059,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <style>#emptyCellBorderColorPicker::-webkit-color-swatch-wrapper{padding:0;}#emptyCellBorderColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#emptyCellBorderColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="checkbox" id="emptyCellBgTransparentToggle" checked onchange="setEmptyCellBgTransparent(this.checked)" style="width:14px;height:14px;cursor:pointer;">EMPTY CELL BG TRANSPARENT
+        <input type="checkbox" id="emptyCellBgTransparentToggle" onchange="setEmptyCellBgTransparent(this.checked)" style="width:14px;height:14px;cursor:pointer;">EMPTY CELL BG TRANSPARENT
       </label>
       <!-- BG = SONG NAME COLOR checkbox removed from the UI per direct
            request — setBgFollowsBarColor and its applyBarColor() hook are
@@ -1112,27 +1109,20 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
       </div>
 
-      <!-- TOP ROW HIGHLIGHT picker removed from the UI — the top-row
-           buttons' pressed/engaged state is now a simple darker version
-           of the button's own resting color (--top-row-pressed-bg),
-           replacing the separate highlight-color system this picker
-           controlled. setTopRowHighlightColor()/_autoPickTopRowHighlight()
-           are kept intact for this reason. -->
-
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">EQ METER COLOR</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW HIGHLIGHT</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="eqMeterColor" value="auto" checked onchange="setEqMeterColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
+            <input type="radio" name="topRowHighlightColor" value="auto" checked onchange="setTopRowHighlightColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="eqMeterColor" value="1" onchange="setEqMeterColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+            <input type="radio" name="topRowHighlightColor" value="1" onchange="setTopRowHighlightColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="eqMeterColor" value="2" onchange="setEqMeterColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+            <input type="radio" name="topRowHighlightColor" value="2" onchange="setTopRowHighlightColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="eqMeterColor" value="3" onchange="setEqMeterColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+            <input type="radio" name="topRowHighlightColor" value="3" onchange="setTopRowHighlightColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
         </div>
       </div>
@@ -1619,10 +1609,6 @@ function _topRowHighlightColor() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--top-row-highlight-color').trim();
   return v || '#adff00';
 }
-function _eqMeterColor() {
-  const v = getComputedStyle(document.documentElement).getPropertyValue('--eq-meter-color').trim();
-  return v || '#f8ff00';
-}
 // ── Shared color helpers for the consolidated COLORS settings section ──
 function _relLuminance(hex) {
   const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -2001,23 +1987,22 @@ function randomizeAppColors() {
   // "light-ish" still reads fine. HIGHLIGHT and BACKGROUND get their own
   // contrast-safe text color computed fresh, so they're free to roam the
   // full range.
-  // SONG NAME BAR is now the primary anchor — picked first, at a
-  // completely free random hue, with every other role (TOP ROW,
-  // HIGHLIGHT, HIGHLIGHT 2, HIGHLIGHT 3, BACKGROUND) stepping around the
-  // wheel from THAT hue instead. Same "one shared hue + fixed offsets"
-  // structure the whole system already used — only which role sits at
-  // the anchor point changed. HIGHLIGHT 3 used to be its own independent
-  // anchor (fixed saturation/lightness, random hue, no relation to
-  // anything else) — it's now just another offset from the bar like
-  // everyone else, keeping its own saturation/lightness recipe (100%/50%)
-  // unchanged.
-  const barHue = Math.random() * 360;
-  const barSat = 0.5 + Math.random() * 0.3;
-  const barLight = 0.55 + Math.random() * 0.2;
-  applyBarColor(_hslToHex(barHue, barSat, barLight));
-  const STEP = 60; // 360° / 6 points on the wheel — the bar itself is the 6th, anchor point; these five step around from it
-  // TOP ROW: bar + 1 step.
-  const _topH = (barHue + STEP) % 360, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
+  // HIGHLIGHT 3 — the top-row buttons' own highlight/active color (what
+  // RAND/SWEEP/RECALL/BEAT switch to when engaged, not their resting
+  // background) — used to be hardcoded to pure red every time. Now it's a
+  // random hue at that same saturation/lightness red always had (100%
+  // saturated, 50% lightness), so it varies like every other role while
+  // still anchoring the wheel the other colors rotate from. Every
+  // saturation/lightness formula below is exactly what it always was —
+  // only where each role's hue comes from changed.
+  const ANCHOR_HUE = Math.random() * 360, ANCHOR_SAT = 1, ANCHOR_LIGHT = 0.5;
+  _applyHighlight3Color(_hslToHex(ANCHOR_HUE, ANCHOR_SAT, ANCHOR_LIGHT));
+  // Random rotation off the (also random) anchor hue — the shared root
+  // the other four roles step around the wheel from.
+  const rootHue = (ANCHOR_HUE + Math.random() * 360) % 360;
+  const STEP = 72; // 360° / 5 points on the wheel — red (HIGHLIGHT 3) itself is the 5th, fixed point; these four step around from the random root
+  // TOP ROW sits at the root itself.
+  const _topH = rootHue, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
   _applyTopColor(_hslToHex(_topH, _topS, _topL));
   // TRACK BUTTONS is still no independent roll — TOP ROW's own hue/saturation
   // with lightness pushed up, same relationship as the two default greys
@@ -2026,22 +2011,17 @@ function randomizeAppColors() {
   // unrelated colors. Trimmed to ~0.26 — a little darker/closer to TOP
   // ROW than the original delta.
   _applyTrackColor(_hslToHex(_topH, _topS, Math.min(0.95, _topL + 0.26)));
-  // HIGHLIGHT: bar + 2 steps.
-  const highlightHue = (barHue + STEP * 2) % 360;
+  // HIGHLIGHT: root + 1 step.
+  const highlightHue = (rootHue + STEP) % 360;
   const highlightSat = 0.6 + Math.random() * 0.35;
   const highlightLight = 0.35 + Math.random() * 0.4;
   _applyHighlightColor(_hslToHex(highlightHue, highlightSat, highlightLight));
-  // HIGHLIGHT 2: bar + 3 steps — same saturation/lightness recipe as
+  // HIGHLIGHT 2: root + 2 steps — same saturation/lightness recipe as
   // HIGHLIGHT (unchanged).
-  const highlight2Hue = (barHue + STEP * 3) % 360;
+  const highlight2Hue = (rootHue + STEP * 2) % 360;
   _applyHighlight2Color(_hslToHex(highlight2Hue, highlightSat, highlightLight));
-  // HIGHLIGHT 3: bar + 4 steps — same fixed 100%/50% saturation/lightness
-  // it always had, just deriving its hue from the bar now instead of
-  // being its own independent random anchor.
-  const highlight3Hue = (barHue + STEP * 4) % 360;
-  _applyHighlight3Color(_hslToHex(highlight3Hue, 1, 0.5));
-  // BACKGROUND: bar + 5 steps.
-  const bgHue = (barHue + STEP * 5) % 360;
+  // BACKGROUND: root + 3 steps.
+  const bgHue = (rootHue + STEP * 3) % 360;
   _applyBgColor(_hslToHex(bgHue, 0.15 + Math.random() * 0.25, 0.82 + Math.random() * 0.13));
   // Re-pick each auto-contrast highlight now that TOP ROW and all 3
   // highlights have fresh values — a manual pick (1/2/3/top) stays
@@ -2053,7 +2033,6 @@ function randomizeAppColors() {
   if (window._topRowHighlightMode === 'auto') _autoPickTopRowHighlight();
   if (window._volSliderColorMode === 'auto') _autoPickVolSliderColor();
   if (window._trackBtnOnColorMode === 'auto') _autoPickTrackBtnOnColor();
-  if (window._eqMeterColorMode === 'auto') _autoPickEqMeterColor();
 }
 (function() {
   const topPicker = document.getElementById('topColorPicker');
@@ -2395,6 +2374,14 @@ async function loadSamples() {
   await new Promise(r => setTimeout(r, 1000));
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('status').textContent = '';
+  // The startup pattern (a deferred randAll() call, so it never delays this
+  // screen's own first paint) lands well before this point, but it's a
+  // direct call rather than going through the scheduler's own "pending
+  // RAND lands on a bar boundary" path — which is what actually triggers
+  // this cascade for a normal + press. It also couldn't have played
+  // earlier regardless, since ctx doesn't exist until the user's tap gets
+  // us here in the first place.
+  if (ctx) playRandReleaseSweep(ctx.currentTime);
 }
 
 
@@ -2804,7 +2791,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.2228 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +2dB (was 0.177)
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.177 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -7999,27 +7986,19 @@ function _clearAllSolo() {
     for (let t = 0; t < NUM_TRACKS; t++) trackMuted[t] = _preSoloMuteState[t];
     _preSoloMuteState = null;
   }
-  // Restore BEAT to exactly what it was BEFORE solo ever engaged — not
-  // whatever it happens to be right now. Same reasoning as track mute
-  // above: toggling BEAT off/on/included during the solo window (see
-  // toggleBeat()) must not affect what comes back once solo fully clears.
-  if (_preSoloBeatState) {
-    beatPlaying = _preSoloBeatState.beatPlaying;
-    _beatPending = _preSoloBeatState.beatPending;
-    _preSoloBeatState = null;
-  }
   _beatIncludedInSolo = false;
   _beatSoloMuted = false;
   _applyBeatVolWithDuck();
-  const bb = document.getElementById('beatBtn');
-  if (bb) bb.classList.toggle('active', beatPlaying || _beatPending);
+  if (beatPlaying || _beatPending) {
+    const bb = document.getElementById('beatBtn');
+    if (bb) bb.classList.add('active');
+  }
   for (let t = 0; t < NUM_TRACKS; t++) {
     updateTrackMute(t);
     const sb = document.getElementById(`solobtn-${t}`);
     if (sb) sb.classList.remove('solo-on');
   }
 }
-let _preSoloBeatState = null; // snapshot of {beatPlaying, beatPending} taken the moment solo first engages — see toggleSolo()
 function toggleSolo(tr) {
   const wasAnySoloed = trackSolo.some(x => x);
   trackSolo[tr] = !trackSolo[tr];
@@ -8034,26 +8013,20 @@ function toggleSolo(tr) {
     _preSoloMuteState = null;
   }
   // BEAT — silenced (and visually reverted to its non-active look) while
-  // solo is engaged. Whatever the user does to BEAT during the solo
-  // window (toggleBeat() can turn it off, on, or explicitly include it)
-  // is irrelevant to what comes back once the last solo disengages — the
-  // ORIGINAL pre-solo state, captured once right here, is what's restored,
-  // exactly matching how track mute state already works above.
+  // solo is engaged, unless the user has explicitly clicked it to add it
+  // to the solo mix (_beatIncludedInSolo, set by toggleBeat()). Restored
+  // to its normal active look the moment the last solo disengages.
   if (!wasAnySoloed && isAnySoloed) {
-    _preSoloBeatState = { beatPlaying, beatPending: _beatPending };
-    if (beatPlaying || _beatPending) {
+    if ((beatPlaying || _beatPending) && !_beatIncludedInSolo) {
       const bb = document.getElementById('beatBtn');
       if (bb) bb.classList.remove('active');
     }
   } else if (wasAnySoloed && !isAnySoloed) {
-    if (_preSoloBeatState) {
-      beatPlaying = _preSoloBeatState.beatPlaying;
-      _beatPending = _preSoloBeatState.beatPending;
-      _preSoloBeatState = null;
-    }
     _beatIncludedInSolo = false;
-    const bb = document.getElementById('beatBtn');
-    if (bb) bb.classList.toggle('active', beatPlaying || _beatPending);
+    if (beatPlaying || _beatPending) {
+      const bb = document.getElementById('beatBtn');
+      if (bb) bb.classList.add('active');
+    }
   }
   _beatSoloMuted = isAnySoloed && !_beatIncludedInSolo;
   _applyBeatVolWithDuck();
@@ -9040,11 +9013,12 @@ function flashBtnOrange(id) {
   const btn = document.getElementById(id); if (!btn) return;
   // Shared by both top-row buttons (scratchBtn) and non-top-row ones
   // (beatCtrlShift, inside the BEAT overlay) — only the top-row ones
-  // get the new unified "slightly darker when pressed" treatment;
-  // beatCtrlShift isn't in scope for that.
+  // should follow the new unified TOP ROW HIGHLIGHT picker, and only the
+  // top-row ones should keep their resting background instead of going
+  // black — beatCtrlShift isn't in scope for either.
   const isTopRowBtn = ['randBtn','clearBtn','playBtn','beatBtn','scratchBtn','saveBtn'].includes(id);
-  btn.style.background = isTopRowBtn ? (getComputedStyle(document.documentElement).getPropertyValue('--top-row-pressed-bg').trim() || '#333') : '#111';
-  btn.style.color = isTopRowBtn ? '#fff' : _highlight3Color();
+  btn.style.background = isTopRowBtn ? (getComputedStyle(document.documentElement).getPropertyValue('--neutral-top').trim() || '#555') : '#111';
+  btn.style.color = isTopRowBtn ? _topRowHighlightColor() : _highlight3Color();
   setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
 }
 function _flashScratchBtnText() {
@@ -9056,8 +9030,8 @@ function setBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
   b.classList.add('btn-flash-blue');
   if (id === 'randBtn') {
-    b.style.setProperty('background', getComputedStyle(document.documentElement).getPropertyValue('--top-row-pressed-bg').trim() || '#333', 'important');
-    b.style.setProperty('color', '#fff', 'important');
+    b.style.setProperty('background', getComputedStyle(document.documentElement).getPropertyValue('--neutral-top').trim() || '#555', 'important');
+    b.style.setProperty('color', _topRowHighlightColor(), 'important');
   }
 }
 function clearBtnBlueHeld(id) {
@@ -9155,31 +9129,6 @@ function setTopRowHighlightColor(n) {
   document.documentElement.style.setProperty('--top-row-highlight-color', map[n] || map[3]);
   document.documentElement.style.setProperty('--top-row-highlight-text', textMap[n] || textMap[3]);
 }
-// EQ METER COLOR — same 4-option pattern (HIGHLIGHT/2/3/AUTO), contrasting
-// against --bg since the meter's canvas has no fill of its own and just
-// sits directly on the page background.
-function setEqMeterColor(n) {
-  window._eqMeterColorMode = n;
-  if (n === 'auto') { _autoPickEqMeterColor(); return; }
-  const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
-  document.documentElement.style.setProperty('--eq-meter-color', map[n] || map[3]);
-}
-function _autoPickEqMeterColor() {
-  const cs = getComputedStyle(document.documentElement);
-  const bg = cs.getPropertyValue('--bg').trim() || '#f5f0e8';
-  const candidates = [
-    cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
-    cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
-    cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
-  ];
-  let best = candidates[0], bestRatio = -1;
-  for (const hex of candidates) {
-    const ratio = _contrastRatio(hex, bg);
-    if (ratio > bestRatio) { bestRatio = ratio; best = hex; }
-  }
-  const finalHex = _ensureContrast(best, bg);
-  document.documentElement.style.setProperty('--eq-meter-color', finalHex);
-}
 // AUTO (BEST CONTRAST) — picks whichever of the 3 highlights has the
 // highest contrast ratio against the top-row buttons' own background
 // (--neutral-top), then nudges that winner's own lightness (via
@@ -9233,8 +9182,6 @@ function setTrackBtnOnColor(n) {
   const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111', top: 'var(--neutral-top-text, #fff)' };
   document.documentElement.style.setProperty('--track-btn-on-color', map[n] || map.top);
   document.documentElement.style.setProperty('--track-btn-on-text', textMap[n] || textMap.top);
-  const resolvedHex = getComputedStyle(document.documentElement).getPropertyValue('--track-btn-on-color').trim();
-  _applyBlastColorFrom(resolvedHex);
 }
 // AUTO (BEST CONTRAST) — checked against the button's own resting
 // background (--track-ctrl-btn-color), since the point of an "on" color
@@ -9242,22 +9189,6 @@ function setTrackBtnOnColor(n) {
 // contrast against the page in general. Considers all 4 sources
 // (HIGHLIGHT/2/3 and TOP ROW BUTTON COLOR), same _ensureContrast fallback
 // as the other two auto-pickers.
-// FX 2 (BLAST) gets its own, more extreme color derived from whatever
-// TRACK BUTTON ON color is chosen — BLAST is the harder/crunchier of the
-// two FX levels, so it needs to visually read as more intense than FX 1,
-// not just share its color. Rotated further around the wheel and
-// lightened more (clamped so it can't wash all the way out to white).
-function _deriveBlastColor(baseHex) {
-  const [h, s, l] = _hexToHsl(baseHex);
-  const newHue = (h + 130) % 360; // was +55 — still read as too similar, pushed much further around the wheel
-  const newLight = Math.min(0.85, l + 0.3); // was +0.22
-  return _hslToHex(newHue, s, newLight);
-}
-function _applyBlastColorFrom(onColorHex) {
-  const blastHex = _deriveBlastColor(onColorHex);
-  document.documentElement.style.setProperty('--track-btn-blast-color', blastHex);
-  document.documentElement.style.setProperty('--track-btn-blast-text', _contrastText(blastHex));
-}
 function _autoPickTrackBtnOnColor() {
   const cs = getComputedStyle(document.documentElement);
   const bg = cs.getPropertyValue('--track-ctrl-btn-color').trim() || cs.getPropertyValue('--neutral-track').trim() || '#b0b0b0';
@@ -9275,7 +9206,6 @@ function _autoPickTrackBtnOnColor() {
   const finalHex = _ensureContrast(best, bg);
   document.documentElement.style.setProperty('--track-btn-on-color', finalHex);
   document.documentElement.style.setProperty('--track-btn-on-text', _contrastText(finalHex));
-  _applyBlastColorFrom(finalHex);
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
@@ -9373,7 +9303,7 @@ function _offerToLoadTapePayload(payload) {
     stopAllAutoRand();
     if (playing) togglePlay();
     restoreState(payload.state);
-    if (ctx) scheduleRandTransition(); // matches exactly what a normal + press does while stopped (which loading a tape always is, per the togglePlay() call above) — playRandReleaseSweep alone was just the noise sweep, missing the actual per-track instrument flourish
+    if (ctx) playRandReleaseSweep(ctx.currentTime); // same landing cue RAND uses, so loading a tape reads as a real "new pattern" moment too
     activeSlot = -1;
     updateSlotButtons();
     markModified();
@@ -9432,7 +9362,7 @@ async function importTapeFile(file) {
     stopAllAutoRand();
     if (playing) togglePlay();
     restoreState(payload.state);
-    if (ctx) scheduleRandTransition(); // matches exactly what a normal + press does while stopped (which loading a tape always is, per the togglePlay() call above) — playRandReleaseSweep alone was just the noise sweep, missing the actual per-track instrument flourish
+    if (ctx) playRandReleaseSweep(ctx.currentTime); // same landing cue RAND uses, so loading a tape reads as a real "new pattern" moment too
     activeSlot = -1; // a loaded tape is new content — no slot claims to match it
     updateSlotButtons();
     markModified();
@@ -9839,7 +9769,7 @@ function updateRecBtn() {
 
 
 const BAR_COLORS = ['#aa64a6', '#c44b8a', '#8b3fa8', '#d45ca3', '#7b2d8b', '#c0392b', '#e67e22', '#d35400', '#a93226', '#e74c3c', '#d4ac0d', '#b7950b', '#f0b429', '#c9970c', '#e2b007', '#1e8449', '#27ae60', '#1a6b3a', '#229954', '#0e6655', '#1a5276', '#2471a3', '#1f618d', '#154360', '#117a65', '#0e7f7f', '#148f8f', '#0d6e6e', '#1a8f8f', '#0b7070', '#4a235a', '#6c3483', '#512e5f', '#7d3c98', '#5b2c6f', '#943126', '#7b241c', '#a04000', '#873600', '#922b21', '#2e4057', '#1c3144', '#2c3e6d', '#1f3a6e', '#253561', '#935116', '#784212', '#6e2f0c'];
-var _currentBarColor = "#aa64a6"; // var, not let — randomizeAppColors() now sets this as its very first action (bar color is the primary anchor everything else derives from), and that function is called once very early at startup (before this declaration's own line would otherwise run), so this needs to be hoisted rather than sitting in a temporal dead zone
+let _currentBarColor = "#aa64a6";
 function barTextColor(hex) {
   const c = hex.replace('#','');
   const r=parseInt(c.slice(0,2),16), g=parseInt(c.slice(2,4),16), b=parseInt(c.slice(4,6),16);
@@ -11462,11 +11392,7 @@ function randAll(mode, opts) {
   }
 
   _currentSpecies = getSpeciesName();
-  // Song name bar color no longer gets its own independent pick here —
-  // it's now the PRIMARY color everything else derives from (see
-  // randomizeAppColors()), so it only changes when WILD mode actually
-  // randomizes colors, same as every other role, rather than on every
-  // single RAND press regardless of WILD.
+  applyBarColor(_analogousToNeutralTopColor());
   // Update key/scale display
   const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = (_currentSpecies || '');
   const kd = document.getElementById('keyDisplay');
@@ -12900,9 +12826,6 @@ setVolSliderColor('auto'); // AUTO (best contrast) is the default
 setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — picks whichever highlight actually reads clearly against the button color, rather than a fixed choice that could land close to it
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
 setTrackBtnOnColor('auto'); // AUTO (best contrast) is the default — checked against the button's own resting color, so ON always reads as clearly different from OFF
-setEmptyCellBgTransparent(true); // EMPTY CELL BG TRANSPARENT is checked by default
-setEmptyCellsInvisible(true); // NOTE MARKERS INVISIBLE is checked by default
-setEqMeterColor('auto'); // AUTO (best contrast) is the default
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
@@ -14737,59 +14660,6 @@ function disengagePerformanceLock() {
   }
 })();
 
-// Frequency meter, sitting just above the top row of buttons — taps the
-// final mix via an AnalyserNode (doesn't affect the audio signal path,
-// since the analyser doesn't need to connect onward to anything), groups
-// its frequency bins into 10 log-spaced bands (linear spacing would leave
-// most bars empty, since musical energy concentrates in the lower end of
-// the spectrum), and redraws them to the small canvas every frame. Not
-// meant to be a precise/granular analyzer — just a simple, cheap,
-// always-on visual.
-function _initEqMeter() {
-  if (!ctx || !masterGain) return;
-  const canvas = document.getElementById('eqMeter');
-  if (!canvas) return;
-  const analyser = ctx.createAnalyser();
-  analyser.fftSize = 256;
-  // Default range (-100 to -30dB) is narrow enough that normal signal
-  // levels can sit at or above the ceiling most of the time, leaving
-  // those bars looking permanently maxed out rather than actually
-  // responding to the music. Widened so there's real headroom below 255.
-  analyser.minDecibels = -90;
-  analyser.maxDecibels = -10;
-  masterGain.connect(analyser);
-  const bufferLength = analyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
-  const cctx = canvas.getContext('2d');
-  const NUM_BARS = 10;
-  // Enforce strictly-increasing edges — the raw log-spaced formula alone
-  // can round two adjacent edges to the same bin at the low end (with only
-  // 128 bins split log-scale across 10 bars), leaving two bars reading
-  // the exact same single bin instead of two genuinely different ranges.
-  const bucketEdges = [0];
-  for (let i = 1; i <= NUM_BARS; i++) {
-    let edge = Math.round(Math.pow(bufferLength, i / NUM_BARS));
-    if (edge <= bucketEdges[i - 1]) edge = bucketEdges[i - 1] + 1;
-    bucketEdges.push(edge);
-  }
-  bucketEdges[NUM_BARS] = bufferLength;
-  function draw() {
-    requestAnimationFrame(draw);
-    analyser.getByteFrequencyData(dataArray);
-    cctx.clearRect(0, 0, canvas.width, canvas.height);
-    cctx.fillStyle = _eqMeterColor();
-    const barWidth = canvas.width / NUM_BARS;
-    for (let b = 0; b < NUM_BARS; b++) {
-      const start = bucketEdges[b], end = bucketEdges[b + 1];
-      let sum = 0, count = 0;
-      for (let i = start; i < end; i++) { sum += dataArray[i]; count++; }
-      const avg = count > 0 ? sum / count : 0;
-      const barHeight = (avg / 255) * canvas.height;
-      cctx.fillRect(b * barWidth + 1, canvas.height - barHeight, barWidth - 2, barHeight);
-    }
-  }
-  draw();
-}
 async function initAudio() {
   if (_initStarted) return; _initStarted = true;
   requestWakeLock();
@@ -14816,7 +14686,6 @@ async function initAudio() {
     msg.textContent = 'RESUMED, BUILDING GRAPH...';
     attachCtxStateWatch();
     masterGain = ctx.createGain(); masterGain.gain.value = masterVol;
-    _initEqMeter(); // dedicated analyser + draw loop for the visual frequency meter under the logo
     try { _getAmalgamBaseBuffer(); } catch(e) {} // pre-warm the amalgam echo's cached buffer up front
     try { _getDroneAirNoiseBuffer(); } catch(e) {} // same for STRINGS's air-noise buffer
     // Single source of truth for the base output boost — the turbo toggle
