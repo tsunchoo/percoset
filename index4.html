@@ -456,7 +456,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: var(--track-btn-text-color, #fff); }
 .fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: var(--track-btn-text-color, #fff); }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: var(--track-btn-text-color, #fff); }
-.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: var(--track-btn-text-color, #fff); }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
@@ -535,25 +535,26 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
   padding: 4px;
-  display: flex; /* the groove is a normal flex child now, not an absolutely-positioned pseudo-element — flex children always respect the parent's own padding correctly and universally, sidestepping whatever cross-browser difference the previous absolute-inset approach was hitting */
   background: var(--bg); /* shows through the 4px inset on all sides */
   border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
-}
-.track-vol-groove {
-  position: relative; flex: 1;
-  background: var(--top-row-pressed-bg);
+  border-bottom: 10px solid var(--bg);
 }
 .track-vol-fill {
-  position: absolute; top: 0; left: 0; bottom: 0;
-  background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
-  pointer-events: none; transition: width 0.05s;
+  position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
+  display: flex; gap: 2px;
+  background: var(--top-row-pressed-bg); /* solid, continuous groove — only the segments below get split into lines, not this */
+  pointer-events: none;
 }
+.vol-segment {
+  flex: 1; background: transparent; transition: background 0.05s;
+}
+.vol-segment.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); }
 .track-vol-bar.muted { background: #ccc; }
-.track-vol-bar.muted .track-vol-groove { background: transparent; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
+.track-vol-bar.muted .vol-segment { background: transparent !important; }
 .row-muted .track-ctrl-icon-btn,
 .row-muted .shift-btn {
   background: #ccc !important; border: none !important; color: #888 !important;
@@ -864,7 +865,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 23:06</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 18:51</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2920,10 +2921,16 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  // Plain percentage — the fill's parent (.track-vol-groove) has no
-  // padding of its own now, so 0-100% already correctly spans exactly the
-  // inset area with no extra math needed.
-  el.style.width = Math.round(pct * 100) + '%';
+  // 10 actual segment divs, not a single clipped/masked bar — a CSS
+  // gradient-based approach was tried first but mysteriously refused to
+  // paint on this specific element despite every diagnostic confirming
+  // the declaration itself was correct; real DOM elements sidestep that
+  // entirely and are simpler to reason about besides.
+  const segs = el.children;
+  const litCount = Math.round(pct * segs.length);
+  for (let i = 0; i < segs.length; i++) {
+    segs[i].classList.toggle('lit', i < litCount);
+  }
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
@@ -7869,11 +7876,13 @@ function buildUI() {
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
-    const volGroove = document.createElement('div'); volGroove.className = 'track-vol-groove';
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
+    for (let i = 0; i < 10; i++) {
+      const seg = document.createElement('div'); seg.className = 'vol-segment';
+      volFill.appendChild(seg);
+    }
     _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
-    volGroove.appendChild(volFill);
-    volBar.appendChild(volGroove);
+    volBar.appendChild(volFill);
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
 
