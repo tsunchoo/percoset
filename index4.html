@@ -861,7 +861,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">29Aug26 22:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 03:53</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -886,6 +886,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 <header>
   <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;padding-left:0;"><span style="display:inline-block;background:#000;padding:2px 4px;">JBX<span style="display:inline-block;width:4px;"></span>84</span></h1>
+  <canvas id="eqMeter" width="120" height="20" style="position:absolute;top:calc(1.59007rem + 10px);left:0;pointer-events:none;"></canvas>
   <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:0;right:2px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;">
     <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M1 13a10 10 0 0 1 20 0" stroke="#e0524d" stroke-width="2.6" stroke-linecap="round"/>
@@ -14686,6 +14687,44 @@ function disengagePerformanceLock() {
   }
 })();
 
+// Frequency meter under the logo — taps the final mix via an AnalyserNode
+// (doesn't affect the audio signal path, since the analyser doesn't need
+// to connect onward to anything), groups its frequency bins into 10
+// log-spaced bands (linear spacing would leave most bars empty, since
+// musical energy concentrates in the lower end of the spectrum), and
+// redraws them to the small canvas every frame. Not meant to be a
+// precise/granular analyzer — just a simple, cheap, always-on visual.
+function _initEqMeter() {
+  if (!ctx || !masterGain) return;
+  const canvas = document.getElementById('eqMeter');
+  if (!canvas) return;
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  masterGain.connect(analyser);
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+  const cctx = canvas.getContext('2d');
+  const NUM_BARS = 10;
+  const bucketEdges = [];
+  for (let i = 0; i <= NUM_BARS; i++) bucketEdges.push(Math.max(i, Math.floor(Math.pow(bufferLength, i / NUM_BARS))));
+  function draw() {
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArray);
+    cctx.clearRect(0, 0, canvas.width, canvas.height);
+    const barColor = getComputedStyle(document.documentElement).getPropertyValue('--playhead-color').trim() || '#f8ff00';
+    cctx.fillStyle = barColor;
+    const barWidth = canvas.width / NUM_BARS;
+    for (let b = 0; b < NUM_BARS; b++) {
+      const start = bucketEdges[b], end = Math.max(start + 1, bucketEdges[b + 1]);
+      let sum = 0, count = 0;
+      for (let i = start; i < end && i < bufferLength; i++) { sum += dataArray[i]; count++; }
+      const avg = count > 0 ? sum / count : 0;
+      const barHeight = (avg / 255) * canvas.height;
+      cctx.fillRect(b * barWidth + 1, canvas.height - barHeight, barWidth - 2, barHeight);
+    }
+  }
+  draw();
+}
 async function initAudio() {
   if (_initStarted) return; _initStarted = true;
   requestWakeLock();
@@ -14712,6 +14751,7 @@ async function initAudio() {
     msg.textContent = 'RESUMED, BUILDING GRAPH...';
     attachCtxStateWatch();
     masterGain = ctx.createGain(); masterGain.gain.value = masterVol;
+    _initEqMeter(); // dedicated analyser + draw loop for the visual frequency meter under the logo
     try { _getAmalgamBaseBuffer(); } catch(e) {} // pre-warm the amalgam echo's cached buffer up front
     try { _getDroneAirNoiseBuffer(); } catch(e) {} // same for STRINGS's air-noise buffer
     // Single source of truth for the base output boost — the turbo toggle
