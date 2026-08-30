@@ -456,7 +456,7 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: var(--track-btn-text-color, #fff); }
 .fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: var(--track-btn-text-color, #fff); }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: var(--track-btn-text-color, #fff); }
-.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: var(--track-btn-text-color, #fff); }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
@@ -534,23 +534,17 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-font-scale, 1)); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: var(--bg); /* shows through the 4px inset on all sides — inset applied via a direct inline style on .track-vol-groove itself (see buildUI()), not CSS padding, so there's no cascade/CSS-interpretation question about whether it applies */
-  border: none;
+  background: var(--top-row-pressed-bg); border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
-}
-.track-vol-groove {
-  position: absolute;
-  background: var(--top-row-pressed-bg);
+  border-bottom: 10px solid var(--bg);
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
-  background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
-  pointer-events: none; transition: width 0.05s;
+  background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
-.track-vol-bar.muted .track-vol-groove { background: transparent; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
 .row-muted .track-ctrl-icon-btn,
 .row-muted .shift-btn {
@@ -862,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 23:16</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 17:57</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2838,7 +2832,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.25 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +1dB more (was 0.2228, +2dB before that, was 0.177)
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.2228 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +2dB (was 0.177)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -2918,9 +2912,6 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  // Plain percentage — the fill's parent (.track-vol-groove) has no
-  // padding of its own now, so 0-100% already correctly spans exactly the
-  // inset area with no extra math needed.
   el.style.width = Math.round(pct * 100) + '%';
 }
 function updateVolFillDisplay(tr) {
@@ -7867,12 +7858,9 @@ function buildUI() {
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
-    const volGroove = document.createElement('div'); volGroove.className = 'track-vol-groove';
-    volGroove.style.top = '4px'; volGroove.style.left = '4px'; volGroove.style.right = '4px'; volGroove.style.bottom = '4px';
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
     _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
-    volGroove.appendChild(volFill);
-    volBar.appendChild(volGroove);
+    volBar.appendChild(volFill);
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
 
