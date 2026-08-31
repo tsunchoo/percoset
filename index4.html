@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:23</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:31</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3554,7 +3554,7 @@ function fireStepAudio(step, t) {
       } else if (_beatType === 'afrobeat') {
         if (bstep === 6 || bstep === 10) fireBeatKick(t); // syncopated hits, off the straight downbeats
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1); // remaining steady 8ths
-        if (bstep === 3 || bstep === 11) fireBeatSidestick(t); // pushed accent, ahead of where a backbeat would land
+        if (bstep === 3 || bstep === 11) playSnare(t); // pushed accent, ahead of where a backbeat would land
       } else if (_beatType === 'mozambique') {
         // Same off-beat 8th-note hi-hat pattern REGGAE already uses (2, 6,
         // 10, 14) — this rhythm's hi-hat happens to land in exactly the
