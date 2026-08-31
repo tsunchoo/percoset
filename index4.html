@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:18</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:23</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2425,6 +2425,17 @@ async function loadSamples() {
   await new Promise(r => setTimeout(r, 1000));
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('status').textContent = '';
+  // Same call the RAND button itself makes — not a reimplementation of
+  // its "landing" cascade, the actual function, so the startup pattern
+  // gets exactly the same sound as a normal + press. Runs here (not
+  // earlier) because this is the first point ctx actually exists. Re-arm
+  // the skip-WILD-colors flag first — the earlier, invisible randAll()
+  // call above (still hidden behind this same overlay the whole time)
+  // already consumed it, and this call is the one whose colors the user
+  // actually sees the moment the overlay lifts, so it's the one that
+  // needs to be the one that's skipped.
+  window._wildColorsSkipNext = true;
+  if (ctx) queueRand();
 }
 
 
