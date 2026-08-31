@@ -213,13 +213,13 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   touch-action: none;
 }
 .btn {
-  background: var(--neutral-top, #555); border: none; color: var(--neutral-track-text, #fff);
+  background: var(--neutral-top, #555); border: none; color: var(--top-row-text-color, #fff);
   font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700;
   letter-spacing: 0.5px; padding: 0 10px; cursor: pointer; text-transform: uppercase;
   transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: var(--top-row-btn-height); flex-shrink: 0; white-space: nowrap;
   touch-action: manipulation;
 }
-.btn.active { background: var(--top-row-pressed-bg); color: #fff; }
+.btn.active { background: var(--top-row-pressed-bg); color: var(--top-row-text-color, #fff); }
 /* NEW/AUTO's label is now a single "+" for both states (color/pulse
    already carries the on/off distinction) — sized up well past the base
    .btn font-size so it reads with the same visual weight the word used
@@ -232,12 +232,12 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #scratchBtn { font-size: 1.08rem; }
 /* All glyphs are always HIGHLIGHT-3 colored — only which letter is bold
    changes as RECALL toggles between the two patterns. */
-#scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: #fff; }
+#scratchBtnA, #scratchBtnB, #scratchBtn .ab-sep { color: var(--top-row-text-color, #fff); }
 /* flashBtnOrange('scratchBtn') sets color on the outer button, but these
    spans have their own explicit color rules above, which take precedence
    over anything set on the parent — so that flash was never actually
    visible on the "A"/"B" text itself. This class overrides it directly. */
-#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: #fff !important; }
+#scratchBtn.ab-flash #scratchBtnA, #scratchBtn.ab-flash #scratchBtnB, #scratchBtn.ab-flash .ab-sep { color: var(--top-row-text-color, #fff) !important; }
 #scratchBtnA, #scratchBtnB { font-weight: 400; }
 #scratchBtnA.ab-current, #scratchBtnB.ab-current { font-weight: 900; font-size: 1.23rem; }
 #scratchBtnA:not(.ab-current), #scratchBtnB:not(.ab-current) { font-size: 1.005rem; }
@@ -263,7 +263,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #playBtn { position: relative; }
 #saveBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
-#playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: var(--top-row-highlight-color, #adff00); -webkit-mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
+#playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: var(--top-row-text-color, #fff); -webkit-mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
 #playBtn.playing #playBtnMask { display: block; }
 #playBtn.playing.btn-beat-pulse #playBtnMask { animation: play-green-pulse 0.44s ease-out; }
 /* PLAY and RECORD icon graphics are plain white PNGs with no built-in
@@ -286,7 +286,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .btn.btn-flash-blue:active { opacity: 1; }
 #clearBtn.active:active { opacity: 1; } /* same reasoning as btn-flash-blue above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey for the whole time it's actually held */
 
-#beatBtn.active:not(.beat-auto-active) { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
+#beatBtn.active:not(.beat-auto-active) { background: var(--top-row-pressed-bg) !important; color: var(--top-row-text-color, #fff) !important; }
 #beatBtn.active:not(.beat-auto-active):active { opacity: 1; } /* same reasoning as #clearBtn.active:active above — the generic .btn:active opacity:0.7 was washing the intended pure black out to grey while actually held */
 #beatBtn.active.btn-beat-pulse #beatBtnText { animation: beat-text-pulse 0.44s ease-out; }
 @keyframes beat-text-pulse { 0% { opacity: 0.55; } 30% { opacity: 1; } 100% { opacity: 0.55; } }
@@ -365,7 +365,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn, #randBtn { touch-action: none; -webkit-touch-callout: none; }
 @keyframes rec-icon-pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.1); } }
 .btn-flash { background: var(--slot-saved) !important; color: #111 !important; border: none !important; transition: none !important; }
-.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: #fff !important; border: none !important; transition: none !important; }
+.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: var(--top-row-text-color, #fff) !important; border: none !important; transition: none !important; }
 .rand-overlay-btn {
   font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
@@ -427,13 +427,13 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-name-btn.shifting { background: var(--playhead) !important; color: #fff !important; animation: pulse 0.5s infinite alternate; }
 .track-ctrl-icon-btn {
   width: calc(32px * var(--track-btn-scale, 1)); flex-shrink: 0;
-  background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0)); border: none; color: #fff;
+  background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0)); border: none; color: var(--track-btn-text-color, #fff);
   font-family: 'DM Sans', sans-serif; font-size: calc(1rem * var(--track-btn-font-scale, 1)); font-weight: 700;
   letter-spacing: 0; text-transform: uppercase; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   touch-action: none; transition: background 0.1s;
 }
-.track-ctrl-icon-btn.on { background: var(--playhead); color: #fff; }
+.track-ctrl-icon-btn.on { background: var(--playhead); color: var(--track-btn-text-color, #fff); }
 /* Per-track N/A label, same "+" treatment as #randBtn above — deliberately
    excludes #beatCtrlRand (the BEAT menu's own N/A, a different concept:
    new BEAT type, not new notes) even though it shares the .rand-btn
@@ -453,14 +453,14 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
    regardless of source order. */
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
-.fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: #fff; }
-.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: #fff; }
-.track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: #fff; }
-.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); color: #fff; }
+.fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: var(--track-btn-text-color, #fff); }
+.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: var(--track-btn-text-color, #fff); }
+.track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: var(--track-btn-text-color, #fff); }
+.track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
    color swap with no animation at all. */
-@keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); color: #fff; } 50% { transform: scale(1.1); filter: brightness(1.3); color: #333; } 100% { transform: scale(1); filter: brightness(1); color: #fff; } }
+@keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); color: var(--track-btn-text-color, #fff); } 50% { transform: scale(1.1); filter: brightness(1.3); color: #333; } 100% { transform: scale(1); filter: brightness(1); color: var(--track-btn-text-color, #fff); } }
 .fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on:not(.lock-btn) {
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
 }
@@ -469,7 +469,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--top-row-pressed-bg) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--track-btn-on-color, #0078ff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
 /* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
@@ -477,7 +477,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    color PLAY and BEAT use for their own active states, instead of
    changing with the pulse. */
 /* #randBtn.pulsing { background: var(--highlight2-color, #0078ff); color: var(--highlight2-text, #fff); } */
-#randBtn.pulsing { background: var(--top-row-pressed-bg); color: #fff; }
+#randBtn.pulsing { background: var(--top-row-pressed-bg); color: var(--top-row-text-color, #fff); }
 /* rand-pulse and beat-auto-color-only alternate between HIGHLIGHT and
    HIGHLIGHT 2 — the two intentionally stay separate variables so this
    two-color flash keeps working; unifying them would flatten it. */
@@ -492,28 +492,28 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    shorthand replaces its whole animation list per rule, it doesn't merge
    across separate rules, so without this explicit combined rule whichever
    one happened to win the cascade would silently drop the other. */
-@keyframes beat-auto-color-only { from { background: var(--neutral-top, #555); color: #fff; } to { background: var(--top-row-pressed-bg); color: #fff; } }
+@keyframes beat-auto-color-only { from { background: var(--neutral-top, #555); color: var(--top-row-text-color, #fff); } to { background: var(--top-row-pressed-bg); color: var(--top-row-text-color, #fff); } }
 #beatBtn.beat-auto-active { animation: beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 #beatBtn.btn-beat-pulse.beat-auto-active { animation: top-row-pulse 0.44s ease-out, beat-auto-color-only 0.6s ease-in-out infinite alternate; }
 @keyframes rand-hold-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 #randBtn.rand-holding { animation: rand-hold-pulse 0.35s ease-in-out infinite; }
 @keyframes rand-pending-fast-pulse { 0% { background: var(--neutral-top, #555); transform: scale(1); } 50% { background: var(--top-row-pressed-bg); transform: scale(1.06); } 100% { background: var(--neutral-top, #555); transform: scale(1); } }
 #randBtn.rand-pending-fast { animation: rand-pending-fast-pulse var(--rand-pending-dur, 0.3s) ease-in-out; }
-#randBtn.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
-#clearBtn.active { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
-#scratchBtn.active { background: var(--top-row-pressed-bg) !important; color: #fff !important; }
+#randBtn.btn-flash-blue { background: var(--top-row-pressed-bg) !important; color: var(--top-row-text-color, #fff) !important; }
+#clearBtn.active { background: var(--top-row-pressed-bg) !important; color: var(--top-row-text-color, #fff) !important; }
+#scratchBtn.active { background: var(--top-row-pressed-bg) !important; color: var(--top-row-text-color, #fff) !important; }
 @keyframes pulse { from { background: var(--playhead); color: #fff; } to { background: #ff7755; color: #fff; } }
 .track-ctrl-icon-btn.playing { opacity: 0.45; }
 .shift-btn {
   width: 32px; flex-shrink: 0; background: var(--track-ctrl-btn-color, var(--neutral-track, #b0b0b0));
   border: none;
-  color: #fff; font-family: 'DM Sans', sans-serif;
+  color: var(--track-btn-text-color, #fff); font-family: 'DM Sans', sans-serif;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   font-size: 1rem; font-weight: 700; transition: opacity 0.1s; padding: 0;
   touch-action: none;
 }
 .shift-btn:active { opacity: 0.4; }
-.shift-btn.on { background: #f17d21; color: #fff; }
+.shift-btn.on { background: #f17d21; color: var(--track-btn-text-color, #fff); }
 .shift-btn.right.on { background: var(--track-btn-on-color, #0081FE); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* The "<" offset button specifically (not the "R" reverb toggle, which
    also uses .shift-btn but always carries .right) — bigger text, same
@@ -534,17 +534,23 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-ctrl-row .shift-btn:not(.right) { font-size: calc((1rem + 0.5em) * var(--track-btn-font-scale, 1)); }
 .track-vol-bar {
   flex: 1; position: relative; overflow: hidden;
-  background: var(--top-row-pressed-bg); border: none;
+  background: var(--bg); /* shows through the 4px inset on all sides — inset applied via a direct inline style on .track-vol-groove itself (see buildUI()), not CSS padding, so there's no cascade/CSS-interpretation question about whether it applies */
+  border: none;
   cursor: ew-resize; touch-action: none;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
-  border-bottom: 10px solid var(--bg);
+}
+.track-vol-groove {
+  position: absolute;
+  background: var(--top-row-pressed-bg);
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 0;
-  background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
+  background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
+  pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
+.track-vol-bar.muted .track-vol-groove { background: transparent; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
 .row-muted .track-ctrl-icon-btn,
 .row-muted .shift-btn {
@@ -856,7 +862,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 17:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 23:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1118,6 +1124,50 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <!-- EQ METER COLOR picker removed from the UI — the EQ meter
            itself is disabled for now (see initAudio()). setEqMeterColor()/
            _autoPickEqMeterColor() are kept intact for this reason. -->
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW TEXT/GRAPHICS COLOR</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowTextColor" value="auto" checked onchange="setTopRowTextColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowTextColor" value="1" onchange="setTopRowTextColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowTextColor" value="2" onchange="setTopRowTextColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowTextColor" value="3" onchange="setTopRowTextColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="topRowTextColor" value="custom" onchange="setTopRowTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
+            <input type="color" id="topRowTextColorPicker" value="#ffffff" oninput="setTopRowTextColor('custom')" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS TEXT/GRAPHICS COLOR</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnTextColor" value="auto" checked onchange="setTrackBtnTextColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnTextColor" value="1" onchange="setTrackBtnTextColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnTextColor" value="2" onchange="setTrackBtnTextColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnTextColor" value="3" onchange="setTrackBtnTextColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+            <input type="radio" name="trackBtnTextColor" value="custom" onchange="setTrackBtnTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
+            <input type="color" id="trackBtnTextColorPicker" value="#ffffff" oninput="setTrackBtnTextColor('custom')" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
+          </label>
+        </div>
+      </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS COLOR (FX/R/&lt;/+/SOLO)</div>
@@ -2036,6 +2086,8 @@ function randomizeAppColors() {
   if (window._volSliderColorMode === 'auto') _autoPickVolSliderColor();
   if (window._trackBtnOnColorMode === 'auto') _autoPickTrackBtnOnColor();
   if (window._eqMeterColorMode === 'auto') _autoPickEqMeterColor();
+  if (window._topRowTextColorMode === 'auto') _autoPickTopRowTextColor();
+  if (window._trackBtnTextColorMode === 'auto') _autoPickTrackBtnTextColor();
 }
 (function() {
   const topPicker = document.getElementById('topColorPicker');
@@ -2786,7 +2838,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.2228 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +2dB (was 0.177)
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.25 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +1dB more (was 0.2228, +2dB before that, was 0.177)
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -2866,6 +2918,9 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
+  // Plain percentage — the fill's parent (.track-vol-groove) has no
+  // padding of its own now, so 0-100% already correctly spans exactly the
+  // inset area with no extra math needed.
   el.style.width = Math.round(pct * 100) + '%';
 }
 function updateVolFillDisplay(tr) {
@@ -7812,9 +7867,12 @@ function buildUI() {
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
+    const volGroove = document.createElement('div'); volGroove.className = 'track-vol-groove';
+    volGroove.style.top = '4px'; volGroove.style.left = '4px'; volGroove.style.right = '4px'; volGroove.style.bottom = '4px';
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
     _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
-    volBar.appendChild(volFill);
+    volGroove.appendChild(volFill);
+    volBar.appendChild(volGroove);
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
 
@@ -9203,6 +9261,76 @@ function _autoPickTopRowHighlight() {
 // fallback — engaged/active states (FX .on, reverb .on, SOLO .solo-on,
 // etc.) all use entirely separate colors already and are untouched by
 // this, since they never read from --neutral-track in the first place.
+// TOP ROW TEXT/GRAPHICS COLOR — HIGHLIGHT/2/3 or a raw color picker.
+// Applies to the shared .btn text color (covers every top-row button's
+// text, resting and pressed/engaged) plus recolors the PLAY/RECORD icon
+// graphics to match exactly, using the same precise pixel-remapping
+// recolorTopRowIcons() already built for TOP ROW BLACK, rather than the
+// coarse black/white invert filter those icons use by default.
+function setTopRowTextColor(n) {
+  window._topRowTextColorMode = n;
+  if (n === 'auto') { _autoPickTopRowTextColor(); return; }
+  let hex;
+  if (n === 'custom') {
+    hex = document.getElementById('topRowTextColorPicker')?.value || '#ffffff';
+  } else {
+    const map = { 1: '--playhead-color', 2: '--highlight2-color', 3: '--highlight3-color' };
+    hex = getComputedStyle(document.documentElement).getPropertyValue(map[n] || map[3]).trim() || '#ffffff';
+  }
+  document.documentElement.style.setProperty('--top-row-text-color', hex);
+  recolorTopRowIcons(hex);
+}
+// AUTO (BEST CONTRAST) — same approach as the other auto pickers: checks
+// each of the 3 highlights against the top row's own resting background
+// (--neutral-top), picks whichever contrasts best, then nudges it further
+// via _ensureContrast if that still isn't enough.
+function _autoPickTopRowTextColor() {
+  const cs = getComputedStyle(document.documentElement);
+  const bg = cs.getPropertyValue('--neutral-top').trim() || '#555555';
+  const candidates = [
+    cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
+    cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
+    cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
+  ];
+  let best = candidates[0], bestRatio = -1;
+  for (const hex of candidates) {
+    const ratio = _contrastRatio(hex, bg);
+    if (ratio > bestRatio) { bestRatio = ratio; best = hex; }
+  }
+  const finalHex = _ensureContrast(best, bg);
+  document.documentElement.style.setProperty('--top-row-text-color', finalHex);
+  recolorTopRowIcons(finalHex);
+}
+function setTrackBtnTextColor(n) {
+  window._trackBtnTextColorMode = n;
+  if (n === 'auto') { _autoPickTrackBtnTextColor(); return; }
+  let hex;
+  if (n === 'custom') {
+    hex = document.getElementById('trackBtnTextColorPicker')?.value || '#ffffff';
+  } else {
+    const map = { 1: '--playhead-color', 2: '--highlight2-color', 3: '--highlight3-color' };
+    hex = getComputedStyle(document.documentElement).getPropertyValue(map[n] || map[3]).trim() || '#ffffff';
+  }
+  document.documentElement.style.setProperty('--track-btn-text-color', hex);
+}
+// AUTO (BEST CONTRAST) — same approach, checked against the track
+// buttons' own resting background (--track-ctrl-btn-color).
+function _autoPickTrackBtnTextColor() {
+  const cs = getComputedStyle(document.documentElement);
+  const bg = cs.getPropertyValue('--track-ctrl-btn-color').trim() || cs.getPropertyValue('--neutral-track').trim() || '#b0b0b0';
+  const candidates = [
+    cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
+    cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
+    cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
+  ];
+  let best = candidates[0], bestRatio = -1;
+  for (const hex of candidates) {
+    const ratio = _contrastRatio(hex, bg);
+    if (ratio > bestRatio) { bestRatio = ratio; best = hex; }
+  }
+  const finalHex = _ensureContrast(best, bg);
+  document.documentElement.style.setProperty('--track-btn-text-color', finalHex);
+}
 function setTrackCtrlBtnColor(n) {
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)', top: 'var(--neutral-top, #555)' };
   const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111', top: 'var(--neutral-top-text, #fff)' };
@@ -12897,6 +13025,8 @@ setTrackBtnOnColor('auto'); // AUTO (best contrast) is the default — checked a
 setEmptyCellBgTransparent(false); // no longer checked by default — the empty cell background is now a subtle 15% opacity fill instead, which the (now off-by-default) toggle would otherwise completely override
 setEmptyCellsInvisible(false); // no longer checked by default — was fully overriding the new 15%-opacity empty cell background with opacity:0 !important, making that change invisible
 setEqMeterColor('auto'); // AUTO (best contrast) is the default
+setTopRowTextColor('auto'); // AUTO (best contrast) is the default
+setTrackBtnTextColor('auto'); // AUTO (best contrast) is the default
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
