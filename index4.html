@@ -263,7 +263,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #playBtn { position: relative; }
 #saveBtn { position: relative; }
 #playBtn.playing img { opacity: 0; }
-#playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: var(--top-row-text-color, #fff); -webkit-mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
+#playBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; transform: translate(-50%, -50%); background: var(--top-row-highlight-color, #adff00); -webkit-mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='18' y='18' width='64' height='64'/%3E%3C/svg%3E"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
 #playBtn.playing #playBtnMask { display: block; }
 #playBtn.playing.btn-beat-pulse #playBtnMask { animation: play-green-pulse 0.44s ease-out; }
 /* PLAY and RECORD icon graphics are plain white PNGs with no built-in
@@ -469,7 +469,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--track-btn-on-color, #0078ff) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--top-row-pressed-bg) !important; animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
 /* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 17:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 17:31</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1123,9 +1123,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW TEXT/GRAPHICS COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowTextColor" value="auto" checked onchange="setTopRowTextColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="topRowTextColor" value="1" onchange="setTopRowTextColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
@@ -1135,7 +1132,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
             <input type="radio" name="topRowTextColor" value="3" onchange="setTopRowTextColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
           <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowTextColor" value="custom" onchange="setTopRowTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
+            <input type="radio" name="topRowTextColor" value="custom" checked onchange="setTopRowTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
             <input type="color" id="topRowTextColorPicker" value="#ffffff" oninput="setTopRowTextColor('custom')" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           </label>
         </div>
@@ -1144,9 +1141,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS TEXT/GRAPHICS COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnTextColor" value="auto" checked onchange="setTrackBtnTextColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
-          </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackBtnTextColor" value="1" onchange="setTrackBtnTextColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
@@ -1157,7 +1151,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
             <input type="radio" name="trackBtnTextColor" value="3" onchange="setTrackBtnTextColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
           <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnTextColor" value="custom" onchange="setTrackBtnTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
+            <input type="radio" name="trackBtnTextColor" value="custom" checked onchange="setTrackBtnTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
             <input type="color" id="trackBtnTextColorPicker" value="#ffffff" oninput="setTrackBtnTextColor('custom')" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
           </label>
         </div>
@@ -2080,8 +2074,6 @@ function randomizeAppColors() {
   if (window._volSliderColorMode === 'auto') _autoPickVolSliderColor();
   if (window._trackBtnOnColorMode === 'auto') _autoPickTrackBtnOnColor();
   if (window._eqMeterColorMode === 'auto') _autoPickEqMeterColor();
-  if (window._topRowTextColorMode === 'auto') _autoPickTopRowTextColor();
-  if (window._trackBtnTextColorMode === 'auto') _autoPickTrackBtnTextColor();
 }
 (function() {
   const topPicker = document.getElementById('topColorPicker');
@@ -9257,7 +9249,6 @@ function _autoPickTopRowHighlight() {
 // coarse black/white invert filter those icons use by default.
 function setTopRowTextColor(n) {
   window._topRowTextColorMode = n;
-  if (n === 'auto') { _autoPickTopRowTextColor(); return; }
   let hex;
   if (n === 'custom') {
     hex = document.getElementById('topRowTextColorPicker')?.value || '#ffffff';
@@ -9268,30 +9259,12 @@ function setTopRowTextColor(n) {
   document.documentElement.style.setProperty('--top-row-text-color', hex);
   recolorTopRowIcons(hex);
 }
-// AUTO (BEST CONTRAST) — same approach as the other auto pickers: checks
-// each of the 3 highlights against the top row's own resting background
-// (--neutral-top), picks whichever contrasts best, then nudges it further
-// via _ensureContrast if that still isn't enough.
-function _autoPickTopRowTextColor() {
-  const cs = getComputedStyle(document.documentElement);
-  const bg = cs.getPropertyValue('--neutral-top').trim() || '#555555';
-  const candidates = [
-    cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
-    cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
-    cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
-  ];
-  let best = candidates[0], bestRatio = -1;
-  for (const hex of candidates) {
-    const ratio = _contrastRatio(hex, bg);
-    if (ratio > bestRatio) { bestRatio = ratio; best = hex; }
-  }
-  const finalHex = _ensureContrast(best, bg);
-  document.documentElement.style.setProperty('--top-row-text-color', finalHex);
-  recolorTopRowIcons(finalHex);
-}
+// TRACK BUTTONS TEXT/GRAPHICS COLOR — same pattern, applied to the shared
+// FX/R/</+/SOLO text color (--track-btn-text-color). These buttons don't
+// have icon-image graphics like PLAY/RECORD do (just text/glyphs), so no
+// pixel-remapping is needed here.
 function setTrackBtnTextColor(n) {
   window._trackBtnTextColorMode = n;
-  if (n === 'auto') { _autoPickTrackBtnTextColor(); return; }
   let hex;
   if (n === 'custom') {
     hex = document.getElementById('trackBtnTextColorPicker')?.value || '#ffffff';
@@ -9300,24 +9273,6 @@ function setTrackBtnTextColor(n) {
     hex = getComputedStyle(document.documentElement).getPropertyValue(map[n] || map[3]).trim() || '#ffffff';
   }
   document.documentElement.style.setProperty('--track-btn-text-color', hex);
-}
-// AUTO (BEST CONTRAST) — same approach, checked against the track
-// buttons' own resting background (--track-ctrl-btn-color).
-function _autoPickTrackBtnTextColor() {
-  const cs = getComputedStyle(document.documentElement);
-  const bg = cs.getPropertyValue('--track-ctrl-btn-color').trim() || cs.getPropertyValue('--neutral-track').trim() || '#b0b0b0';
-  const candidates = [
-    cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
-    cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
-    cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
-  ];
-  let best = candidates[0], bestRatio = -1;
-  for (const hex of candidates) {
-    const ratio = _contrastRatio(hex, bg);
-    if (ratio > bestRatio) { bestRatio = ratio; best = hex; }
-  }
-  const finalHex = _ensureContrast(best, bg);
-  document.documentElement.style.setProperty('--track-btn-text-color', finalHex);
 }
 function setTrackCtrlBtnColor(n) {
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)', top: 'var(--neutral-top, #555)' };
@@ -13013,8 +12968,8 @@ setTrackBtnOnColor('auto'); // AUTO (best contrast) is the default — checked a
 setEmptyCellBgTransparent(false); // no longer checked by default — the empty cell background is now a subtle 15% opacity fill instead, which the (now off-by-default) toggle would otherwise completely override
 setEmptyCellsInvisible(false); // no longer checked by default — was fully overriding the new 15%-opacity empty cell background with opacity:0 !important, making that change invisible
 setEqMeterColor('auto'); // AUTO (best contrast) is the default
-setTopRowTextColor('auto'); // AUTO (best contrast) is the default
-setTrackBtnTextColor('auto'); // AUTO (best contrast) is the default
+setTopRowTextColor('custom'); // CUSTOM (white) is the default — matches the prior fixed-white behavior
+setTrackBtnTextColor('custom'); // CUSTOM (white) is the default — matches the prior fixed-white behavior
 // BEAT is on by default — sync the button's visible state to match, since
 // nothing else touches it this early (buildUI() doesn't, and the deferred
 // startup RAND call below doesn't either).
