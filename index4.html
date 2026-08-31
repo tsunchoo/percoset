@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:34</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -15497,10 +15497,12 @@ function stopRecallLoop() {
     // never got reached. Logging now instead of failing silently.
     try {
       const current = snapshotState();
-      document.querySelectorAll('.reel-wrap').forEach(r => {
-        r.classList.remove('spinning');
-        r.classList.add('spinning-reverse');
-      });
+      if (playing) {
+        document.querySelectorAll('.reel-wrap').forEach(r => {
+          r.classList.remove('spinning');
+          r.classList.add('spinning-reverse');
+        });
+      }
       restoreState(_recallSnapB, { skipBeatState: true });
       flashBtnOrange('scratchBtn');
       _flashScratchBtnText();
@@ -15522,10 +15524,12 @@ function stopRecallLoop() {
     setTimeout(() => {
       if (window._reelReversePending) {
         window._reelReversePending = false;
-        document.querySelectorAll('.reel-wrap').forEach(r => {
-          r.classList.remove('spinning-reverse');
-          r.classList.add('spinning');
-        });
+        if (playing) {
+          document.querySelectorAll('.reel-wrap').forEach(r => {
+            r.classList.remove('spinning-reverse');
+            r.classList.add('spinning');
+          });
+        }
       }
     }, rewindDur * 1000);
   };
