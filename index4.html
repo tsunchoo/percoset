@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:31</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:34</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1304,7 +1304,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <button id="exportTapeBtn" class="rec-mode-btn" onclick="exportTape()">SAVE TAPE</button>
+          <button id="exportTapeBtn" class="rec-mode-btn" onclick="hideSettings(); exportTape();">SAVE TAPE</button>
           <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
           <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
           <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain" style="display:none;" onchange="importTapeFile(this.files[0])">
