@@ -379,9 +379,9 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 .bpm-val { font-size: 0.9rem; font-weight: 700; min-width: 32px; text-align: right; flex-shrink: 0; }
 input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; background: #555; outline: none; border-radius: 0; cursor: pointer; }
 input[type=range]::-webkit-slider-runnable-track { -webkit-appearance: none; background: #555; height: 4px; border-radius: 0; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; background: #f17d21; cursor: pointer; border-radius: 0; margin-top: -12px; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; background: var(--neutral-top, #555); cursor: pointer; border-radius: 0; margin-top: -12px; }
 input[type=range]::-moz-range-track { background: #555; height: 4px; border-radius: 0; }
-input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: #f17d21; cursor: pointer; border-radius: 0; border: none; }
+input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: var(--neutral-top, #555); cursor: pointer; border-radius: 0; border: none; }
 .vol-wrap { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 960px; margin-top: 6px; padding: 6px 0; }
 .master-vol-slider { flex: 1; accent-color: var(--neutral-top, #555); }
 /* accent-color alone isn't reliably supported across every iOS Safari
@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:11</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 05:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
