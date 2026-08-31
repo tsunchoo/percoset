@@ -862,7 +862,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">30Aug26 23:16</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">31Aug26 04:49</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -956,7 +956,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div class="beat-type-item" data-beat="halftime">HALFTIME</div>
       <div class="beat-type-item" data-beat="reggae">ROCKERS</div>
       <div class="beat-type-item" data-beat="reggae2">ONE DROP</div>
-      <div class="beat-type-item" data-beat="push">PUSH</div>
+      <div class="beat-type-item" data-beat="mozambique">MOZAMBIQUE</div>
       <div class="beat-type-item" data-beat="doubledown">DOUBLEDOWN</div>
       <div class="beat-type-item" data-beat="samba">SAMBA</div>
       <div class="beat-type-item" data-beat="cumbia">CUMBIA</div>
@@ -1482,6 +1482,8 @@ const INSTRUMENTS = {
   sidestick: { name: 'SIDESTICK', soft: 'Sounds/Sidestick50.wav', accent: 'Sounds/Sidestick100.wav', group: 'kit' },
   snare2: { name: 'SNARE 2', soft: null, accent: null, group: 'kit' },
   shihat: { name: 'HIHAT',       soft: null, accent: null, group: 'kit' },
+  stomMid: { name: 'MID TOM',    soft: null, accent: null, group: 'kit' },
+  stomLo: { name: 'LOW TOM',     soft: null, accent: null, group: 'kit' },
   ride:   { name: 'RIDE',        soft: 'Sounds/Ride50.wav',  accent: 'Sounds/Ride100.wav',  group: 'kit'  },
   tamb:   { name: 'TAMB',        soft: 'Sounds/Tamb50.wav',   accent: 'Sounds/Tamb100.wav',   group: 'perc' },
   shak:   { name: 'SHAKER',      soft: 'Sounds/Shak50.wav',   accent: 'Sounds/Shak100.wav',   group: 'perc' },
@@ -2794,6 +2796,8 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'snare2') { triggerFxEnvelope(tr, time); playSynthSnare_reinstated(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
+  if (key === 'stomMid') { triggerFxEnvelope(tr, time); playSynthTom(isAccent, time, tr, false); return; }
+  if (key === 'stomLo')  { triggerFxEnvelope(tr, time); playSynthTom(isAccent, time, tr, true); return; }
   if (key === 'amlgm')  {
     triggerFxEnvelope(tr, time);
     let dur = stepDuration();
@@ -3466,8 +3470,11 @@ function fireStepAudio(step, t) {
           // Kick on 1 (all the &s handled below), snares on 2+4 backbeat
           doKick  = (bstep === 0);
           doSnare = (bstep === 4 || bstep === 12);
-        } else if (_beatType === 'push') {
-          doKick = (bstep === 4 || bstep === 12);
+        } else if (_beatType === 'mozambique') {
+          // MOZAMBIQUE — single kick right on the downbeat; sidestick,
+          // hi-hat, and both toms are handled in the off-beat dispatch
+          // below, since none of them land on a straight quarter note.
+          doKick = (bstep === 0);
         } else if (_beatType === 'rollin') {
           // ROLLIN — straight backbeat snare, rolling syncopated kick underneath
           doKick  = (bstep === 0);
@@ -3546,8 +3553,14 @@ function fireStepAudio(step, t) {
         if (bstep === 6 || bstep === 10) fireBeatKick(t); // syncopated hits, off the straight downbeats
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1); // remaining steady 8ths
         if (bstep === 3 || bstep === 11) fireBeatSidestick(t); // pushed accent, ahead of where a backbeat would land
-      } else if (_beatType === 'push') {
-        if (bstep === 1 || bstep === 7 || bstep === 9 || bstep === 14) fireBeatKick(t);
+      } else if (_beatType === 'mozambique') {
+        // Same off-beat 8th-note hi-hat pattern REGGAE already uses (2, 6,
+        // 10, 14) — this rhythm's hi-hat happens to land in exactly the
+        // same spots.
+        if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
+        if (bstep === 3 || bstep === 11) fireBeatSidestick(t);
+        if (bstep === 7) playSynthTom(false, t, -1, false); // mid tom
+        if (bstep === 14 || bstep === 15) playSynthTom(false, t, -1, true); // low tom
       }
     }
 }
@@ -3742,6 +3755,44 @@ function playSynthKick(isAccent, time, tr) {
   g.gain.exponentialRampToValueAtTime(0.001, time + 0.45);
   osc.start(time); osc.stop(time + 0.46);
   _cleanupNodes([g], time + 0.47);
+}
+// Same pitch-envelope technique as playSynthKick — a sine sweeping down
+// in frequency with an exponential gain decay — just pitched into tom
+// range instead of kick range (sweep starts higher, ends higher, and is
+// less extreme, since toms keep more of their tonal character than a
+// kick's sub-bass thump) so the two stay clearly distinct. A short,
+// bandpassed noise click layered under the attack (same idea as
+// playSynthSnare's rim crack) gives the stick attack some definition
+// rather than sounding like a plain sine sweep.
+function playSynthTom(isAccent, time, tr, isLow) {
+  if (!ctx) return;
+  const dest = getSynthConnectNode(tr);
+  const startFreq = isLow ? (isAccent ? 150 : 120) : (isAccent ? 220 : 180);
+  const endFreq = isLow ? 65 : 90;
+  const vol = isLow ? (isAccent ? 0.32 : 0.21) : (isAccent ? 0.30 : 0.20);
+  const dur = isLow ? 0.4 : 0.3;
+
+  const osc = ctx.createOscillator(), g = ctx.createGain();
+  osc.type = 'sine';
+  osc.connect(g); g.connect(dest);
+  osc.frequency.setValueAtTime(startFreq, time);
+  osc.frequency.exponentialRampToValueAtTime(endFreq, time + dur * 0.7);
+  g.gain.setValueAtTime(vol, time);
+  g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  osc.start(time); osc.stop(time + dur + 0.01);
+  _cleanupNodes([g], time + dur + 0.02);
+
+  const clickLen = 0.008;
+  const cBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * clickLen), ctx.sampleRate);
+  const cd = cBuf.getChannelData(0);
+  for (let i = 0; i < cd.length; i++) cd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / cd.length, 3);
+  const cSrc = ctx.createBufferSource(), cg = ctx.createGain();
+  const cFilter = ctx.createBiquadFilter(); cFilter.type = 'bandpass'; cFilter.frequency.value = isLow ? 900 : 1400; cFilter.Q.value = 1.2;
+  cSrc.buffer = cBuf; cSrc.connect(cFilter); cFilter.connect(cg); cg.connect(dest);
+  cg.gain.setValueAtTime(vol * 0.25, time);
+  cg.gain.exponentialRampToValueAtTime(0.001, time + clickLen);
+  cSrc.start(time);
+  _cleanupNodes([cFilter, cg], time + clickLen + 0.02);
 }
 function playSynthSnare_reinstated(isAccent, time, tr, gainScale) {
   if (!ctx) return;
@@ -10774,7 +10825,7 @@ function randAll(mode, opts) {
     const tempoSlider = document.getElementById('tempoBar'); if (tempoSlider) tempoSlider.value = bpm;
   }
   if (!_beatTypeLocked) {
-    const _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'push', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
+    const _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'mozambique', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
     setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
   }
 
@@ -15724,7 +15775,7 @@ function beatCtrlCycleFx() {
 // R (rand) — single tap picks a new BEAT type once; double tap toggles an
 // auto mode that picks a new one every 4 bars, same shape as the per-track
 // randomize button and the top-row RAND AUTO loop.
-const _BEAT_TYPE_POOL = ['disco','bounce','breaks','drive','swagger','halftime','reggae','reggae2','push','doubledown','samba','cumbia','afrobeat','boogie'];
+const _BEAT_TYPE_POOL = ['disco','bounce','breaks','drive','swagger','halftime','reggae','reggae2','mozambique','doubledown','samba','cumbia','afrobeat','boogie'];
 function randomizeBeatType() {
   const pick = _BEAT_TYPE_POOL[Math.floor(Math.random() * _BEAT_TYPE_POOL.length)];
   setBeatType(pick);
