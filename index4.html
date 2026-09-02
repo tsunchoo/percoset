@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">02 Sep 26 20:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">02 Sep 26 20:55</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3482,9 +3482,11 @@ function fireStepAudio(step, t) {
           doKick  = (bstep === 0);
           doSnare = (bstep === 4 || bstep === 12);
         } else if (_beatType === 'mozambique') {
-          // MOZAMBIQUE — single kick right on the downbeat; sidestick,
-          // hi-hat, and both toms are handled in the off-beat dispatch
-          // below, since none of them land on a straight quarter note.
+          // MOZAMBIQUE — single kick right on the downbeat; hi-hat is
+          // handled in the off-beat dispatch below since it doesn't land on
+          // a straight quarter note. Sidestick, ride, and both toms are all
+          // real tracks now (see _applyMozambiqueTracksToCurrentPattern),
+          // not synth hits.
           doKick = (bstep === 0);
         } else if (_beatType === 'rollin') {
           // ROLLIN — straight backbeat snare, rolling syncopated kick underneath
@@ -3567,11 +3569,9 @@ function fireStepAudio(step, t) {
       } else if (_beatType === 'mozambique') {
         // Same off-beat 8th-note hi-hat pattern REGGAE already uses (2, 6,
         // 10, 14) — this rhythm's hi-hat happens to land in exactly the
-        // same spots. Sidestick and ride are real tracks now (see
-        // _applyMozambiqueTracksToCurrentPattern), not synth hits here.
+        // same spots. Sidestick, ride, and both toms are real tracks now
+        // (see _applyMozambiqueTracksToCurrentPattern), not synth hits here.
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 7) playSynthTom(false, t, -1, false); // mid tom
-        if (bstep === 14 || bstep === 15) playSynthTom(false, t, -1, true); // low tom
       }
     }
 }
@@ -11193,12 +11193,11 @@ function randAll(mode, opts) {
     pool[replaceIdx] = 'shihat';
   }
 
-  // MOZAMBIQUE beat type — RIDE and SIDESTICK become real tracks (their
-  // pattern is written directly below), same reasoning and same
-  // replace-a-slot approach as JAZZ's ride/comping pass above. Kick,
-  // hihat, and both toms stay BEAT-menu-only synthesis — they're never
-  // tracks.
-  const _mozambiqueTrackKeys = ['ride', 'sidestick'];
+  // MOZAMBIQUE beat type — RIDE, SIDESTICK, and both toms become real
+  // tracks (their patterns are written directly below), same reasoning and
+  // same replace-a-slot approach as JAZZ's ride/comping pass above. Kick
+  // and hihat stay BEAT-menu-only synthesis — they're never tracks.
+  const _mozambiqueTrackKeys = ['ride', 'sidestick', 'tomHi', 'tomLo'];
   if (_beatType === 'mozambique') {
     const bassKeysLocal4 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
     for (const member of _mozambiqueTrackKeys) {
@@ -11393,6 +11392,18 @@ function randAll(mode, opts) {
         // used before this became a real track.
         grid[_tr].fill(0);
         grid[_tr][3] = 2; grid[_tr][11] = 2;
+        redrawTrackCells(_tr); markModified();
+      } else if (_beatType === 'mozambique' && trackInstruments[_tr] === 'tomHi') {
+        // Fixed single hit, same step the old synth-dispatch "mid tom" call
+        // used before this became a real track.
+        grid[_tr].fill(0);
+        grid[_tr][7] = 1;
+        redrawTrackCells(_tr); markModified();
+      } else if (_beatType === 'mozambique' && trackInstruments[_tr] === 'tomLo') {
+        // Fixed 2-hit pattern, same steps the old synth-dispatch "low tom"
+        // call used before this became a real track.
+        grid[_tr].fill(0);
+        grid[_tr][14] = 1; grid[_tr][15] = 1;
         redrawTrackCells(_tr); markModified();
       } else {
         randomizeTrack(_tr);
@@ -15910,8 +15921,8 @@ function setBeatType(type) {
   // moment DISCO is actually picked, not just to whatever RAND generates
   // next.
   if (type === 'disco' && !_wasDisco) _applyDiscoHihatToCurrentPattern();
-  // MOZAMBIQUE gets its RIDE + SIDESTICK tracks the same way, the moment
-  // it's actually picked, not just on the next RAND.
+  // MOZAMBIQUE gets its RIDE + SIDESTICK + tom tracks the same way, the
+  // moment it's actually picked, not just on the next RAND.
   if (type === 'mozambique' && !_wasMozambique) _applyMozambiqueTracksToCurrentPattern();
 }
 // Forces RIDE and SIDESTICK onto 2 of the current pattern's tracks,
@@ -16023,24 +16034,28 @@ function _applyJazzTracksToCurrentPattern() {
   markModified();
 }
 // Same idea as _applyJazzTracksToCurrentPattern above, for MOZAMBIQUE's
-// RIDE + SIDESTICK — fixed patterns (not randomized), applied to 2 of the
-// current pattern's tracks the moment MOZAMBIQUE is picked directly from
-// the BEAT menu, not just to whatever RAND generates next.
+// RIDE + SIDESTICK + both toms — fixed patterns (not randomized), applied
+// to 4 of the current pattern's tracks the moment MOZAMBIQUE is picked
+// directly from the BEAT menu, not just to whatever RAND generates next.
 function _applyMozambiqueTracksToCurrentPattern() {
   const _existingRideTr = trackInstruments.findIndex(k => k === 'ride');
   const _existingSidestickTr = trackInstruments.findIndex(k => k === 'sidestick');
+  const _existingTomHiTr = trackInstruments.findIndex(k => k === 'tomHi');
+  const _existingTomLoTr = trackInstruments.findIndex(k => k === 'tomLo');
   const _essentialKeys = new Set(['skick', 'shihat', ...TONAL_KEYS, 'congHi', 'congLo', 'bongHi', 'bongLo']);
   const _unlocked = [];
   for (let tr = 0; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _unlocked.push(tr);
-  if (_unlocked.length < 2) return; // nothing safe to overwrite
+  if (_unlocked.length < 4) return; // nothing safe to overwrite
   const _preferred = _unlocked.filter(tr => !_essentialKeys.has(trackInstruments[tr]));
   const _targets = [];
   if (_existingRideTr !== -1 && !trackSweep[_existingRideTr]) _targets.push(_existingRideTr);
   if (_existingSidestickTr !== -1 && !trackSweep[_existingSidestickTr] && !_targets.includes(_existingSidestickTr)) _targets.push(_existingSidestickTr);
-  for (const tr of _preferred) { if (_targets.length < 2 && !_targets.includes(tr)) _targets.push(tr); }
-  for (const tr of _unlocked) { if (_targets.length < 2 && !_targets.includes(tr)) _targets.push(tr); }
-  if (_targets.length < 2) return;
-  const [rideTr, sidestickTr] = _targets;
+  if (_existingTomHiTr !== -1 && !trackSweep[_existingTomHiTr] && !_targets.includes(_existingTomHiTr)) _targets.push(_existingTomHiTr);
+  if (_existingTomLoTr !== -1 && !trackSweep[_existingTomLoTr] && !_targets.includes(_existingTomLoTr)) _targets.push(_existingTomLoTr);
+  for (const tr of _preferred) { if (_targets.length < 4 && !_targets.includes(tr)) _targets.push(tr); }
+  for (const tr of _unlocked) { if (_targets.length < 4 && !_targets.includes(tr)) _targets.push(tr); }
+  if (_targets.length < 4) return;
+  const [rideTr, sidestickTr, tomHiTr, tomLoTr] = _targets;
   const _applyOneMoz = (tr, key) => {
     trackInstruments[tr] = key;
     const tb = document.getElementById(`tbtn-${tr}`); if (tb) tb.textContent = INSTRUMENTS[key]?.name || key;
@@ -16055,13 +16070,19 @@ function _applyMozambiqueTracksToCurrentPattern() {
     if (key === 'ride') {
       grid[tr][0] = 2; grid[tr][2] = 1; grid[tr][4] = 2; grid[tr][5] = 1;
       grid[tr][7] = 1; grid[tr][9] = 1; grid[tr][10] = 2; grid[tr][12] = 1; grid[tr][13] = 1;
-    } else {
+    } else if (key === 'sidestick') {
       grid[tr][3] = 2; grid[tr][11] = 2;
+    } else if (key === 'tomHi') {
+      grid[tr][7] = 1;
+    } else if (key === 'tomLo') {
+      grid[tr][14] = 1; grid[tr][15] = 1;
     }
     redrawTrackCells(tr);
   };
   _applyOneMoz(rideTr, 'ride');
   _applyOneMoz(sidestickTr, 'sidestick');
+  _applyOneMoz(tomHiTr, 'tomHi');
+  _applyOneMoz(tomLoTr, 'tomLo');
   markModified();
 }
 // Tapping the already-active BEAT TYPE button toggles the lock (tapping it otherwise does
