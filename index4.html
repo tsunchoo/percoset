@@ -23,7 +23,7 @@
   --track-btn-scale: 0.9025; /* per-track button box size (width/height) — 0.95 * 0.95, two successive 5% reductions. Text is deliberately NOT scaled by this — see --track-btn-font-scale below, frozen at the first round's value so glyphs/labels stay exactly the size they already are */
   --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
-  --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 80%, black); /* pressed/engaged state for every top-row button — a slightly darker version of the button's own resting color, replacing the old separate highlight-color system */
+  --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 72%, black); /* pressed/engaged state for every top-row button — a slightly darker version of the button's own resting color, replacing the old separate highlight-color system */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">02 Sep 26 20:55</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">02 Sep 26 21:06</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1326,16 +1326,16 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">42</span>
+          <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">51</span>
         </div>
-        <input type="range" id="reverbIntensityBar" min="0" max="100" value="42" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
+        <input type="range" id="reverbIntensityBar" min="0" max="100" value="51" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">25</span>
+          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">30</span>
         </div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
+        <input type="range" id="delayMixBar" min="0" max="100" value="30" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
       </div>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
@@ -1581,12 +1581,12 @@ function syncSettingsPanel() {
   if (kd) kd.textContent = (getKeyName() || '').replace(/-/g, ' ');
   const dmb = document.getElementById('delayMixBar');
   if (dmb) {
-    dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.25) * 100);
+    dmb.value = Math.round((window._globalDelayMix !== undefined ? window._globalDelayMix : 0.3) * 100);
     const dmv = document.getElementById('reverbMixVal'); if (dmv) dmv.textContent = dmb.value;
   }
   const rib = document.getElementById('reverbIntensityBar');
   if (rib) {
-    rib.value = Math.round((window._reverbIntensity !== undefined ? window._reverbIntensity : 0.425) * 100);
+    rib.value = Math.round((window._reverbIntensity !== undefined ? window._reverbIntensity : 0.51) * 100);
     const riv = document.getElementById('reverbIntensityVal'); if (riv) riv.textContent = rib.value;
   }
   const is = document.getElementById('intensitySlider');
@@ -9402,15 +9402,28 @@ function setTrackCtrlBtnColor(n) {
 // Unified via --track-btn-on-color/-text, same 4-option pattern as the
 // other track/top-row pickers.
 window._trackBtnOnColorMode = 'auto';
+// Mixes a hex color a little toward black — used to make the engaged/"on"
+// state read as a clear, slightly darker version of whatever color is
+// chosen, the same darkening treatment the top row's pressed state already
+// gets via --top-row-pressed-bg.
+function _darkenHex(hex, factor) {
+  const h = (hex || '').replace('#', '');
+  if (h.length !== 6) return hex;
+  const r = Math.round(parseInt(h.substr(0, 2), 16) * factor);
+  const g = Math.round(parseInt(h.substr(2, 2), 16) * factor);
+  const b = Math.round(parseInt(h.substr(4, 2), 16) * factor);
+  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+}
 function setTrackBtnOnColor(n) {
   window._trackBtnOnColorMode = n;
   if (n === 'auto') { _autoPickTrackBtnOnColor(); return; }
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)', top: 'var(--neutral-top, #555)' };
-  const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111', top: 'var(--neutral-top-text, #fff)' };
   document.documentElement.style.setProperty('--track-btn-on-color', map[n] || map.top);
-  document.documentElement.style.setProperty('--track-btn-on-text', textMap[n] || textMap.top);
   const resolvedHex = getComputedStyle(document.documentElement).getPropertyValue('--track-btn-on-color').trim();
-  _applyBlastColorFrom(resolvedHex);
+  const darkHex = _darkenHex(resolvedHex, 0.85); // a little darker than the raw highlight/base color
+  document.documentElement.style.setProperty('--track-btn-on-color', darkHex);
+  document.documentElement.style.setProperty('--track-btn-on-text', _contrastText(darkHex));
+  _applyBlastColorFrom(darkHex);
 }
 // AUTO (BEST CONTRAST) — checked against the button's own resting
 // background (--track-ctrl-btn-color), since the point of an "on" color
@@ -9454,9 +9467,10 @@ function _autoPickTrackBtnOnColor() {
     if (ratio > bestRatio) { bestRatio = ratio; best = hex; }
   }
   const finalHex = _ensureContrast(best, bg);
-  document.documentElement.style.setProperty('--track-btn-on-color', finalHex);
-  document.documentElement.style.setProperty('--track-btn-on-text', _contrastText(finalHex));
-  _applyBlastColorFrom(finalHex);
+  const darkHex = _darkenHex(finalHex, 0.85); // a little darker than the raw auto-picked color, same treatment as the explicit picks above
+  document.documentElement.style.setProperty('--track-btn-on-color', darkHex);
+  document.documentElement.style.setProperty('--track-btn-on-text', _contrastText(darkHex));
+  _applyBlastColorFrom(darkHex);
 }
 function setTrackNamesUniform(on) {
   window._trackNamesUniform = !!on;
@@ -10277,9 +10291,9 @@ function _buildBounceGraph(targetCtx) {
   window._reverbSendBus = targetCtx.createGain(); window._reverbSendBus.gain.value = 1;
   window._reverbConv = targetCtx.createConvolver();
   window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
-  window._reverbConv.buffer = _buildReverbIRBuffer(targetCtx, _reverbSizeFromSlider((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.425));
+  window._reverbConv.buffer = _buildReverbIRBuffer(targetCtx, _reverbSizeFromSlider((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.51));
   window._reverbOutGain = targetCtx.createGain();
-  window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.25) * REVERB_MIX_MAX;
+  window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.3) * REVERB_MIX_MAX;
   window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
   masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain);
   window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain);
@@ -11722,7 +11736,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (trackInstruments[tr] === 'magic') ? 0 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // MAGIC never gets reverb through RAND — checked first, unconditional 0, only ever on if set manually via the track's own R button; CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (trackInstruments[tr] === 'magic') ? 0 : (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo') ? 1 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // MAGIC never gets reverb through RAND — checked first, unconditional 0, only ever on if set manually via the track's own R button; TOM HI/MID/LOW always get reverb through RAND — unconditional 1, overrides the too-dense/full-16th gate below same as CONGA/BONGO; CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     _setTrackReverb(tr, delayOn);
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -11778,12 +11792,21 @@ function randAll(mode, opts) {
     });
   }
   const _reverbQuota = intensityQuota();
+  // TOM HI/MID/LOW are guaranteed reverb (see delayChance above) and stay
+  // that way regardless of the INTENSITY cap below — pulled out into their
+  // own "protected" list so the random trim never touches them; the quota
+  // available to everything else shrinks by however many toms are holding
+  // a guaranteed slot.
+  const _reverbProtectedTracks = [];
   const _reverbOnTracks = [];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
-    if (trackDelay[tr]) _reverbOnTracks.push(tr);
+    if (!trackDelay[tr]) continue;
+    if (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo') { _reverbProtectedTracks.push(tr); continue; }
+    _reverbOnTracks.push(tr);
   }
-  if (_reverbOnTracks.length > _reverbQuota) {
-    _reverbOnTracks.sort(() => Math.random() - 0.5).slice(_reverbQuota).forEach(tr => {
+  const _reverbRemovableQuota = Math.max(0, _reverbQuota - _reverbProtectedTracks.length);
+  if (_reverbOnTracks.length > _reverbRemovableQuota) {
+    _reverbOnTracks.sort(() => Math.random() - 0.5).slice(_reverbRemovableQuota).forEach(tr => {
       _setTrackReverb(tr, false);
       const db = document.getElementById(`delaybtn-${tr}`);
       if (db) db.classList.toggle('on', false);
@@ -14547,10 +14570,10 @@ function fullReset() {
   currentScaleName = 'penta-min'; PENTA_MINOR = SCALES['penta-min']; globalScaleRoot = null;
   activeSlot = -1;
   slots.fill(null); _pendingSlot = -1; _autoSlotQueue = [];
-  window._globalDelayMix = 0.25;
-  if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.50 * REVERB_MIX_MAX;
-  window._reverbIntensity = 0.425; // REVERB SIZE — -15% from the previous 0.50 default
-  if (window._reverbConv && ctx) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, _reverbSizeFromSlider(0.425));
+  window._globalDelayMix = 0.3;
+  if (window._reverbOutGain) window._reverbOutGain.gain.value = 0.3 * REVERB_MIX_MAX; // REVERB MIX — +20% from the previous 0.25 default
+  window._reverbIntensity = 0.51; // REVERB SIZE — +20% from the previous 0.425 default
+  if (window._reverbConv && ctx) window._reverbConv.buffer = _buildReverbIRBuffer(ctx, _reverbSizeFromSlider(0.51));
 
   // Display prefs back to default
   _bgPulseEnabled = false; _bgStaticEnabled = false; _bgPulseSteps = 4; _bgPulseCounter = 0;
@@ -15084,8 +15107,8 @@ window.masterLimiter = ctx.createDynamicsCompressor(); const masterLimiter = win
     window._reverbSendBus = ctx.createGain(); window._reverbSendBus.gain.value = 1;
     window._reverbConv = ctx.createConvolver();
     window._reverbConv.normalize = false; // browser auto-normalize crushes a dense noise-decay IR like this to near-silence
-    window._reverbConv.buffer = _buildReverbIRBuffer(ctx, _reverbSizeFromSlider((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.425));
-    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.25) * REVERB_MIX_MAX;
+    window._reverbConv.buffer = _buildReverbIRBuffer(ctx, _reverbSizeFromSlider((window._reverbIntensity !== undefined) ? window._reverbIntensity : 0.51));
+    window._reverbOutGain = ctx.createGain(); window._reverbOutGain.gain.value = ((window._globalDelayMix !== undefined) ? window._globalDelayMix : 0.3) * REVERB_MIX_MAX;
     window._reverbSendBus.connect(window._reverbConv); window._reverbConv.connect(window._reverbOutGain); window._reverbOutGain.connect(window._normalTrackFadeGain);
     masterGain.connect(window._normalTrackFadeGain); window._normalTrackFadeGain.connect(makeupGain); makeupGain.connect(window._duckGain); window._duckGain.connect(masterLimiter); masterLimiter.connect(window._postLimiterGain); window._postLimiterGain.connect(ctx.destination);
     for (let i=0; i<NUM_TRACKS; i++) {
