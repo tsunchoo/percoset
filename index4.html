@@ -15475,7 +15475,7 @@ function stopRecallLoop() {
   };
 
   const doRecall = () => {
-    if (!playing || !_recallSnapB) { playUiSound('play'); return; }
+    if (!playing || !_recallSnapB) { playUiSound('click'); return; }
     _pressPulse('scratchBtn');
     stopAllAutoRand();
     const rewindName = Math.random() < 0.5 ? 'rewind' : 'rewind2';
