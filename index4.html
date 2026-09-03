@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:26</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -10437,7 +10437,11 @@ function _precomputeLoopSequence(numLoops) {
       // approximated here with the lightweight per-track randomize rather
       // than the full randAll() (which carries invasive live-UI/BPM/color
       // side effects that have no place in this offline precompute pass).
-      if (autoShiftStops[tr] || _autoRandLoopActive) randomizeTrack(tr);
+      // MOZAMBIQUE's 4 fixed kit tracks are excluded either way — their
+      // patterns are deliberately fixed and must not evolve/regenerate,
+      // live or in a bounce, same as randAll() itself already guards.
+      const _isMozKit = _beatType === 'mozambique' && ['ride', 'sidestick', 'tomHi', 'tomLo'].includes(trackInstruments[tr]);
+      if ((autoShiftStops[tr] || _autoRandLoopActive) && !_isMozKit) randomizeTrack(tr);
     }
     sequence.push(_capturePlaybackState());
   }
@@ -11300,6 +11304,17 @@ function randAll(mode, opts) {
         pool[replaceIdx] = member;
       }
     }
+    // The 4 forced members above are the ONLY percussion MOZAMBIQUE ever
+    // gets — any other percussion instrument that landed in the pool from
+    // the normal random perc/tonal split gets swapped for a tonal
+    // instrument instead, so RAND never quietly adds a 5th/6th perc track
+    // alongside the fixed kit.
+    for (let i = 0; i < pool.length; i++) {
+      if (_mozambiqueTrackKeys.includes(pool[i])) continue;
+      if (!percKeysAll.includes(pool[i])) continue; // already tonal — leave it
+      const _replacement = tonalKeysAll[Math.floor(Math.random() * tonalKeysAll.length)];
+      if (_replacement) pool[i] = _replacement;
+    }
   }
 
   // Sort pool into fixed visual order: top=hihat, perc, tonal, bass, kick=bottom
@@ -11668,8 +11683,12 @@ function randAll(mode, opts) {
   // Levels 3+4: activate auto-rand on some tracks and boost FX
   if (level >= 3) {
     const autoCount = Math.min(NUM_TRACKS, Math.round((_intensitySliderVal / 100) * 4)); // driven by INTENSITY — 0 at the bottom (genuinely zero auto-note tracks), up to 4 at the top
-    // Use actual track indices, not pool indices
-    const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== 0);
+    // Use actual track indices, not pool indices. MOZAMBIQUE's 4 fixed
+    // kit tracks (ride/sidestick/tomHi/tomLo) are excluded — their
+    // patterns are deliberately fixed, never something auto-rand should
+    // be free to reinterpret every 4 bars, same reasoning as JAZZ's ride
+    // never getting auto-rand either.
+    const eligible = Array.from({length: NUM_TRACKS}, (_, i) => i).filter(i => !trackSweep[i] && i !== 0 && !(_beatType === 'mozambique' && _mozambiqueTrackKeys.includes(trackInstruments[i])));
     // Lead instruments are most likely to be picked, other tonal tracks a
     // bit more likely than percussion — weighted random sampling
     // (Efraimidis-Spirakis: rank by Math.random()^(1/weight), higher weight floats to the top)
