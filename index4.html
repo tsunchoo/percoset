@@ -896,7 +896,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:38</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:42</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3019,7 +3019,7 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  el.style.width = Math.round(pct * 100) + '%';
+  el.style.width = Math.round(pct * 10) * 10 + '%'; // snapped to the nearest whole segment (10% steps) — otherwise the fill can stop mid-segment and show a partial-width sliver that looks like an unequal segment next to the fully-lit ones
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
