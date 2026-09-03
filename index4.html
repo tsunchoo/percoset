@@ -546,7 +546,8 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
   border-bottom: 10px solid var(--bg);
-  height: calc(clamp(28px, 8vw, 32px) * 1.1); /* +10% vs. the old row height — matches .track-ctrl-row's own new height exactly, so it fills the row flush instead of overflowing it */
+  height: calc(clamp(28px, 8vw, 32px) * 0.99); /* was *1.1, now -10% more (1.1 * 0.9) — shorter than .track-ctrl-row's own height (still *1.1) again, so... */
+  align-self: center; /* ...it's vertically centered in the row instead of flush top/bottom, giving an equal gap above and below */
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 15%; /* inset from the bottom only — was 5%, +10% more */
@@ -864,7 +865,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:32</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
