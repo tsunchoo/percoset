@@ -863,7 +863,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:30</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1245,33 +1245,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 </div>
 
 <!-- Settings window — appears on reel hold -->
-<div id="instructionsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px 16px;min-width:min(340px,90vw);max-width:min(420px,90vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;">
-    <div id="instructionsLockBtn" style="display:flex;align-items:center;gap:6px;font-size:0.7rem;font-weight:700;letter-spacing:1px;color:var(--dim);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:8px 14px;text-transform:uppercase;pointer-events:none;transition:background 0.12s, color 0.12s, transform 0.12s;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAADwCAYAAACg7+4yAAAD3ElEQVR4nO3bUW7bSBBAQTnI/a/s/QgS7GZtQBQpsh+n6gAKp+epTRvI4wEAAAAAAAAc7+PqBxjq8+oH+Ib7+suqA5ka6F7L3edKB75rtN9Z4m7vfsjVov3Obe/5rgcT7tdud993O5Bwn3Obe7/LQYT7mvz91w8g3GNkO/hx9QPsIN7jZGdZ/OZlhx2Q66H2wOI9R6aL0iuEeM+TmXUl4MxAbyQx80LAiUHe1PjZTw94/AAXMPoOJgc8enCLGXsXUwMeO7CFjbyTiQGPHBSPx2Pg3UwLeNyA+J9RdzQp4FGDoWFSwHSMWTZTAh4zEJ424s4mBDxiELzk8rubEDC87OqAL/8Gs9uld3hlwOJlt6s3MPdw2TK6KmDbl0PYwBzlkqUkYNKuCNjrA4exgTnS6cvp59n/YMi0/5nrJ9cXzr6k6ZcwLdrvTJ7jqTMU8C+VcP+2/DxXf4Wohvvb7+efGvLbnflL3LQh1+P9tzudZZNV/wpxxwufdKbTltWKAU+66KPd+WxfWi3gFS54hTP+sVrA3MxZAU/4BW6lzbTMWW1g3uWUpSVg0gRM2ioBL/NOuJpVAl7REl9aAZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkfRz8eZ8Hfx73dUh7R3yIaNljV4N7XyHEy167Gnq1fuHyDpt7fGUDi5d32dzW1oDFyyj+jMY0m5bkloBtX8axgZno6WUpYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImTcCkCZg0AZMmYNIETJqASRMwaQImbUvAH297Cvivp1uzgUnbGrAtzLttaswGZpLNC/KVgG1hxnh1A4uYo73U1BEhfh7wGaxrV4NHb1Ix8ww/wQEAAAAAAGC0fwDhV0KVLoch3gAAAABJRU5ErkJggg==" style="width:12px;height:auto;pointer-events:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" alt="">Screen Lock</div>
-    <div style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;text-align:center;width:100%;">How To Use</div>
-    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;align-items:stretch;gap:2px;font-size:0.76rem;color:var(--text);line-height:1.15;text-align:left;width:100%;">
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">RECORD</span><span>Record in realtime then Save or Share</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">PLAY/STOP</span><span>Double-click Resets the Pattern</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">SWEEP</span><span>Click and Hold to create transitions</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">BEAT</span><span>Toggles the drum machine on and off, Click and Hold for Menu</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">NEW</span><span>Generates a new Pattern</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">RECALL</span><span>Brings back the last pattern</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">Save Slots 1-6</span><span>Fill automatically or set manually</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">Left Tape Spool</span><span>Turntable-style Hold and Release</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">Right Tape Spool</span><span>Resets the 1</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">Tape Window</span><span>Click and Hold for Settings Menu</span></li>
-      <li style="display:flex;gap:5px;margin-top:2px;"><span style="font-weight:700;flex-shrink:0;width:100px;">TEMPO</span><span>Click to Lock, Hold for Menu</span></li>
-      <li style="display:flex;gap:5px;margin-top:2px;"><span style="font-weight:700;flex-shrink:0;width:100px;">Track Names</span><span>click to toggle mute and hold to change instrument</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">L</span><span>Locks the track out of being randomized</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">&lt;</span><span>Offsets the notes backwards 1/16th</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">R</span><span>Adds Reverb</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">FX</span><span>Two levels of crunch</span></li>
-      <li style="display:flex;gap:5px;"><span style="font-weight:700;flex-shrink:0;width:100px;">N</span><span>creates new notes in track, double-click for Automatic</span></li>
-    </ul>
-    <div style="font-size:0.65rem;letter-spacing:0.5px;color:var(--dim);text-align:center;padding-top:4px;border-top:1px solid #ddd;">Concept &amp; Design by Simon Garrett, built with Claude</div>
-  </div>
-</div>
-
 <div id="settingsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);" id="settingsBg">
   <div id="settingsPanel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:24px;min-width:min(340px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;max-height:85vh;overflow-y:auto;">
 
@@ -1549,14 +1522,12 @@ document.addEventListener('touchstart', () => { _lastRealTouchTimeGlobal = Date.
 // them. Deliberate exceptions: the sound picker's own scrollable list,
 // every settings slider (input[type=range], which relies entirely on
 // the browser's own native touch-drag to move their thumb), and the
-// settings panel, instructions/performance-lock panel, and COLOR (dev)
-// menu themselves — all three scroll their own content and were just as
-// broken as the sliders were for the same reason.
+// settings panel and COLOR (dev) menu themselves — both scroll their own
+// content and were just as broken as the sliders were for the same reason.
 document.addEventListener('touchmove', e => {
   if (e.target.closest('.sound-picker-inner')) return;
   if (e.target.closest('input[type="range"]')) return;
   if (e.target.closest('#settingsPanel')) return;
-  if (e.target.closest('#instructionsOverlay')) return;
   if (e.target.closest('#devMenuOverlay')) return;
   e.preventDefault();
 }, { passive: false });
@@ -14445,14 +14416,6 @@ function setTonalPercBalance(v) {
   const readout = document.getElementById('tonalPercBalanceReadout');
   if (readout) readout.textContent = `${v} / ${6 - v}`;
 }
-function showInstructions() {
-  const el = document.getElementById('instructionsOverlay');
-  if (el) { el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center'; }
-}
-function hideInstructions() {
-  const el = document.getElementById('instructionsOverlay');
-  if (el) el.style.display = 'none';
-}
 (function() {
   const title = document.getElementById('siFiTitle');
   if (!title) return;
@@ -14957,70 +14920,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// ── Performance lock ──
-// Blacks out via a grayscale/dim filter and eats every touch (the How To
-// panel itself, kept visible, does the blocking) so a phone in a pocket
-// can't trigger buttons. Does not touch ctx/scheduler/playing in any way —
-// audio keeps running exactly as it was.
-let _performanceLocked = false;
-const UNLOCK_HOLD_MS = 600; // direct hold on the visible lock badge to release
-
-function updateLockIconState() {
-  const lockBtn = document.getElementById('instructionsLockBtn');
-  if (!lockBtn) return;
-  const img = lockBtn.querySelector('img');
-  if (_performanceLocked) {
-    lockBtn.style.background = '#111';
-    lockBtn.style.color = '#f5f0e8';
-    if (img) img.style.filter = 'invert(1)';
-  } else {
-    lockBtn.style.background = 'var(--panel)';
-    lockBtn.style.color = 'var(--dim)';
-    if (img) img.style.filter = '';
-  }
-}
-function engagePerformanceLock() {
-  _performanceLocked = true;
-  document.documentElement.style.filter = 'grayscale(1) contrast(1.15) brightness(0.55)';
-  updateLockIconState();
-  // Let the phone sleep its display on its own timer instead of forcing the
-  // user to fight the wake lock with the hardware button.
-  if (_wakeLock) { _wakeLock.release().catch(() => {}); _wakeLock = null; }
-}
-function disengagePerformanceLock() {
-  _performanceLocked = false;
-  document.documentElement.style.filter = '';
-  updateLockIconState();
-  requestWakeLock();
-  hideInstructions();
-}
-// Direct hold-to-unlock on the visible lock badge — reachable once the
-// panel is up, so no need to route back through the title gesture.
-(function() {
-  const lockBtn = document.getElementById('instructionsLockBtn');
-  if (!lockBtn) return;
-  lockBtn.style.pointerEvents = 'auto';
-  lockBtn.style.cursor = 'pointer';
-  let holdTimer = null;
-  lockBtn.addEventListener('pointerdown', e => {
-    if (!_performanceLocked) return;
-    e.preventDefault();
-    lockBtn.style.transform = 'scale(0.92)';
-    holdTimer = setTimeout(() => {
-      lockBtn.style.transform = 'scale(1)';
-      disengagePerformanceLock();
-    }, UNLOCK_HOLD_MS);
-  });
-  const cancelHold = () => {
-    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-    lockBtn.style.transform = 'scale(1)';
-  };
-  lockBtn.addEventListener('pointerup', cancelHold);
-  lockBtn.addEventListener('pointercancel', cancelHold);
-  lockBtn.addEventListener('pointerleave', cancelHold);
-})();
-
-
 // Android/Chrome: capture the native install prompt and trigger it from our
 // own button (Chrome hides its default mini-infobar once we do this).
 // iOS Safari has no install API at all, so it gets a one-time instructional
@@ -15295,7 +15194,13 @@ async function hardResetAudioEngine() {
   btn.addEventListener('mouseup', () => { if (!ctx) initAudio(); else ctx.resume().catch(()=>{}); });
 })();
 
-// SWEEP button wiring — hold = rising noise sweep, release = descend
+// SWEEP button wiring — a single press/tap starts the rising noise sweep
+// and takeover, which now runs on its own (no need to keep holding) all
+// the way up to whatever the next 1st downbeat actually is from wherever
+// playback currently sits, then releases/descends automatically at that
+// point exactly the way it does on a manual release. If the sequencer
+// isn't playing at all, there's no downbeat to sync to, so it falls back
+// to the old fixed one-bar-plus-a-quarter-note duration instead.
 (function() {
   const btn = document.getElementById('clearBtn');
   if (!btn) return;
@@ -15306,6 +15211,22 @@ async function hardResetAudioEngine() {
   // when dragged back off the spool onto SWEEP itself).
   const SWEEP_ATTACK_LEVEL = 0.1704; // -3dB more (was 0.2407)
   const SWEEP_CEILING_LEVEL = 1.2029; // -3dB more (was 1.6991)
+  // How long this run should last, decided once at press time (see
+  // beginPress) and read by both startSweep's own duck-intensity ramp and
+  // startSweepTakeover's gain/auto-release timing, so the two stay in sync
+  // with each other instead of each independently assuming a fixed bar.
+  let _sweepPlannedDuration = 0;
+  // Time (seconds, ctx.currentTime-relative) from right now until the next
+  // 1st downbeat (step 0) actually lands, based on the live scheduler
+  // state — same computation scheduleRandTransition() already uses to find
+  // the next bar boundary. Returns null while stopped, since there's no
+  // playhead position to measure from.
+  function _sweepTimeToNextDownbeat() {
+    if (!playing || !ctx) return null;
+    const nextStep = (currentStep + 1) % NUM_STEPS;
+    const barStartTime = (nextStep === 0) ? nextStepTime : nextStepTime + (NUM_STEPS - nextStep) * stepDuration();
+    return Math.max(0.05, barStartTime - ctx.currentTime); // floor so a press landing right on the boundary itself still gets a real (if brief) run instead of ~0s
+  }
 
   // Sidechain analyser on master output — reads current mix level to duck the sweep
   let _sweepAnalyser = null, _sweepAnalyserData = null, _sweepDuckLoop = null;
@@ -15357,7 +15278,7 @@ async function hardResetAudioEngine() {
     // course of the measure — a mild pump at the start, an extreme,
     // hair-trigger, near-total-silence-at-peaks pump by the end.
     let _lastDuckTarget = 1;
-    const measureLen = stepDuration() * 20; // one full bar plus one more quarter note, so it never ends early
+    const measureLen = _sweepPlannedDuration || stepDuration() * 20; // one full bar plus one more quarter note, so it never ends early — matches startSweepTakeover's own duration, decided once at press time
     const duckLoop = () => {
       if (!sweepNodes || !_sweepAnalyser) return;
       _sweepAnalyser.getByteTimeDomainData(_sweepAnalyserData);
@@ -15408,19 +15329,20 @@ async function hardResetAudioEngine() {
     setTimeout(() => { try { noise.stop(); noise.disconnect(); } catch(e) {} }, quarterNote * 1000 + 100);
   }
 
-  // The hold itself is now a full-measure crossfade takeover: SWEEP's
-  // presence rises while the normal mix fades out under it, for as long as
-  // the button stays held. The pump motion keeps reading off masterGain
+  // A single press is now the whole gesture: SWEEP's presence rises while
+  // the normal mix fades out under it, automatically, for however long it
+  // takes to reach the next 1st downbeat from wherever the playhead
+  // currently is (or one bar-plus-a-quarter if playback is stopped) — no
+  // need to keep holding. The pump motion keeps reading off masterGain
   // directly (pre-fade), so it stays just as vigorous throughout even as
-  // the normal mix gets quiet. Release early and it cuts off right where it
-  // is, into the usual sweep-out; hold the full measure and it completes
-  // and releases on its own, whether the finger is still down or not.
+  // the normal mix gets quiet. It completes and releases entirely on its
+  // own once that time is up, whether the finger is still down or not.
   let _sweepTakeoverTid = null;
   function startSweepTakeover() {
     if (!sweepNodes) return;
     const { gain } = sweepNodes;
     const t = ctx.currentTime;
-    const measure = stepDuration() * 20; // one full bar plus one more quarter note, so it never ends early
+    const measure = _sweepPlannedDuration || stepDuration() * 20; // decided once at press time in beginPress — time to the next downbeat, or the old fixed fallback if stopped
     const attackDur = stepDuration() * 4; // matches startSweep's own fade-in — let it actually finish before taking over, instead of cancelling it out from under itself
     // Don't touch anything before the fade-in completes — cancelling here
     // used to wipe out the quarter-note attack before it ever had a chance
@@ -15428,7 +15350,7 @@ async function hardResetAudioEngine() {
     gain.gain.linearRampToValueAtTime(SWEEP_CEILING_LEVEL, t + measure); // boosted well past unity — the duck's own increasing depth was eating most of the rise otherwise; limiter downstream catches the peaks
     _sweepTakeoverTid = setTimeout(() => {
       _sweepTakeoverTid = null;
-      stopSweep(); // full measure elapsed — triggers the usual sweep-out and brings the normal mix back up
+      stopSweep(); // reached the next downbeat (or the fallback duration elapsed) — triggers the usual sweep-out and brings the normal mix back up
     }, measure * 1000);
   }
 
@@ -15455,12 +15377,22 @@ async function hardResetAudioEngine() {
     bp.frequency.exponentialRampToValueAtTime(rising ? SWEEP_CEIL_FREQ : SWEEP_FLOOR_FREQ, t + dur);
   }
 
-  const beginPress = () => { window._sweepGestureActive = true; startSweep(); startSweepTakeover(); btn.classList.add('active'); };
+  const beginPress = () => {
+    if (sweepNodes) return; // already sweeping from an earlier press — let that run finish on its own instead of double-triggering
+    window._sweepGestureActive = true;
+    const fallbackDuration = stepDuration() * 20; // one full bar plus one more quarter note — used only when playback is stopped and there's no downbeat to sync to
+    _sweepPlannedDuration = _sweepTimeToNextDownbeat() ?? fallbackDuration;
+    startSweep();
+    startSweepTakeover();
+    btn.classList.add('active');
+  };
+  // No longer stops the sweep — the whole point is you don't have to keep
+  // holding. This just clears the drag-combo tracking flag (spool
+  // pitch-reverse, drag-onto-BEAT/RAND/RECALL) for whenever the finger
+  // actually lifts; the sweep itself keeps running and auto-releases on
+  // its own via startSweepTakeover's timer above, at the next downbeat.
   const endPress = () => {
     window._sweepGestureActive = false;
-    if (_sweepTakeoverTid) { clearTimeout(_sweepTakeoverTid); _sweepTakeoverTid = null; }
-    stopSweep(); // released early — cuts off right where the ramps currently are
-    btn.classList.remove('active');
   };
 
   btn.addEventListener('touchstart', e => { e.preventDefault(); beginPress(); }, { passive: false });
@@ -15468,9 +15400,9 @@ async function hardResetAudioEngine() {
   btn.addEventListener('touchcancel', endPress);
   btn.addEventListener('mousedown', beginPress);
   // Document-wide, not button-only — the pointer rolling off the button
-  // while still held should NOT stop the effect, and a mouseup bound only
-  // to the button would miss the release entirely if the pointer had
-  // drifted away by the time it's released, leaving it stuck on.
+  // while still held should still clear the drag-combo flag correctly, and
+  // a mouseup bound only to the button would miss it entirely if the
+  // pointer had drifted away by the time it's released.
   document.addEventListener('mouseup', endPress);
 
   // Drag from SWEEP onto BEAT or RAND to trigger them simultaneously.
