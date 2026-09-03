@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 18:34</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 19:32</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8081,13 +8081,15 @@ function buildUI() {
     soloBtn._flashHeld = false;
     let _lastSoloTouchStart = 0;
     soloBtn.addEventListener('mousedown', (e) => {
-      if (!window._soloFlashMode) return; // classic mode: mousedown does nothing, the mouseup toggle below handles it
-      if (Date.now() - _lastSoloTouchStart < 500) return; // synthetic ghost from the drag-to-engage system's touchstart dispatch — the real touchstart handler below already engaged it
+      if (!window._soloFlashMode) return; // classic mode: mousedown does nothing, the mouseup toggle below handles it (already drag-across-capable, untouched)
+      if (Date.now() - _lastSoloTouchStart < 500) return; // synthetic ghost following THIS button's own real touchstart — already engaged there below, ignore
+      if (!e.isTrusted) { toggleSolo(tr); return; } // genuine drag-across from another button (the generic drag-to-engage system's dispatch) — a persistent toggle, same as every other draggable button, not a flash-hold (there's no real press here to eventually release)
       if (!soloBtn._flashHeld) { soloBtn._flashHeld = true; toggleSolo(tr); }
     });
     soloBtn.addEventListener('mouseup', (e) => {
       if (window._soloFlashMode) {
-        if (Date.now() - _lastSoloTouchStart < 500) return; // synthetic ghost — the real touchend handler below already released it
+        if (Date.now() - _lastSoloTouchStart < 500) return; // synthetic ghost following THIS button's own real touchend — already released there below, ignore
+        if (!e.isTrusted) return; // drag-across pair — the mousedown above already applied the persistent toggle; this immediately-following synthetic mouseup must not undo it
         if (soloBtn._flashHeld) { soloBtn._flashHeld = false; toggleSolo(tr); }
         return;
       }
