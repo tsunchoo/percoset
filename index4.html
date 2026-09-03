@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">02 Sep 26 21:06</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:00</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1476,8 +1476,6 @@ const INSTRUMENTS = {
   sidestick: { name: 'SIDESTICK', soft: 'Sounds/Sidestick50.wav', accent: 'Sounds/Sidestick100.wav', group: 'kit' },
   snare2: { name: 'SNARE 2', soft: null, accent: null, group: 'kit' },
   shihat: { name: 'HIHAT',       soft: null, accent: null, group: 'kit' },
-  stomMid: { name: 'MID TOM',    soft: null, accent: null, group: 'kit' },
-  stomLo: { name: 'LOW TOM',     soft: null, accent: null, group: 'kit' },
   ride:   { name: 'RIDE',        soft: 'Sounds/Ride50.wav',  accent: 'Sounds/Ride100.wav',  group: 'kit'  },
   tomHi:  { name: 'Tom Hi',      soft: 'Sounds/TomHigh50.wav', accent: 'Sounds/TomHigh100.wav', group: 'kit' },
   tomMid: { name: 'Tom Mid',     soft: 'Sounds/TomMid50.wav',  accent: 'Sounds/TomMid100.wav',  group: 'kit' },
@@ -2810,8 +2808,6 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'snare2') { triggerFxEnvelope(tr, time); playSynthSnare_reinstated(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
-  if (key === 'stomMid') { triggerFxEnvelope(tr, time); playSynthTom(isAccent, time, tr, false); return; }
-  if (key === 'stomLo')  { triggerFxEnvelope(tr, time); playSynthTom(isAccent, time, tr, true); return; }
   if (key === 'amlgm')  {
     triggerFxEnvelope(tr, time);
     let dur = stepDuration();
@@ -3766,44 +3762,6 @@ function playSynthKick(isAccent, time, tr) {
   g.gain.exponentialRampToValueAtTime(0.001, time + 0.45);
   osc.start(time); osc.stop(time + 0.46);
   _cleanupNodes([g], time + 0.47);
-}
-// Same pitch-envelope technique as playSynthKick — a sine sweeping down
-// in frequency with an exponential gain decay — just pitched into tom
-// range instead of kick range (sweep starts higher, ends higher, and is
-// less extreme, since toms keep more of their tonal character than a
-// kick's sub-bass thump) so the two stay clearly distinct. A short,
-// bandpassed noise click layered under the attack (same idea as
-// playSynthSnare's rim crack) gives the stick attack some definition
-// rather than sounding like a plain sine sweep.
-function playSynthTom(isAccent, time, tr, isLow) {
-  if (!ctx) return;
-  const dest = getSynthConnectNode(tr);
-  const startFreq = isLow ? (isAccent ? 150 : 120) : (isAccent ? 220 : 180);
-  const endFreq = isLow ? 65 : 90;
-  const vol = isLow ? (isAccent ? 0.32 : 0.21) : (isAccent ? 0.30 : 0.20);
-  const dur = isLow ? 0.4 : 0.3;
-
-  const osc = ctx.createOscillator(), g = ctx.createGain();
-  osc.type = 'sine';
-  osc.connect(g); g.connect(dest);
-  osc.frequency.setValueAtTime(startFreq, time);
-  osc.frequency.exponentialRampToValueAtTime(endFreq, time + dur * 0.7);
-  g.gain.setValueAtTime(vol, time);
-  g.gain.exponentialRampToValueAtTime(0.001, time + dur);
-  osc.start(time); osc.stop(time + dur + 0.01);
-  _cleanupNodes([g], time + dur + 0.02);
-
-  const clickLen = 0.008;
-  const cBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * clickLen), ctx.sampleRate);
-  const cd = cBuf.getChannelData(0);
-  for (let i = 0; i < cd.length; i++) cd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / cd.length, 3);
-  const cSrc = ctx.createBufferSource(), cg = ctx.createGain();
-  const cFilter = ctx.createBiquadFilter(); cFilter.type = 'bandpass'; cFilter.frequency.value = isLow ? 900 : 1400; cFilter.Q.value = 1.2;
-  cSrc.buffer = cBuf; cSrc.connect(cFilter); cFilter.connect(cg); cg.connect(dest);
-  cg.gain.setValueAtTime(vol * 0.25, time);
-  cg.gain.exponentialRampToValueAtTime(0.001, time + clickLen);
-  cSrc.start(time);
-  _cleanupNodes([cFilter, cg], time + clickLen + 0.02);
 }
 function playSynthSnare_reinstated(isAccent, time, tr, gainScale) {
   if (!ctx) return;
@@ -11408,16 +11366,16 @@ function randAll(mode, opts) {
         grid[_tr][3] = 2; grid[_tr][11] = 2;
         redrawTrackCells(_tr); markModified();
       } else if (_beatType === 'mozambique' && trackInstruments[_tr] === 'tomHi') {
-        // Fixed single hit, same step the old synth-dispatch "mid tom" call
-        // used before this became a real track.
+        // Fixed single accented hit, same step the old synth-dispatch "mid
+        // tom" call used before this became a real track.
         grid[_tr].fill(0);
-        grid[_tr][7] = 1;
+        grid[_tr][7] = 2;
         redrawTrackCells(_tr); markModified();
       } else if (_beatType === 'mozambique' && trackInstruments[_tr] === 'tomLo') {
-        // Fixed 2-hit pattern, same steps the old synth-dispatch "low tom"
-        // call used before this became a real track.
+        // Fixed 2-hit accented pattern, same steps the old synth-dispatch
+        // "low tom" call used before this became a real track.
         grid[_tr].fill(0);
-        grid[_tr][14] = 1; grid[_tr][15] = 1;
+        grid[_tr][14] = 2; grid[_tr][15] = 2;
         redrawTrackCells(_tr); markModified();
       } else {
         randomizeTrack(_tr);
@@ -11439,12 +11397,13 @@ function randAll(mode, opts) {
       // Tambourine/Ride — those instruments already cover the whole measure
       // evenly at that density, so Delay just smears an already-continuous
       // part rather than adding anything.
-      // CONGA/BONGO are exempt from both density-based strips below — their
-      // 50% reverb chance (set earlier) is meant to be unconditional, and
-      // their patterns are naturally busy/dense enough to trip these checks
-      // almost every time, which was silently undoing that fixed chance
-      // right after it was set.
-      const _congaBongoTr = ['congHi', 'congLo', 'bongHi', 'bongLo'].includes(trackInstruments[_tr]);
+      // CONGA/BONGO and TOM HI/MID/LOW are exempt from both density-based
+      // strips below — their reverb chance (set earlier, unconditional for
+      // toms) is meant to survive regardless of how dense the actual
+      // randomized pattern turns out, and their patterns are naturally
+      // busy/dense enough to trip these checks often, which was silently
+      // undoing that fixed/guaranteed chance right after it was set.
+      const _congaBongoTr = ['congHi', 'congLo', 'bongHi', 'bongLo', 'tomHi', 'tomMid', 'tomLo'].includes(trackInstruments[_tr]);
       const _full16th = grid[_tr].every(v => v > 0);
       const _full8thRelevant = ['shihat','shak','tamb','ride'].includes(trackInstruments[_tr]) &&
         [0,2,4,6,8,10,12,14].every(s => grid[_tr][s] > 0);
@@ -16096,9 +16055,9 @@ function _applyMozambiqueTracksToCurrentPattern() {
     } else if (key === 'sidestick') {
       grid[tr][3] = 2; grid[tr][11] = 2;
     } else if (key === 'tomHi') {
-      grid[tr][7] = 1;
+      grid[tr][7] = 2;
     } else if (key === 'tomLo') {
-      grid[tr][14] = 1; grid[tr][15] = 1;
+      grid[tr][14] = 2; grid[tr][15] = 2;
     }
     redrawTrackCells(tr);
   };
