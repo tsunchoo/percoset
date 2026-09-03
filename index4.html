@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:56</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1108,10 +1108,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+            <input type="radio" name="trackNamesMode" value="color" onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+            <input type="radio" name="trackNamesMode" value="uniform" checked onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
           </label>
         </div>
       </div>
@@ -7940,8 +7940,17 @@ function buildUI() {
     // ── Control row ──
     const ctrlRow = document.createElement('div'); ctrlRow.className = 'track-ctrl-row'; ctrlRow.id = `ctrlrow-${tr}`;
 
-    // L button — lock track from RAND (far left, first in the row, flush
-    // against the name button with no gap between them).
+    // Name button (click=mute, hold=sound picker) — now first in the row
+    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
+    nameBtn.dataset.tr = tr;
+    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
+    setTrackNameColor(tr, trackInstruments[tr]);
+    nameBtn.classList.toggle('muted', trackMuted[tr]);
+    ctrlRow.appendChild(nameBtn);
+
+    // L button — lock track from RAND (now second in the row, right after
+    // the name button, still with no gap between them via the row's own
+    // gap treatment).
     const sweepBtnL = document.createElement('button'); sweepBtnL.className = 'track-ctrl-icon-btn lock-btn'; sweepBtnL.id = `swpbtn-${tr}`;
     sweepBtnL.dataset.tr = tr;
     sweepBtnL.innerHTML = LOCK_ICON_SVG;
@@ -7964,14 +7973,6 @@ function buildUI() {
       markModified();
     });
     ctrlRow.appendChild(sweepBtnL);
-
-    // Name button (click=mute, hold=sound picker)
-    const nameBtn = document.createElement('button'); nameBtn.className = 'track-name-btn'; nameBtn.id = `tbtn-${tr}`;
-    nameBtn.dataset.tr = tr;
-    nameBtn.textContent = grid[tr].some(v => v > 0) ? (INSTRUMENTS[trackInstruments[tr]]?.name ?? (tr + 1)) : 'EMPTY';
-    setTrackNameColor(tr, trackInstruments[tr]);
-    nameBtn.classList.toggle('muted', trackMuted[tr]);
-    ctrlRow.appendChild(nameBtn);
 
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
@@ -8175,7 +8176,18 @@ function _syncSoloOnUnmute(tr) {
   }
 }
 function _clearAllSolo() {
-  if (!trackSolo.some(x => x)) return; // nothing soloed, nothing to do
+  // Reset every SOLO FLASH button's own hold-tracking flag first,
+  // unconditionally — before the early-return below, and regardless of
+  // whether trackSolo already reads all-false by the time this runs. A
+  // finger/mouse still physically down on a solo button when a new
+  // pattern lands must not have its eventual release still treated as
+  // "released while flashHeld" — that's what was turning solo back on
+  // (or off) on release after the pattern had already cleared it.
+  for (let t = 0; t < NUM_TRACKS; t++) {
+    const sb0 = document.getElementById(`solobtn-${t}`);
+    if (sb0) sb0._flashHeld = false;
+  }
+  if (!trackSolo.some(x => x)) return; // nothing soloed, nothing else to do
   for (let t = 0; t < NUM_TRACKS; t++) trackSolo[t] = false;
   if (_preSoloMuteState) {
     for (let t = 0; t < NUM_TRACKS; t++) trackMuted[t] = _preSoloMuteState[t];
@@ -8198,7 +8210,7 @@ function _clearAllSolo() {
   for (let t = 0; t < NUM_TRACKS; t++) {
     updateTrackMute(t);
     const sb = document.getElementById(`solobtn-${t}`);
-    if (sb) { sb.classList.remove('solo-on'); sb._flashHeld = false; } // SOLO FLASH: a finger physically still down when this fires would otherwise leave the button's own hold-tracking flag stuck true, so its eventual release re-toggles solo back on instead of leaving it cleared — reset it here too, not just the visible class
+    if (sb) sb.classList.remove('solo-on');
   }
 }
 let _preSoloBeatState = null; // snapshot of {beatPlaying, beatPending} taken the moment solo first engages — see toggleSolo()
@@ -13240,7 +13252,7 @@ function wireRandomizeButton(btn, tr) {
   btn.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
 }
 
-window._trackNamesUniform = false; // COLOR-CODED is now the pre-selected radio at startup — track names start out color-coded by instrument group, not uniform
+window._trackNamesUniform = true; // DEFAULT (solid, not color-coded) is now the pre-selected radio at startup — track names start out solid/uniform, not color-coded by instrument group
 document.body.classList.remove('notes-grayscale'); // note markers start out NOT grayscale (colored) at startup, matching the DEV menu checkbox's own default unchecked state
 buildUI();
 updateMasterVolCells();
@@ -14590,8 +14602,8 @@ function fullReset() {
   const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="solid"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
   setTrackTextPulseColor(2);
   const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="2"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
-  setTrackNamesUniform(false);
-  const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="color"]'); if (_tnmRadio) _tnmRadio.checked = true;
+  setTrackNamesUniform(true);
+  const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="uniform"]'); if (_tnmRadio) _tnmRadio.checked = true;
   setVolSliderColor('auto');
   const _vscRadio = document.querySelector('input[name="volSliderColor"][value="auto"]'); if (_vscRadio) _vscRadio.checked = true;
   setTopRowHighlightColor('auto');
