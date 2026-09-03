@@ -548,25 +548,19 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   box-sizing: border-box;
   height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); /* matches .track-name-btn's own height exactly, flush at the top of the row same as every other button in it — no centering offset, no extra padding */
 }
+/* 10 real flex children, not a width-percentage fill with a gradient
+   overlay on top — flexbox's own equal-distribution (flex:1 on every
+   child, same gap on every side) is the only way to guarantee genuinely
+   identical notch widths with no partial/mid-notch fill ever possible,
+   regardless of any inset elsewhere on the bar. */
 .track-vol-fill {
-  position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); bottom: 12.5%; /* same gap value as .track-ctrl-row's own gap between buttons — was flush at left:0 */
-  background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
+  position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 12.5%; /* symmetric left/right inset now — same gap value as .track-ctrl-row's own gap between buttons */
+  display: flex; gap: 2px; pointer-events: none;
 }
-/* 10 fixed vertical segments, LED-meter style — a static overlay of 9
-   divider lines at even 10% intervals, painted on top of the fill (::after
-   is always last in paint order) so the dividers never move or scale with
-   the actual volume value underneath, only the fill's width does. */
-.track-vol-bar::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image: linear-gradient(to right, transparent calc(100% - 2px), var(--neutral-top, #555) calc(100% - 2px)); /* one tile's pattern — background-size below repeats it identically, guaranteeing genuinely equal segment widths (mixing % and px inside a single repeating-linear-gradient doesn't reliably tile the same way) */
-  background-size: 10% 100%;
-  background-repeat: repeat-x;
-}
-.track-vol-bar.muted::after {
-  background-image: linear-gradient(to right, transparent calc(100% - 2px), #ccc calc(100% - 2px));
-}
+.track-vol-notch { flex: 1; background: var(--neutral-track, #b0b0b0); }
+.track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); }
 .track-vol-bar.muted { background: #ccc; }
-.track-vol-bar.muted .track-vol-fill { background: transparent; }
+.track-vol-bar.muted .track-vol-notch.lit { background: transparent; }
 /* TRACK BUTTON OPACITY (see --track-default-opacity above) — the volume
    bar background and every track button's resting look, EXCEPT the
    instrument name button and the lock button (deliberately excluded,
@@ -896,7 +890,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:42</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:46</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3019,7 +3013,14 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  el.style.width = Math.round(pct * 10) * 10 + '%'; // snapped to the nearest whole segment (10% steps) — otherwise the fill can stop mid-segment and show a partial-width sliver that looks like an unequal segment next to the fully-lit ones
+  // el is the .track-vol-fill flex container holding 10 .track-vol-notch
+  // children (see attachVolBarEvents/track row setup) — light however many
+  // of them the current value reaches, rather than setting a width. Every
+  // notch is identically sized via flex:1, so this can never show a
+  // partial/mid-notch fill the way a width-percentage bar could.
+  const lit = Math.round(pct * 10);
+  const notches = el.children;
+  for (let i = 0; i < notches.length; i++) notches[i].classList.toggle('lit', i < lit);
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
@@ -7975,6 +7976,7 @@ function buildUI() {
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
+    for (let n = 0; n < 10; n++) volFill.appendChild(document.createElement('div')).className = 'track-vol-notch'; // 10 fixed, equal-width notches — see _setVolFillPct
     _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
     volBar.appendChild(volFill);
     attachVolBarEvents(volBar, tr);
