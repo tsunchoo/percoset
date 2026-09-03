@@ -409,7 +409,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: var
 /* ── Per-track inline control row ── */
 .track-ctrl-row {
   display: flex; align-items: stretch; gap: clamp(2px, 1vw, 5px);
-  height: clamp(28px, 8vw, 32px);
+  height: calc(clamp(28px, 8vw, 32px) * 1.1); /* +10% to match the volume bar's own +10% height below, so it fits flush instead of overflowing the row */
   touch-action: none; /* a touch landing in the gap between buttons (missing one slightly) used to fall through to the page's own pan-y scroll — on iOS that overscroll could trigger a pull-to-refresh reload, silently losing the current pattern. Blocking it at the whole-row level, not just per-button, closes that gap. */
 }
 .track-name-btn {
@@ -546,6 +546,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
   border-bottom: 10px solid var(--bg);
+  height: calc(clamp(28px, 8vw, 32px) * 1.1); /* +10% vs. the old row height — matches .track-ctrl-row's own new height exactly, so it fills the row flush instead of overflowing it */
 }
 .track-vol-fill {
   position: absolute; top: 0; left: 0; bottom: 15%; /* inset from the bottom only — was 5%, +10% more */
@@ -863,7 +864,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:06</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
