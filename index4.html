@@ -856,7 +856,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:00</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:12</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -991,6 +991,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="fxReverbPulseToggle" checked onchange="setFxReverbPulse(this.checked)" style="width:14px;height:14px;cursor:pointer;">FX/REVERB PULSE
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="soloFlashToggle" checked onchange="setSoloFlashMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLO FLASH
     </label>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -1469,6 +1472,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <script>
 let _bgPulseEnabled = false, _bgStaticEnabled = false, _bgPulseSteps = 4, _bgPulseCounter = 0;
 window._wildColorsEnabled = true; // WILD toggle in settings — randomizes app colors alongside every new whole-pattern RAND, on by default
+window._soloFlashMode = true; // SOLO FLASH toggle in settings — track SOLO buttons work as press-and-hold (solo only while held) rather than click-to-toggle, on by default
 window._wildColorsSkipNext = true; // don't apply WILD to the initial startup pattern — the first + press or auto-rand cycle after that is where it actually starts
 const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
@@ -7979,14 +7983,46 @@ function buildUI() {
     wireRandomizeButton(randBtn, tr);
     ctrlRow.appendChild(randBtn);
 
-    // S button — solo track
+    // S button — solo track. SOLO FLASH (default on, toggle in COLOR
+    // settings) makes this button momentary — solo only while held down,
+    // released the instant you let go — instead of a persistent
+    // click-to-toggle. See setSoloFlashMode().
     const soloBtn = document.createElement('button'); soloBtn.className = 'track-ctrl-icon-btn solo-btn'; soloBtn.id = `solobtn-${tr}`;
     soloBtn.dataset.tr = tr;
     soloBtn.textContent = 'S';
     soloBtn.classList.toggle('solo-on', !!trackSolo[tr]);
+    soloBtn._flashHeld = false;
+    let _lastSoloTouchStart = 0;
+    soloBtn.addEventListener('mousedown', (e) => {
+      if (!window._soloFlashMode) return; // classic mode: mousedown does nothing, the mouseup toggle below handles it
+      if (Date.now() - _lastSoloTouchStart < 500) return; // synthetic ghost from the drag-to-engage system's touchstart dispatch — the real touchstart handler below already engaged it
+      if (!soloBtn._flashHeld) { soloBtn._flashHeld = true; toggleSolo(tr); }
+    });
     soloBtn.addEventListener('mouseup', (e) => {
+      if (window._soloFlashMode) {
+        if (Date.now() - _lastSoloTouchStart < 500) return; // synthetic ghost — the real touchend handler below already released it
+        if (soloBtn._flashHeld) { soloBtn._flashHeld = false; toggleSolo(tr); }
+        return;
+      }
       if (e.isTrusted && Date.now() - _lastRealTouchTimeGlobal < 500) return; // ignore genuine synthetic mouseup following a real touch, but let the drag system's own dispatched (untrusted) event through
       toggleSolo(tr);
+    });
+    soloBtn.addEventListener('mouseleave', () => {
+      if (window._soloFlashMode && soloBtn._flashHeld) { soloBtn._flashHeld = false; toggleSolo(tr); } // pointer dragged off while held — release, same as letting go
+    });
+    soloBtn.addEventListener('touchstart', e => {
+      if (!window._soloFlashMode) return; // classic mode: leave this to the generic drag-to-engage system entirely, unchanged
+      e.preventDefault();
+      _lastSoloTouchStart = Date.now();
+      if (!soloBtn._flashHeld) { soloBtn._flashHeld = true; toggleSolo(tr); }
+    }, { passive: false });
+    soloBtn.addEventListener('touchend', e => {
+      if (!window._soloFlashMode) return;
+      e.preventDefault();
+      if (soloBtn._flashHeld) { soloBtn._flashHeld = false; toggleSolo(tr); }
+    }, { passive: false });
+    soloBtn.addEventListener('touchcancel', () => {
+      if (window._soloFlashMode && soloBtn._flashHeld) { soloBtn._flashHeld = false; toggleSolo(tr); }
     });
     ctrlRow.appendChild(soloBtn);
 
@@ -14319,6 +14355,14 @@ function setTopRowBlack(on) {
 function setFxReverbPulse(on) {
   document.body.classList.toggle('no-fx-reverb-pulse', !on);
 }
+// SOLO FLASH — toggles whether track SOLO buttons are momentary (solo only
+// while held, released the instant you let go) or a classic click-to-toggle.
+// The actual press/release handling lives on each SOLO button itself (see
+// its wiring where the buttons are created) — this just flips the mode flag
+// those handlers check.
+function setSoloFlashMode(on) {
+  window._soloFlashMode = !!on;
+}
 window._devRandOffsetEnabled = false;
 function setDevRandOffset(on) {
   window._devRandOffsetEnabled = !!on;
@@ -14550,6 +14594,8 @@ function fullReset() {
   window._wildColorsEnabled = true;
   window._wildColorsSkipNext = true; // same as a fresh page load — colors stay default until the first + press or auto-rand after this
   const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = true;
+  window._soloFlashMode = true;
+  const soloFlashCb = document.getElementById('soloFlashToggle'); if (soloFlashCb) soloFlashCb.checked = true;
   _resetAppColorsToDefault();
   const speedWrap = document.getElementById('bgPulseSpeedWrap'); if (speedWrap) speedWrap.style.display = 'none';
   // Note marker color is tinted against whatever background is currently
