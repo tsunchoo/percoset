@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:39</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8198,7 +8198,7 @@ function _clearAllSolo() {
   for (let t = 0; t < NUM_TRACKS; t++) {
     updateTrackMute(t);
     const sb = document.getElementById(`solobtn-${t}`);
-    if (sb) sb.classList.remove('solo-on');
+    if (sb) { sb.classList.remove('solo-on'); sb._flashHeld = false; } // SOLO FLASH: a finger physically still down when this fires would otherwise leave the button's own hold-tracking flag stuck true, so its eventual release re-toggles solo back on instead of leaving it cleared — reset it here too, not just the visible class
   }
 }
 let _preSoloBeatState = null; // snapshot of {beatPlaying, beatPending} taken the moment solo first engages — see toggleSolo()
