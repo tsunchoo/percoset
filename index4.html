@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 19:53</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 20:03</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1005,6 +1005,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLOR</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">SOLO + BEAT</div>
+      <label class="wild-toggle">
+        <input type="checkbox" id="soloIncludesBeatToggle" checked onchange="setSoloIncludesBeat(this.checked)">
+        <span class="wild-toggle-slider"></span>
+      </label>
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
       <label class="wild-toggle">
@@ -1488,6 +1495,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 let _bgPulseEnabled = false, _bgStaticEnabled = false, _bgPulseSteps = 4, _bgPulseCounter = 0;
 window._wildColorsEnabled = true; // WILD toggle in settings — randomizes app colors alongside every new whole-pattern RAND, on by default
 window._soloFlashMode = true; // SOLO FLASH toggle in settings — track SOLO buttons work as press-and-hold (solo only while held) rather than click-to-toggle, on by default
+window._soloIncludesBeat = true; // SOLO + BEAT toggle in settings — BEAT stays in the mix and completely unaffected by any SOLO, on by default; off restores the original behavior (BEAT silenced by solo unless explicitly clicked to include it)
 window._wildColorsSkipNext = true; // don't apply WILD to the initial startup pattern — the first + press or auto-rand cycle after that is where it actually starts
 const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
@@ -8255,11 +8263,17 @@ function toggleSolo(tr) {
     _preSoloMuteState = null;
   }
   // BEAT — silenced (and visually reverted to its non-active look) while
-  // solo is engaged. Whatever the user does to BEAT during the solo
-  // window (toggleBeat() can turn it off, on, or explicitly include it)
-  // is irrelevant to what comes back once the last solo disengages — the
-  // ORIGINAL pre-solo state, captured once right here, is what's restored,
-  // exactly matching how track mute state already works above.
+  // solo is engaged, UNLESS the SOLO + BEAT toggle (COLOR settings,
+  // default on) is on — in which case BEAT is meant to stay completely
+  // unaffected by any SOLO, so none of this snapshot/mute/revert
+  // machinery runs at all; skip straight past it. When the toggle is off,
+  // this is exactly the original behavior: whatever the user does to
+  // BEAT during the solo window (toggleBeat() can turn it off, on, or
+  // explicitly include it) is irrelevant to what comes back once the
+  // last solo disengages — the ORIGINAL pre-solo state, captured once
+  // right here, is what's restored, exactly matching how track mute
+  // state already works above.
+  if (!window._soloIncludesBeat) {
   if (!wasAnySoloed && isAnySoloed) {
     _preSoloBeatState = { beatPlaying, beatPending: _beatPending };
     if (beatPlaying || _beatPending) {
@@ -8276,7 +8290,8 @@ function toggleSolo(tr) {
     const bb = document.getElementById('beatBtn');
     if (bb) bb.classList.toggle('active', beatPlaying || _beatPending);
   }
-  _beatSoloMuted = isAnySoloed && !_beatIncludedInSolo;
+  }
+  _beatSoloMuted = window._soloIncludesBeat ? false : (isAnySoloed && !_beatIncludedInSolo);
   _applyBeatVolWithDuck();
   for (let t = 0; t < NUM_TRACKS; t++) {
     updateTrackMute(t);
@@ -14529,6 +14544,18 @@ function setTrackDefaultOpacity(v) {
 function setSoloFlashMode(on) {
   window._soloFlashMode = !!on;
 }
+// SOLO + BEAT — whether BEAT stays in the mix regardless of any active
+// SOLO (on, default) or gets silenced by solo like every un-soloed track
+// unless explicitly clicked to include it (off — the original behavior).
+// Re-applies immediately so flipping it mid-solo takes effect right away
+// rather than waiting for the next solo engage/disengage.
+function setSoloIncludesBeat(on) {
+  window._soloIncludesBeat = !!on;
+  if (trackSolo.some(x => x)) {
+    _beatSoloMuted = window._soloIncludesBeat ? false : !_beatIncludedInSolo;
+    _applyBeatVolWithDuck();
+  }
+}
 window._devRandOffsetEnabled = false;
 function setDevRandOffset(on) {
   window._devRandOffsetEnabled = !!on;
@@ -14756,6 +14783,8 @@ function fullReset() {
   const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = true;
   window._soloFlashMode = true;
   const soloFlashCb = document.getElementById('soloFlashToggle'); if (soloFlashCb) soloFlashCb.checked = true;
+  setSoloIncludesBeat(true);
+  const soloBeatCb = document.getElementById('soloIncludesBeatToggle'); if (soloBeatCb) soloBeatCb.checked = true;
   _resetAppColorsToDefault();
   const speedWrap = document.getElementById('bgPulseSpeedWrap'); if (speedWrap) speedWrap.style.display = 'none';
   // Note marker color is tinted against whatever background is currently
