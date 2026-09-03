@@ -24,7 +24,7 @@
   --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
-  --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
+  --track-default-opacity: 0.6; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -552,6 +552,17 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); bottom: 12.5%; /* same gap value as .track-ctrl-row's own gap between buttons — was flush at left:0 */
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
 }
+/* 10 fixed vertical segments, LED-meter style — a static overlay of 9
+   divider lines at even 10% intervals, painted on top of the fill (::after
+   is always last in paint order) so the dividers never move or scale with
+   the actual volume value underneath, only the fill's width does. */
+.track-vol-bar::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 2px), var(--neutral-top, #555) calc(10% - 2px), var(--neutral-top, #555) 10%);
+}
+.track-vol-bar.muted::after {
+  background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 2px), #ccc calc(10% - 2px), #ccc 10%);
+}
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
 /* TRACK BUTTON OPACITY (see --track-default-opacity above) — the volume
@@ -883,7 +894,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:34</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -997,12 +1008,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLOR</div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>TRACK BUTTON OPACITY</span><span id="trackDefaultOpacityVal" style="color:#adff00;">75</span>
-      </div>
-      <input type="range" id="trackDefaultOpacityBar" min="0" max="100" value="75" class="master-vol-slider" style="width:100%;" oninput="setTrackDefaultOpacity(this.value/100); document.getElementById('trackDefaultOpacityVal').textContent=this.value">
-    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
       <label class="wild-toggle">
@@ -1215,6 +1220,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
             <input type="radio" name="trackCtrlBtnColor" value="top" checked onchange="setTrackCtrlBtnColor('top')" style="width:15px;height:15px;cursor:pointer;">TOP ROW BUTTON COLOR
           </label>
         </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+          <span>TRACK BUTTON OPACITY</span><span id="trackDefaultOpacityVal" style="color:#adff00;">60</span>
+        </div>
+        <input type="range" id="trackDefaultOpacityBar" min="0" max="100" value="60" class="master-vol-slider" style="width:100%;" oninput="setTrackDefaultOpacity(this.value/100); document.getElementById('trackDefaultOpacityVal').textContent=this.value">
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
