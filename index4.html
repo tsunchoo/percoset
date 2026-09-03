@@ -548,7 +548,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   border-bottom: 10px solid var(--bg);
 }
 .track-vol-fill {
-  position: absolute; top: 0; left: 0; bottom: 0;
+  position: absolute; top: 5%; left: 0; bottom: 5%; /* -10% total height vs. the old top:0/bottom:0 (full height) — the bar itself reads 10% thinner, centered, while .track-vol-bar's own box/background above is completely untouched */
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
@@ -863,7 +863,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:51</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:01</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
