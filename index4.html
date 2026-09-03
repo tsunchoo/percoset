@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:17</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:26</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1120,10 +1120,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTON PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="solid" checked onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+            <input type="radio" name="trackPulseMode" value="solid" onchange="setTrackPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackPulseMode" value="a" onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+            <input type="radio" name="trackPulseMode" value="a" checked onchange="setTrackPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
           </label>
         </div>
       </div>
@@ -1251,10 +1251,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK TEXT PULSE</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="solid" onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
+            <input type="radio" name="trackTextPulseMode" value="solid" checked onchange="setTrackTextPulseMode('solid')" style="width:15px;height:15px;cursor:pointer;">SOLID
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseMode" value="a" checked onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
+            <input type="radio" name="trackTextPulseMode" value="a" onchange="setTrackTextPulseMode('a')" style="width:15px;height:15px;cursor:pointer;">PULSING
           </label>
         </div>
       </div>
@@ -1263,10 +1263,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TEXT PULSE COLOR</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseColor" value="1" checked onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
+            <input type="radio" name="trackTextPulseColor" value="1" onchange="setTrackTextPulseColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackTextPulseColor" value="2" onchange="setTrackTextPulseColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
+            <input type="radio" name="trackTextPulseColor" value="2" checked onchange="setTrackTextPulseColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
             <input type="radio" name="trackTextPulseColor" value="3" onchange="setTrackTextPulseColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
@@ -13220,9 +13220,9 @@ window._trackNamesUniform = false; // COLOR-CODED is now the pre-selected radio 
 document.body.classList.remove('notes-grayscale'); // note markers start out NOT grayscale (colored) at startup, matching the DEV menu checkbox's own default unchecked state
 buildUI();
 updateMasterVolCells();
-setTrackPulseMode('solid');
-setTrackTextPulseMode('a'); // PULSING is the default for text — background stays solid, text pulses
-setTrackTextPulseColor(1); // HIGHLIGHT is the default text pulse color
+setTrackPulseMode('a'); // PULSING is now the default for the button background pulse
+setTrackTextPulseMode('solid'); // SOLID is now the default for text — no pulse
+setTrackTextPulseColor(2); // HIGHLIGHT 2 is the default text pulse color — the halfway point of the 1-3 range
 setVolSliderColor('auto'); // AUTO (best contrast) is the default
 setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — picks whichever highlight actually reads clearly against the button color, rather than a fixed choice that could land close to it
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
@@ -14560,12 +14560,12 @@ function fullReset() {
   if (playing) togglePlay();
   _recallSnapB = null;
   window._resetRecallAB?.();
-  setTrackPulseMode('solid');
-  const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="solid"]'); if (_tpmRadio) _tpmRadio.checked = true;
-  setTrackTextPulseMode('a');
-  const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="a"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
-  setTrackTextPulseColor(1);
-  const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="1"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
+  setTrackPulseMode('a');
+  const _tpmRadio = document.querySelector('input[name="trackPulseMode"][value="a"]'); if (_tpmRadio) _tpmRadio.checked = true;
+  setTrackTextPulseMode('solid');
+  const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="solid"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
+  setTrackTextPulseColor(2);
+  const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="2"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
   setTrackNamesUniform(false);
   const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="color"]'); if (_tnmRadio) _tnmRadio.checked = true;
   setVolSliderColor('auto');
