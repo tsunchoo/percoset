@@ -24,6 +24,7 @@
   --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
+  --track-default-opacity: 1; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -553,6 +554,25 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 }
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-fill { background: transparent; }
+/* TRACK BUTTON OPACITY (see --track-default-opacity above) — the volume
+   bar background and every track button's resting look, EXCEPT the
+   instrument name button and the lock button (deliberately excluded,
+   never affected by this slider). */
+.track-vol-bar,
+.track-ctrl-row .track-ctrl-icon-btn:not(.lock-btn),
+.track-ctrl-row .shift-btn {
+  opacity: var(--track-default-opacity, 1);
+}
+/* ...but engaged/active states always stay fully opaque regardless of the
+   slider — dimming would just make it harder to see what's actually on. */
+.track-ctrl-row .fx-btn.on,
+.track-ctrl-row .fx-btn.blast-on,
+.track-ctrl-row .track-ctrl-icon-btn.solo-on,
+.track-ctrl-row .rand-btn.rand-auto,
+.track-ctrl-row .shift-btn.on,
+.track-ctrl-row .shift-btn.right.on {
+  opacity: 1;
+}
 .row-muted .track-ctrl-icon-btn,
 .row-muted .shift-btn {
   background: #ccc !important; border: none !important; color: #888 !important;
@@ -863,7 +883,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:10</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:18</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -977,6 +997,12 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLOR</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>TRACK BUTTON OPACITY</span><span id="trackDefaultOpacityVal" style="color:#adff00;">100</span>
+      </div>
+      <input type="range" id="trackDefaultOpacityBar" min="0" max="100" value="100" class="master-vol-slider" style="width:100%;" oninput="setTrackDefaultOpacity(this.value/100); document.getElementById('trackDefaultOpacityVal').textContent=this.value">
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
       <label class="wild-toggle">
@@ -14391,6 +14417,12 @@ function setTopRowBlack(on) {
 // elsewhere and isn't affected by this toggle.
 function setFxReverbPulse(on) {
   document.body.classList.toggle('no-fx-reverb-pulse', !on);
+}
+// TRACK BUTTON OPACITY — the volume bar background and every track
+// button's resting look except the name/lock buttons (see
+// --track-default-opacity at :root and the rules that apply/reset it).
+function setTrackDefaultOpacity(v) {
+  document.documentElement.style.setProperty('--track-default-opacity', v);
 }
 // SOLO FLASH — toggles whether track SOLO buttons are momentary (solo only
 // while held, released the instant you let go) or a classic click-to-toggle.
