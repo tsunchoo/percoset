@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 19:32</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 19:34</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9315,23 +9315,18 @@ function setVolSliderColor(n) {
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
   document.documentElement.style.setProperty('--vol-slider-color', map[n] || map[3]);
 }
-// AUTO (BEST CONTRAST) — same approach as TOP ROW HIGHLIGHT below, checked
-// against the volume bar's own resting background (--neutral-top), since
-// that's what the fill actually sits on top of.
+// AUTO (BEST CONTRAST) — same contrast-checking routine as before
+// (_ensureContrast against the volume bar's own resting background,
+// --neutral-top, since that's what the fill actually sits on top of),
+// but the color it starts from is now the song name bar's own current
+// hue (--bar-color) instead of picking whichever highlight contrasts
+// best — so the slider's color visibly follows the song name rather
+// than the general highlight palette.
 function _autoPickVolSliderColor() {
   const cs = getComputedStyle(document.documentElement);
   const bg = cs.getPropertyValue('--neutral-top').trim() || '#555555';
-  const candidates = [
-    cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
-    cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
-    cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
-  ];
-  let best = candidates[0], bestRatio = -1;
-  for (const hex of candidates) {
-    const ratio = _contrastRatio(hex, bg);
-    if (ratio > bestRatio) { bestRatio = ratio; best = hex; }
-  }
-  document.documentElement.style.setProperty('--vol-slider-color', _ensureContrast(best, bg));
+  const songColor = cs.getPropertyValue('--bar-color').trim() || _currentBarColor || '#aa64a6';
+  document.documentElement.style.setProperty('--vol-slider-color', _ensureContrast(songColor, bg));
 }
 // TOP ROW HIGHLIGHT — previously the 6 top-row buttons' various engaged/
 // active/flash/auto states pulled from all 3 highlight colors
