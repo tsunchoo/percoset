@@ -23,7 +23,7 @@
   --track-btn-scale: 0.9025; /* per-track button box size (width/height) — 0.95 * 0.95, two successive 5% reductions. Text is deliberately NOT scaled by this — see --track-btn-font-scale below, frozen at the first round's value so glyphs/labels stay exactly the size they already are */
   --track-btn-font-scale: 0.95; /* frozen at the first round's 5% — button/glyph text no longer shrinks on subsequent box-scale reductions, only the box itself does */
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
-  --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 72%, black); /* pressed/engaged state for every top-row button — a slightly darker version of the button's own resting color, replacing the old separate highlight-color system */
+  --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -863,7 +863,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:51</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -15245,7 +15245,7 @@ async function hardResetAudioEngine() {
     ensureSweepAnalyser();
     window._sweepStartMs = Date.now();
     const bufDur = 12; // generous buffer length so long holds never run out
-    const riseDur = stepDuration() * 4; // one quarter note at current tempo — matches the redirect timing below
+    const riseDur = _sweepPlannedDuration || stepDuration() * 4; // now spans the whole run (decided once at press time in beginPress) instead of a fixed quarter note — pitch reaches its peak exactly at the next downbeat, in sync with the gain takeover below, instead of maxing out early and then just sitting there
     const capFreq = 4000; // reasonable ceiling — never rises past this no matter how long it's held
     const t = ctx.currentTime;
     const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * bufDur), ctx.sampleRate);
