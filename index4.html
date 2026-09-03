@@ -864,7 +864,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:56</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -8207,12 +8207,6 @@ function toggleSolo(tr) {
 
 function attachVolBarEvents(bar, tr) {
   let dragging = false;
-  const BOTTOM_BORDER = 10; // px — matches the CSS bottom border; decorative only, doesn't respond to touch
-  function inBorderZone(clientY) {
-    const r = bar.getBoundingClientRect();
-    const relY = clientY - r.top;
-    return relY > r.height - BOTTOM_BORDER;
-  }
   function getVol(clientX) {
     const r = bar.getBoundingClientRect();
     const pos = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
@@ -8225,10 +8219,10 @@ function attachVolBarEvents(bar, tr) {
     updateVolFillDisplay(tr);
     markModified();
   }
-  bar.addEventListener('mousedown', e => { if (inBorderZone(e.clientY)) return; dragging = true; setVol(e.clientX); e.preventDefault(); });
+  bar.addEventListener('mousedown', e => { dragging = true; setVol(e.clientX); e.preventDefault(); });
   window.addEventListener('mousemove', e => { if (dragging) setVol(e.clientX); });
   window.addEventListener('mouseup', () => { dragging = false; });
-  bar.addEventListener('touchstart', e => { if (inBorderZone(e.touches[0].clientY)) return; dragging = true; setVol(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+  bar.addEventListener('touchstart', e => { dragging = true; setVol(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
   bar.addEventListener('touchmove', e => { if (dragging) { setVol(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
   bar.addEventListener('touchend', () => { dragging = false; });
 }
