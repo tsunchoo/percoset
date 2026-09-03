@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 07:39</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9466,9 +9466,14 @@ function _autoPickTrackBtnTextColor() {
 }
 function setTrackCtrlBtnColor(n) {
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)', top: 'var(--neutral-top, #555)' };
-  const textMap = { 1: 'var(--highlight-text, #000)', 2: 'var(--highlight2-text, #fff)', 3: '#111', top: 'var(--neutral-top-text, #fff)' };
   document.documentElement.style.setProperty('--track-ctrl-btn-color', map[n] || map.top);
-  document.documentElement.style.setProperty('--track-ctrl-btn-text', textMap[n] || textMap.top);
+  // Computed fresh from the actual resolved color every time, rather than
+  // a precomputed --highlight-text/--highlight2-text lookup (which could
+  // be stale or missing depending on setup order) or a flat hardcoded
+  // '#111' for HIGHLIGHT 3 — that flat fallback is what let a dark navy
+  // HIGHLIGHT/HIGHLIGHT 3 slip through with unreadable black text.
+  const resolvedHex = getComputedStyle(document.documentElement).getPropertyValue('--track-ctrl-btn-color').trim();
+  document.documentElement.style.setProperty('--track-ctrl-btn-text', _contrastText(resolvedHex));
 }
 // TRACK BUTTON ON (FX/REVERB/SOLO) — previously 3 independent hardcoded
 // colors (orange for FX, blue for reverb, yellow for SOLO) for what's
