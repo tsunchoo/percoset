@@ -416,8 +416,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; background: var
   font-size: calc(clamp(0.64rem, 2.3vw, 0.86rem) * var(--track-name-font-scale, 1)); font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   cursor: pointer; background: var(--neutral-track, #b0b0b0); color: var(--neutral-track-text, var(--text));
   border: none; padding: 0 4px; white-space: nowrap; overflow: hidden;
-  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: calc(clamp(78px, 22vw, 106px) * var(--track-btn-scale, 1) * 1.1 + clamp(2px, 1vw, 5px)); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1));
-  margin-right: calc(-1 * clamp(2px, 1vw, 5px)); /* grown by exactly the row's own gap and pulled back in by the same amount — closes the gap to the volume slider right next to it, without touching the gap between any of the row's other buttons */
+  font-family: 'DM Sans', sans-serif; flex-shrink: 0; width: calc(clamp(78px, 22vw, 106px) * var(--track-btn-scale, 1) * 1.1); height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1));
   display: flex; align-items: center;
   touch-action: none; -webkit-tap-highlight-color: transparent;
   transition: background 0.06s, color 0.06s;
@@ -549,7 +548,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); /* matches .track-name-btn's own height exactly, flush at the top of the row same as every other button in it — no centering offset, no extra padding */
 }
 .track-vol-fill {
-  position: absolute; top: 12.5%; left: 0; bottom: 12.5%; /* another 10 points on top of the previous 15% total (was 7.5%/7.5%) — still split evenly, vertically centered within .track-vol-bar */
+  position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); bottom: 12.5%; /* same gap value as .track-ctrl-row's own gap between buttons — was flush at left:0 */
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
@@ -864,7 +863,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
