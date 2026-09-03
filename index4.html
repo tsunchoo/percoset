@@ -891,7 +891,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 19:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 19:53</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2034,6 +2034,12 @@ function setLogoNoteJump(on) {
   if (el) el.style.color = ''; // clear any leftover jump color (or let the CSS cycle take back over) on every mode switch
 }
 const _LOGO_JUMP_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)']; // HIGHLIGHT 3 excluded — same reasoning as the smooth cycle above: it's now a fixed constant (always red), not a varying accent, so leaving it in would mean 1-in-4 jumps always landing on the same red
+// VOLUME SLIDER note-pulse (see updatePlayhead) — every color actually
+// chosen in the current pattern's palette, HIGHLIGHT 3's fixed red
+// included this time since this is a per-track flash rather than the
+// single shared logo, so landing on the same red sometimes isn't the
+// same repetitive tell it would be there.
+const _VOL_SLIDER_PULSE_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)', 'var(--highlight3-color)'];
 function _jumpLogoColor() {
   const el = document.getElementById('siFiTitle');
   if (!el) return;
@@ -3672,7 +3678,16 @@ function updatePlayhead(step) {
     if (tbtn && grid[tr][gs] > 0 && !trackMuted[tr]) {
       tbtn.classList.add('playing');
       setTimeout(() => tbtn.classList.remove('playing'), 80);
-
+      // VOLUME SLIDER color pulse — same trigger and duration as the name
+      // button pulse right above (a note actually sounding on this
+      // track), but instead of a brightness flash it jumps to a random
+      // one of the app's own chosen palette colors for that one flash,
+      // then reverts back to the slider's normal derived color.
+      const vb = document.getElementById(`vbar-${tr}`);
+      if (vb) {
+        vb.style.setProperty('--vol-slider-color', _VOL_SLIDER_PULSE_VARS[Math.floor(Math.random() * _VOL_SLIDER_PULSE_VARS.length)]);
+        setTimeout(() => { vb.style.removeProperty('--vol-slider-color'); }, 80);
+      }
     }
   }
   // Pulse active slot + transport buttons on every beat (every 4 steps)
