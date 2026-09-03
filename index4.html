@@ -892,7 +892,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 20:23</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 23:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1298,11 +1298,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="settingsOverlay" style="display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.5);" id="settingsBg">
   <div id="settingsPanel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:24px;min-width:min(340px,90vw);display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;max-height:85vh;overflow-y:auto;">
 
+    <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">SETTINGS</div>
+
     <!-- Song name on its own line, scale + tempo on the line below -->
     <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:12px;border-bottom:1px solid #ddd;">
-      <div style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;" id="settingsNameDisplay"></div>
+      <input type="text" id="settingsNameDisplay" oninput="_updateSongNameFromSettings(this.value)" onkeydown="if(event.key==='Enter') this.blur();" style="font-size:1.1rem;font-weight:700;color:#111;letter-spacing:0.5px;text-transform:uppercase;border:none;background:transparent;padding:0;width:100%;font-family:'DM Sans',sans-serif;" title="tap to rename">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div id="keyDisplay" style="font-size:0.85rem;font-weight:700;color:#555;cursor:pointer;user-select:none;-webkit-user-select:none;letter-spacing:1px;text-transform:uppercase;" title="tap to change key"></div>
+        <div id="keyDisplay" style="font-size:0.85rem;font-weight:700;color:#555;cursor:pointer;user-select:none;-webkit-user-select:none;letter-spacing:1px;text-transform:uppercase;" title="tap to change key">Key <span id="keyDisplayValue"></span></div>
         <div id="bpmVal" onclick="hideSettings(); showTempoScreen();" style="font-size:0.85rem;font-weight:700;color:#555;cursor:pointer;user-select:none;-webkit-user-select:none;" title="tap to open tempo screen">110 BPM</div>
       </div>
     </div>
@@ -1608,7 +1610,7 @@ function syncSettingsPanel() {
   if (tt) tt.textContent = bpm;
   const bs = document.getElementById('bpmSettingsSlider');
   if (bs) bs.value = bpm;
-  const kd = document.getElementById('keyDisplay');
+  const kd = document.getElementById('keyDisplayValue');
   if (kd) kd.textContent = (getKeyName() || '').replace(/-/g, ' ');
   const dmb = document.getElementById('delayMixBar');
   if (dmb) {
@@ -3316,7 +3318,7 @@ function scheduler() {
           if (snap.colors.bg) _applyBgColor(snap.colors.bg);
         }
         if (snap.currentScaleName) { currentScaleName = snap.currentScaleName; }
-        const kd = document.getElementById('keyDisplay'); if (kd) kd.textContent = (getKeyName()||'').replace(/-/g,' ');
+        const kd = document.getElementById('keyDisplayValue'); if (kd) kd.textContent = (getKeyName()||'').replace(/-/g,' ');
         updateSlotButtons();
       });
     }
@@ -11876,7 +11878,7 @@ function randAll(mode, opts) {
   // single RAND press regardless of WILD.
   // Update key/scale display
   const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = (_currentSpecies || '');
-  const kd = document.getElementById('keyDisplay');
+  const kd = document.getElementById('keyDisplayValue');
   if (kd) { const kn = getKeyName(); kd.textContent = (kn || '').replace(/-/g, ' '); }
   // Randomise delay for all tracks. Every instrument now keeps at least a
   // small nonzero chance (and every "always on" case stays just short of
@@ -12336,7 +12338,7 @@ function restoreState(snap, opts) {
     if (bb) bb.classList.toggle('active', beatPlaying);
     updateBeatPulse();
   }
-  const kd = document.getElementById('keyDisplay'); if (kd) kd.textContent = (getKeyName()||''). replace(/-/g,' ');
+  const kd = document.getElementById('keyDisplayValue'); if (kd) kd.textContent = (getKeyName()||''). replace(/-/g,' ');
   // Restore auto-rand lane colors and R button state
   if (snap.trackAutoRand) {
     snap.trackAutoRand.forEach((isAutoRaw, tr) => {
@@ -13389,11 +13391,20 @@ setTimeout(async () => {
 
 // ── Settings panel ──
 let _settingsOpenedAt = 0;
+// Editing the song name directly in Settings updates the single shared
+// _currentSpecies value everywhere else already reads from — the tape
+// name bar, exports/downloads, share links, and save-slot data — so
+// nothing else needs to be told separately; they all read it fresh.
+function _updateSongNameFromSettings(v) {
+  _currentSpecies = v;
+  const nd = document.getElementById('nameDisplay'); if (nd) nd.textContent = _currentSpecies;
+  markModified();
+}
 function showSettings() {
   const el = document.getElementById('settingsOverlay');
   if (el) { el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center'; }
   const snd = document.getElementById('settingsNameDisplay');
-  if (snd) snd.textContent = _currentSpecies || '';
+  if (snd) snd.value = _currentSpecies || '';
   syncSettingsPanel();
   _settingsOpenedAt = Date.now();
 }
@@ -15024,7 +15035,7 @@ function fullReset() {
   if (nd && _currentSpecies) nd.textContent = _currentSpecies;
   const barEl = nd?.parentElement;
   applyBarColor(_currentBarColor);
-  const kd = document.getElementById('keyDisplay');
+  const kd = document.getElementById('keyDisplayValue');
   if (kd) kd.textContent = (getKeyName()||'').replace(/-/g,' ');
 })();
 
@@ -15802,7 +15813,7 @@ function stopRecallLoop() {
         if (trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'chug' || trackInstruments[tr] === 'bashp' || trackInstruments[tr] === 'sparkle') trackBassScale[tr] = trackBassScale[tr].slice(0, 4); // limited palette — max 4 notes in the scale
       }
     }
-    const kd2 = document.getElementById('keyDisplay');
+    const kd2 = document.getElementById('keyDisplayValue');
     if (kd2) kd2.textContent = (getKeyName() || '').replace(/-/g, ' ');
   }
 
