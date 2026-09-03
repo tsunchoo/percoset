@@ -557,7 +557,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 12.5%; /* symmetric left/right inset now — same gap value as .track-ctrl-row's own gap between buttons */
   display: flex; gap: 2px; pointer-events: none;
 }
-.track-vol-notch { flex: 1; background: var(--neutral-track, #b0b0b0); }
+.track-vol-notch { flex: 1; background: transparent; } /* unlit — lets .track-vol-bar's own background show through instead of introducing a separate gray, and automatically matches whatever that background is (including .muted's gray) */
 .track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); }
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-notch.lit { background: transparent; }
@@ -890,7 +890,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:46</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 06:53</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
