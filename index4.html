@@ -546,11 +546,11 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
   border-bottom: 10px solid var(--bg);
-  height: calc(clamp(28px, 8vw, 32px) * 0.99); /* was *1.1, now -10% more (1.1 * 0.9) — shorter than .track-ctrl-row's own height (still *1.1) again, so... */
-  align-self: center; /* ...it's vertically centered in the row instead of flush top/bottom, giving an equal gap above and below */
+  height: calc(clamp(28px, 8vw, 32px) * var(--track-btn-scale, 1)); /* now matches .track-name-btn's own height exactly, instead of the row's */
+  align-self: center; /* centered in the row instead of flush top/bottom, giving an equal gap above and below */
 }
 .track-vol-fill {
-  position: absolute; top: 7.5%; left: 0; bottom: 7.5%; /* split evenly (was top:0/bottom:15%, all on one side) — vertically centered within .track-vol-bar now, same total 15% inset */
+  position: absolute; top: 12.5%; left: 0; bottom: 12.5%; /* another 10 points on top of the previous 15% total (was 7.5%/7.5%) — still split evenly, vertically centered within .track-vol-bar */
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); pointer-events: none; transition: width 0.05s;
 }
 .track-vol-bar.muted { background: #ccc; }
@@ -865,7 +865,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:39</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 05:43</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
