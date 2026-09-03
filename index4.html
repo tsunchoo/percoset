@@ -25,6 +25,7 @@
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
   --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
+  --vol-slider-saturation: 1; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. 1 = unchanged, 0 = grayscale, >1 = boosted. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -559,7 +560,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   display: flex; gap: 2px; pointer-events: none;
 }
 .track-vol-notch { flex: 1; background: transparent; } /* unlit — lets .track-vol-bar's own background show through instead of introducing a separate gray, and automatically matches whatever that background is (including .muted's gray) */
-.track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); }
+.track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); filter: saturate(var(--vol-slider-saturation, 1)); }
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-notch.lit { background: transparent; }
 /* TRACK BUTTON OPACITY (see --track-default-opacity above) — the volume
@@ -891,7 +892,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 20:03</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 20:23</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -934,7 +935,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
   </div>
   <div id="topTempoReadout" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:baseline;gap:6px;align-self:flex-start;margin-top:calc(1.59007rem + 24px);font-family:'DM Sans',sans-serif;cursor:pointer;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;line-height:1;">
     <span id="topTempoBpmNum" style="font-size:2.016rem;font-weight:700;color:var(--header-text-color,#111);">110</span>
-    <span id="topTempoBpmLabel" style="font-size:0.768rem;font-weight:700;letter-spacing:1px;color:var(--header-text-dim,#555);">bpm</span>
+    <span id="topTempoBpmLabel" style="font-size:0.768rem;font-weight:700;letter-spacing:1px;color:var(--header-text-color,#111);">bpm</span>
     <span id="topTempoLockedLabel" style="display:none;position:absolute;top:calc(100% + 5px);right:0;font-size:0.6rem;font-weight:700;letter-spacing:1.5px;color:var(--playhead);white-space:nowrap;">LOCKED</span>
   </div>
 </header>
@@ -1151,6 +1152,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
             <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
           </label>
         </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+          <span>TRACK VOLUME COLOR SATURATION</span><span id="volSliderSaturationVal" style="color:#adff00;">100</span>
+        </div>
+        <input type="range" id="volSliderSaturationBar" min="0" max="200" value="100" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
       </div>
 
       <!-- TOP ROW HIGHLIGHT picker removed from the UI — the top-row
@@ -2269,13 +2277,14 @@ function randomizeAppColors() {
     // is (custom color, or back to the default app bg). Track lines always
     // stay transparent, so there's nothing to re-tint there anymore.
     if (window._applyEmptyCellColor) window._applyEmptyCellColor();
-    // Tempo number stays black regardless of lock state now — just
-    // refresh it along with everything else on a theme/color change.
+    // Tempo number and "bpm" label both stay black regardless of lock
+    // state now — just refresh them along with everything else on a
+    // theme/color change.
     {
       const num = document.getElementById('topTempoBpmNum');
       const lbl = document.getElementById('topTempoBpmLabel');
       if (num) num.style.color = 'var(--header-text-color, #111)';
-      if (lbl && !_tempoLocked) lbl.style.color = 'var(--header-text-dim, #555)';
+      if (lbl) lbl.style.color = 'var(--header-text-color, #111)';
     }
   }
 
@@ -2948,7 +2957,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.25 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : (key === 'tomHi' || key === 'tomMid' || key === 'tomLo') ? 0.7063 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +1dB more (was 0.2228, +2dB before that, was 0.177); TOM HI/MID/LOW +3dB from the 0.5 default (0.5 * 10^(3/20))
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.25 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride' && _beatType === 'mozambique') ? 0.3178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : (key === 'tomHi' || key === 'tomMid' || key === 'tomLo') ? 0.7063 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +1dB more (was 0.2228, +2dB before that, was 0.177); TOM HI/MID/LOW +3dB from the 0.5 default (0.5 * 10^(3/20)); RIDE +3dB specifically in MOZAMBIQUE (was 0.225, same as every other beat type still) — that beat's fixed ride pattern is mostly soft-velocity hits (the quieter sample) with only a few accents, so it was landing noticeably under SIDESTICK's all-accent pattern there; boosting just this beat's level (not the soft/accent split itself, which is deliberate structural-vs-filler phrasing, and not RIDE's level in JAZZ or anywhere else it's used) closes that gap
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
@@ -13405,8 +13414,8 @@ function _syncTempoLockUI() {
   if (slider) slider.classList.toggle('tempo-locked', _tempoLocked);
   if (icon) icon.style.opacity = _tempoLocked ? '1' : '0';
   if (btn) btn.style.background = _tempoLocked ? '#f17d21' : 'var(--panel)';
-  if (num) num.style.color = 'var(--header-text-color, #111)'; // stays black regardless of lock state now — the LOCKED label below and the "bpm" text dimming are enough of a lock indicator on their own
-  if (lbl) lbl.style.color = _tempoLocked ? 'var(--playhead)' : 'var(--header-text-dim, #555)';
+  if (num) num.style.color = 'var(--header-text-color, #111)'; // stays black regardless of lock state now — the LOCKED label below is enough of a lock indicator on its own
+  if (lbl) lbl.style.color = 'var(--header-text-color, #111)'; // "bpm" label — also stays black regardless of lock state, same reasoning as num above; used to turn red (var(--playhead)) when locked
   if (locked) locked.style.display = _tempoLocked ? 'block' : 'none';
 }
 function toggleTempoLock() {
@@ -14535,6 +14544,12 @@ function setFxReverbPulse(on) {
 // --track-default-opacity at :root and the rules that apply/reset it).
 function setTrackDefaultOpacity(v) {
   document.documentElement.style.setProperty('--track-default-opacity', v);
+}
+// TRACK VOLUME COLOR SATURATION — independent of which color the slider
+// above picks; just a saturate() filter on the lit notches themselves.
+// Slider is 0-200 (%); divide by 100 for the actual filter multiplier.
+function setVolSliderSaturation(v) {
+  document.documentElement.style.setProperty('--vol-slider-saturation', v / 100);
 }
 // SOLO FLASH — toggles whether track SOLO buttons are momentary (solo only
 // while held, released the instant you let go) or a classic click-to-toggle.
