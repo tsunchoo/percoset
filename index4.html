@@ -863,7 +863,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:21</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 04:30</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -14458,19 +14458,12 @@ function hideInstructions() {
   if (!title) return;
   // Used to open the instructions/performance-lock panel on press-and-hold
   // over an on-screen lock icon — replaced with a plain tap toggling LOGO
-  // NOTE JUMP directly, per direct request.
+  // NOTE JUMP directly, per direct request. 8-BIT MODE (crushes the whole
+  // output) rides the same tap now too.
   title.addEventListener('click', () => {
     setLogoNoteJump(!window._logoNoteJumpEnabled);
     const cb = document.getElementById('logoNoteJumpToggle');
     if (cb) cb.checked = window._logoNoteJumpEnabled;
-  });
-  // Double-click/double-tap the logo toggles 8-BIT MODE — crushes the
-  // whole output to a crunchy retro sound. Same single-click above still
-  // fires too (a real double-click is two clicks, then a dblclick), same
-  // as every other double-tap gesture already in this app — the brief
-  // double-flip of LOGO NOTE JUMP that causes is harmless.
-  title.addEventListener('dblclick', (e) => {
-    e.preventDefault();
     setEightBitMode(!window._eightBitEnabled);
   });
 })();
