@@ -26,7 +26,7 @@
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
   --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
-  --top-row-saturation: 0.7416; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Slider default is 55, but setTopRowSaturation() square-root-curves that (saturate() isn't perceptually linear) — this is sqrt(0.55), the actual filter value that curve produces, kept in sync with the slider's own default. 1 = unchanged, 0 = grayscale, >1 = boosted. */
+  --top-row-saturation: 0.7; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Plain linear mapping, no curve — this is literally saturate(0.7), matching the slider's own default of 70. 1 = unchanged, 0 = grayscale, >1 = boosted. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -909,7 +909,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:35</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:40</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1031,9 +1031,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>TOP ROW COLOR SATURATION</span><span id="topRowSaturationVal" style="color:#adff00;">55</span>
+        <span>TOP ROW COLOR SATURATION</span><span id="topRowSaturationVal" style="color:#adff00;">70</span>
       </div>
-      <input type="range" id="topRowSaturationBar" min="0" max="200" value="55" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
+      <input type="range" id="topRowSaturationBar" min="0" max="200" value="70" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -14609,12 +14609,11 @@ function setVolSliderSaturation(v) {
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
 function setTopRowSaturation(v) {
-  // CSS saturate() isn't perceptually linear — a raw 0.55 multiplier reads
-  // as considerably more washed-out than "55%" on the slider suggests.
-  // Square-root-curving the input keeps the slider's own numbers matching
-  // what actually shows on screen (55 now genuinely looks like a modest,
-  // roughly-halfway desaturation, not a heavy one).
-  document.documentElement.style.setProperty('--top-row-saturation', Math.sqrt(v / 100));
+  // Plain, literal, 1:1 with the slider — no curve. The earlier
+  // square-root correction was a guess at fixing a perceptual mismatch
+  // and it didn't match what was actually seen, so it's gone: 70 on the
+  // slider now means exactly saturate(0.7), nothing hidden.
+  document.documentElement.style.setProperty('--top-row-saturation', v / 100);
 }
 // NOTE MARKER OPACITY — a multiplier on the step-cell note markers'
 // existing opacity values (soft vs. accented, playing or not), so their
