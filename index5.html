@@ -25,9 +25,9 @@
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
   --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
-  --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
-  --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now maximum (the slider's own max of 100 = saturate(1), full original color, no desaturation). Plain linear mapping, no curve. 0 = grayscale, >1 not reachable at this slider's current 0-100 range. */
-  --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
+  --vol-slider-saturation: 1; /* Hard-coded to 100% (saturate(1), unchanged) now — the TRACK VOLUME COLOR SATURATION slider itself was removed from COLOR settings. Still a saturate() filter on the volume slider fill, independent of which color/hue is chosen above it. */
+  --top-row-saturation: 1; /* Hard-coded to 100% (maximum, unchanged) now — the TOP ROW COLOR SATURATION slider itself was removed from COLOR settings. Still a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. */
+  --note-marker-opacity: 0.9; /* Hard-coded to 90% now — the NOTE MARKER OPACITY slider itself was removed from COLOR settings. Still a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. */
   --vol-scale-thickness: 3.125px; /* Hard-coded to the old slider's maximum now — the SCALE LINES THICKNESS slider itself was removed from COLOR settings. */
   --vol-scale-opacity: 1; /* Hard-coded to 100% now — the SCALE LINES OPACITY slider itself was removed from COLOR settings. Color is a darker version of --neutral-top (the volume bar's own background), not independently pickable. */
   --vol-scale-invert: 0; /* INVERT SCALE COLOR toggle in COLOR settings — 0 = normal, 1 = inverted, applied on top of the darkened color rather than being its own separate color pick. */
@@ -125,7 +125,6 @@ body.seq-playing.logo-color-static #siFiTitle { animation: logo-wobble 1.4s ease
   75%  { background-color: var(--highlight3-color, #adff00); }
   100% { background-color: var(--neutral-top, #555); }
 }
-body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) .track-vol-bar:not(.muted) .track-vol-notch.lit { animation: vol-slider-color-cycle 1s linear infinite; } /* smooth mode — same gating as the logo's own smooth cycle, but 4x its speed (1s vs. the logo's 4s); jump mode's equivalent is the JS-driven per-note flash in updatePlayhead() instead, same as the logo itself switches to a per-note jump there */
 header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; }
 #cmapOverlay {
   display: block;
@@ -579,7 +578,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    layer 2 is the vertical ticks (a repeating gradient, tiled every 10% of
    the width, but only 80% of the full height so the ticks read as
    "almost but not quite" reaching top/bottom, same centered positioning).
-   Sits behind .track-vol-fill/-solid in paint order simply by being
+   Sits behind .track-vol-fill-solid in paint order simply by being
    appended first — no z-index needed within this single stacking
    context. */
 .track-vol-scale {
@@ -616,35 +615,14 @@ body.vol-scale-style-horizontal .track-vol-scale-tick { display: none; } /* SCAL
   background-color: color-mix(in srgb, var(--top-row-pressed-bg) 60%, black); /* same as .track-vol-scale-tick above */
 }
 body:not(.vol-scale-style-horizontal) .track-vol-scale::before { display: none; }
-/* 14 real flex children, not a width-percentage fill with a gradient
-   overlay on top — flexbox's own boundary-per-child (explicit flex-basis
-   set at creation time, not equal flex:1 — see VOL_STEP_BOUNDARIES) is
-   the only way to guarantee each notch's own boundary lines up with the
-   ruler line behind it, with no partial/mid-notch fill ever possible,
-   regardless of any inset elsewhere on the bar. */
-.track-vol-fill {
-  position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* symmetric left/right inset now — same gap value as .track-ctrl-row's own gap between buttons */
-  display: flex; gap: 2px; pointer-events: none;
-}
-.track-vol-notch { flex: 1; background: transparent; } /* unlit — lets .track-vol-bar's own background show through instead of introducing a separate gray, and automatically matches whatever that background is (including .muted's gray) */
-.track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); filter: saturate(var(--vol-slider-saturation, 1)); }
-/* SOLID VOLUME BAR (COLOR settings) — snapped-width alternative to the 14
-   notches above (not smoothly continuous — same 14 increments, see
-   _setVolFillPct), same inset, same color/saturation. Only one of
-   the two is ever visible at once — .track-vol-fill is hidden outright in
-   solid mode instead of just layering underneath, so its pointer-events
-   and lit children can't interfere. */
 .track-vol-fill-solid {
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); bottom: 15%;
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
   filter: saturate(var(--vol-slider-saturation, 1));
-  pointer-events: none; display: none; width: 0%;
+  pointer-events: none; width: 0%; /* always solid now — the old segmented (notched) alternative and its SOLID VOLUME BAR toggle were removed */
 }
-body.vol-slider-solid .track-vol-fill { display: none; }
-body.vol-slider-solid .track-vol-fill-solid { display: block; }
-body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) .track-vol-bar:not(.muted) .track-vol-fill-solid { animation: vol-slider-color-cycle 1s linear infinite; } /* same smooth-mode pulse as the notches get, just here too since solid mode swaps which element is visible */
+body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) .track-vol-bar:not(.muted) .track-vol-fill-solid { animation: vol-slider-color-cycle 1s linear infinite; }
 .track-vol-bar.muted { background: #ccc; }
-.track-vol-bar.muted .track-vol-notch.lit { background: transparent; }
 .track-vol-bar.muted .track-vol-fill-solid { background: transparent; }
 /* TRACK BUTTON OPACITY (see --track-default-opacity above) — the volume
    bar background and every track button's resting look, EXCEPT the
@@ -975,7 +953,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 15:54</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:09</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1094,27 +1072,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="volScaleInvertToggle" onchange="setVolScaleInvert(this.checked)" style="width:14px;height:14px;cursor:pointer;">INVERT SCALE COLOR
-    </label>
-    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">80</span>
-      </div>
-      <input type="range" id="noteMarkerOpacityBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;" oninput="setNoteMarkerOpacity(this.value); document.getElementById('noteMarkerOpacityVal').textContent=this.value">
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>TOP ROW COLOR SATURATION</span><span id="topRowSaturationVal" style="color:#adff00;">100</span>
-      </div>
-      <input type="range" id="topRowSaturationBar" min="0" max="100" value="100" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>TRACK VOLUME COLOR SATURATION</span><span id="volSliderSaturationVal" style="color:#adff00;">200</span>
-      </div>
-      <input type="range" id="volSliderSaturationBar" min="0" max="200" value="200" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="volSliderSolidToggle" checked onchange="setVolSliderSolid(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLID VOLUME BAR
     </label>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -2160,7 +2117,6 @@ _resetAppColorsToDefault();
 // direct request — the logo tap still toggles between the two exactly
 // as before, this only changes which one the app starts on.
 setLogoNoteJump(true);
-setVolSliderSolid(true); // SOLID VOLUME BAR is the default now — segmented (the notches) is the alternate, off by default
 setVolScaleStyle(true); // SCALE STYLE: horizontal is the default now — vertical is the alternate, off by default
 // Colors otherwise stay at the CSS :root defaults (plain gray/green/etc.)
 // until the first RAND/WILD press, since that's the only place
@@ -2209,8 +2165,12 @@ function randomizeAppColors() {
   const barLight = 0.55 + Math.random() * 0.2;
   applyBarColor(_hslToHex(barHue, barSat, barLight));
   const STEP = 60; // 360° / 6 points on the wheel — the bar itself is the 6th, anchor point; these five step around from it
-  // TOP ROW: bar + 1 step.
-  const _topH = (barHue + STEP) % 360, _topS = 0.5 + Math.random() * 0.3, _topL = 0.22 + Math.random() * 0.18;
+  // TOP ROW: bar + 1 step. Lightness floor raised from 0.22 to 0.32 —
+  // the low end was landing dark enough (near-black navy) to eat into
+  // the contrast headroom every auto-contrast pick against it (button
+  // text, the volume ruler, etc.) depends on; range width kept the same,
+  // just shifted lighter.
+  const _topH = (barHue + STEP) % 360, _topS = 0.5 + Math.random() * 0.3, _topL = 0.32 + Math.random() * 0.18;
   _applyTopColor(_hslToHex(_topH, _topS, _topL));
   // TRACK BUTTONS is still no independent roll — TOP ROW's own hue/saturation
   // with lightness pushed up, same relationship as the two default greys
@@ -3169,42 +3129,30 @@ function volGainToPos(gain) {
 // drag to get back to that level. Fill color itself is plain CSS now
 // (var(--playhead-color), same as the HIGHLIGHT setting) — no more
 // per-pixel dynamic coloring here.
-// Volume slider step boundaries — 12 cumulative width fractions, one per
-// lit-notch count (1-12). Not evenly spaced: steps 1-11's fill boundary
+// Volume slider step boundaries — 14 cumulative width fractions, one per
+// step count (1-14). Not evenly spaced: steps 1-13's fill boundary
 // lands exactly on the ruler's corresponding line (the vertical ticks are
-// centered in 12 equal slots — see .track-vol-scale — so a plain 1/12
-// boundary sits BETWEEN two ruler lines, not on one); step 12 (full) goes
+// centered in 14 equal slots — see .track-vol-scale — so a plain 1/14
+// boundary sits BETWEEN two ruler lines, not on one); step 14 (full) goes
 // all the way to the true right edge instead, since full volume has to
 // reach the actual edge regardless of where the last ruler line sits.
-// Shared by both fill modes (notch flex-basis below, and the solid bar's
-// snapped width in _setVolFillPct) so segmented and solid always agree
-// on exactly the same boundary positions.
-const VOL_STEP_BOUNDARIES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 28].map(x => x / 28); // 14 steps now (was 12) — see the matching 14-line ruler in .track-vol-scale's CSS
-function _setVolFillPct(el, pct) {
-  if (!el) return;
-  // el is the .track-vol-fill flex container holding 14 .track-vol-notch
-  // children (see attachVolBarEvents/track row setup) — light however many
-  // of them the current value reaches, rather than setting a width. Each
-  // notch's own width (set via flex-basis at creation time, not simple
-  // flex:1 equal division) already lines its boundary up with the ruler
-  // behind it — see VOL_STEP_BOUNDARIES above. 14 steps, not a smoothly
-  // continuous value, matching the 12-line ruler behind it — the fader
-  // doesn't need to track every in-between position visually.
+const VOL_STEP_BOUNDARIES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 28].map(x => x / 28);
+function _setVolFillPct(vb, pct) {
+  if (!vb) return;
+  // vb is the .track-vol-bar itself — snaps the fill to whichever of the
+  // 14 VOL_STEP_BOUNDARIES positions the value reaches, rather than a
+  // smooth continuous width; the fader doesn't need to track every
+  // in-between position visually, and this keeps the fill's edge lined
+  // up with the ruler behind it at every step.
+  const solid = vb.querySelector('.track-vol-fill-solid');
+  if (!solid) return;
   const lit = Math.round(pct * 14);
-  const notches = el.children;
-  for (let i = 0; i < notches.length; i++) notches[i].classList.toggle('lit', i < lit);
-  // Solid-bar alternative (SEGMENTED/SOLID toggle in COLOR settings) —
-  // snapped to the same 14 boundary positions as the notches above (not
-  // a smooth continuous width, and not plain 12ths either), so switching
-  // between the two modes always shows the exact same edge position.
-  const solid = el.parentElement && el.parentElement.querySelector('.track-vol-fill-solid');
-  if (solid) solid.style.width = (lit > 0 ? VOL_STEP_BOUNDARIES[lit - 1] * 100 : 0) + '%';
+  solid.style.width = (lit > 0 ? VOL_STEP_BOUNDARIES[lit - 1] * 100 : 0) + '%';
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
   if (!vb) return;
-  const f = vb.querySelector('.track-vol-fill');
-  _setVolFillPct(f, volGainToPos(trackVolume[tr]));
+  _setVolFillPct(vb, volGainToPos(trackVolume[tr]));
 }
 const trackFx = Array.from({length: NUM_TRACKS}, () => ({ x: 0, y: 0 }));
 const trackDelay = new Array(NUM_TRACKS).fill(false);
@@ -3443,7 +3391,7 @@ function scheduler() {
           const fb = document.getElementById(`fxbtn-${tr}`); if (fb) fb.classList.toggle('on', trackFx[tr].x > 0 || trackFx[tr].y > 0);
           const row = document.getElementById(`ctrlrow-${tr}`); if (row) row.classList.toggle('row-muted', trackMuted[tr]);
           const lm = document.getElementById(`lane-${tr}`); if (lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
-          const vb = document.getElementById(`vbar-${tr}`); if (vb) { vb.classList.toggle('muted', trackMuted[tr]); const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
+          const vb = document.getElementById(`vbar-${tr}`); if (vb) { vb.classList.toggle('muted', trackMuted[tr]); _setVolFillPct(vb, volGainToPos(trackVolume[tr])); }
         }
         document.getElementById('bpmSlider').value = bpm;
         syncSettingsPanel();
@@ -8202,17 +8150,9 @@ function buildUI() {
       volScale.appendChild(tick);
     }
     volBar.appendChild(volScale);
-    const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
-    for (let n = 0; n < 14; n++) {
-      const notch = document.createElement('div'); notch.className = 'track-vol-notch';
-      const prevBoundary = n === 0 ? 0 : VOL_STEP_BOUNDARIES[n - 1];
-      notch.style.flex = `0 0 ${(VOL_STEP_BOUNDARIES[n] - prevBoundary) * 100}%`; // not equal widths — see VOL_STEP_BOUNDARIES above, each notch's own boundary lines up with the ruler line behind it
-      volFill.appendChild(notch);
-    }
-    volBar.appendChild(volFill);
-    const volFillSolid = document.createElement('div'); volFillSolid.className = 'track-vol-fill-solid'; // continuous width-based alternative to the notches above — SEGMENTED/SOLID toggle in COLOR settings picks which one is visible; _setVolFillPct keeps both in sync regardless
+    const volFillSolid = document.createElement('div'); volFillSolid.className = 'track-vol-fill-solid'; // width-based fill, snapped to VOL_STEP_BOUNDARIES's 14 steps — always solid now, the old segmented (notched) alternative and its toggle were removed
     volBar.appendChild(volFillSolid);
-    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
+    _setVolFillPct(volBar, volGainToPos(trackVolume[tr]));
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
 
@@ -11022,7 +10962,7 @@ function fullClear() {
     const rb = document.getElementById(`randbtn-${tr}`); if (rb) rb.classList.remove('pulsing');
     const cr = document.getElementById(`ctrlrow-${tr}`); if (cr) cr.classList.remove('row-muted');
     const vb = document.getElementById(`vbar-${tr}`);
-    if (vb) { vb.classList.remove('muted'); const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
+    if (vb) { vb.classList.remove('muted'); _setVolFillPct(vb, volGainToPos(trackVolume[tr])); }
     redrawTrackCells(tr);
   }
   // Track 1 is no longer special — cleared the same as every other track
@@ -11906,13 +11846,13 @@ function randAll(mode, opts) {
       if (_volReduction > 0) {
         trackVolume[_tr] = Math.max(0.05, trackVolume[_tr] * (1 - _volReduction));
         if (ctx && trackGainNodes[_tr]) trackGainNodes[_tr].gain.setTargetAtTime(trackVolume[_tr], ctx.currentTime, 0.05);
-        const vb3 = document.getElementById(`vbar-${_tr}`); if (vb3) { const f3 = vb3.querySelector('.track-vol-fill'); _setVolFillPct(f3, volGainToPos(trackVolume[_tr])); }
+        const vb3 = document.getElementById(`vbar-${_tr}`); if (vb3) { _setVolFillPct(vb3, volGainToPos(trackVolume[_tr])); }
       }
     }, _tr * 30); // stagger 30ms per track
     _pendingRandTimeouts.push(_tid);
     trackVolume[tr] = 0.30;
     if (ctx && trackGainNodes[tr]) trackGainNodes[tr].gain.setValueAtTime(trackVolume[tr], ctx.currentTime);
-    const vb = document.getElementById(`vbar-${tr}`); if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
+    const vb = document.getElementById(`vbar-${tr}`); if (vb) { _setVolFillPct(vb, volGainToPos(trackVolume[tr])); }
     // Reset FX to off first — setFxActive will apply -6dB if FX gets turned on
     trackFx[tr] = { x: 0, y: 0 };
     if (ctx && trackFxNodes[tr]) setFxActive(tr, { x: 0, y: 0 });
@@ -12081,7 +12021,7 @@ function randAll(mode, opts) {
       else {
         // No ctx yet — just set vol bar
         const vb = document.getElementById(`vbar-${tr}`);
-        if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, fxOn ? 0.25 : 0.5); }
+        if (vb) { _setVolFillPct(vb, fxOn ? 0.25 : 0.5); }
       }
       const fb = document.getElementById(`fxbtn-${tr}`);
       if (fb) fb.classList.toggle('on', fxOn);
@@ -12101,7 +12041,7 @@ function randAll(mode, opts) {
       trackPump[tr] = false;
       const fb2 = document.getElementById(`fxbtn-${tr}`); if (fb2) fb2.classList.remove('blast-on');
       const vb = document.getElementById(`vbar-${tr}`);
-      if (vb) { const f = vb.querySelector('.track-vol-fill'); _setVolFillPct(f, 0.5); }
+      if (vb) { _setVolFillPct(vb, 0.5); }
       if (trackGainNodes[tr] && ctx) trackGainNodes[tr].gain.setValueAtTime(0.5, ctx.currentTime);
     }
   }
@@ -12547,7 +12487,7 @@ function restoreState(snap, opts) {
     }
     const row=document.getElementById(`ctrlrow-${tr}`); if(row) row.classList.toggle('row-muted', trackMuted[tr]);
     const lm=document.getElementById(`lane-${tr}`); if(lm) lm.classList.toggle('lane-muted', trackMuted[tr]);
-    const vb=document.getElementById(`vbar-${tr}`); if(vb) { vb.classList.toggle('muted', trackMuted[tr]); const f=vb.querySelector('.track-vol-fill'); _setVolFillPct(f, volGainToPos(trackVolume[tr])); }
+    const vb=document.getElementById(`vbar-${tr}`); if(vb) { vb.classList.toggle('muted', trackMuted[tr]); _setVolFillPct(vb, volGainToPos(trackVolume[tr])); }
     redrawTrackCells(tr);
   }
   // RECALL (the only caller that passes skipBeatState) can genuinely
@@ -14845,13 +14785,6 @@ function setTrackDefaultOpacity(v) {
 // Slider is 0-200 (%); divide by 100 for the actual filter multiplier.
 function setVolSliderSaturation(v) {
   document.documentElement.style.setProperty('--vol-slider-saturation', v / 100);
-}
-// SEGMENTED / SOLID — which of the two volume-slider fill elements is
-// visible (see .track-vol-fill vs .track-vol-fill-solid); _setVolFillPct
-// already keeps both in sync on every volume change, so toggling this is
-// purely a CSS display swap, nothing to recompute.
-function setVolSliderSolid(on) {
-  document.body.classList.toggle('vol-slider-solid', !!on);
 }
 // SCALE LINES THICKNESS/OPACITY — the volume slider's ruler (.track-vol-scale).
 // Color is always the TOP ROW color (--neutral-top), not independently
