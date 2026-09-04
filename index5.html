@@ -483,22 +483,31 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
 .track-ctrl-icon-btn.lock-btn:not(#beatCtrlL) { width: calc(32px * var(--track-btn-scale, 1)); background: #999; color: #fff; }
 .track-ctrl-icon-btn.lock-btn.sweep-on:not(#beatCtrlL) { background: #333; color: #fff; }
 .fx-btn.on { background: var(--track-btn-on-color, #f17d21); color: var(--track-btn-on-text, #fff); }
-.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: var(--track-btn-on-text, #fff); }
+.fx-btn.blast-on { background: var(--track-btn-blast-color, var(--playhead)); color: var(--track-btn-blast-text, #fff); }
 .track-ctrl-icon-btn.sweep-on { background: var(--playhead); color: var(--track-btn-on-text, #fff); }
 .track-ctrl-icon-btn.solo-on { background: var(--track-btn-on-color, #FFA700); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
 /* Every engaged track button (FX, BLAST, reverb, lock) pulses in both
    size and color while active — previously these just had a flat, static
-   color swap with no animation at all. */
+   color swap with no animation at all. Two separate keyframes, not one
+   shared: FX/solo/reverb sit on --track-btn-on-color, but BLAST (and
+   auto-rand, which shares BLAST's color) sits on the different
+   --track-btn-blast-color — reusing the ON keyframe's --track-btn-on-text
+   there was pulsing through a text color contrasted against the WRONG
+   background, occasionally landing dark-on-dark. */
 @keyframes engaged-btn-pulse { 0% { transform: scale(1); filter: brightness(1); color: var(--track-btn-on-text, #fff); } 50% { transform: scale(1.1); filter: brightness(1.3); color: #333; } 100% { transform: scale(1); filter: brightness(1); color: var(--track-btn-on-text, #fff); } }
-.fx-btn.on, .fx-btn.blast-on, .track-ctrl-icon-btn.sweep-on:not(.lock-btn) {
+@keyframes engaged-btn-pulse-blast { 0% { transform: scale(1); filter: brightness(1); color: var(--track-btn-blast-text, #fff); } 50% { transform: scale(1.1); filter: brightness(1.3); color: #333; } 100% { transform: scale(1); filter: brightness(1); color: var(--track-btn-blast-text, #fff); } }
+.fx-btn.on, .track-ctrl-icon-btn.sweep-on:not(.lock-btn) {
   animation: engaged-btn-pulse 0.6s ease-in-out infinite;
+}
+.fx-btn.blast-on {
+  animation: engaged-btn-pulse-blast 0.6s ease-in-out infinite;
 }
 body.no-fx-reverb-pulse .fx-btn.on, body.no-fx-reverb-pulse .fx-btn.blast-on, body.no-fx-reverb-pulse .shift-btn.right.on { animation: none; }
 body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0); }
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
-.rand-btn.rand-auto { background: var(--track-btn-blast-color, var(--playhead)) !important; color: var(--track-btn-on-text, #fff); animation: engaged-btn-pulse 0.6s ease-in-out infinite; }
+.rand-btn.rand-auto { background: var(--track-btn-blast-color, var(--playhead)) !important; color: var(--track-btn-blast-text, #fff); animation: engaged-btn-pulse-blast 0.6s ease-in-out infinite; }
 #randBtn.pulsing { display: flex; align-items: center; justify-content: center; }
 .track-auto-rand { --track-color: var(--highlight2-color, #0078ff) !important; }
 /* Was: alternating HIGHLIGHT/HIGHLIGHT2 color-pulse while in auto mode —
@@ -951,7 +960,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:19</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
