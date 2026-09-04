@@ -939,7 +939,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:47</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1472,6 +1472,7 @@ const INSTRUMENTS = {
   tomHi:  { name: 'Tom Hi',      soft: 'Sounds/TomHigh50.wav', accent: 'Sounds/TomHigh100.wav', group: 'kit' },
   tomMid: { name: 'Tom Mid',     soft: 'Sounds/TomMid50.wav',  accent: 'Sounds/TomMid100.wav',  group: 'kit' },
   tomLo:  { name: 'Tom Low',     soft: 'Sounds/TomLow50.wav',  accent: 'Sounds/TomLow100.wav',  group: 'kit' },
+  toms:   { name: 'Toms', soft: null, accent: null, group: 'kit' }, // MOZAMBIQUE-only — Tom Hi and Tom Lo combined onto one track to free up a second slot; no real samples of its own, playBuffer() remaps this key to tomHi or tomLo per-step (step 7 = hi, everything else on this track = lo) before ever touching the sample buffers. Not meant to be a general-purpose instrument — a one-off tied to MOZAMBIQUE's own fixed step positions.
   tamb:   { name: 'TAMB',        soft: 'Sounds/Tamb50.wav',   accent: 'Sounds/Tamb100.wav',   group: 'perc' },
   shak:   { name: 'SHAKER',      soft: 'Sounds/Shak50.wav',   accent: 'Sounds/Shak100.wav',   group: 'perc' },
   clap:   { name: 'HANDCLAP',    soft: 'Sounds/Clap50.wav',   accent: 'Sounds/Clap100.wav',   group: 'perc' },
@@ -2884,6 +2885,7 @@ function _rawSynthConnectNode(tr) {
 
 
 function playBuffer(key, isAccent, time, tr, stepIdx) {
+  if (key === 'toms') key = (stepIdx === 7) ? 'tomHi' : 'tomLo'; // MOZAMBIQUE's combined toms track — step 7 is the hi hit, steps 14/15 are the lo hits (see _applyMozambiqueTracksToCurrentPattern); remapped to a real sample key before anything else below touches it, so gain/buffer lookups work exactly like the old separate tracks did
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
   if (key === 'snare2') { triggerFxEnvelope(tr, time); playSynthSnare_reinstated(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
@@ -10542,7 +10544,7 @@ function _precomputeLoopSequence(numLoops) {
       // MOZAMBIQUE's 4 fixed kit tracks are excluded either way — their
       // patterns are deliberately fixed and must not evolve/regenerate,
       // live or in a bounce, same as randAll() itself already guards.
-      const _isMozKit = _beatType === 'mozambique' && ['ride', 'sidestick', 'tomHi', 'tomLo'].includes(trackInstruments[tr]);
+      const _isMozKit = _beatType === 'mozambique' && ['ride', 'sidestick', 'toms'].includes(trackInstruments[tr]);
       if ((autoShiftStops[tr] || _autoRandLoopActive) && !_isMozKit) randomizeTrack(tr);
     }
     sequence.push(_capturePlaybackState());
@@ -11101,7 +11103,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia'));
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'toms' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia')); // 'toms' excluded — MOZAMBIQUE-only, assigned directly by _applyMozambiqueTracksToCurrentPattern/the mozambique RAND branch, not through this general pool (it has no real samples of its own outside that fixed step-7-is-hi/else-is-lo context)
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k) && ((k !== 'jcmgtr' && k !== 'dulc') || _intensitySliderVal > 80)); // JINX and BOOBOO stay out of RAND below 80% INTENSITY — still fully selectable manually from the sound picker regardless
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
@@ -11420,11 +11422,15 @@ function randAll(mode, opts) {
     pool[replaceIdx] = 'shihat';
   }
 
-  // MOZAMBIQUE beat type — RIDE, SIDESTICK, and both toms become real
-  // tracks (their patterns are written directly below), same reasoning and
-  // same replace-a-slot approach as JAZZ's ride/comping pass above. Kick
-  // and hihat stay BEAT-menu-only synthesis — they're never tracks.
-  const _mozambiqueTrackKeys = ['ride', 'sidestick', 'tomHi', 'tomLo'];
+  // MOZAMBIQUE beat type — RIDE, SIDESTICK, and a combined TOMS track
+  // (Tom Hi and Tom Lo sharing one track — a one-off just for this beat
+  // type, freeing up a 4th slot other beat types don't get; see
+  // playBuffer()'s per-step remap and _applyMozambiqueTracksToCurrentPattern)
+  // become real tracks (their patterns are written directly below), same
+  // reasoning and same replace-a-slot approach as JAZZ's ride/comping pass
+  // above. Kick and hihat stay BEAT-menu-only synthesis — they're never
+  // tracks.
+  const _mozambiqueTrackKeys = ['ride', 'sidestick', 'toms'];
   if (_beatType === 'mozambique') {
     const bassKeysLocal4 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
     for (const member of _mozambiqueTrackKeys) {
@@ -11638,16 +11644,13 @@ function randAll(mode, opts) {
         grid[_tr].fill(0);
         grid[_tr][3] = 2; grid[_tr][11] = 2;
         redrawTrackCells(_tr); markModified();
-      } else if (_beatType === 'mozambique' && trackInstruments[_tr] === 'tomHi') {
-        // Fixed single accented hit, same step the old synth-dispatch "mid
-        // tom" call used before this became a real track.
+      } else if (_beatType === 'mozambique' && trackInstruments[_tr] === 'toms') {
+        // Fixed combined pattern — hi tom's single accented hit plus lo
+        // tom's 2-hit accented pattern, same steps the old separate
+        // tomHi/tomLo tracks used, now sharing one track (see playBuffer's
+        // per-step remap).
         grid[_tr].fill(0);
         grid[_tr][7] = 2;
-        redrawTrackCells(_tr); markModified();
-      } else if (_beatType === 'mozambique' && trackInstruments[_tr] === 'tomLo') {
-        // Fixed 2-hit accented pattern, same steps the old synth-dispatch
-        // "low tom" call used before this became a real track.
-        grid[_tr].fill(0);
         grid[_tr][14] = 2; grid[_tr][15] = 2;
         redrawTrackCells(_tr); markModified();
       } else {
@@ -11677,7 +11680,7 @@ function randAll(mode, opts) {
       // and their patterns are naturally busy/dense enough to trip these
       // checks often, which was silently undoing that fixed/guaranteed
       // chance right after it was set.
-      const _congaBongoTr = ['congHi', 'congLo', 'bongHi', 'bongLo', 'tomHi', 'tomMid', 'tomLo', 'dronePlus'].includes(trackInstruments[_tr]);
+      const _congaBongoTr = ['congHi', 'congLo', 'bongHi', 'bongLo', 'tomHi', 'tomMid', 'tomLo', 'toms', 'dronePlus'].includes(trackInstruments[_tr]);
       const _full16th = grid[_tr].every(v => v > 0);
       const _full8thRelevant = ['shihat','shak','tamb','ride'].includes(trackInstruments[_tr]) &&
         [0,2,4,6,8,10,12,14].every(s => grid[_tr][s] > 0);
@@ -11826,8 +11829,8 @@ function randAll(mode, opts) {
   // Levels 3+4: activate auto-rand on some tracks and boost FX
   if (level >= 3) {
     const autoCount = Math.min(NUM_TRACKS, Math.round((_intensitySliderVal / 100) * 4)); // driven by INTENSITY — 0 at the bottom (genuinely zero auto-note tracks), up to 4 at the top
-    // Use actual track indices, not pool indices. MOZAMBIQUE's 4 fixed
-    // kit tracks (ride/sidestick/tomHi/tomLo) are excluded — their
+    // Use actual track indices, not pool indices. MOZAMBIQUE's 3 fixed
+    // kit tracks (ride/sidestick/toms) are excluded — their
     // patterns are deliberately fixed, never something auto-rand should
     // be free to reinterpret every 4 bars, same reasoning as JAZZ's ride
     // never getting auto-rand either.
@@ -11973,7 +11976,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (trackInstruments[tr] === 'magic') ? 0 : (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo' || trackInstruments[tr] === 'dronePlus') ? 1 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // MAGIC never gets reverb through RAND — checked first, unconditional 0, only ever on if set manually via the track's own R button; TOM HI/MID/LOW and STRINGS+ always get reverb through RAND — unconditional 1, overrides the too-dense/full-16th gate below same as CONGA/BONGO; CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (trackInstruments[tr] === 'magic') ? 0 : (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo' || trackInstruments[tr] === 'toms' || trackInstruments[tr] === 'dronePlus') ? 1 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // MAGIC never gets reverb through RAND — checked first, unconditional 0, only ever on if set manually via the track's own R button; TOM HI/MID/LOW and STRINGS+ always get reverb through RAND — unconditional 1, overrides the too-dense/full-16th gate below same as CONGA/BONGO; CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     _setTrackReverb(tr, delayOn);
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -12038,7 +12041,7 @@ function randAll(mode, opts) {
   const _reverbOnTracks = [];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (!trackDelay[tr]) continue;
-    if (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo' || trackInstruments[tr] === 'dronePlus') { _reverbProtectedTracks.push(tr); continue; }
+    if (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo' || trackInstruments[tr] === 'toms' || trackInstruments[tr] === 'dronePlus') { _reverbProtectedTracks.push(tr); continue; }
     _reverbOnTracks.push(tr);
   }
   const _reverbRemovableQuota = Math.max(0, _reverbQuota - _reverbProtectedTracks.length);
@@ -16360,22 +16363,20 @@ function _applyJazzTracksToCurrentPattern() {
 function _applyMozambiqueTracksToCurrentPattern() {
   const _existingRideTr = trackInstruments.findIndex(k => k === 'ride');
   const _existingSidestickTr = trackInstruments.findIndex(k => k === 'sidestick');
-  const _existingTomHiTr = trackInstruments.findIndex(k => k === 'tomHi');
-  const _existingTomLoTr = trackInstruments.findIndex(k => k === 'tomLo');
+  const _existingTomsTr = trackInstruments.findIndex(k => k === 'toms');
   const _essentialKeys = new Set(['skick', 'shihat', ...TONAL_KEYS, 'congHi', 'congLo', 'bongHi', 'bongLo']);
   const _unlocked = [];
   for (let tr = 0; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _unlocked.push(tr);
-  if (_unlocked.length < 4) return; // nothing safe to overwrite
+  if (_unlocked.length < 3) return; // nothing safe to overwrite
   const _preferred = _unlocked.filter(tr => !_essentialKeys.has(trackInstruments[tr]));
   const _targets = [];
   if (_existingRideTr !== -1 && !trackSweep[_existingRideTr]) _targets.push(_existingRideTr);
   if (_existingSidestickTr !== -1 && !trackSweep[_existingSidestickTr] && !_targets.includes(_existingSidestickTr)) _targets.push(_existingSidestickTr);
-  if (_existingTomHiTr !== -1 && !trackSweep[_existingTomHiTr] && !_targets.includes(_existingTomHiTr)) _targets.push(_existingTomHiTr);
-  if (_existingTomLoTr !== -1 && !trackSweep[_existingTomLoTr] && !_targets.includes(_existingTomLoTr)) _targets.push(_existingTomLoTr);
-  for (const tr of _preferred) { if (_targets.length < 4 && !_targets.includes(tr)) _targets.push(tr); }
-  for (const tr of _unlocked) { if (_targets.length < 4 && !_targets.includes(tr)) _targets.push(tr); }
-  if (_targets.length < 4) return;
-  const [rideTr, sidestickTr, tomHiTr, tomLoTr] = _targets;
+  if (_existingTomsTr !== -1 && !trackSweep[_existingTomsTr] && !_targets.includes(_existingTomsTr)) _targets.push(_existingTomsTr);
+  for (const tr of _preferred) { if (_targets.length < 3 && !_targets.includes(tr)) _targets.push(tr); }
+  for (const tr of _unlocked) { if (_targets.length < 3 && !_targets.includes(tr)) _targets.push(tr); }
+  if (_targets.length < 3) return;
+  const [rideTr, sidestickTr, tomsTr] = _targets;
   const _applyOneMoz = (tr, key) => {
     trackInstruments[tr] = key;
     const tb = document.getElementById(`tbtn-${tr}`); if (tb) tb.textContent = INSTRUMENTS[key]?.name || key;
@@ -16392,17 +16393,15 @@ function _applyMozambiqueTracksToCurrentPattern() {
       grid[tr][7] = 1; grid[tr][9] = 1; grid[tr][10] = 2; grid[tr][12] = 1; grid[tr][13] = 1;
     } else if (key === 'sidestick') {
       grid[tr][3] = 2; grid[tr][11] = 2;
-    } else if (key === 'tomHi') {
-      grid[tr][7] = 2;
-    } else if (key === 'tomLo') {
-      grid[tr][14] = 2; grid[tr][15] = 2;
+    } else if (key === 'toms') {
+      grid[tr][7] = 2; // hi
+      grid[tr][14] = 2; grid[tr][15] = 2; // lo
     }
     redrawTrackCells(tr);
   };
   _applyOneMoz(rideTr, 'ride');
   _applyOneMoz(sidestickTr, 'sidestick');
-  _applyOneMoz(tomHiTr, 'tomHi');
-  _applyOneMoz(tomLoTr, 'tomLo');
+  _applyOneMoz(tomsTr, 'toms');
   markModified();
 }
 // Tapping the already-active BEAT TYPE button toggles the lock (tapping it otherwise does
