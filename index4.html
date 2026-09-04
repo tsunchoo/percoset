@@ -26,8 +26,8 @@
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
   --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
-  --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings (MORE) — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. 1 = unchanged, 0 = grayscale, >1 = boosted. */
-  --note-marker-opacity: 0.7; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 70%; 1 = unchanged, 0 = invisible. */
+  --top-row-saturation: 0.55; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now 55%; 1 = unchanged, 0 = grayscale, >1 = boosted. */
+  --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -895,7 +895,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 02:57</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:12</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1008,6 +1008,31 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <!-- Dev menu — small, separate from the performance-lock title gesture -->
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
+    <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">COLOR MENU</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">80</span>
+      </div>
+      <input type="range" id="noteMarkerOpacityBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;" oninput="setNoteMarkerOpacity(this.value); document.getElementById('noteMarkerOpacityVal').textContent=this.value">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>TOP ROW COLOR SATURATION</span><span id="topRowSaturationVal" style="color:#adff00;">55</span>
+      </div>
+      <input type="range" id="topRowSaturationBar" min="0" max="200" value="55" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>TRACK VOLUME COLOR SATURATION</span><span id="volSliderSaturationVal" style="color:#adff00;">200</span>
+      </div>
+      <input type="range" id="volSliderSaturationBar" min="0" max="200" value="200" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>TRACK BUTTON OPACITY</span><span id="trackDefaultOpacityVal" style="color:#adff00;">75</span>
+      </div>
+      <input type="range" id="trackDefaultOpacityBar" min="0" max="100" value="75" class="master-vol-slider" style="width:100%;" oninput="setTrackDefaultOpacity(this.value/100); document.getElementById('trackDefaultOpacityVal').textContent=this.value">
+    </div>
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLOR</div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">SOLO + BEAT</div>
@@ -1032,12 +1057,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="emptyCellsInvisibleToggle" onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
     </label>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">70</span>
-      </div>
-      <input type="range" id="noteMarkerOpacityBar" min="0" max="100" value="70" class="master-vol-slider" style="width:100%;" oninput="setNoteMarkerOpacity(this.value); document.getElementById('noteMarkerOpacityVal').textContent=this.value">
-    </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
     </label>
@@ -1064,12 +1083,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
         <input type="color" id="topColorPicker" value="#555555" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
         <style>#topColorPicker::-webkit-color-swatch-wrapper{padding:0;}#topColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#topColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>TOP ROW COLOR SATURATION</span><span id="topRowSaturationVal" style="color:#adff00;">100</span>
-        </div>
-        <input type="range" id="topRowSaturationBar" min="0" max="200" value="100" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
@@ -1169,13 +1182,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>TRACK VOLUME COLOR SATURATION</span><span id="volSliderSaturationVal" style="color:#adff00;">200</span>
-        </div>
-        <input type="range" id="volSliderSaturationBar" min="0" max="200" value="200" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
-      </div>
-
       <!-- TOP ROW HIGHLIGHT picker removed from the UI — the top-row
            buttons' pressed/engaged state is now a simple darker version
            of the button's own resting color (--top-row-pressed-bg),
@@ -1247,13 +1253,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
             <input type="radio" name="trackCtrlBtnColor" value="top" checked onchange="setTrackCtrlBtnColor('top')" style="width:15px;height:15px;cursor:pointer;">TOP ROW BUTTON COLOR
           </label>
         </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;margin:10px 0;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>TRACK BUTTON OPACITY</span><span id="trackDefaultOpacityVal" style="color:#adff00;">75</span>
-        </div>
-        <input type="range" id="trackDefaultOpacityBar" min="0" max="100" value="75" class="master-vol-slider" style="width:100%;" oninput="setTrackDefaultOpacity(this.value/100); document.getElementById('trackDefaultOpacityVal').textContent=this.value">
       </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -3027,7 +3026,7 @@ const trackVolume = [0.0501, 0.505, 0.8, 0.8, 0.8, 0.8];
 // since gain is perceived logarithmically. This maps slider position
 // linearly across a -40dB..0dB range instead, so the full width of the
 // slider actually does something audible.
-const VOL_MIN_DB = -40;
+const VOL_MIN_DB = -24; // was -40 — the bottom ~4 of the 10 displayed segments used to fall between -40dB and -24dB, a range quiet enough to be functionally useless in a mix; raising the floor to exactly that old boundary hands that wasted travel back to the range that actually matters (still an 18-stop curve below, already clustered toward the top for finer control near full volume — same shape, just recalibrated to a more useful window)
 // Discrete stop positions instead of a fully continuous slider — clustered
 // densely near the top (fine control near full volume) and sparse near
 // the bottom (coarser control at quiet levels), via a power curve.
@@ -8108,11 +8107,10 @@ function buildUI() {
     });
     ctrlRow.appendChild(delayBtn);
 
-    // Shift left
-    const btnL = document.createElement('button'); btnL.className = 'shift-btn'; btnL.innerHTML = '<span class="glyph">&lt;</span>';
-    wireShiftButton(btnL, tr, -1);
-    ctrlRow.appendChild(btnL);
-
+    // "Shift left" (<) button removed — its width goes back to the volume
+    // slider instead (flex:1 on .track-vol-bar picks up the freed space
+    // automatically). wireShiftButton() is left defined, unused, in case
+    // this or the already-commented-out "shift right" is reinstated later.
     // Shift right (kept for later use)
     // const btnR = document.createElement('button'); btnR.className = 'shift-btn right'; btnR.textContent = '>';
     // wireShiftButton(btnR, tr, +1);
