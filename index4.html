@@ -106,8 +106,9 @@ body.eight-bit-mode #siFiTitle span { color: #00ff41 !important; }
   25% { transform: translateX(-0.5px); }
   75% { transform: translateX(0.5px); }
 }
-body.seq-playing:not(.logo-note-jump-mode) #siFiTitle { animation: logo-color-cycle 4s linear infinite, logo-wobble 1.4s ease-in-out infinite; }
+body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) #siFiTitle { animation: logo-color-cycle 4s linear infinite, logo-wobble 1.4s ease-in-out infinite; }
 body.seq-playing.logo-note-jump-mode #siFiTitle { animation: logo-wobble 1.4s ease-in-out infinite; }
+body.seq-playing.logo-color-static #siFiTitle { animation: logo-wobble 1.4s ease-in-out infinite; color: var(--bg); }
 /* Same smooth sweep as the logo's own non-jump mode above — all 4 chosen
    colors now (TOP ROW/HIGHLIGHT/HIGHLIGHT2/HIGHLIGHT3), not just 3 — just
    animating background-color instead of text color — applied to every
@@ -120,7 +121,7 @@ body.seq-playing.logo-note-jump-mode #siFiTitle { animation: logo-wobble 1.4s ea
   75%  { background-color: var(--highlight3-color, #adff00); }
   100% { background-color: var(--neutral-top, #555); }
 }
-body.seq-playing:not(.logo-note-jump-mode) .track-vol-bar:not(.muted) .track-vol-notch.lit { animation: vol-slider-color-cycle 1s linear infinite; } /* smooth mode — same gating as the logo's own smooth cycle, but 4x its speed (1s vs. the logo's 4s); jump mode's equivalent is the JS-driven per-note flash in updatePlayhead() instead, same as the logo itself switches to a per-note jump there */
+body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) .track-vol-bar:not(.muted) .track-vol-notch.lit { animation: vol-slider-color-cycle 1s linear infinite; } /* smooth mode — same gating as the logo's own smooth cycle, but 4x its speed (1s vs. the logo's 4s); jump mode's equivalent is the JS-driven per-note flash in updatePlayhead() instead, same as the logo itself switches to a per-note jump there */
 header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; }
 #cmapOverlay {
   display: block;
@@ -591,7 +592,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 }
 body.vol-slider-solid .track-vol-fill { display: none; }
 body.vol-slider-solid .track-vol-fill-solid { display: block; }
-body.seq-playing:not(.logo-note-jump-mode) .track-vol-bar:not(.muted) .track-vol-fill-solid { animation: vol-slider-color-cycle 1s linear infinite; } /* same smooth-mode pulse as the notches get, just here too since solid mode swaps which element is visible */
+body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) .track-vol-bar:not(.muted) .track-vol-fill-solid { animation: vol-slider-color-cycle 1s linear infinite; } /* same smooth-mode pulse as the notches get, just here too since solid mode swaps which element is visible */
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-notch.lit { background: transparent; }
 .track-vol-bar.muted .track-vol-fill-solid { background: transparent; }
@@ -924,7 +925,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:48</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2094,12 +2095,16 @@ setLogoNoteJump(true);
 // Running it once here means everything (including the fixed red
 // HIGHLIGHT 3) is live from the very first paint.
 randomizeAppColors();
-function setLogoNoteJump(on) {
-  window._logoNoteJumpEnabled = !!on;
-  document.body.classList.toggle('logo-note-jump-mode', window._logoNoteJumpEnabled);
+window._logoColorMode = 'jump'; // 'jump' | 'smooth' | 'static' — cycled by tapping the logo; setLogoNoteJump(true) just above re-sets this to the same value via setLogoColorMode() below, kept here too just as the up-front declaration
+function setLogoColorMode(mode) {
+  window._logoColorMode = mode;
+  window._logoNoteJumpEnabled = (mode === 'jump'); // kept in sync — still what the vol-slider flash and a couple of playback hooks check
+  document.body.classList.toggle('logo-note-jump-mode', mode === 'jump');
+  document.body.classList.toggle('logo-color-static', mode === 'static');
   const el = document.getElementById('siFiTitle');
-  if (el) el.style.color = ''; // clear any leftover jump color (or let the CSS cycle take back over) on every mode switch
+  if (el) el.style.color = ''; // clear any leftover jump color (or let CSS — the cycle, or the static rule — take back over) on every mode switch
 }
+function setLogoNoteJump(on) { setLogoColorMode(on ? 'jump' : 'smooth'); } // kept for anything still calling this by its old name/signature
 const _LOGO_JUMP_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)']; // HIGHLIGHT 3 excluded — same reasoning as the smooth cycle above: it's now a fixed constant (always red), not a varying accent, so leaving it in would mean 1-in-4 jumps always landing on the same red
 function _jumpLogoColor() {
   const el = document.getElementById('siFiTitle');
@@ -14689,13 +14694,15 @@ function setTonalPercBalance(v) {
   const title = document.getElementById('siFiTitle');
   if (!title) return;
   // Used to open the instructions/performance-lock panel on press-and-hold
-  // over an on-screen lock icon — replaced with a plain tap toggling LOGO
-  // NOTE JUMP directly, per direct request. 8-BIT MODE used to ride this
-  // same tap too — decoupled now, moved to its own toggle in SETTINGS.
+  // over an on-screen lock icon — replaced with a plain tap cycling
+  // through the logo's 3 color modes directly, per direct request:
+  // jump -> smooth -> static -> back to jump. 8-BIT MODE used to ride
+  // this same tap too — decoupled now, moved to its own toggle in
+  // SETTINGS.
+  const _LOGO_COLOR_MODE_CYCLE = ['jump', 'smooth', 'static'];
   title.addEventListener('click', () => {
-    setLogoNoteJump(!window._logoNoteJumpEnabled);
-    const cb = document.getElementById('logoNoteJumpToggle');
-    if (cb) cb.checked = window._logoNoteJumpEnabled;
+    const next = _LOGO_COLOR_MODE_CYCLE[(_LOGO_COLOR_MODE_CYCLE.indexOf(window._logoColorMode) + 1) % _LOGO_COLOR_MODE_CYCLE.length];
+    setLogoColorMode(next);
   });
 })();
 
