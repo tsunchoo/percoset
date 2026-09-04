@@ -574,7 +574,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    identical notch widths with no partial/mid-notch fill ever possible,
    regardless of any inset elsewhere on the bar. */
 .track-vol-fill {
-  position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 12.5%; /* symmetric left/right inset now — same gap value as .track-ctrl-row's own gap between buttons */
+  position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* symmetric left/right inset now — same gap value as .track-ctrl-row's own gap between buttons */
   display: flex; gap: 2px; pointer-events: none;
 }
 .track-vol-notch { flex: 1; background: transparent; } /* unlit — lets .track-vol-bar's own background show through instead of introducing a separate gray, and automatically matches whatever that background is (including .muted's gray) */
@@ -585,7 +585,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
    solid mode instead of just layering underneath, so its pointer-events
    and lit children can't interfere. */
 .track-vol-fill-solid {
-  position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); bottom: 12.5%;
+  position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); bottom: 15%;
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
   filter: saturate(var(--vol-slider-saturation, 1));
   pointer-events: none; display: none; width: 0%;
@@ -925,7 +925,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:20</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1049,7 +1049,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
         <span>TOP ROW COLOR SATURATION</span><span id="topRowSaturationVal" style="color:#adff00;">55</span>
       </div>
-      <input type="range" id="topRowSaturationBar" min="0" max="200" value="55" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
+      <input type="range" id="topRowSaturationBar" min="0" max="100" value="55" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -1058,7 +1058,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <input type="range" id="volSliderSaturationBar" min="0" max="200" value="200" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="volSliderSolidToggle" onchange="setVolSliderSolid(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLID VOLUME BAR
+      <input type="checkbox" id="volSliderSolidToggle" checked onchange="setVolSliderSolid(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLID VOLUME BAR
     </label>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -2087,6 +2087,7 @@ _resetAppColorsToDefault();
 // direct request — the logo tap still toggles between the two exactly
 // as before, this only changes which one the app starts on.
 setLogoNoteJump(true);
+setVolSliderSolid(true); // SOLID VOLUME BAR is the default now — segmented (the notches) is the alternate, off by default
 // Colors otherwise stay at the CSS :root defaults (plain gray/green/etc.)
 // until the first RAND/WILD press, since that's the only place
 // randomizeAppColors() was ever called from — settings sliders and
