@@ -594,7 +594,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
      landing too close to it depending on what TOP ROW happens to be. */
   background-image:
     linear-gradient(var(--vol-scale-line-color, #000), var(--vol-scale-line-color, #000)),
-    repeating-linear-gradient(to right, var(--vol-scale-line-color, #000) 0, var(--vol-scale-line-color, #000) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent 10%);
+    repeating-linear-gradient(to right, var(--vol-scale-line-color, #000) 0, var(--vol-scale-line-color, #000) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent calc(100% / 12)); /* 12 ticks now, was 10 — repeat period is just 100% divided by however many lines are wanted */
   background-size: 100% var(--vol-scale-thickness, 1px), 100% 80%;
   background-position: center center, center center;
   background-repeat: no-repeat, no-repeat;
@@ -956,7 +956,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:32</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:43</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -13656,6 +13656,7 @@ function _tempoScreenRefresh() {
   if (el) el.textContent = Math.round(bpm + _tempoNudge);
   const lockBtn = document.getElementById('tempoScreenLockBtn');
   if (lockBtn) lockBtn.style.background = _tempoLocked ? '#f17d21' : 'var(--panel)';
+  if (window._tempoRestPositionHandle) window._tempoRestPositionHandle(bpm); // keep the bottom track's handle matching the actual bpm, whatever changed it (this slider, tap tempo, RAND, etc.)
 }
 function _tempoSetNudge(newNudge) {
   if (_tempoLocked) return; // a nudge still audibly changes the tempo even though it's temporary, so it counts as overriding the lock same as a permanent change would
@@ -13745,52 +13746,43 @@ function hideTempoScreen() {
   track.addEventListener('pointerup', release);
   track.addEventListener('pointercancel', release);
 })();
-// Bottom track: permanent resting-tempo change, 1bpm steps, 400ms hold-to-repeat
+// Bottom track: absolute-position tempo slider, 40-200 BPM (matches
+// _tempoSetResting's own clamp range) — the handle's position always
+// reflects the actual current bpm directly, from wherever the pointer
+// lands, and stays exactly there on release (see _tempoRestPositionHandle,
+// called from _tempoScreenRefresh whenever bpm changes from ANY source —
+// this drag, tap tempo, RAND, etc.) rather than snapping back to center
+// the way the relative NUDGE track above deliberately does.
 (function() {
   const track = document.getElementById('tempoRestTrack');
   const handle = document.getElementById('tempoRestHandle');
   if (!track || !handle) return;
-  const STEP_PX = 30, STEP_BPM = 1, DEAD_ZONE_PX = STEP_PX;
-  const HOLD_DELAY_MS = 400, HOLD_REPEAT_MS = 400;
-  let dragging = false, startX = 0, lastStepCrossed = 0, maxTravel = 90;
-  let holdTimeout = null, holdInterval = null;
-  function stepsFromDx(dx) {
-    if (Math.abs(dx) < DEAD_ZONE_PX) return 0;
-    const adjusted = dx - Math.sign(dx) * DEAD_ZONE_PX;
-    return Math.trunc(adjusted / STEP_PX) + Math.sign(dx);
+  const BPM_MIN = 40, BPM_MAX = 200;
+  let dragging = false;
+  function positionHandle(v) {
+    const frac = Math.max(0, Math.min(1, (v - BPM_MIN) / (BPM_MAX - BPM_MIN)));
+    const maxTravel = (track.clientWidth - handle.getBoundingClientRect().width) / 2;
+    const px = (frac - 0.5) * 2 * maxTravel;
+    handle.style.transform = `translateX(calc(-50% + ${px}px))`;
   }
-  function clearHold() {
-    if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
-    if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
-  }
-  function armHold(dir) {
-    clearHold();
-    if (dir === 0) return;
-    holdTimeout = setTimeout(() => {
-      holdInterval = setInterval(() => { _tempoSetResting(bpm + dir * STEP_BPM); }, HOLD_REPEAT_MS);
-    }, HOLD_DELAY_MS);
+  window._tempoRestPositionHandle = positionHandle;
+  function bpmFromClientX(clientX) {
+    const rect = track.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return Math.round(BPM_MIN + frac * (BPM_MAX - BPM_MIN));
   }
   track.addEventListener('pointerdown', e => {
-    dragging = true; startX = e.clientX; lastStepCrossed = 0;
-    maxTravel = (track.clientWidth - handle.getBoundingClientRect().width) / 2;
+    dragging = true;
     track.setPointerCapture(e.pointerId);
+    _tempoSetResting(bpmFromClientX(e.clientX));
   });
   track.addEventListener('pointermove', e => {
     if (!dragging) return;
-    const dx = e.clientX - startX;
-    const visualX = Math.max(-maxTravel, Math.min(maxTravel, dx));
-    handle.style.transform = `translateX(calc(-50% + ${visualX}px))`;
-    const stepsCrossed = stepsFromDx(dx);
-    if (stepsCrossed !== lastStepCrossed) {
-      _tempoSetResting(bpm + (stepsCrossed - lastStepCrossed) * STEP_BPM);
-      lastStepCrossed = stepsCrossed;
-    }
-    armHold(Math.abs(dx) < DEAD_ZONE_PX ? 0 : Math.sign(dx));
+    _tempoSetResting(bpmFromClientX(e.clientX));
   });
   const release = e => {
     if (!dragging) return;
-    dragging = false; clearHold();
-    handle.style.transform = 'translateX(-50%)';
+    dragging = false;
     try { track.releasePointerCapture(e.pointerId); } catch(err) {}
   };
   track.addEventListener('pointerup', release);
