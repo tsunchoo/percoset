@@ -1009,7 +1009,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:22</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1127,7 +1127,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
         <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">2</span>
       </div>
-      <input type="range" id="volScaleThicknessBar" min="0" max="10" step="0.5" value="2" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
+      <input type="range" id="volScaleThicknessBar" min="0" max="2" step="0.1" value="2" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -14071,7 +14071,24 @@ function _getDroneAirNoiseBuffer() {
 function playAtmos(freq, dur, isAccent, time, tr) {
   _playDronePhantomNote(tr, freq, isAccent, time, getSynthConnectNode(tr), dur);
 }
-function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
+// STRINGS+ — was calling a function (playAtmosPortamento) that never
+// actually existed anywhere in the file. Every STRINGS+ note was throwing
+// a ReferenceError the instant it tried to play, which — depending on
+// where in the scheduler's own per-step work that landed — could abort
+// mid-tick and skip whatever timing bookkeeping was supposed to run
+// after it, which is exactly the kind of bug that would present as
+// playback suddenly racing ahead. Reuses the exact same drone synth as
+// plain STRINGS (playAtmos/_playDronePhantomNote), just gliding each
+// oscillator from the track's last STRINGS+ frequency into this new one
+// instead of snapping straight to it — the actual portamento the
+// INSTRUMENTS entry always claimed it had.
+window._dronePlusLastFreq = {};
+function playAtmosPortamento(freq, dur, isAccent, time, tr) {
+  const fromFreq = window._dronePlusLastFreq[tr];
+  _playDronePhantomNote(tr, freq, isAccent, time, getSynthConnectNode(tr), dur, fromFreq);
+  window._dronePlusLastFreq[tr] = freq;
+}
+function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec, glideFromFreq) {
   if (!ctx) return;
   // Self-contained attenuation applied regardless of caller — this used to
   // only get its quiet level from _amalgamVolOverride, set by the old
@@ -14084,6 +14101,7 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
   const vel = (_amalgamVolOverride !== null ? _amalgamVolOverride : 0.18) * (isAccent ? 1.3 : 1) * droneAtten;
   const sustain = Math.max(durSec || 0.35, 0.35);
   const bodyTail = 0.45; // a little more sustain — compensates for the airier/thinner EQ below
+  const glideDur = (glideFromFreq && glideFromFreq !== freq) ? Math.min(sustain * 0.4, 0.35) : 0; // STRINGS+ portamento — a portion of the note, capped so short notes don't glide forever; 0 (no glide) for plain STRINGS, which never passes glideFromFreq at all
 
   // Three detuned oscillators for a thicker, less stable core than TEXTURE's
   // plain sine+triangle pair.
@@ -14105,7 +14123,13 @@ function _playDronePhantomNote(tr, freq, isAccent, t, dest, durSec) {
 
   oscDefs.forEach(o => {
     const osc = ctx.createOscillator(); osc.type = o.type;
-    osc.frequency.value = freq; osc.detune.value = o.detune;
+    if (glideDur > 0) {
+      osc.frequency.setValueAtTime(glideFromFreq, t);
+      osc.frequency.exponentialRampToValueAtTime(freq, t + glideDur);
+    } else {
+      osc.frequency.value = freq;
+    }
+    osc.detune.value = o.detune;
     driftGain.connect(osc.detune);
     const g = ctx.createGain(); g.gain.value = o.amp;
     osc.connect(g); g.connect(bodyMix);
