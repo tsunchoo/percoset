@@ -960,7 +960,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:28</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -9735,15 +9735,13 @@ function setTrackBtnOnColor(n) {
 // not just share its color. Rotated further around the wheel and
 // lightened more (clamped so it can't wash all the way out to white).
 function _deriveBlastColor(baseHex) {
-  // True RGB inverse (photo-negative) of FX 1's color — not just a hue
-  // rotation. Also inverts lightness (light becomes dark, dark becomes
-  // light), giving BLAST a starker, higher-contrast look befitting the
-  // harder/crunchier of the two FX levels.
-  const hex = baseHex.replace('#', '');
-  const r = 255 - parseInt(hex.substr(0, 2), 16);
-  const g = 255 - parseInt(hex.substr(2, 2), 16);
-  const b = 255 - parseInt(hex.substr(4, 2), 16);
-  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  // A more extreme version of the same FX/reverb highlight color — same
+  // hue, pushed to full saturation and darkened — not an inverse/negative
+  // anymore. BLAST is the harder/crunchier of the two FX levels, so it
+  // should read as an intensified version of FX 1's own color, not an
+  // unrelated one.
+  const [h, s, l] = _hexToHsl(baseHex);
+  return _hslToHex(h, 1, Math.max(0, l - 0.18));
 }
 function _applyBlastColorFrom(onColorHex) {
   const blastHex = _deriveBlastColor(onColorHex);
