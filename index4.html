@@ -578,8 +578,23 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 }
 .track-vol-notch { flex: 1; background: transparent; } /* unlit — lets .track-vol-bar's own background show through instead of introducing a separate gray, and automatically matches whatever that background is (including .muted's gray) */
 .track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); filter: saturate(var(--vol-slider-saturation, 1)); }
+/* SOLID VOLUME BAR (COLOR settings) — continuous width-based alternative
+   to the 10 notches above, same inset, same color/saturation. Only one of
+   the two is ever visible at once — .track-vol-fill is hidden outright in
+   solid mode instead of just layering underneath, so its pointer-events
+   and lit children can't interfere. */
+.track-vol-fill-solid {
+  position: absolute; top: 12.5%; left: clamp(2px, 1vw, 5px); bottom: 12.5%;
+  background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
+  filter: saturate(var(--vol-slider-saturation, 1));
+  pointer-events: none; display: none; width: 0%;
+}
+body.vol-slider-solid .track-vol-fill { display: none; }
+body.vol-slider-solid .track-vol-fill-solid { display: block; }
+body.seq-playing:not(.logo-note-jump-mode) .track-vol-bar:not(.muted) .track-vol-fill-solid { animation: vol-slider-color-cycle 1s linear infinite; } /* same smooth-mode pulse as the notches get, just here too since solid mode swaps which element is visible */
 .track-vol-bar.muted { background: #ccc; }
 .track-vol-bar.muted .track-vol-notch.lit { background: transparent; }
+.track-vol-bar.muted .track-vol-fill-solid { background: transparent; }
 /* TRACK BUTTON OPACITY (see --track-default-opacity above) — the volume
    bar background and every track button's resting look, EXCEPT the
    instrument name button and the lock button (deliberately excluded,
@@ -909,7 +924,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:48</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1041,6 +1056,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
       <input type="range" id="volSliderSaturationBar" min="0" max="200" value="200" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
     </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="volSliderSolidToggle" onchange="setVolSliderSolid(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLID VOLUME BAR
+    </label>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
         <span>TRACK BUTTON OPACITY</span><span id="trackDefaultOpacityVal" style="color:#adff00;">75</span>
@@ -3077,6 +3095,12 @@ function _setVolFillPct(el, pct) {
   const lit = Math.round(pct * 10);
   const notches = el.children;
   for (let i = 0; i < notches.length; i++) notches[i].classList.toggle('lit', i < lit);
+  // Solid-bar alternative (SEGMENTED/SOLID toggle in COLOR settings) — a
+  // plain continuous width, kept in sync here regardless of which one is
+  // actually visible right now, so switching the toggle never shows a
+  // stale value until the next volume change.
+  const solid = el.parentElement && el.parentElement.querySelector('.track-vol-fill-solid');
+  if (solid) solid.style.width = Math.round(pct * 100) + '%';
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
@@ -8049,8 +8073,10 @@ function buildUI() {
     volBar.classList.toggle('muted', trackMuted[tr]);
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
     for (let n = 0; n < 10; n++) volFill.appendChild(document.createElement('div')).className = 'track-vol-notch'; // 10 fixed, equal-width notches — see _setVolFillPct
-    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
     volBar.appendChild(volFill);
+    const volFillSolid = document.createElement('div'); volFillSolid.className = 'track-vol-fill-solid'; // continuous width-based alternative to the notches above — SEGMENTED/SOLID toggle in COLOR settings picks which one is visible; _setVolFillPct keeps both in sync regardless
+    volBar.appendChild(volFillSolid);
+    _setVolFillPct(volFill, volGainToPos(trackVolume[tr]));
     attachVolBarEvents(volBar, tr);
     ctrlRow.appendChild(volBar);
 
@@ -14606,6 +14632,13 @@ function setTrackDefaultOpacity(v) {
 function setVolSliderSaturation(v) {
   document.documentElement.style.setProperty('--vol-slider-saturation', v / 100);
 }
+// SEGMENTED / SOLID — which of the two volume-slider fill elements is
+// visible (see .track-vol-fill vs .track-vol-fill-solid); _setVolFillPct
+// already keeps both in sync on every volume change, so toggling this is
+// purely a CSS display swap, nothing to recompute.
+function setVolSliderSolid(on) {
+  document.body.classList.toggle('vol-slider-solid', !!on);
+}
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
 function setTopRowSaturation(v) {
@@ -15446,8 +15479,8 @@ async function hardResetAudioEngine() {
   // back toward while dragged over the left spool) and the full-hold
   // ceiling (where it climbs to normally, and resumes climbing toward
   // when dragged back off the spool onto SWEEP itself).
-  const SWEEP_ATTACK_LEVEL = 0.1704; // -3dB more (was 0.2407)
-  const SWEEP_CEILING_LEVEL = 1.2029; // -3dB more (was 1.6991)
+  const SWEEP_ATTACK_LEVEL = 0.1354; // -2dB more (was 0.1704)
+  const SWEEP_CEILING_LEVEL = 0.9555; // -2dB more (was 1.2029)
   // How long this run should last, decided once at press time (see
   // beginPress) and read by both startSweep's own duck-intensity ramp and
   // startSweepTakeover's gain/auto-release timing, so the two stay in sync
