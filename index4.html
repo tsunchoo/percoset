@@ -96,8 +96,9 @@ body.eight-bit-mode #siFiTitle span { color: #00ff41 !important; }
    moments, so no separate play/stop hook is needed here. */
 @keyframes logo-color-cycle {
   0%   { color: var(--neutral-top, #555); }
-  33%  { color: var(--playhead-color, #f8ff00); }
-  66%  { color: var(--highlight2-color, #0078ff); }
+  25%  { color: var(--playhead-color, #f8ff00); }
+  50%  { color: var(--highlight2-color, #0078ff); }
+  75%  { color: var(--highlight3-color, #adff00); }
   100% { color: var(--neutral-top, #555); }
 }
 @keyframes logo-wobble {
@@ -107,17 +108,19 @@ body.eight-bit-mode #siFiTitle span { color: #00ff41 !important; }
 }
 body.seq-playing:not(.logo-note-jump-mode) #siFiTitle { animation: logo-color-cycle 4s linear infinite, logo-wobble 1.4s ease-in-out infinite; }
 body.seq-playing.logo-note-jump-mode #siFiTitle { animation: logo-wobble 1.4s ease-in-out infinite; }
-/* Same smooth 3-color sweep as the logo's own non-jump mode above, just
+/* Same smooth sweep as the logo's own non-jump mode above — all 4 chosen
+   colors now (TOP ROW/HIGHLIGHT/HIGHLIGHT2/HIGHLIGHT3), not just 3 — just
    animating background-color instead of text color — applied to every
    track's lit volume-slider notches while playing, all in unison (one
    shared animation, same as there's only ever one logo). */
 @keyframes vol-slider-color-cycle {
   0%   { background-color: var(--neutral-top, #555); }
-  33%  { background-color: var(--playhead-color, #f8ff00); }
-  66%  { background-color: var(--highlight2-color, #0078ff); }
+  25%  { background-color: var(--playhead-color, #f8ff00); }
+  50%  { background-color: var(--highlight2-color, #0078ff); }
+  75%  { background-color: var(--highlight3-color, #adff00); }
   100% { background-color: var(--neutral-top, #555); }
 }
-body.seq-playing:not(.logo-note-jump-mode) .track-vol-bar:not(.muted) .track-vol-notch.lit { animation: vol-slider-color-cycle 4s linear infinite; } /* smooth mode — mirrors the logo's own body.seq-playing:not(.logo-note-jump-mode) gating exactly; jump mode's equivalent is the JS-driven per-note flash in updatePlayhead() instead, same as the logo itself switches to a per-note jump there */
+body.seq-playing:not(.logo-note-jump-mode) .track-vol-bar:not(.muted) .track-vol-notch.lit { animation: vol-slider-color-cycle 1s linear infinite; } /* smooth mode — same gating as the logo's own smooth cycle, but 4x its speed (1s vs. the logo's 4s); jump mode's equivalent is the JS-driven per-note flash in updatePlayhead() instead, same as the logo itself switches to a per-note jump there */
 header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; }
 #cmapOverlay {
   display: block;
@@ -906,7 +909,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:26</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:35</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1415,6 +1418,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
         <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="eightBitToggle" onchange="setEightBitMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">8-BIT
       </label>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -14652,13 +14658,12 @@ function setTonalPercBalance(v) {
   if (!title) return;
   // Used to open the instructions/performance-lock panel on press-and-hold
   // over an on-screen lock icon — replaced with a plain tap toggling LOGO
-  // NOTE JUMP directly, per direct request. 8-BIT MODE (crushes the whole
-  // output) rides the same tap now too.
+  // NOTE JUMP directly, per direct request. 8-BIT MODE used to ride this
+  // same tap too — decoupled now, moved to its own toggle in SETTINGS.
   title.addEventListener('click', () => {
     setLogoNoteJump(!window._logoNoteJumpEnabled);
     const cb = document.getElementById('logoNoteJumpToggle');
     if (cb) cb.checked = window._logoNoteJumpEnabled;
-    setEightBitMode(!window._eightBitEnabled);
   });
 })();
 
