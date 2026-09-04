@@ -29,7 +29,7 @@
   --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now maximum (the slider's own max of 100 = saturate(1), full original color, no desaturation). Plain linear mapping, no curve. 0 = grayscale, >1 not reachable at this slider's current 0-100 range. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
   --vol-scale-thickness: 3.125px; /* Hard-coded to the old slider's maximum now — the SCALE LINES THICKNESS slider itself was removed from COLOR settings. */
-  --vol-scale-opacity: 0.25; /* SCALE LINES OPACITY slider in COLOR settings — opacity of that same ruler. Default is 25%. Color is a darker version of --neutral-top (the volume bar's own background), not independently pickable. */
+  --vol-scale-opacity: 1; /* Hard-coded to 100% now — the SCALE LINES OPACITY slider itself was removed from COLOR settings. Color is a darker version of --neutral-top (the volume bar's own background), not independently pickable. */
   --vol-scale-invert: 0; /* INVERT SCALE COLOR toggle in COLOR settings — 0 = normal, 1 = inverted, applied on top of the darkened color rather than being its own separate color pick. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -975,7 +975,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 15:51</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 15:54</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1089,12 +1089,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">COLOR MENU</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>SCALE LINES OPACITY</span><span id="volScaleOpacityVal" style="color:#adff00;">25</span>
-      </div>
-      <input type="range" id="volScaleOpacityBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setVolScaleOpacity(this.value); document.getElementById('volScaleOpacityVal').textContent=this.value">
-    </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="volScaleStyleToggle" checked onchange="setVolScaleStyle(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE STYLE: HORIZONTAL (OFF = VERTICAL)
     </label>
