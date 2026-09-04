@@ -601,7 +601,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-vol-scale-tick {
   position: absolute; top: 10%; bottom: 10%; width: var(--vol-scale-thickness, 1px);
   transform: translateX(-50%);
-  background-color: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* a darker version of the volume slider background div's own color (--neutral-top, same as .track-vol-bar's own background) — same 67%/33% darkening ratio the top row buttons' own engaged/on state uses */
+  background-color: var(--top-row-pressed-bg); /* same color as #playBtn.playing — the play button's own pressed/engaged background */
 }
 body.vol-scale-style-horizontal .track-vol-scale-tick { display: none; } /* SCALE STYLE toggle — horizontal or vertical, never both */
 /* Horizontal line — its own layer (::before), independent of the tick
@@ -613,7 +613,7 @@ body.vol-scale-style-horizontal .track-vol-scale-tick { display: none; } /* SCAL
   position: absolute; left: calc(2 * clamp(2px, 1vw, 5px)); right: calc(2 * clamp(2px, 1vw, 5px)); top: 50%; pointer-events: none; /* brought in from the edges by twice the FX-R button gap (was flush at left:0/right:0) */
   height: var(--vol-scale-thickness, 1px);
   transform: translateY(-50%);
-  background-color: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* same as .track-vol-scale-tick above — see its comment */
+  background-color: var(--top-row-pressed-bg); /* same as .track-vol-scale-tick above */
 }
 body:not(.vol-scale-style-horizontal) .track-vol-scale::before { display: none; }
 /* 14 real flex children, not a width-percentage fill with a gradient
@@ -975,7 +975,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 15:11</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 15:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
