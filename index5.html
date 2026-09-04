@@ -939,7 +939,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 23:33</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 23:41</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1107,23 +1107,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK VOLUME COLOR</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="auto" checked onchange="setVolSliderColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="1" onchange="setVolSliderColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="2" onchange="setVolSliderColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="volSliderColor" value="3" onchange="setVolSliderColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-        </div>
-      </div>
+      <!-- TRACK VOLUME COLOR radios removed from the UI — AUTO (best
+           contrast) is the only mode now. setVolSliderColor()/
+           _autoPickVolSliderColor() are kept intact for this reason. -->
 
       <!-- TOP ROW HIGHLIGHT picker removed from the UI — the top-row
            buttons' pressed/engaged state is now a simple darker version
@@ -1136,26 +1122,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
            itself is disabled for now (see initAudio()). setEqMeterColor()/
            _autoPickEqMeterColor() are kept intact for this reason. -->
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTON ON (FX/REVERB/SOLO)</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnOnColor" value="auto" checked onchange="setTrackBtnOnColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnOnColor" value="1" onchange="setTrackBtnOnColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnOnColor" value="2" onchange="setTrackBtnOnColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnOnColor" value="3" onchange="setTrackBtnOnColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnOnColor" value="top" onchange="setTrackBtnOnColor('top')" style="width:15px;height:15px;cursor:pointer;">TOP ROW BUTTON COLOR
-          </label>
-        </div>
-      </div>
+      <!-- TRACK BUTTON ON (FX/REVERB/SOLO) radios removed from the UI —
+           AUTO (best contrast) is the only mode now. setTrackBtnOnColor()/
+           _autoPickTrackBtnOnColor() are kept intact for this reason. -->
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK TEXT PULSE</div>
@@ -10965,7 +10934,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'toms' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia')); // 'toms' excluded — MOZAMBIQUE-only, assigned directly by _applyMozambiqueTracksToCurrentPattern/the mozambique RAND branch, not through this general pool (it has no real samples of its own outside that fixed step-7-is-hi/else-is-lo context)
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'toms' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia') && !((k === 'skick' || k === 'ssnare' || k === 'snare2' || k === 'shihat') && _beatType === 'mozambique')); // 'toms' excluded — MOZAMBIQUE-only, assigned directly by _applyMozambiqueTracksToCurrentPattern/the mozambique RAND branch, not through this general pool (it has no real samples of its own outside that fixed step-7-is-hi/else-is-lo context); KICK/SNARE/SNARE 2/HIHAT also excluded for MOZAMBIQUE specifically — that beat's own kick/hihat are BEAT-menu-only synthesis, never tracks, so having a track-based kick/snare/hihat competing alongside them doesn't fit the style
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k) && ((k !== 'jcmgtr' && k !== 'dulc') || _intensitySliderVal > 80)); // JINX and BOOBOO stay out of RAND below 80% INTENSITY — still fully selectable manually from the sound picker regardless
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
