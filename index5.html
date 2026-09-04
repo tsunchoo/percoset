@@ -812,7 +812,6 @@ body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) .track-vol-ba
 }
 .step-cell.soft::after { background: var(--track-color, var(--text)); opacity: calc(var(--note-marker-opacity, 1) * 0.4); }
 .step-cell.on::after   { background: var(--track-color, var(--text)); opacity: var(--note-marker-opacity, 1); }
-body.empty-cell-bg-transparent .step-cell:not(.soft):not(.on):not(.split32)::after { background: transparent !important; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
 /* Hides only genuinely empty cells' resting marker — .soft/.on (actual
    notes) are untouched, and :not(.playing) keeps the playhead sweep
@@ -940,7 +939,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:36</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:47</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1129,16 +1128,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <input type="color" id="bgColorPicker" value="#f5f0e8" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
         <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">EMPTY CELL BORDER</div>
-        </div>
-        <input type="color" id="emptyCellBorderColorPicker" value="#cccccc" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#emptyCellBorderColorPicker::-webkit-color-swatch-wrapper{padding:0;}#emptyCellBorderColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#emptyCellBorderColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="checkbox" id="emptyCellBgTransparentToggle" onchange="setEmptyCellBgTransparent(this.checked)" style="width:14px;height:14px;cursor:pointer;">EMPTY CELL BG TRANSPARENT
-      </label>
       <!-- BG = SONG NAME COLOR checkbox removed from the UI per direct
            request — setBgFollowsBarColor and its applyBarColor() hook are
            kept intact elsewhere for this reason. -->
@@ -1149,10 +1138,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR CODED BY INSTRUMENT
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">SOLID
           </label>
         </div>
       </div>
@@ -1197,68 +1186,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <!-- EQ METER COLOR picker removed from the UI — the EQ meter
            itself is disabled for now (see initAudio()). setEqMeterColor()/
            _autoPickEqMeterColor() are kept intact for this reason. -->
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW TEXT/GRAPHICS COLOR</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowTextColor" value="auto" checked onchange="setTopRowTextColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowTextColor" value="1" onchange="setTopRowTextColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowTextColor" value="2" onchange="setTopRowTextColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowTextColor" value="3" onchange="setTopRowTextColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="topRowTextColor" value="custom" onchange="setTopRowTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
-            <input type="color" id="topRowTextColorPicker" value="#ffffff" oninput="setTopRowTextColor('custom')" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS TEXT/GRAPHICS COLOR</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnTextColor" value="auto" checked onchange="setTrackBtnTextColor('auto')" style="width:15px;height:15px;cursor:pointer;">AUTO (BEST CONTRAST)
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnTextColor" value="1" onchange="setTrackBtnTextColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnTextColor" value="2" onchange="setTrackBtnTextColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnTextColor" value="3" onchange="setTrackBtnTextColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackBtnTextColor" value="custom" onchange="setTrackBtnTextColor('custom')" style="width:15px;height:15px;cursor:pointer;">CUSTOM
-            <input type="color" id="trackBtnTextColorPicker" value="#ffffff" oninput="setTrackBtnTextColor('custom')" style="width:24px;height:24px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS COLOR (FX/R/&lt;/+/SOLO)</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackCtrlBtnColor" value="1" onchange="setTrackCtrlBtnColor(1)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackCtrlBtnColor" value="2" onchange="setTrackCtrlBtnColor(2)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 2
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackCtrlBtnColor" value="3" onchange="setTrackCtrlBtnColor(3)" style="width:15px;height:15px;cursor:pointer;">HIGHLIGHT 3
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackCtrlBtnColor" value="top" checked onchange="setTrackCtrlBtnColor('top')" style="width:15px;height:15px;cursor:pointer;">TOP ROW BUTTON COLOR
-          </label>
-        </div>
-      </div>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTON ON (FX/REVERB/SOLO)</div>
@@ -2180,10 +2107,6 @@ function randomizeAppColors() {
   if (highlight3Picker) highlight3Picker.addEventListener('input', () => _applyHighlight3Color(highlight3Picker.value));
   const bgPicker = document.getElementById('bgColorPicker');
   if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
-  const emptyCellBorderPicker = document.getElementById('emptyCellBorderColorPicker');
-  if (emptyCellBorderPicker) emptyCellBorderPicker.addEventListener('input', () => {
-    document.documentElement.style.setProperty('--empty-cell-border-color', emptyCellBorderPicker.value);
-  });
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => {
     // Guards against a ghost-click landing here right as the menu opens —
@@ -8115,7 +8038,7 @@ function buildUI() {
     fxBtn.textContent = 'FX';
     const fxVal = trackFx[tr]; fxBtn.classList.toggle('on', fxVal && (fxVal.x > 0 || fxVal.y > 0));
     fxBtn.classList.toggle('blast-on', !!trackPump[tr]);
-    fxBtn.textContent = trackPump[tr] ? 'X' : 'FX'; // BLAST shows as a single X instead of the normal FX label
+    fxBtn.textContent = 'FX'; // stays "FX" always now — used to switch to a single "X" during BLAST, per direct request to stop that
     const cycleFxBtn = () => {
       const cur = trackFx[tr], fxIsOn = cur && (cur.x > 0 || cur.y > 0);
       if (!fxIsOn) {
@@ -8128,7 +8051,6 @@ function buildUI() {
         // FX on -> FX+BLAST on
         trackPump[tr] = true;
         fxBtn.classList.add('blast-on');
-        fxBtn.textContent = 'X';
       } else {
         // FX+BLAST on -> off
         trackFx[tr] = { x: 0, y: 0 };
@@ -13482,7 +13404,6 @@ setVolSliderColor('auto'); // AUTO (best contrast) is the default
 setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — picks whichever highlight actually reads clearly against the button color, rather than a fixed choice that could land close to it
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
 setTrackBtnOnColor('auto'); // AUTO (best contrast) is the default — checked against the button's own resting color, so ON always reads as clearly different from OFF
-setEmptyCellBgTransparent(false); // no longer checked by default — the empty cell background is now a subtle 15% opacity fill instead, which the (now off-by-default) toggle would otherwise completely override
 setEqMeterColor('auto'); // AUTO (best contrast) is the default
 setTopRowTextColor('auto'); // AUTO (best contrast) is the default
 setTrackBtnTextColor('auto'); // AUTO (best contrast) is the default
@@ -14691,9 +14612,6 @@ function setDevNotesGrayscale(on) {
   document.body.classList.toggle('notes-grayscale', on);
   const otherCb = document.getElementById('notesGrayscaleEnable');
   if (otherCb) otherCb.checked = on;
-}
-function setEmptyCellBgTransparent(on) {
-  document.body.classList.toggle('empty-cell-bg-transparent', !!on);
 }
 // FX/REVERB PULSE — the scale+brightness pulse (engaged-btn-pulse) FX and
 // REVERB already share when engaged. Checked by default since pulsing is
