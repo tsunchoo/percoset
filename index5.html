@@ -939,7 +939,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 23:33</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1074,60 +1074,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button id="randomizeColorsBtn" class="rec-mode-btn" style="margin-top:4px;">RANDOMIZE COLORS</button>
       <button id="devMoreToggleBtn" class="rec-mode-btn" onclick="toggleDevMore()">MORE</button>
-      <button id="saveThemeBtn" class="rec-mode-btn" style="margin-top:4px;">SAVE THEME</button>
-      <button id="loadThemeBtn" class="rec-mode-btn" onclick="document.getElementById('themeFileInput').click()">LOAD THEME</button>
-      <input type="file" id="themeFileInput" accept=".SiFiTheme,.json,application/json" style="display:none;" onchange="importThemeFile(this.files[0])">
     </div>
 
     <div id="devMorePanel" style="display:none;flex-direction:column;gap:12px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TOP ROW</div>
-          <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Top row buttons, plus the volume slider background and border</div>
-        </div>
-        <input type="color" id="topColorPicker" value="#555555" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#topColorPicker::-webkit-color-swatch-wrapper{padding:0;}#topColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#topColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK BUTTONS</div>
-          <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Default state of the track buttons</div>
-        </div>
-        <input type="color" id="trackColorPicker" value="#b0b0b0" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#trackColorPicker::-webkit-color-swatch-wrapper{padding:0;}#trackColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#trackColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT</div>
-          <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">Track name pulse, the note marker sweeping through the lines, and the volume slider fill</div>
-        </div>
-        <input type="color" id="highlightColorPicker" value="#f8ff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#highlightColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlightColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlightColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 2</div>
-          <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">NEW/AUTO's pulse, BEAT in auto mode, the N track buttons in auto mode, and the N buttons' single-click flash</div>
-        </div>
-        <input type="color" id="highlight2ColorPicker" value="#0078ff" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#highlight2ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight2ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight2ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">HIGHLIGHT 3</div>
-          <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">PLAY's icon, and BEAT/SWEEP/RECALL's text when active or flashed</div>
-        </div>
-        <input type="color" id="highlight3ColorPicker" value="#adff00" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#highlight3ColorPicker::-webkit-color-swatch-wrapper{padding:0;}#highlight3ColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#highlight3ColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">BACKGROUND</div>
-          <div style="font-size:0.6rem;color:var(--dim);line-height:1.3;margin-top:2px;">The page background only — menus keep their own color</div>
-        </div>
-        <input type="color" id="bgColorPicker" value="#f5f0e8" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
-        <style>#bgColorPicker::-webkit-color-swatch-wrapper{padding:0;}#bgColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#bgColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
-      </div>
       <!-- BG = SONG NAME COLOR checkbox removed from the UI per direct
            request — setBgFollowsBarColor and its applyBarColor() hook are
            kept intact elsewhere for this reason. -->
@@ -1297,19 +1246,19 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <input type="range" id="swingBar" min="0" max="100" value="62" class="master-vol-slider" style="width:100%;">
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;flex-direction:column;gap:15px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
         <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;flex-direction:column;gap:15px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
           <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">51</span>
         </div>
         <input type="range" id="reverbIntensityBar" min="0" max="100" value="51" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;flex-direction:column;gap:15px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
           <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">30</span>
         </div>
@@ -1321,7 +1270,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;flex-direction:column;gap:15px;">
         <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <input type="range" id="devOffsetStepSlider" min="0" max="3" step="1" value="0" oninput="setDevOffsetStepSize(this.value)" class="master-vol-slider" style="flex:1;">
@@ -1900,13 +1849,6 @@ function _applyBgColor(hex) {
 // The six default colors the app ships with — used to restore the
 // palette when WILD gets switched off.
 function _resetAppColorsToDefault() {
-  // A saved theme (see saveTheme()) IS the default now, if one exists —
-  // only fall back to the app's original shipped colors when nothing's
-  // been saved.
-  try {
-    const saved = localStorage.getItem('_sifiDefaultTheme');
-    if (saved) { _applyColorTheme(JSON.parse(saved)); return; }
-  } catch (e) {}
   _applyTopColor('#555555');
   _applyTrackColor('#b0b0b0');
   _applyHighlightColor('#f8ff00');
@@ -1914,84 +1856,18 @@ function _resetAppColorsToDefault() {
   _applyHighlight3Color('#adff00');
   _applyBgColor('#f5f0e8');
 }
-// Save/load just the color theme as its own small file, independent of
-// a full tape — SAVE THEME captures whatever's currently on screen
-// (however it got there: manual pickers, RANDOMIZE COLORS, or WILD), and
-// LOAD THEME applies a previously-saved one, both immediately and
-// automatically from then on whenever that file is loaded again.
-function _currentColorTheme() {
-  const cs = getComputedStyle(document.documentElement);
-  return {
-    top: cs.getPropertyValue('--neutral-top').trim() || '#555555',
-    track: cs.getPropertyValue('--neutral-track').trim() || '#b0b0b0',
-    highlight: cs.getPropertyValue('--playhead-color').trim() || '#f8ff00',
-    highlight2: cs.getPropertyValue('--highlight2-color').trim() || '#0078ff',
-    highlight3: cs.getPropertyValue('--highlight3-color').trim() || '#adff00',
-    bg: cs.getPropertyValue('--bg').trim() || '#f5f0e8',
-  };
-}
-function _applyColorTheme(colors) {
-  if (!colors) return;
-  if (colors.top) _applyTopColor(colors.top);
-  if (colors.track) _applyTrackColor(colors.track);
-  if (colors.highlight) _applyHighlightColor(colors.highlight);
-  if (colors.highlight2) _applyHighlight2Color(colors.highlight2);
-  if (colors.highlight3) _applyHighlight3Color(colors.highlight3);
-  if (colors.bg) _applyBgColor(colors.bg);
-}
-function saveTheme() {
-  const colors = _currentColorTheme();
-  const payload = { format: 'sifi-theme', version: 1, colors };
-  const json = JSON.stringify(payload, null, 2);
-  const file = new File([json], 'theme.SiFiTheme.json', { type: 'application/json' });
-  shareOrDownload([file]);
-  // Saving a theme makes it the default from now on — every future page
-  // load applies this instead of the app's original shipped colors — and
-  // switches WILD off if it was on, since WILD randomizing straight over
-  // a theme you just deliberately saved would defeat the point of saving
-  // it in the first place.
-  try { localStorage.setItem('_sifiDefaultTheme', JSON.stringify(colors)); } catch (e) {}
-  window._wildColorsEnabled = false;
-  const wildCbSave = document.getElementById('wildColorsToggle'); if (wildCbSave) wildCbSave.checked = false;
-}
-async function importThemeFile(file) {
-  const inp = document.getElementById('themeFileInput');
-  if (!file) return;
-  try {
-    const text = await file.text();
-    const payload = JSON.parse(text);
-    if (!payload || payload.format !== 'sifi-theme' || !payload.colors) {
-      alert("That doesn't look like a valid theme file.");
-      if (inp) inp.value = '';
-      return;
-    }
-    _applyColorTheme(payload.colors);
-    // WILD would just randomize right over this on the very next new
-    // pattern otherwise — loading a specific saved theme means the
-    // person wants exactly this, not a random one a moment later.
-    window._wildColorsEnabled = false;
-    const wildCb = document.getElementById('wildColorsToggle'); if (wildCb) wildCb.checked = false;
-  } catch (err) {
-    console.error('importThemeFile failed:', err);
-    alert("Couldn't read that theme file.");
-  } finally {
-    if (inp) inp.value = '';
-  }
-}
-// Apply either a previously-saved default theme (see saveTheme() above) or
-// the app's own shipped defaults right at load — before anything else
-// touches colors — so every color-derived custom property (including
-// --track-text-invert, which the top-row icon graphics depend on) is
-// always genuinely initialized from the very first paint. This used to
-// only run the saved-theme branch, leaving everything unset on a fresh
-// install/first visit until something else happened to trigger a color
-// change (RANDOMIZE COLORS, WILD, a reset) — until then, properties like
-// --track-text-invert fell back to their bare CSS default (0, i.e. "don't
-// invert"), which doesn't match what the actual default track color
-// would compute, so the icons stayed white instead of matching it.
-// _resetAppColorsToDefault() already does exactly this same
-// saved-theme-else-shipped-defaults check internally, so it's reused
-// directly here rather than duplicating that logic.
+// Applies the app's own shipped default colors right at load — before
+// anything else touches colors — so every color-derived custom property
+// (including --track-text-invert, which the top-row icon graphics depend
+// on) is always genuinely initialized from the very first paint. This
+// used to leave everything unset on a fresh install/first visit until
+// something else happened to trigger a color change (RANDOMIZE COLORS,
+// WILD, a reset) — until then, properties like --track-text-invert fell
+// back to their bare CSS default (0, i.e. "don't invert"), which doesn't
+// match what the actual default track color would compute, so the icons
+// stayed white instead of matching it. _resetAppColorsToDefault() already
+// does exactly this, so it's reused directly here rather than duplicating
+// that logic.
 _resetAppColorsToDefault();
 // LOGO NOTE JUMP — an alternate mode to the measure-long color cycle
 // below. Instead of smoothly transitioning through all four accent
@@ -2096,18 +1972,6 @@ function randomizeAppColors() {
   if (window._trackBtnTextColorMode === 'auto') _autoPickTrackBtnTextColor();
 }
 (function() {
-  const topPicker = document.getElementById('topColorPicker');
-  if (topPicker) topPicker.addEventListener('input', () => _applyTopColor(topPicker.value));
-  const trackPicker = document.getElementById('trackColorPicker');
-  if (trackPicker) trackPicker.addEventListener('input', () => _applyTrackColor(trackPicker.value));
-  const highlightPicker = document.getElementById('highlightColorPicker');
-  if (highlightPicker) highlightPicker.addEventListener('input', () => _applyHighlightColor(highlightPicker.value));
-  const highlight2Picker = document.getElementById('highlight2ColorPicker');
-  if (highlight2Picker) highlight2Picker.addEventListener('input', () => _applyHighlight2Color(highlight2Picker.value));
-  const highlight3Picker = document.getElementById('highlight3ColorPicker');
-  if (highlight3Picker) highlight3Picker.addEventListener('input', () => _applyHighlight3Color(highlight3Picker.value));
-  const bgPicker = document.getElementById('bgColorPicker');
-  if (bgPicker) bgPicker.addEventListener('input', () => _applyBgColor(bgPicker.value));
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => {
     // Guards against a ghost-click landing here right as the menu opens —
@@ -2124,8 +1988,6 @@ function randomizeAppColors() {
     if (Date.now() - _settingsOpenedAt < 600) return;
     _pressPulse('randomizeColorsBtn'); randomizeAppColors();
   });
-  const saveThemeBtn = document.getElementById('saveThemeBtn');
-  if (saveThemeBtn) saveThemeBtn.addEventListener('click', saveTheme);
   const wildToggle = document.getElementById('wildColorsToggle');
   if (wildToggle) wildToggle.addEventListener('change', () => {
     window._wildColorsEnabled = wildToggle.checked;
