@@ -26,7 +26,7 @@
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
   --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
-  --top-row-saturation: 0.55; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now 55%; 1 = unchanged, 0 = grayscale, >1 = boosted. */
+  --top-row-saturation: 0.7416; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Slider default is 55, but setTopRowSaturation() square-root-curves that (saturate() isn't perceptually linear) — this is sqrt(0.55), the actual filter value that curve produces, kept in sync with the slider's own default. 1 = unchanged, 0 = grayscale, >1 = boosted. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -107,6 +107,17 @@ body.eight-bit-mode #siFiTitle span { color: #00ff41 !important; }
 }
 body.seq-playing:not(.logo-note-jump-mode) #siFiTitle { animation: logo-color-cycle 4s linear infinite, logo-wobble 1.4s ease-in-out infinite; }
 body.seq-playing.logo-note-jump-mode #siFiTitle { animation: logo-wobble 1.4s ease-in-out infinite; }
+/* Same smooth 3-color sweep as the logo's own non-jump mode above, just
+   animating background-color instead of text color — applied to every
+   track's lit volume-slider notches while playing, all in unison (one
+   shared animation, same as there's only ever one logo). */
+@keyframes vol-slider-color-cycle {
+  0%   { background-color: var(--neutral-top, #555); }
+  33%  { background-color: var(--playhead-color, #f8ff00); }
+  66%  { background-color: var(--highlight2-color, #0078ff); }
+  100% { background-color: var(--neutral-top, #555); }
+}
+body.seq-playing:not(.logo-note-jump-mode) .track-vol-bar:not(.muted) .track-vol-notch.lit { animation: vol-slider-color-cycle 4s linear infinite; } /* smooth mode — mirrors the logo's own body.seq-playing:not(.logo-note-jump-mode) gating exactly; jump mode's equivalent is the JS-driven per-note flash in updatePlayhead() instead, same as the logo itself switches to a per-note jump there */
 header .sub { font-size: 0.44rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; }
 #cmapOverlay {
   display: block;
@@ -895,7 +906,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:12</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 03:26</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -2066,12 +2077,6 @@ function setLogoNoteJump(on) {
   if (el) el.style.color = ''; // clear any leftover jump color (or let the CSS cycle take back over) on every mode switch
 }
 const _LOGO_JUMP_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)']; // HIGHLIGHT 3 excluded — same reasoning as the smooth cycle above: it's now a fixed constant (always red), not a varying accent, so leaving it in would mean 1-in-4 jumps always landing on the same red
-// VOLUME SLIDER note-pulse (see updatePlayhead) — every color actually
-// chosen in the current pattern's palette, HIGHLIGHT 3's fixed red
-// included this time since this is a per-track flash rather than the
-// single shared logo, so landing on the same red sometimes isn't the
-// same repetitive tell it would be there.
-const _VOL_SLIDER_PULSE_VARS = ['var(--neutral-top)', 'var(--playhead-color)', 'var(--highlight2-color)', 'var(--highlight3-color)'];
 function _jumpLogoColor() {
   const el = document.getElementById('siFiTitle');
   if (!el) return;
@@ -3716,15 +3721,21 @@ function updatePlayhead(step) {
     if (tbtn && grid[tr][gs] > 0 && !trackMuted[tr]) {
       tbtn.classList.add('playing');
       setTimeout(() => tbtn.classList.remove('playing'), 80);
-      // VOLUME SLIDER color pulse — same trigger and duration as the name
-      // button pulse right above (a note actually sounding on this
-      // track), but instead of a brightness flash it jumps to a random
-      // one of the app's own chosen palette colors for that one flash,
-      // then reverts back to the slider's normal derived color.
-      const vb = document.getElementById(`vbar-${tr}`);
-      if (vb) {
-        vb.style.setProperty('--vol-slider-color', _VOL_SLIDER_PULSE_VARS[Math.floor(Math.random() * _VOL_SLIDER_PULSE_VARS.length)]);
-        setTimeout(() => { vb.style.removeProperty('--vol-slider-color'); }, 80);
+      // VOLUME SLIDER pulse — linked to the exact same LOGO NOTE JUMP
+      // toggle the logo itself uses, same trigger (a note actually
+      // sounding on this track) and the logo's own candidate colors
+      // (_LOGO_JUMP_VARS). Jump mode: a random one of those colors for
+      // one 80ms flash, then back to normal — same shape as the logo's
+      // own per-note jump. Smooth mode: no JS flash at all here — the
+      // CSS vol-slider-color-cycle animation (gated the same way the
+      // logo's own smooth cycle is, :not(.logo-note-jump-mode)) handles
+      // it continuously instead.
+      if (window._logoNoteJumpEnabled) {
+        const vb = document.getElementById(`vbar-${tr}`);
+        if (vb) {
+          vb.style.setProperty('--vol-slider-color', _LOGO_JUMP_VARS[Math.floor(Math.random() * _LOGO_JUMP_VARS.length)]);
+          setTimeout(() => { vb.style.removeProperty('--vol-slider-color'); }, 80);
+        }
       }
     }
   }
@@ -14592,7 +14603,12 @@ function setVolSliderSaturation(v) {
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
 function setTopRowSaturation(v) {
-  document.documentElement.style.setProperty('--top-row-saturation', v / 100);
+  // CSS saturate() isn't perceptually linear — a raw 0.55 multiplier reads
+  // as considerably more washed-out than "55%" on the slider suggests.
+  // Square-root-curving the input keeps the slider's own numbers matching
+  // what actually shows on screen (55 now genuinely looks like a modest,
+  // roughly-halfway desaturation, not a heavy one).
+  document.documentElement.style.setProperty('--top-row-saturation', Math.sqrt(v / 100));
 }
 // NOTE MARKER OPACITY — a multiplier on the step-cell note markers'
 // existing opacity values (soft vs. accented, playing or not), so their
