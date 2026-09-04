@@ -25,7 +25,9 @@
   --top-row-btn-height: 46.08px; /* shared by the top row (.btn) and the save slots (.slot-btn) — one source of truth so the two rows can't drift apart in a future edit, only the box height, never text/glyph size */
   --top-row-pressed-bg: color-mix(in srgb, var(--neutral-top, #555) 67%, black); /* pressed/engaged state for every top-row button — a darker version of the button's own resting color, replacing the old separate highlight-color system */
   --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
-  --vol-slider-saturation: 1; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. 1 = unchanged, 0 = grayscale, >1 = boosted. */
+  --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
+  --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings (MORE) — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. 1 = unchanged, 0 = grayscale, >1 = boosted. */
+  --note-marker-opacity: 1; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. 1 = unchanged, 0 = invisible. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -227,6 +229,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   letter-spacing: 0.5px; padding: 0 10px; cursor: pointer; text-transform: uppercase;
   transition: background 0.1s, color 0.1s, transform 0.12s ease-out; height: var(--top-row-btn-height); flex-shrink: 0; white-space: nowrap;
   touch-action: manipulation;
+  filter: saturate(var(--top-row-saturation, 1));
 }
 .btn.active { background: var(--top-row-pressed-bg); color: var(--top-row-text-color, #fff); }
 /* NEW/AUTO's label is now a single "+" for both states (color/pulse
@@ -761,8 +764,8 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   transition: background 0.05s, opacity 0.05s;
   top: 0; bottom: 0; left: 1px; right: 1px;
 }
-.step-cell.soft::after { background: var(--track-color, var(--text)); opacity: 0.4; }
-.step-cell.on::after   { background: var(--track-color, var(--text)); opacity: 1; }
+.step-cell.soft::after { background: var(--track-color, var(--text)); opacity: calc(var(--note-marker-opacity, 1) * 0.4); }
+.step-cell.on::after   { background: var(--track-color, var(--text)); opacity: var(--note-marker-opacity, 1); }
 body.empty-cell-bg-transparent .step-cell:not(.soft):not(.on):not(.split32)::after { background: transparent !important; }
 .step-lane.lane-muted .step-cell::after { opacity: 0.075 !important; filter: grayscale(1); }
 /* Hides only genuinely empty cells' resting marker — .soft/.on (actual
@@ -787,8 +790,8 @@ body.notes-grayscale .step-cell.split32::after {
 body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important; filter: none; }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.15; }
-.step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: 1; }
-.step-cell.soft.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.7; }
+.step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: var(--note-marker-opacity, 1); }
+.step-cell.soft.playing::after { background: var(--playhead-color, #f8ff00); opacity: calc(var(--note-marker-opacity, 1) * 0.7); }
 .step-cell.split32::after {
   background: repeating-linear-gradient(to right, var(--track-color, var(--text)) 0%, var(--track-color, var(--text)) 45%, transparent 45%, transparent 55%, var(--track-color, var(--text)) 55%, var(--track-color, var(--text)) 100%);
   opacity: 1;
@@ -892,7 +895,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">03 Sep 26 23:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 02:52</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1029,6 +1032,12 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="emptyCellsInvisibleToggle" onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
     </label>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">100</span>
+      </div>
+      <input type="range" id="noteMarkerOpacityBar" min="0" max="100" value="100" class="master-vol-slider" style="width:100%;" oninput="setNoteMarkerOpacity(this.value); document.getElementById('noteMarkerOpacityVal').textContent=this.value">
+    </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
     </label>
@@ -1055,6 +1064,12 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
         <input type="color" id="topColorPicker" value="#555555" style="width:28px;height:28px;border:none;border-radius:0;padding:0;background:none;cursor:pointer;flex-shrink:0;-webkit-appearance:none;appearance:none;">
         <style>#topColorPicker::-webkit-color-swatch-wrapper{padding:0;}#topColorPicker::-webkit-color-swatch{border:none;border-radius:0;}#topColorPicker::-moz-color-swatch{border:none;border-radius:0;}</style>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+          <span>TOP ROW COLOR SATURATION</span><span id="topRowSaturationVal" style="color:#adff00;">100</span>
+        </div>
+        <input type="range" id="topRowSaturationBar" min="0" max="200" value="100" class="master-vol-slider" style="width:100%;" oninput="setTopRowSaturation(this.value); document.getElementById('topRowSaturationVal').textContent=this.value">
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
@@ -1116,10 +1131,10 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">TRACK NAMES</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="color" onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
+            <input type="radio" name="trackNamesMode" value="color" checked onchange="setTrackNamesUniform(false)" style="width:15px;height:15px;cursor:pointer;">COLOR-CODED
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-            <input type="radio" name="trackNamesMode" value="uniform" checked onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
+            <input type="radio" name="trackNamesMode" value="uniform" onchange="setTrackNamesUniform(true)" style="width:15px;height:15px;cursor:pointer;">DEFAULT
           </label>
         </div>
       </div>
@@ -1156,9 +1171,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>TRACK VOLUME COLOR SATURATION</span><span id="volSliderSaturationVal" style="color:#adff00;">100</span>
+          <span>TRACK VOLUME COLOR SATURATION</span><span id="volSliderSaturationVal" style="color:#adff00;">200</span>
         </div>
-        <input type="range" id="volSliderSaturationBar" min="0" max="200" value="100" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
+        <input type="range" id="volSliderSaturationBar" min="0" max="200" value="200" class="master-vol-slider" style="width:100%;" oninput="setVolSliderSaturation(this.value); document.getElementById('volSliderSaturationVal').textContent=this.value">
       </div>
 
       <!-- TOP ROW HIGHLIGHT picker removed from the UI — the top-row
@@ -2146,13 +2161,18 @@ function randomizeAppColors() {
   });
   const randomizeBtn = document.getElementById('randomizeColorsBtn');
   if (randomizeBtn) randomizeBtn.addEventListener('click', () => {
-    // Guards against a ghost-click landing here right as settings opens —
+    // Guards against a ghost-click landing here right as the menu opens —
     // the tap that opens the panel can trigger the DOM's own click event
     // slightly after the layout has already changed underneath it, which
     // can land on whatever happens to now be at those same screen
-    // coordinates. A genuine, deliberate press on this button will always
-    // happen well after the panel has actually opened.
-    if (Date.now() - _settingsOpenedAt < 350) return;
+    // coordinates — a real risk here specifically since this button sits
+    // near the top of the menu's always-visible content, close to where
+    // the menu-opening tap itself likely landed. 350ms wasn't a wide
+    // enough margin for that delayed ghost click on some devices; widened
+    // to 600ms, matching the timing margins used for the same class of
+    // issue elsewhere in this file. A genuine, deliberate press on this
+    // button will always happen well after the panel has actually opened.
+    if (Date.now() - _settingsOpenedAt < 600) return;
     _pressPulse('randomizeColorsBtn'); randomizeAppColors();
   });
   const saveThemeBtn = document.getElementById('saveThemeBtn');
@@ -13322,7 +13342,7 @@ function wireRandomizeButton(btn, tr) {
   btn.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
 }
 
-window._trackNamesUniform = true; // DEFAULT (solid, not color-coded) is now the pre-selected radio at startup — track names start out solid/uniform, not color-coded by instrument group
+window._trackNamesUniform = false; // COLOR-CODED (by instrument group) is now the pre-selected radio at startup, not solid/uniform
 document.body.classList.remove('notes-grayscale'); // note markers start out NOT grayscale (colored) at startup, matching the DEV menu checkbox's own default unchecked state
 buildUI();
 updateMasterVolCells();
@@ -14382,6 +14402,15 @@ function showDevMenu() {
   // was only ever updated by showSettings(), so opening this menu instead
   // left the guard blind and the button could fire immediately on open.
   _settingsOpenedAt = Date.now();
+  // Belt-and-braces on top of that timing guard: actually refuse pointer
+  // events on the button itself for the same window, so a ghost click
+  // physically can't land on it no matter how the timing check's own
+  // math works out.
+  const rb = document.getElementById('randomizeColorsBtn');
+  if (rb) {
+    rb.style.pointerEvents = 'none';
+    setTimeout(() => { rb.style.pointerEvents = ''; }, 600);
+  }
 }
 function hideDevMenu() {
   const el = document.getElementById('devMenuOverlay');
@@ -14562,6 +14591,18 @@ function setTrackDefaultOpacity(v) {
 function setVolSliderSaturation(v) {
   document.documentElement.style.setProperty('--vol-slider-saturation', v / 100);
 }
+// TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
+// itself; just a saturate() filter on every .btn.
+function setTopRowSaturation(v) {
+  document.documentElement.style.setProperty('--top-row-saturation', v / 100);
+}
+// NOTE MARKER OPACITY — a multiplier on the step-cell note markers'
+// existing opacity values (soft vs. accented, playing or not), so their
+// relative contrast stays intact while the whole set fades in or out
+// together.
+function setNoteMarkerOpacity(v) {
+  document.documentElement.style.setProperty('--note-marker-opacity', v / 100);
+}
 // SOLO FLASH — toggles whether track SOLO buttons are momentary (solo only
 // while held, released the instant you let go) or a classic click-to-toggle.
 // The actual press/release handling lives on each SOLO button itself (see
@@ -14699,8 +14740,8 @@ function fullReset() {
   const _ttpmRadio = document.querySelector('input[name="trackTextPulseMode"][value="solid"]'); if (_ttpmRadio) _ttpmRadio.checked = true;
   setTrackTextPulseColor(2);
   const _ttpcRadio = document.querySelector('input[name="trackTextPulseColor"][value="2"]'); if (_ttpcRadio) _ttpcRadio.checked = true;
-  setTrackNamesUniform(true);
-  const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="uniform"]'); if (_tnmRadio) _tnmRadio.checked = true;
+  setTrackNamesUniform(false);
+  const _tnmRadio = document.querySelector('input[name="trackNamesMode"][value="color"]'); if (_tnmRadio) _tnmRadio.checked = true;
   setVolSliderColor('auto');
   const _vscRadio = document.querySelector('input[name="volSliderColor"][value="auto"]'); if (_vscRadio) _vscRadio.checked = true;
   setTopRowHighlightColor('auto');
