@@ -587,68 +587,79 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
   /* Vertical ticks only here — the horizontal line is a separate ::before
      below, so SCALE HORIZONTAL LINE (COLOR settings) can hide just that
-     one piece without touching these. Same color as the top row buttons'
-     own highlight/engaged color (--top-row-highlight-color). 12 lines,
-     each explicitly centered in its own equal 1/12 slot (rather than a
-     repeating gradient that starts a line at 0% and just tiles every
-     100%/12) — a repeating gradient's own tiling always leaves the
-     trailing gap, from the last line to the right edge, equal to a FULL
-     period width, not the same as the gap between two lines (which is
-     period-minus-thickness); centering each line in its slot instead
-     makes every gap — including both outer margins — genuinely equal. */
+     one piece without touching these, and SCALE VERTICAL LINES below
+     hides just this background-image without touching the ::before. Same
+     color as the top row buttons' own highlight/engaged color
+     (--top-row-highlight-color). 14 lines (was 12), each explicitly
+     centered in its own equal 1/14 slot (rather than a repeating gradient
+     that starts a line at 0% and just tiles every 100%/14) — a repeating
+     gradient's own tiling always leaves the trailing gap, from the last
+     line to the right edge, equal to a FULL period width, not the same as
+     the gap between two lines (which is period-minus-thickness);
+     centering each line in its slot instead makes every gap — including
+     both outer margins — genuinely equal. */
   background-image: linear-gradient(to right,
-      transparent calc(100% * 1 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 1 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 3 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 3 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 5 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 5 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 7 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 7 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 9 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 9 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 11 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 11 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 13 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 13 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 15 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 15 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 17 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 17 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 19 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 19 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 21 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 21 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 23 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 24 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 24 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 23 / 24 + var(--vol-scale-thickness) / 2));
+      transparent calc(100% * 1 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 1 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 3 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 3 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 5 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 5 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 7 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 7 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 9 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 9 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 11 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 11 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 13 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 13 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 15 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 15 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 17 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 17 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 19 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 19 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 21 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 21 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 23 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 23 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 25 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 25 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 25 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 25 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 27 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 27 / 28 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 27 / 28 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 27 / 28 + var(--vol-scale-thickness) / 2));
   background-size: 100% 80%;
   background-position: center center;
   background-repeat: no-repeat;
 }
+body.vol-scale-no-vertical .track-vol-scale { background-image: none; }
 /* Horizontal line — its own layer now (was a second background-image on
    .track-vol-scale itself) so SCALE HORIZONTAL LINE (COLOR settings) can
    hide just this one piece and leave the vertical ticks above untouched. */
@@ -660,7 +671,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   background-color: var(--top-row-highlight-color, #f8ff00);
 }
 body.vol-scale-no-horizontal .track-vol-scale::before { display: none; }
-/* 12 real flex children, not a width-percentage fill with a gradient
+/* 14 real flex children, not a width-percentage fill with a gradient
    overlay on top — flexbox's own boundary-per-child (explicit flex-basis
    set at creation time, not equal flex:1 — see VOL_STEP_BOUNDARIES) is
    the only way to guarantee each notch's own boundary lines up with the
@@ -672,8 +683,8 @@ body.vol-scale-no-horizontal .track-vol-scale::before { display: none; }
 }
 .track-vol-notch { flex: 1; background: transparent; } /* unlit — lets .track-vol-bar's own background show through instead of introducing a separate gray, and automatically matches whatever that background is (including .muted's gray) */
 .track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); filter: saturate(var(--vol-slider-saturation, 1)); }
-/* SOLID VOLUME BAR (COLOR settings) — snapped-width alternative to the 12
-   notches above (not smoothly continuous — same 12 increments, see
+/* SOLID VOLUME BAR (COLOR settings) — snapped-width alternative to the 14
+   notches above (not smoothly continuous — same 14 increments, see
    _setVolFillPct), same inset, same color/saturation. Only one of
    the two is ever visible at once — .track-vol-fill is hidden outright in
    solid mode instead of just layering underneath, so its pointer-events
@@ -1019,7 +1030,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:36</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:50</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1147,6 +1158,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="volScaleHorizontalToggle" checked onchange="setVolScaleHorizontal(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE HORIZONTAL LINE
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="volScaleVerticalToggle" checked onchange="setVolScaleVertical(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE VERTICAL LINES
     </label>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -3218,22 +3232,22 @@ function volGainToPos(gain) {
 // Shared by both fill modes (notch flex-basis below, and the solid bar's
 // snapped width in _setVolFillPct) so segmented and solid always agree
 // on exactly the same boundary positions.
-const VOL_STEP_BOUNDARIES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 24].map(x => x / 24);
+const VOL_STEP_BOUNDARIES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 28].map(x => x / 28); // 14 steps now (was 12) — see the matching 14-line ruler in .track-vol-scale's CSS
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  // el is the .track-vol-fill flex container holding 12 .track-vol-notch
+  // el is the .track-vol-fill flex container holding 14 .track-vol-notch
   // children (see attachVolBarEvents/track row setup) — light however many
   // of them the current value reaches, rather than setting a width. Each
   // notch's own width (set via flex-basis at creation time, not simple
   // flex:1 equal division) already lines its boundary up with the ruler
-  // behind it — see VOL_STEP_BOUNDARIES above. 12 steps, not a smoothly
+  // behind it — see VOL_STEP_BOUNDARIES above. 14 steps, not a smoothly
   // continuous value, matching the 12-line ruler behind it — the fader
   // doesn't need to track every in-between position visually.
-  const lit = Math.round(pct * 12);
+  const lit = Math.round(pct * 14);
   const notches = el.children;
   for (let i = 0; i < notches.length; i++) notches[i].classList.toggle('lit', i < lit);
   // Solid-bar alternative (SEGMENTED/SOLID toggle in COLOR settings) —
-  // snapped to the same 12 boundary positions as the notches above (not
+  // snapped to the same 14 boundary positions as the notches above (not
   // a smooth continuous width, and not plain 12ths either), so switching
   // between the two modes always shows the exact same edge position.
   const solid = el.parentElement && el.parentElement.querySelector('.track-vol-fill-solid');
@@ -8234,10 +8248,10 @@ function buildUI() {
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
-    const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle, 10 vertical tick marks crossing it, appended first so it paints behind everything else added below
+    const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle, 14 vertical tick marks crossing it, appended first so it paints behind everything else added below
     volBar.appendChild(volScale);
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
-    for (let n = 0; n < 12; n++) {
+    for (let n = 0; n < 14; n++) {
       const notch = document.createElement('div'); notch.className = 'track-vol-notch';
       const prevBoundary = n === 0 ? 0 : VOL_STEP_BOUNDARIES[n - 1];
       notch.style.flex = `0 0 ${(VOL_STEP_BOUNDARIES[n] - prevBoundary) * 100}%`; // not equal widths — see VOL_STEP_BOUNDARIES above, each notch's own boundary lines up with the ruler line behind it
@@ -14871,6 +14885,12 @@ function setVolScaleOpacity(v) {
 // background-image) alone. On by default.
 function setVolScaleHorizontal(on) {
   document.body.classList.toggle('vol-scale-no-horizontal', !on);
+}
+// SCALE VERTICAL LINES — hides just the 14 vertical ticks (.track-vol-scale's
+// own background-image) and leaves the horizontal line (::before) alone.
+// On by default.
+function setVolScaleVertical(on) {
+  document.body.classList.toggle('vol-scale-no-vertical', !on);
 }
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
