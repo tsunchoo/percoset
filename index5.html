@@ -30,7 +30,6 @@
   --note-marker-opacity: 0.9; /* Hard-coded to 90% now — the NOTE MARKER OPACITY slider itself was removed from COLOR settings. Still a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. */
   --vol-scale-thickness: 3.125px; /* Hard-coded to the old slider's maximum now — the SCALE LINES THICKNESS slider itself was removed from COLOR settings. */
   --vol-scale-opacity: 1; /* Hard-coded to 100% now — the SCALE LINES OPACITY slider itself was removed from COLOR settings. Color is a darker version of --neutral-top (the volume bar's own background), not independently pickable. */
-  --vol-scale-invert: 0; /* INVERT SCALE COLOR toggle in COLOR settings — 0 = normal, 1 = inverted, applied on top of the darkened color rather than being its own separate color pick. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -585,7 +584,6 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* same inset as the fill layers above it, so the ruler lines up with exactly the area the fill actually covers */
   pointer-events: none;
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
-  filter: invert(var(--vol-scale-invert, 0)); /* INVERT SCALE COLOR toggle in COLOR settings — applied on top of whatever --top-row-highlight-color already resolved to (auto-contrast pick or manual), not a separate color choice of its own. Sits on the parent so it covers both the tick divs (real children) and the horizontal line (::before) in one place. */
 }
 /* 14 real absolutely-positioned tick divs (created in the JS loop where
    .track-vol-scale itself is built), not a single big linear-gradient —
@@ -953,7 +951,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:09</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:19</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1067,26 +1065,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">COLOR MENU</div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="volScaleStyleToggle" checked onchange="setVolScaleStyle(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE STYLE: HORIZONTAL (OFF = VERTICAL)
-    </label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="volScaleInvertToggle" onchange="setVolScaleInvert(this.checked)" style="width:14px;height:14px;cursor:pointer;">INVERT SCALE COLOR
-    </label>
-    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>TRACK BUTTON OPACITY</span><span id="trackDefaultOpacityVal" style="color:#adff00;">75</span>
-      </div>
-      <input type="range" id="trackDefaultOpacityBar" min="0" max="100" value="75" class="master-vol-slider" style="width:100%;" oninput="setTrackDefaultOpacity(this.value/100); document.getElementById('trackDefaultOpacityVal').textContent=this.value">
-    </div>
     <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">COLOR</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">SOLO + BEAT</div>
-      <label class="wild-toggle">
-        <input type="checkbox" id="soloIncludesBeatToggle" checked onchange="setSoloIncludesBeat(this.checked)">
-        <span class="wild-toggle-slider"></span>
-      </label>
-    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;">WILD</div>
       <label class="wild-toggle">
@@ -1099,6 +1078,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
          intact elsewhere for this reason, in case it's reinstated later. -->
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="volScaleStyleToggle" checked onchange="setVolScaleStyle(this.checked)" style="width:14px;height:14px;cursor:pointer;">VOLUME STYLE
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="emptyCellsInvisibleToggle" onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
@@ -1456,6 +1438,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
         <input type="checkbox" id="eightBitToggle" onchange="setEightBitMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">8-BIT
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="soloIncludesBeatToggle" checked onchange="setSoloIncludesBeat(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLO + BEAT
       </label>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -14799,12 +14784,6 @@ function setVolScaleOpacity(v) {
 // = vertical ticks only; on = the horizontal line only.
 function setVolScaleStyle(horizontal) {
   document.body.classList.toggle('vol-scale-style-horizontal', !!horizontal);
-}
-// INVERT SCALE COLOR — a filter(invert()) on top of whatever
-// --top-row-highlight-color already resolved to, not a separate color
-// choice.
-function setVolScaleInvert(on) {
-  document.documentElement.style.setProperty('--vol-scale-invert', on ? 1 : 0);
 }
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
