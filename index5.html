@@ -585,9 +585,10 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* same inset as the fill layers above it, so the ruler lines up with exactly the area the fill actually covers */
   pointer-events: none;
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
+  --vol-scale-line-color: color-mix(in srgb, var(--neutral-top, #555) 60%, black); /* a visibly darker shade of the TOP ROW color, not the literal same value — .track-vol-bar's own background is ALSO plain var(--neutral-top), so using that unmixed would put the ruler on a background of the exact same color: zero contrast, invisible (which is exactly what was happening — muting only "fixed" it by accident, since .track-vol-bar.muted swaps to a different background color, #ccc, finally giving the ruler something to contrast against) */
   background-image:
-    linear-gradient(var(--neutral-top, #555), var(--neutral-top, #555)),
-    repeating-linear-gradient(to right, var(--neutral-top, #555) 0, var(--neutral-top, #555) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent 10%);
+    linear-gradient(var(--vol-scale-line-color), var(--vol-scale-line-color)),
+    repeating-linear-gradient(to right, var(--vol-scale-line-color) 0, var(--vol-scale-line-color) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent 10%);
   background-size: 100% var(--vol-scale-thickness, 1px), 100% 80%;
   background-position: center center, center center;
   background-repeat: no-repeat, no-repeat;
@@ -949,7 +950,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:13</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:15</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
