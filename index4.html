@@ -27,7 +27,7 @@
   --track-default-opacity: 0.75; /* TRACK BUTTON OPACITY slider in COLOR settings — applies to the volume bar background and every track button's resting/default look EXCEPT the instrument name button and the lock button, which always stay fully opaque. Engaged/active states (FX on, BLAST, reverb on, solo, auto-rand, etc.) reset back to full opacity regardless — see the reset rules further down. */
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
   --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings (MORE) — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. 1 = unchanged, 0 = grayscale, >1 = boosted. */
-  --note-marker-opacity: 1; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. 1 = unchanged, 0 = invisible. */
+  --note-marker-opacity: 0.7; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 70%; 1 = unchanged, 0 = invisible. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -895,7 +895,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 02:52</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 02:57</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1034,9 +1034,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </label>
     <div style="display:flex;flex-direction:column;gap:6px;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">100</span>
+        <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">70</span>
       </div>
-      <input type="range" id="noteMarkerOpacityBar" min="0" max="100" value="100" class="master-vol-slider" style="width:100%;" oninput="setNoteMarkerOpacity(this.value); document.getElementById('noteMarkerOpacityVal').textContent=this.value">
+      <input type="range" id="noteMarkerOpacityBar" min="0" max="100" value="70" class="master-vol-slider" style="width:100%;" oninput="setNoteMarkerOpacity(this.value); document.getElementById('noteMarkerOpacityVal').textContent=this.value">
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
@@ -2979,7 +2979,7 @@ function playBuffer(key, isAccent, time, tr, stepIdx) {
 
   const src = ctx.createBufferSource(); src.buffer = buf;
   const instrumentGain = ctx.createGain();
-  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.25 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride' && _beatType === 'mozambique') ? 0.3178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : (key === 'tomHi' || key === 'tomMid' || key === 'tomLo') ? 0.7063 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +1dB more (was 0.2228, +2dB before that, was 0.177); TOM HI/MID/LOW +3dB from the 0.5 default (0.5 * 10^(3/20)); RIDE +3dB specifically in MOZAMBIQUE (was 0.225, same as every other beat type still) — that beat's fixed ride pattern is mostly soft-velocity hits (the quieter sample) with only a few accents, so it was landing noticeably under SIDESTICK's all-accent pattern there; boosting just this beat's level (not the soft/accent split itself, which is deliberate structural-vs-filler phrasing, and not RIDE's level in JAZZ or anywhere else it's used) closes that gap
+  instrumentGain.gain.value = (key === 'shak') ? 0.265 : (key === 'clap') ? 0.25 : (key === 'tamb') ? 0.4455 : (key === 'guiro') ? 0.178 : (key === 'ride' && _beatType === 'mozambique') ? 0.3178 : (key === 'ride') ? 0.225 : (key === 'congHi' || key === 'congLo' || key === 'bongHi' || key === 'bongLo') ? 0.6686 : (key === 'sidestick') ? 0.1991 : (key === 'tomHi' && _beatType === 'mozambique') ? 0.9977 : (key === 'tomHi' || key === 'tomMid' || key === 'tomLo') ? 0.7063 : 0.5; // SHAKER -1.5dB from the +2dB bump (was 0.315); TAMBOURINE +1dB (was 0.397); CONGA/BONGO +1dB more (was 0.5959); SIDESTICK -1.5dB more (was 0.2366, -2dB before that, -4dB before that, -0.5dB from the 0.5 default before that); HANDCLAP +1dB more (was 0.2228, +2dB before that, was 0.177); TOM HI/MID/LOW +3dB from the 0.5 default (0.5 * 10^(3/20)); RIDE +3dB specifically in MOZAMBIQUE (was 0.225, same as every other beat type still) — that beat's fixed ride pattern is mostly soft-velocity hits (the quieter sample) with only a few accents, so it was landing noticeably under SIDESTICK's all-accent pattern there; boosting just this beat's level (not the soft/accent split itself, which is deliberate structural-vs-filler phrasing, and not RIDE's level in JAZZ or anywhere else it's used) closes that gap; TOM HI +3dB more, specifically in MOZAMBIQUE only (was 0.7063, same as every other beat type and same as TOM MID/LOW still) — even accented and already at the shared tom boost, its own sample reads quieter than RIDE/SIDESTICK there
 
   const fxVal = trackFx[tr];
   const on = fxVal && (fxVal.x > 0 || fxVal.y > 0);
