@@ -503,7 +503,6 @@ body.track-text-pulse-a .track-name-btn.playing { color: var(--track-text-pulse-
   animation: engaged-btn-pulse-blast 0.6s ease-in-out infinite;
 }
 body.no-fx-reverb-pulse .fx-btn.on, body.no-fx-reverb-pulse .fx-btn.blast-on, body.no-fx-reverb-pulse .shift-btn.right.on { animation: none; }
-body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0); }
 .rand-btn.pulsing { color: #fff; animation: pulse 0.5s infinite alternate; }
 .rand-btn.rand-pending { background: var(--playhead) !important; color: #fff !important; animation: rand-pending-pulse 0.2s infinite alternate; }
 @keyframes rand-pending-pulse { from { background: var(--playhead); } to { background: #7a1000; } }
@@ -594,34 +593,16 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   pointer-events: none;
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
 }
-/* 14 real absolutely-positioned tick divs (created in the JS loop where
-   .track-vol-scale itself is built), not a single big linear-gradient —
-   a gradient's color-stops are positions along ONE continuous line, and
-   once SCALE LINES THICKNESS pushed two adjacent stops close enough to
-   cross over, the CSS spec's own stop-clamping rule kicked in (each
-   stop is clamped to never sit before the previous one), which doesn't
-   fail gracefully — lines started reading as thinner/messier the
-   FURTHER thickness was pushed, the opposite of what the slider should
-   do. A real element's width just grows normally with the variable, so
-   there's no crossover math to go wrong, however large the slider goes. */
-.track-vol-scale-tick {
-  position: absolute; top: 10%; bottom: 10%; width: var(--vol-scale-thickness, 1px);
-  transform: translateX(-50%);
-  background-color: color-mix(in srgb, var(--top-row-pressed-bg) 60%, black); /* darker still than #playBtn.playing's own pressed background — that alone wasn't reading as dark enough against the slider */
-}
-body.vol-scale-style-horizontal .track-vol-scale-tick { display: none; } /* SCALE STYLE toggle — horizontal or vertical, never both */
-/* Horizontal line — its own layer (::before), independent of the tick
-   divs above, so SCALE HORIZONTAL LINE (COLOR settings) can hide just
-   this piece and SCALE VERTICAL LINES above can hide just the ticks,
-   without either affecting the other. */
+/* Horizontal line only now — the vertical-ticks alternative and the
+   VOLUME STYLE toggle that switched between them were removed; this is
+   always visible. */
 .track-vol-scale::before {
   content: '';
-  position: absolute; left: calc(2 * clamp(2px, 1vw, 5px)); right: calc(2 * clamp(2px, 1vw, 5px)); top: 50%; pointer-events: none; /* brought in from the edges by twice the FX-R button gap (was flush at left:0/right:0) */
+  position: absolute; left: calc(2 * clamp(2px, 1vw, 5px)); right: calc(2 * clamp(2px, 1vw, 5px)); top: 50%; pointer-events: none; /* brought in from the edges by twice the FX-R button gap */
   height: var(--vol-scale-thickness, 1px);
   transform: translateY(-50%);
-  background-color: color-mix(in srgb, var(--top-row-pressed-bg) 60%, black); /* same as .track-vol-scale-tick above */
+  background-color: color-mix(in srgb, var(--top-row-pressed-bg) 60%, black); /* darker still than #playBtn.playing's own pressed background — that alone wasn't reading as dark enough against the slider */
 }
-body:not(.vol-scale-style-horizontal) .track-vol-scale::before { display: none; }
 .track-vol-fill-solid {
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); bottom: 15%;
   background: var(--vol-slider-color, var(--playhead-color, #f8ff00));
@@ -836,7 +817,6 @@ body.empty-cell-bg-transparent .step-cell:not(.soft):not(.on):not(.split32)::aft
 /* Hides only genuinely empty cells' resting marker — .soft/.on (actual
    notes) are untouched, and :not(.playing) keeps the playhead sweep
    visible as it passes over empty steps even with this on. */
-body.empty-cells-invisible .step-cell:not(.soft):not(.on):not(.playing)::after { opacity: 0 !important; }
 /* Two fixed gray levels, not a per-track filter — a grayscale() filter
    preserves each original color's own luminance, so different track
    colors were converting to genuinely different shades of gray instead
@@ -960,7 +940,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:28</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 16:36</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1089,19 +1069,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <input type="checkbox" id="devNotesGrayscale" onchange="setDevNotesGrayscale(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS GRAYSCALE
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="volScaleStyleToggle" checked onchange="setVolScaleStyle(this.checked)" style="width:14px;height:14px;cursor:pointer;">VOLUME STYLE
-    </label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="emptyCellsInvisibleToggle" onchange="setEmptyCellsInvisible(this.checked)" style="width:14px;height:14px;cursor:pointer;">NOTE MARKERS INVISIBLE
-    </label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="topRowBlackToggle" onchange="setTopRowBlack(this.checked)" style="width:14px;height:14px;cursor:pointer;">TOP ROW BLACK
-    </label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
       <input type="checkbox" id="fxReverbPulseToggle" checked onchange="setFxReverbPulse(this.checked)" style="width:14px;height:14px;cursor:pointer;">FX/REVERB PULSE
-    </label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="soloFlashToggle" checked onchange="setSoloFlashMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLO FLASH
     </label>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -1376,10 +1344,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
 
       <div style="display:flex;flex-direction:column;gap:15px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">INTENSITY</div>
-          <div id="intensityReadout" style="font-size:0.6rem;font-weight:700;color:#111;font-family:'DM Sans',sans-serif;">MEDIUM</div>
-        </div>
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">INTENSITY</div>
         <input type="range" id="intensitySlider" min="0" max="100" step="25" value="50" oninput="setIntensity(this.value)" class="master-vol-slider" style="width:100%;">
         <div style="display:flex;justify-content:space-between;font-size:0.55rem;font-weight:700;color:var(--dim);letter-spacing:0.5px;">
           <span>MELLOW</span>
@@ -1423,6 +1388,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
         <input type="range" id="delayMixBar" min="0" max="100" value="30" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="randomizeReverbToggle" onchange="setRandomizeReverb(this.checked)" style="width:14px;height:14px;cursor:pointer;">RANDOMIZE REVERB
+      </label>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
 
@@ -1443,13 +1411,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="checkbox" id="randomizeReverbToggle" onchange="setRandomizeReverb(this.checked)" style="width:14px;height:14px;cursor:pointer;">RANDOMIZE REVERB
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
         <input type="checkbox" id="eightBitToggle" onchange="setEightBitMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">8-BIT
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
         <input type="checkbox" id="soloIncludesBeatToggle" checked onchange="setSoloIncludesBeat(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLO + BEAT
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="soloFlashToggle" checked onchange="setSoloFlashMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">SOLO FLASH
       </label>
 
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1883,10 +1851,6 @@ function _applyTrackColor(hex) {
   // sync with track-button text color rather than TOP ROW's own.
   document.documentElement.style.setProperty('--track-text-invert', trackText === '#111111' ? '1' : '0');
   const el = document.getElementById('trackColorPicker'); if (el) el.value = hex;
-  // TOP ROW BLACK mode needs the icons precisely matching TRACK BUTTONS
-  // COLOR, not just a black/white approximation — if it's currently
-  // active, keep the icons in sync as track color itself changes (RAND/WILD).
-  if (document.body.classList.contains('top-row-black')) recolorTopRowIcons(hex);
 }
 // PLAY/RECORD icon recoloring for TOP ROW BLACK — these are simple
 // single-color (white) PNGs with binary alpha (fully transparent or fully
@@ -2111,7 +2075,6 @@ _resetAppColorsToDefault();
 // direct request — the logo tap still toggles between the two exactly
 // as before, this only changes which one the app starts on.
 setLogoNoteJump(true);
-setVolScaleStyle(true); // SCALE STYLE: horizontal is the default now — vertical is the alternate, off by default
 // Colors otherwise stay at the CSS :root defaults (plain gray/green/etc.)
 // until the first RAND/WILD press, since that's the only place
 // randomizeAppColors() was ever called from — settings sliders and
@@ -8137,12 +8100,7 @@ function buildUI() {
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
-    const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle (::before, in CSS), 14 real vertical tick divs crossing it (not a gradient — see the loop below), appended first so it paints behind everything else added below
-    for (let n = 0; n < 14; n++) {
-      const tick = document.createElement('div'); tick.className = 'track-vol-scale-tick';
-      tick.style.left = `calc(100% * ${2 * n + 1} / 28)`; // centered in its own equal 1/14 slot, same positions VOL_STEP_BOUNDARIES's steps land on
-      volScale.appendChild(tick);
-    }
+    const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle (::before, in CSS), appended first so it paints behind everything else added below
     volBar.appendChild(volScale);
     const volFillSolid = document.createElement('div'); volFillSolid.className = 'track-vol-fill-solid'; // width-based fill, snapped to VOL_STEP_BOUNDARIES's 14 steps — always solid now, the old segmented (notched) alternative and its toggle were removed
     volBar.appendChild(volFillSolid);
@@ -13525,7 +13483,6 @@ setTopRowHighlightColor('auto'); // AUTO (best contrast) is the default — pick
 setTrackCtrlBtnColor('top'); // TOP ROW BUTTON COLOR is the default — matches --neutral-track's own prior default appearance most closely
 setTrackBtnOnColor('auto'); // AUTO (best contrast) is the default — checked against the button's own resting color, so ON always reads as clearly different from OFF
 setEmptyCellBgTransparent(false); // no longer checked by default — the empty cell background is now a subtle 15% opacity fill instead, which the (now off-by-default) toggle would otherwise completely override
-setEmptyCellsInvisible(false); // no longer checked by default — was fully overriding the new 15%-opacity empty cell background with opacity:0 !important, making that change invisible
 setEqMeterColor('auto'); // AUTO (best contrast) is the default
 setTopRowTextColor('auto'); // AUTO (best contrast) is the default
 setTrackBtnTextColor('auto'); // AUTO (best contrast) is the default
@@ -14738,25 +14695,6 @@ function setDevNotesGrayscale(on) {
 function setEmptyCellBgTransparent(on) {
   document.body.classList.toggle('empty-cell-bg-transparent', !!on);
 }
-// NOTE MARKERS INVISIBLE — hides only empty cells' resting marker; actual
-// notes and the playhead sweep over empty steps stay fully visible (see
-// the :not(.soft):not(.on):not(.playing) scoping on the CSS rule itself).
-function setEmptyCellsInvisible(on) {
-  document.body.classList.toggle('empty-cells-invisible', !!on);
-}
-// TOP ROW BLACK — pins the top-row buttons' resting background to black
-// via a CSS override class, without touching anything else about them
-// (text color, hover/active states, sizing, or the underlying color-wheel
-// values those states still derive from).
-function setTopRowBlack(on) {
-  document.body.classList.toggle('top-row-black', !!on);
-  if (on) {
-    const trackHex = getComputedStyle(document.documentElement).getPropertyValue('--neutral-track').trim();
-    recolorTopRowIcons(trackHex || '#b0b0b0');
-  } else {
-    restoreTopRowIcons();
-  }
-}
 // FX/REVERB PULSE — the scale+brightness pulse (engaged-btn-pulse) FX and
 // REVERB already share when engaged. Checked by default since pulsing is
 // the existing behavior; unchecking just removes the animation via a CSS
@@ -14789,9 +14727,6 @@ function setVolScaleOpacity(v) {
 }
 // SCALE STYLE — horizontal or vertical, never both at once. Off (default)
 // = vertical ticks only; on = the horizontal line only.
-function setVolScaleStyle(horizontal) {
-  document.body.classList.toggle('vol-scale-style-horizontal', !!horizontal);
-}
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
 function setTopRowSaturation(v) {
