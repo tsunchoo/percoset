@@ -28,7 +28,7 @@
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
   --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now maximum (the slider's own max of 100 = saturate(1), full original color, no desaturation). Plain linear mapping, no curve. 0 = grayscale, >1 not reachable at this slider's current 0-100 range. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
-  --vol-scale-thickness: clamp(2px, 1vw, 5px); /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. Default now matches .track-ctrl-row's own gap exactly (the same distance between FX and R), responsively; the slider still overrides it with a fixed px number once touched. */
+  --vol-scale-thickness: 1.7px; /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. Default is 1.7, ~85% of the slider's 0-2 range. */
   --vol-scale-opacity: 0.9; /* SCALE LINES OPACITY slider in COLOR settings — opacity of that same ruler. Default is now 90% (was 100%). Color follows --top-row-highlight-color directly, not independently pickable. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -585,20 +585,18 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* same inset as the fill layers above it, so the ruler lines up with exactly the area the fill actually covers */
   pointer-events: none;
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
-  /* Same color as the top row buttons' own highlight/engaged color
-     (--top-row-highlight-color, whatever HIGHLIGHT/2/3/TOP/AUTO is
-     currently picked in COLOR settings) — not an auto-contrast pick
-     anymore. 12 lines, each explicitly centered in its own equal 1/12
-     slot (rather than a repeating gradient that starts a line at 0% and
-     just tiles every 100%/12) — a repeating gradient's own tiling always
-     leaves the trailing gap, from the last line to the right edge, equal
-     to a FULL period width, not the same as the gap between two lines
-     (which is period-minus-thickness); centering each line in its slot
-     instead makes every gap — including both outer margins — genuinely
-     equal. */
-  background-image:
-    linear-gradient(var(--top-row-highlight-color, #f8ff00), var(--top-row-highlight-color, #f8ff00)),
-    linear-gradient(to right,
+  /* Vertical ticks only here — the horizontal line is a separate ::before
+     below, so SCALE HORIZONTAL LINE (COLOR settings) can hide just that
+     one piece without touching these. Same color as the top row buttons'
+     own highlight/engaged color (--top-row-highlight-color). 12 lines,
+     each explicitly centered in its own equal 1/12 slot (rather than a
+     repeating gradient that starts a line at 0% and just tiles every
+     100%/12) — a repeating gradient's own tiling always leaves the
+     trailing gap, from the last line to the right edge, equal to a FULL
+     period width, not the same as the gap between two lines (which is
+     period-minus-thickness); centering each line in its slot instead
+     makes every gap — including both outer margins — genuinely equal. */
+  background-image: linear-gradient(to right,
       transparent calc(100% * 1 / 24 - var(--vol-scale-thickness) / 2),
       var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 24 - var(--vol-scale-thickness) / 2),
       var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 24 + var(--vol-scale-thickness) / 2),
@@ -647,14 +645,26 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
       var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 24 - var(--vol-scale-thickness) / 2),
       var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 24 + var(--vol-scale-thickness) / 2),
       transparent calc(100% * 23 / 24 + var(--vol-scale-thickness) / 2));
-  background-size: 100% var(--vol-scale-thickness, 1px), 100% 80%;
-  background-position: center center, center center;
-  background-repeat: no-repeat, no-repeat;
+  background-size: 100% 80%;
+  background-position: center center;
+  background-repeat: no-repeat;
 }
+/* Horizontal line — its own layer now (was a second background-image on
+   .track-vol-scale itself) so SCALE HORIZONTAL LINE (COLOR settings) can
+   hide just this one piece and leave the vertical ticks above untouched. */
+.track-vol-scale::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 50%; pointer-events: none;
+  height: var(--vol-scale-thickness, 1px);
+  transform: translateY(-50%);
+  background-color: var(--top-row-highlight-color, #f8ff00);
+}
+body.vol-scale-no-horizontal .track-vol-scale::before { display: none; }
 /* 12 real flex children, not a width-percentage fill with a gradient
-   overlay on top — flexbox's own equal-distribution (flex:1 on every
-   child, same gap on every side) is the only way to guarantee genuinely
-   identical notch widths with no partial/mid-notch fill ever possible,
+   overlay on top — flexbox's own boundary-per-child (explicit flex-basis
+   set at creation time, not equal flex:1 — see VOL_STEP_BOUNDARIES) is
+   the only way to guarantee each notch's own boundary lines up with the
+   ruler line behind it, with no partial/mid-notch fill ever possible,
    regardless of any inset elsewhere on the bar. */
 .track-vol-fill {
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* symmetric left/right inset now — same gap value as .track-ctrl-row's own gap between buttons */
@@ -1009,7 +1019,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:22</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:36</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1125,9 +1135,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">COLOR MENU</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">2</span>
+        <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">1.7</span>
       </div>
-      <input type="range" id="volScaleThicknessBar" min="0" max="2" step="0.1" value="2" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
+      <input type="range" id="volScaleThicknessBar" min="0" max="2" step="0.1" value="1.7" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -1135,6 +1145,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </div>
       <input type="range" id="volScaleOpacityBar" min="0" max="100" value="90" class="master-vol-slider" style="width:100%;" oninput="setVolScaleOpacity(this.value); document.getElementById('volScaleOpacityVal').textContent=this.value">
     </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+      <input type="checkbox" id="volScaleHorizontalToggle" checked onchange="setVolScaleHorizontal(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE HORIZONTAL LINE
+    </label>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
         <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">80</span>
@@ -3195,24 +3208,36 @@ function volGainToPos(gain) {
 // drag to get back to that level. Fill color itself is plain CSS now
 // (var(--playhead-color), same as the HIGHLIGHT setting) — no more
 // per-pixel dynamic coloring here.
+// Volume slider step boundaries — 12 cumulative width fractions, one per
+// lit-notch count (1-12). Not evenly spaced: steps 1-11's fill boundary
+// lands exactly on the ruler's corresponding line (the vertical ticks are
+// centered in 12 equal slots — see .track-vol-scale — so a plain 1/12
+// boundary sits BETWEEN two ruler lines, not on one); step 12 (full) goes
+// all the way to the true right edge instead, since full volume has to
+// reach the actual edge regardless of where the last ruler line sits.
+// Shared by both fill modes (notch flex-basis below, and the solid bar's
+// snapped width in _setVolFillPct) so segmented and solid always agree
+// on exactly the same boundary positions.
+const VOL_STEP_BOUNDARIES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 24].map(x => x / 24);
 function _setVolFillPct(el, pct) {
   if (!el) return;
   // el is the .track-vol-fill flex container holding 12 .track-vol-notch
   // children (see attachVolBarEvents/track row setup) — light however many
-  // of them the current value reaches, rather than setting a width. Every
-  // notch is identically sized via flex:1, so this can never show a
-  // partial/mid-notch fill the way a width-percentage bar could. 12, not
-  // a smoothly continuous value, matching the 12-line ruler behind it —
-  // the fader doesn't need to track every in-between position visually.
+  // of them the current value reaches, rather than setting a width. Each
+  // notch's own width (set via flex-basis at creation time, not simple
+  // flex:1 equal division) already lines its boundary up with the ruler
+  // behind it — see VOL_STEP_BOUNDARIES above. 12 steps, not a smoothly
+  // continuous value, matching the 12-line ruler behind it — the fader
+  // doesn't need to track every in-between position visually.
   const lit = Math.round(pct * 12);
   const notches = el.children;
   for (let i = 0; i < notches.length; i++) notches[i].classList.toggle('lit', i < lit);
   // Solid-bar alternative (SEGMENTED/SOLID toggle in COLOR settings) —
-  // snapped to the same 12 increments, not a smooth continuous width,
-  // for the same reason and so switching between the two modes shows the
-  // same coarse level either way.
+  // snapped to the same 12 boundary positions as the notches above (not
+  // a smooth continuous width, and not plain 12ths either), so switching
+  // between the two modes always shows the exact same edge position.
   const solid = el.parentElement && el.parentElement.querySelector('.track-vol-fill-solid');
-  if (solid) solid.style.width = (Math.round(pct * 12) / 12 * 100) + '%';
+  if (solid) solid.style.width = (lit > 0 ? VOL_STEP_BOUNDARIES[lit - 1] * 100 : 0) + '%';
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
@@ -8212,7 +8237,12 @@ function buildUI() {
     const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle, 10 vertical tick marks crossing it, appended first so it paints behind everything else added below
     volBar.appendChild(volScale);
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
-    for (let n = 0; n < 12; n++) volFill.appendChild(document.createElement('div')).className = 'track-vol-notch'; // 12 fixed, equal-width notches (was 10 — matches the 12-line ruler behind it) — see _setVolFillPct
+    for (let n = 0; n < 12; n++) {
+      const notch = document.createElement('div'); notch.className = 'track-vol-notch';
+      const prevBoundary = n === 0 ? 0 : VOL_STEP_BOUNDARIES[n - 1];
+      notch.style.flex = `0 0 ${(VOL_STEP_BOUNDARIES[n] - prevBoundary) * 100}%`; // not equal widths — see VOL_STEP_BOUNDARIES above, each notch's own boundary lines up with the ruler line behind it
+      volFill.appendChild(notch);
+    }
     volBar.appendChild(volFill);
     const volFillSolid = document.createElement('div'); volFillSolid.className = 'track-vol-fill-solid'; // continuous width-based alternative to the notches above — SEGMENTED/SOLID toggle in COLOR settings picks which one is visible; _setVolFillPct keeps both in sync regardless
     volBar.appendChild(volFillSolid);
@@ -11832,13 +11862,14 @@ function randAll(mode, opts) {
       // Tambourine/Ride — those instruments already cover the whole measure
       // evenly at that density, so Delay just smears an already-continuous
       // part rather than adding anything.
-      // CONGA/BONGO and TOM HI/MID/LOW are exempt from both density-based
-      // strips below — their reverb chance (set earlier, unconditional for
-      // toms) is meant to survive regardless of how dense the actual
-      // randomized pattern turns out, and their patterns are naturally
-      // busy/dense enough to trip these checks often, which was silently
-      // undoing that fixed/guaranteed chance right after it was set.
-      const _congaBongoTr = ['congHi', 'congLo', 'bongHi', 'bongLo', 'tomHi', 'tomMid', 'tomLo'].includes(trackInstruments[_tr]);
+      // CONGA/BONGO, TOM HI/MID/LOW, and STRINGS+ are exempt from both
+      // density-based strips below — their reverb chance (set earlier,
+      // unconditional for toms and STRINGS+) is meant to survive
+      // regardless of how dense the actual randomized pattern turns out,
+      // and their patterns are naturally busy/dense enough to trip these
+      // checks often, which was silently undoing that fixed/guaranteed
+      // chance right after it was set.
+      const _congaBongoTr = ['congHi', 'congLo', 'bongHi', 'bongLo', 'tomHi', 'tomMid', 'tomLo', 'dronePlus'].includes(trackInstruments[_tr]);
       const _full16th = grid[_tr].every(v => v > 0);
       const _full8thRelevant = ['shihat','shak','tamb','ride'].includes(trackInstruments[_tr]) &&
         [0,2,4,6,8,10,12,14].every(s => grid[_tr][s] > 0);
@@ -12134,7 +12165,7 @@ function randAll(mode, opts) {
     }
     const _tooDense = _maxConsec > 3 || (_onsets.length > 1 && _minGap < 4);
     const _isFull16th = grid[tr].every(v => v > 0);
-    const delayChance = (trackInstruments[tr] === 'magic') ? 0 : (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo') ? 1 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // MAGIC never gets reverb through RAND — checked first, unconditional 0, only ever on if set manually via the track's own R button; TOM HI/MID/LOW always get reverb through RAND — unconditional 1, overrides the too-dense/full-16th gate below same as CONGA/BONGO; CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
+    const delayChance = (trackInstruments[tr] === 'magic') ? 0 : (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo' || trackInstruments[tr] === 'dronePlus') ? 1 : (trackInstruments[tr] === 'congHi' || trackInstruments[tr] === 'congLo' || trackInstruments[tr] === 'bongHi' || trackInstruments[tr] === 'bongLo') ? (_congaBongoReverbRoll ? 1 : 0) : (_tooDense || _isFull16th) ? 0 : _noDelayKeys.has(trackInstruments[tr]) ? 0.12 : (trackInstruments[tr] === 'damask' || trackInstruments[tr] === 'yamask') ? 0.65 : (trackInstruments[tr] === 'spiano') ? 0.7 : (trackInstruments[tr] === 'jcmgtr') ? (_jinxComboRoll[tr] ? 1 : 0) : (trackInstruments[tr] === 'ride' || trackInstruments[tr] === 'dulc' || trackInstruments[tr] === 'sidestick') ? 0.5 : (trackInstruments[tr] === 'opening') ? 0.1 : (trackInstruments[tr] === 'chug') ? 0.15 : ((trackInstruments[tr] === 'stab' || trackInstruments[tr] === 'bashp') ? 0.4 : Math.min(1, (0.5175 + (level >= 3 ? 0.195 : 0) + (level >= 4 ? 0.195 : 0)) * autoBoost * 1.25 * 1.5 * 1.25)); // MAGIC never gets reverb through RAND — checked first, unconditional 0, only ever on if set manually via the track's own R button; TOM HI/MID/LOW and STRINGS+ always get reverb through RAND — unconditional 1, overrides the too-dense/full-16th gate below same as CONGA/BONGO; CONGA/BONGO linked to one shared roll for the whole pair, not independent per-track — overrides the too-dense/full-16th gate below (their patterns are often dense enough to always hit it otherwise, which was silently zeroing this out); base +15%, then +25% more, then +50% more, then +25% more still; RYTM GTR/MARIO PIANO fixed at 40%; DAMASK/YAMASK fixed at 65% reverb; SCHOOL PIANO fixed at 70% (7/10) — "most of the time"; RIDE/BOOBOO/SIDESTICK fixed at 50%; JINX linked to the same roll as its own FX/BLAST — reverb+FX+BLAST all together 50% of the time, not independent rolls; OPENING fixed at 10% — rarely wants it; CHUG fixed at 15% — dampened, stays dry
     const delayOn = Math.random() < delayChance;
     _setTrackReverb(tr, delayOn);
     const db = document.getElementById(`delaybtn-${tr}`);
@@ -12190,16 +12221,16 @@ function randAll(mode, opts) {
     });
   }
   const _reverbQuota = intensityQuota();
-  // TOM HI/MID/LOW are guaranteed reverb (see delayChance above) and stay
-  // that way regardless of the INTENSITY cap below — pulled out into their
-  // own "protected" list so the random trim never touches them; the quota
-  // available to everything else shrinks by however many toms are holding
-  // a guaranteed slot.
+  // TOM HI/MID/LOW and STRINGS+ are guaranteed reverb (see delayChance
+  // above) and stay that way regardless of the INTENSITY cap below —
+  // pulled out into their own "protected" list so the random trim never
+  // touches them; the quota available to everything else shrinks by
+  // however many are holding a guaranteed slot.
   const _reverbProtectedTracks = [];
   const _reverbOnTracks = [];
   for (let tr = 0; tr < NUM_TRACKS; tr++) {
     if (!trackDelay[tr]) continue;
-    if (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo') { _reverbProtectedTracks.push(tr); continue; }
+    if (trackInstruments[tr] === 'tomHi' || trackInstruments[tr] === 'tomMid' || trackInstruments[tr] === 'tomLo' || trackInstruments[tr] === 'dronePlus') { _reverbProtectedTracks.push(tr); continue; }
     _reverbOnTracks.push(tr);
   }
   const _reverbRemovableQuota = Math.max(0, _reverbQuota - _reverbProtectedTracks.length);
@@ -14834,6 +14865,12 @@ function setVolScaleThickness(v) {
 }
 function setVolScaleOpacity(v) {
   document.documentElement.style.setProperty('--vol-scale-opacity', v / 100);
+}
+// SCALE HORIZONTAL LINE — hides just the horizontal line (.track-vol-scale's
+// own ::before) and leaves the 12 vertical ticks (.track-vol-scale's main
+// background-image) alone. On by default.
+function setVolScaleHorizontal(on) {
+  document.body.classList.toggle('vol-scale-no-horizontal', !on);
 }
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
