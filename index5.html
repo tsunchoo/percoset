@@ -949,7 +949,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:51</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:59</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1475,6 +1475,9 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <input type="checkbox" id="devRandOffset" onchange="setDevRandOffset(this.checked)" style="width:14px;height:14px;cursor:pointer;">RAND OFFSET
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
+        <input type="checkbox" id="randomizeReverbToggle" onchange="setRandomizeReverb(this.checked)" style="width:14px;height:14px;cursor:pointer;">RANDOMIZE REVERB
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
         <input type="checkbox" id="eightBitToggle" onchange="setEightBitMode(this.checked)" style="width:14px;height:14px;cursor:pointer;">8-BIT
       </label>
 
@@ -1639,6 +1642,7 @@ const INSTRUMENTS = {
   satk:   { name: 'TALK BOX',    soft: null, accent: null, group: 'tonal' },
   amlgm:  { name: 'TEXTURE',     soft: null, accent: null, group: 'tonal' },
   drone:  { name: 'STRINGS',     soft: null, accent: null, group: 'tonal' },
+  dronePlus: { name: 'STRINGS+', soft: null, accent: null, group: 'tonal' }, // same voice as STRINGS, but every note is legato+contiguous (sustains exactly until the next note begins, however far that is) with true portamento gliding into each new pitch — see playAtmosPortamento and the contiguous-legato pass in randAll
   sbass:  { name: 'SYNTH BASS',  soft: null, accent: null, group: 'tonal' },
   sludge: { name: 'SLUDGE BASS', soft: null, accent: null, group: 'tonal' },
   sbass3: { name: 'JAMES BASS',  soft: null, accent: null, group: 'tonal' },
@@ -2661,6 +2665,10 @@ function setGlobalDelayMix(v) {
 // A ScriptProcessorNode (not AudioWorklet) keeps this self-contained in a
 // single inline script with no separate module file to load.
 window._eightBitEnabled = false;
+window._randomizeReverbEnabled = false; // RANDOMIZE REVERB toggle in Settings — off by default; see the block near the top of randAll()
+function setRandomizeReverb(on) {
+  window._randomizeReverbEnabled = !!on;
+}
 window._eightBitNode = null;
 function _buildEightBitNode(audioCtx) {
   const bits = 8, downsample = 6; // 8-bit depth; ~44.1kHz/6 ≈ 7.35kHz effective rate — squarely in chiptune/8-bit-console territory
@@ -3464,14 +3472,19 @@ function fireStepAudio(step, t) {
       if (val > 0) {
         if (tr !== 0) duckEchoTrack(t); // TEXTURE gets pumped by everything else going on
         const key = trackInstruments[tr];
-        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'sludge' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'magic' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone') {
+        if (key === 'sbass' || key === 'sbass3' || key === 'sbass4' || key === 'dbass' || key === 'pbass' || key === 'sludge' || key === 'stab' || key === 'chug' || key === 'bashp' || key === 'denial' || key === 'jcmgtr' || key === 'sprkls' || key === 'clar' || key === 'sstring' || key === 'sleg' || key === 'sparkle' || key === 'rhodes' || key === 'rhodes2' || key === 'sflute' || key === 'spiano' || key === 'satk' || key === 'boog' || key === 'magic' || key === 'fflute' || key === 'blunt' || key === 'damask' || key === 'yamask' || key === 'dulc' || key === 'opening' || key === 'drone' || key === 'dronePlus') {
           const scale = trackBassScale[tr] || [110];
           const noteIdx = gs % scale.length;
           const freq = (trackPitchOverride[tr] && trackPitchOverride[tr][gs] !== undefined) ? trackPitchOverride[tr][gs] : scale[noteIdx];
           let dur = stepDuration();
           if (!trackChop[tr] && trackLegatoLen[tr] && trackLegatoLen[tr][gs]) {
-            // Explicit length from a drag-created legato note — capped.
-            dur = stepDuration() * Math.min(trackLegatoLen[tr][gs], LEGATO_CAP_STEPS);
+            // Explicit length from a drag-created legato note — capped, except
+            // STRINGS+ (dronePlus) which is always contiguous by design (the
+            // RAND-time pass below writes its true distance-to-next-note into
+            // this same array) and needs the much larger NUM_STEPS cap instead
+            // of the normal short LEGATO_CAP_STEPS ceiling to actually reach it.
+            const _legatoCap = (key === 'dronePlus') ? NUM_STEPS : LEGATO_CAP_STEPS;
+            dur = stepDuration() * Math.min(trackLegatoLen[tr][gs], _legatoCap);
           }
           // else: a plain manually-placed note — stays a single short step,
           // rather than inferring sustain from the gap to the next note.
@@ -3522,6 +3535,7 @@ function fireStepAudio(step, t) {
           if (key === 'dulc')    playBooboo(freq, dur, val === 2, t, tr);
           if (key === 'opening') playOpening(freq, dur, val === 2, t, tr);
           if (key === 'drone')   playAtmos(freq, dur, val === 2, t, tr);
+          if (key === 'dronePlus') playAtmosPortamento(freq, dur, val === 2, t, tr);
           if (key === 'fflute')  {
             playGlassBell(freq, dur, val === 2, t, tr);
           }
@@ -4237,7 +4251,7 @@ const trackLockedRoot = {}; // tr -> root frequency, captured the moment L locks
 
 // Global scale root — shared by all tonal tracks, cleared by CLEAR
 let globalScaleRoot = null;
-const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone','magic','amlgm']);
+const TONAL_KEYS = new Set(['sbass','sbass3','sbass4','dbass','pbass','sludge','stab','chug','bashp','denial','jcmgtr','sprkls','clar','sstring','sleg','sparkle','rhodes','rhodes2','sflute','spiano','satk','boog','fflute','blunt','damask','yamask','dulc','opening','drone','dronePlus','magic','amlgm']);
 
 function buildScaleFromRoot(root, scaleOverride) {
   const scaleArr = scaleOverride || PENTA_MINOR;
@@ -4259,7 +4273,7 @@ function getRangeRoots(key) {
   if (key === 'blunt') return MID_ROOTS;
   if (key === 'chug') return CHUG_ROOTS;
   if (key === 'stab' || key === 'bashp') return MID_ROOTS;
-  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening' || key === 'spiano' || key === 'dulc' || key === 'drone') return MELODY_ROOTS;
+  if (key === 'sstring' || key === 'sleg' || key === 'rhodes' || key === 'rhodes2' || key === 'clar' || key === 'jcmgtr' || key === 'denial' || key === 'damask' || key === 'yamask' || key === 'opening' || key === 'spiano' || key === 'dulc' || key === 'drone' || key === 'dronePlus') return MELODY_ROOTS;
   return BASS_ROOTS;
 }
 
@@ -4407,6 +4421,7 @@ function randomizeBassTrack(tr, level) {
     yamask:  [[1,3,0.15],[2,4,0.30],[3,5,0.40]],   // YAMASK — same sparse, spacious character as DAMASK
     dulc:    [[1,3,0.20],[2,4,0.35],[3,6,0.50]],   // BOOBOO — fewer notes now, legato phrases fill in the rest instead of density
     drone:   [[2,5,0.25],[4,7,0.40],[6,10,0.55]],  // STRINGS — a normal tonal instrument now, same rules as any other
+    dronePlus: [[2,5,0.25],[4,7,0.40],[6,10,0.55]], // STRINGS+ — same note-count table as STRINGS; duration is overridden separately (see the contiguous-legato pass) so this only governs how many notes/onsets it gets
     opening: [[1,2,0.60],[2,3,0.70],[2,3,0.80]],   // OPENING — capped at 3 max, sustained pad chords
     jcmgtr:  [[1,3,0.20],[2,4,0.35],[3,6,0.50]],   // JINX — back to a calmer, more natural density (was pushed busier to [3,6]/[5,9]/[8,13] at one point)
     denial:  [[2,5,0.35],[5,8,0.55],[8,13,0.70]],  // ARBY — same note counts as the generic default, but explicit and boosted accent ratio, matched to DENIECE below rather than relying on both sharing the same implicit fallback
@@ -11062,6 +11077,29 @@ function randAll(mode, opts) {
   if (window._wildColorsEnabled) {
     if (window._wildColorsSkipNext) window._wildColorsSkipNext = false;
     else randomizeAppColors();
+  }
+  // RANDOMIZE REVERB (Settings toggle) — same "goes along with every new
+  // pattern" reasoning as WILD colors just above: the global REVERB SIZE
+  // and MIX (Settings sliders), plus BEAT's own reverb on/off and its
+  // separate REVERB MIX, all reroll together. UI elements for all four
+  // are updated directly too (not just the underlying state) so they're
+  // accurate whenever Settings/BEAT controls are next opened, even though
+  // neither panel needs to be open right now for this to apply.
+  if (window._randomizeReverbEnabled) {
+    const _newReverbSize = Math.random();
+    setReverbIntensity(_newReverbSize);
+    const rib = document.getElementById('reverbIntensityBar'); if (rib) rib.value = Math.round(_newReverbSize * 100);
+    const riv = document.getElementById('reverbIntensityVal'); if (riv) riv.textContent = Math.round(_newReverbSize * 100);
+    const _newReverbMix = Math.random();
+    setGlobalDelayMix(_newReverbMix);
+    const dmb = document.getElementById('delayMixBar'); if (dmb) dmb.value = Math.round(_newReverbMix * 100);
+    const rmv = document.getElementById('reverbMixVal'); if (rmv) rmv.textContent = Math.round(_newReverbMix * 100);
+    const _wantBeatReverbOn = Math.random() < 0.5;
+    if (_beatDelay !== _wantBeatReverbOn) beatCtrlToggleDelay();
+    const _newBeatReverbMix = Math.random();
+    setBeatReverbMix(_newBeatReverbMix);
+    const brmb = document.getElementById('beatReverbMixBar'); if (brmb) brmb.value = Math.round(_newBeatReverbMix * 100);
+    const brmv = document.getElementById('beatReverbMixVal'); if (brmv) brmv.textContent = Math.round(_newBeatReverbMix * 100);
   }
   _split32CycleCount = 0;
   mode = mode || 'all';
