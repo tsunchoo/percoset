@@ -585,84 +585,27 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* same inset as the fill layers above it, so the ruler lines up with exactly the area the fill actually covers */
   pointer-events: none;
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
-  /* Vertical ticks only here — the horizontal line is a separate ::before
-     below, so SCALE HORIZONTAL LINE (COLOR settings) can hide just that
-     one piece without touching these, and SCALE VERTICAL LINES below
-     hides just this background-image without touching the ::before. Same
-     color as the top row buttons' own highlight/engaged color
-     (--top-row-highlight-color). 14 lines (was 12), each explicitly
-     centered in its own equal 1/14 slot (rather than a repeating gradient
-     that starts a line at 0% and just tiles every 100%/14) — a repeating
-     gradient's own tiling always leaves the trailing gap, from the last
-     line to the right edge, equal to a FULL period width, not the same as
-     the gap between two lines (which is period-minus-thickness);
-     centering each line in its slot instead makes every gap — including
-     both outer margins — genuinely equal. */
-  background-image: linear-gradient(to right,
-      transparent calc(100% * 1 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 1 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 3 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 3 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 5 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 5 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 7 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 7 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 9 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 9 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 11 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 11 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 13 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 13 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 15 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 15 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 17 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 17 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 19 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 19 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 21 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 21 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 23 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 23 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 25 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 25 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 25 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 25 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 27 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 27 / 28 - var(--vol-scale-thickness) / 2),
-      var(--top-row-highlight-color, #f8ff00) calc(100% * 27 / 28 + var(--vol-scale-thickness) / 2),
-      transparent calc(100% * 27 / 28 + var(--vol-scale-thickness) / 2));
-  background-size: 100% 80%;
-  background-position: center center;
-  background-repeat: no-repeat;
 }
-body.vol-scale-no-vertical .track-vol-scale { background-image: none; }
-/* Horizontal line — its own layer now (was a second background-image on
-   .track-vol-scale itself) so SCALE HORIZONTAL LINE (COLOR settings) can
-   hide just this one piece and leave the vertical ticks above untouched. */
+/* 14 real absolutely-positioned tick divs (created in the JS loop where
+   .track-vol-scale itself is built), not a single big linear-gradient —
+   a gradient's color-stops are positions along ONE continuous line, and
+   once SCALE LINES THICKNESS pushed two adjacent stops close enough to
+   cross over, the CSS spec's own stop-clamping rule kicked in (each
+   stop is clamped to never sit before the previous one), which doesn't
+   fail gracefully — lines started reading as thinner/messier the
+   FURTHER thickness was pushed, the opposite of what the slider should
+   do. A real element's width just grows normally with the variable, so
+   there's no crossover math to go wrong, however large the slider goes. */
+.track-vol-scale-tick {
+  position: absolute; top: 10%; bottom: 10%; width: var(--vol-scale-thickness, 1px);
+  transform: translateX(-50%);
+  background-color: var(--top-row-highlight-color, #f8ff00);
+}
+body.vol-scale-no-vertical .track-vol-scale-tick { display: none; }
+/* Horizontal line — its own layer (::before), independent of the tick
+   divs above, so SCALE HORIZONTAL LINE (COLOR settings) can hide just
+   this piece and SCALE VERTICAL LINES above can hide just the ticks,
+   without either affecting the other. */
 .track-vol-scale::before {
   content: '';
   position: absolute; left: 0; right: 0; top: 50%; pointer-events: none;
@@ -1030,7 +973,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:50</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 07:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1148,7 +1091,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
         <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">1.7</span>
       </div>
-      <input type="range" id="volScaleThicknessBar" min="0" max="2" step="0.1" value="1.7" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
+      <input type="range" id="volScaleThicknessBar" min="0" max="2.5" step="0.1" value="1.7" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -8248,7 +8191,12 @@ function buildUI() {
     // Vol bar
     const volBar = document.createElement('div'); volBar.className = 'track-vol-bar'; volBar.id = `vbar-${tr}`;
     volBar.classList.toggle('muted', trackMuted[tr]);
-    const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle, 14 vertical tick marks crossing it, appended first so it paints behind everything else added below
+    const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle (::before, in CSS), 14 real vertical tick divs crossing it (not a gradient — see the loop below), appended first so it paints behind everything else added below
+    for (let n = 0; n < 14; n++) {
+      const tick = document.createElement('div'); tick.className = 'track-vol-scale-tick';
+      tick.style.left = `calc(100% * ${2 * n + 1} / 28)`; // centered in its own equal 1/14 slot, same positions VOL_STEP_BOUNDARIES's steps land on
+      volScale.appendChild(tick);
+    }
     volBar.appendChild(volScale);
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
     for (let n = 0; n < 14; n++) {
@@ -11266,7 +11214,17 @@ function randAll(mode, opts) {
     const tempoSlider = document.getElementById('tempoBar'); if (tempoSlider) tempoSlider.value = bpm;
   }
   if (!_beatTypeLocked) {
-    const _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'mozambique', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
+    let _beatTypes = ['disco', 'halftime', 'reggae', 'breaks', 'bounce', 'reggae2', 'mozambique', 'doubledown', 'drive', 'samba', 'swagger', 'cumbia', 'afrobeat', 'boogie', 'blap', 'jazz'];
+    // SHUFFLE and JAZZ both have a particular swing/timing feel that's
+    // really only right at a tempo RAND itself would have picked for
+    // them — with TEMPO LOCK on, RAND can't also adjust tempo to suit
+    // whichever one it lands on, so it shouldn't jump INTO either style
+    // from something else while locked. Staying within them (or
+    // switching between the two of them) is still fine, since that's a
+    // combination the user actually already chose.
+    if (_tempoLocked && _beatType !== 'boogie' && _beatType !== 'jazz') {
+      _beatTypes = _beatTypes.filter(t => t !== 'boogie' && t !== 'jazz');
+    }
     setBeatType(_beatTypes[Math.floor(Math.random() * _beatTypes.length)]);
   }
 
@@ -16414,7 +16372,15 @@ function beatCtrlCycleFx() {
 // randomize button and the top-row RAND AUTO loop.
 const _BEAT_TYPE_POOL = ['disco','bounce','breaks','drive','swagger','halftime','reggae','reggae2','mozambique','doubledown','samba','cumbia','afrobeat','boogie'];
 function randomizeBeatType() {
-  const pick = _BEAT_TYPE_POOL[Math.floor(Math.random() * _BEAT_TYPE_POOL.length)];
+  // SHUFFLE (boogie) has a particular swing/timing feel that's really
+  // only right at a tempo RAND itself would have picked for it — with
+  // TEMPO LOCK on, this can't also adjust tempo to suit it, so it
+  // shouldn't jump INTO shuffle from something else while locked (same
+  // reasoning as the main RAND button's own beat-type pool). Staying on
+  // shuffle while already there is still fine.
+  let pool = _BEAT_TYPE_POOL;
+  if (_tempoLocked && _beatType !== 'boogie') pool = pool.filter(t => t !== 'boogie');
+  const pick = pool[Math.floor(Math.random() * pool.length)];
   setBeatType(pick);
   refreshBeatMenuHighlight();
 }
