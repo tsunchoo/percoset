@@ -28,8 +28,8 @@
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
   --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now maximum (the slider's own max of 100 = saturate(1), full original color, no desaturation). Plain linear mapping, no curve. 0 = grayscale, >1 not reachable at this slider's current 0-100 range. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
-  --vol-scale-thickness: 1px; /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. */
-  --vol-scale-opacity: 0.25; /* SCALE LINES OPACITY slider in COLOR settings — opacity of that same ruler. Color itself is always the TOP ROW color (--neutral-top), not independently pickable. */
+  --vol-scale-thickness: 3.5px; /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. Default is 3.5, ~35% of the slider's 0-10 range. */
+  --vol-scale-opacity: 1; /* SCALE LINES OPACITY slider in COLOR settings — opacity of that same ruler. Default is now maximum (100%). Color is auto-picked (see _autoPickVolScaleColor) for contrast against both the volume background and the slider's own fill color. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -585,10 +585,16 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* same inset as the fill layers above it, so the ruler lines up with exactly the area the fill actually covers */
   pointer-events: none;
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
-  --vol-scale-line-color: color-mix(in srgb, var(--neutral-top, #555) 60%, black); /* a visibly darker shade of the TOP ROW color, not the literal same value — .track-vol-bar's own background is ALSO plain var(--neutral-top), so using that unmixed would put the ruler on a background of the exact same color: zero contrast, invisible (which is exactly what was happening — muting only "fixed" it by accident, since .track-vol-bar.muted swaps to a different background color, #ccc, finally giving the ruler something to contrast against) */
+  /* --vol-scale-line-color is set by _autoPickVolScaleColor() in JS — plain
+     black or white, whichever contrasts better against BOTH the volume
+     bar's own background AND the slider's own current fill color, so the
+     ruler can't blend into either one. Not just a darkened TOP ROW color
+     anymore — .track-vol-bar's own background is ALSO plain
+     var(--neutral-top), so any fixed function of that same value risks
+     landing too close to it depending on what TOP ROW happens to be. */
   background-image:
-    linear-gradient(var(--vol-scale-line-color), var(--vol-scale-line-color)),
-    repeating-linear-gradient(to right, var(--vol-scale-line-color) 0, var(--vol-scale-line-color) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent 10%);
+    linear-gradient(var(--vol-scale-line-color, #000), var(--vol-scale-line-color, #000)),
+    repeating-linear-gradient(to right, var(--vol-scale-line-color, #000) 0, var(--vol-scale-line-color, #000) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent 10%);
   background-size: 100% var(--vol-scale-thickness, 1px), 100% 80%;
   background-position: center center, center center;
   background-repeat: no-repeat, no-repeat;
@@ -950,7 +956,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:15</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:32</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1066,15 +1072,15 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">COLOR MENU</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">1</span>
+        <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">3.5</span>
       </div>
-      <input type="range" id="volScaleThicknessBar" min="0" max="10" step="0.5" value="1" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
+      <input type="range" id="volScaleThicknessBar" min="0" max="10" step="0.5" value="3.5" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>SCALE LINES OPACITY</span><span id="volScaleOpacityVal" style="color:#adff00;">25</span>
+        <span>SCALE LINES OPACITY</span><span id="volScaleOpacityVal" style="color:#adff00;">100</span>
       </div>
-      <input type="range" id="volScaleOpacityBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setVolScaleOpacity(this.value); document.getElementById('volScaleOpacityVal').textContent=this.value">
+      <input type="range" id="volScaleOpacityBar" min="0" max="100" value="100" class="master-vol-slider" style="width:100%;" oninput="setVolScaleOpacity(this.value); document.getElementById('volScaleOpacityVal').textContent=this.value">
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -2212,6 +2218,7 @@ function randomizeAppColors() {
   // value rather than a stale one.
   if (window._topRowHighlightMode === 'auto') _autoPickTopRowHighlight();
   if (window._volSliderColorMode === 'auto') _autoPickVolSliderColor();
+  _autoPickVolScaleColor(); // always recomputed here, regardless of the vol-slider's own color mode — it has to contrast against both --neutral-top (which always just changed) and whatever the slider's own color currently is
   if (window._trackBtnOnColorMode === 'auto') _autoPickTrackBtnOnColor();
   if (window._eqMeterColorMode === 'auto') _autoPickEqMeterColor();
   if (window._topRowTextColorMode === 'auto') _autoPickTopRowTextColor();
@@ -9502,9 +9509,10 @@ function setTrackTextPulseColor(n) {
 window._volSliderColorMode = 'auto';
 function setVolSliderColor(n) {
   window._volSliderColorMode = n;
-  if (n === 'auto') { _autoPickVolSliderColor(); return; }
+  if (n === 'auto') { _autoPickVolSliderColor(); _autoPickVolScaleColor(); return; }
   const map = { 1: 'var(--playhead-color, #f8ff00)', 2: 'var(--highlight2-color, #0078ff)', 3: 'var(--highlight3-color, #adff00)' };
   document.documentElement.style.setProperty('--vol-slider-color', map[n] || map[3]);
+  _autoPickVolScaleColor(); // the ruler has to contrast against whatever the slider color just changed to, manual pick or not
 }
 // AUTO (BEST CONTRAST) — same contrast-checking routine as before
 // (_ensureContrast against the volume bar's own resting background,
@@ -9518,6 +9526,26 @@ function _autoPickVolSliderColor() {
   const bg = cs.getPropertyValue('--neutral-top').trim() || '#555555';
   const songColor = cs.getPropertyValue('--bar-color').trim() || _currentBarColor || '#aa64a6';
   document.documentElement.style.setProperty('--vol-slider-color', _ensureContrast(songColor, bg));
+}
+// Volume slider ruler (.track-vol-scale) — picks whichever of black/white
+// has the better WORST-CASE contrast against both the volume bar's own
+// background (--neutral-top, what the ruler is drawn on top of) and the
+// slider's own current fill color (--vol-slider-color, what the ruler
+// needs to stay visible over once the fill covers part of it) — so it's
+// never a coin-flip that happens to look fine against one but blend into
+// the other. Re-picked wherever either of those two colors can change:
+// RANDOMIZE COLORS/WILD and every vol-slider-color pick, auto or manual.
+function _autoPickVolScaleColor() {
+  const cs = getComputedStyle(document.documentElement);
+  const bg = cs.getPropertyValue('--neutral-top').trim() || '#555555';
+  const sliderColor = cs.getPropertyValue('--vol-slider-color').trim() || cs.getPropertyValue('--playhead-color').trim() || '#f8ff00';
+  const candidates = ['#000000', '#ffffff'];
+  let best = candidates[0], bestScore = -1;
+  for (const c of candidates) {
+    const score = Math.min(_contrastRatio(c, bg), _contrastRatio(c, sliderColor));
+    if (score > bestScore) { bestScore = score; best = c; }
+  }
+  document.documentElement.style.setProperty('--vol-scale-line-color', best);
 }
 // TOP ROW HIGHLIGHT — previously the 6 top-row buttons' various engaged/
 // active/flash/auto states pulled from all 3 highlight colors
