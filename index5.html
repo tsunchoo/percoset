@@ -949,7 +949,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:06</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 05:13</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -4458,6 +4458,23 @@ function randomizeBassTrack(tr, level) {
         const span = Math.min(gapToNext, 2 + Math.floor(Math.random() * 4)); // 3-6 steps, never overlapping the next note
         if (span > 1) trackLegatoLen[tr][s] = span;
       }
+    });
+  }
+  // STRINGS+ (dronePlus) — always fully contiguous by design (see its
+  // INSTRUMENTS entry): every note's true distance to the next one, with
+  // no cap and no per-note chance, unlike BOOBOO just above. This was the
+  // pass the playback dispatch's own comment already promised existed —
+  // it didn't, so every STRINGS+ note was silently falling through to the
+  // single-step "plain note" case instead of sustaining/gliding, which is
+  // exactly what made it sound like it was racing through the bar.
+  if (key === 'dronePlus') {
+    const onsets = [];
+    for (let s = 0; s < NUM_STEPS; s++) if (grid[tr][s] > 0) onsets.push(s);
+    if (!trackLegatoLen[tr]) trackLegatoLen[tr] = {};
+    onsets.forEach((s, i) => {
+      const nextOnset = onsets[i + 1];
+      const gapToNext = nextOnset !== undefined ? nextOnset - s : NUM_STEPS - s;
+      if (gapToNext > 1) trackLegatoLen[tr][s] = gapToNext;
     });
   }
 
