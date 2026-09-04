@@ -28,6 +28,8 @@
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
   --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now maximum (the slider's own max of 100 = saturate(1), full original color, no desaturation). Plain linear mapping, no curve. 0 = grayscale, >1 not reachable at this slider's current 0-100 range. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
+  --vol-scale-thickness: 1px; /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. */
+  --vol-scale-opacity: 0.25; /* SCALE LINES OPACITY slider in COLOR settings — opacity of that same ruler. Color itself is always the TOP ROW color (--neutral-top), not independently pickable. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -582,10 +584,11 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 .track-vol-scale {
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* same inset as the fill layers above it, so the ruler lines up with exactly the area the fill actually covers */
   pointer-events: none;
+  opacity: var(--vol-scale-opacity, 0.25); /* SCALE LINES OPACITY slider in COLOR settings */
   background-image:
-    linear-gradient(var(--scale-line-color, rgba(0, 0, 0, 0.25)), var(--scale-line-color, rgba(0, 0, 0, 0.25))),
-    repeating-linear-gradient(to right, var(--scale-line-color, rgba(0, 0, 0, 0.25)) 0, var(--scale-line-color, rgba(0, 0, 0, 0.25)) 1px, transparent 1px, transparent 10%);
-  background-size: 100% 1px, 100% 80%;
+    linear-gradient(var(--neutral-top, #555), var(--neutral-top, #555)),
+    repeating-linear-gradient(to right, var(--neutral-top, #555) 0, var(--neutral-top, #555) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent 10%);
+  background-size: 100% var(--vol-scale-thickness, 1px), 100% 80%;
   background-position: center center, center center;
   background-repeat: no-repeat, no-repeat;
 }
@@ -946,7 +949,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:40</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:51</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1060,6 +1063,18 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 <div id="devMenuOverlay" style="display:none;position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.5);" onclick="if(event.target===this) hideDevMenu();">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#f5f0e8;padding:20px 24px;min-width:min(300px,90vw);max-width:min(360px,90vw);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;font-family:'DM Sans',sans-serif;border-radius:8px;">
     <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">COLOR MENU</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">1</span>
+      </div>
+      <input type="range" id="volScaleThicknessBar" min="0" max="10" step="0.5" value="1" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
+        <span>SCALE LINES OPACITY</span><span id="volScaleOpacityVal" style="color:#adff00;">25</span>
+      </div>
+      <input type="range" id="volScaleOpacityBar" min="0" max="100" value="25" class="master-vol-slider" style="width:100%;" oninput="setVolScaleOpacity(this.value); document.getElementById('volScaleOpacityVal').textContent=this.value">
+    </div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
         <span>NOTE MARKER OPACITY</span><span id="noteMarkerOpacityVal" style="color:#adff00;">80</span>
@@ -14669,6 +14684,15 @@ function setVolSliderSaturation(v) {
 // purely a CSS display swap, nothing to recompute.
 function setVolSliderSolid(on) {
   document.body.classList.toggle('vol-slider-solid', !!on);
+}
+// SCALE LINES THICKNESS/OPACITY — the volume slider's ruler (.track-vol-scale).
+// Color is always the TOP ROW color (--neutral-top), not independently
+// pickable — only these two are exposed.
+function setVolScaleThickness(v) {
+  document.documentElement.style.setProperty('--vol-scale-thickness', v + 'px');
+}
+function setVolScaleOpacity(v) {
+  document.documentElement.style.setProperty('--vol-scale-opacity', v / 100);
 }
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
