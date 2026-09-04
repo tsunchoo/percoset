@@ -28,8 +28,9 @@
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
   --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now maximum (the slider's own max of 100 = saturate(1), full original color, no desaturation). Plain linear mapping, no curve. 0 = grayscale, >1 not reachable at this slider's current 0-100 range. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
-  --vol-scale-thickness: 1.7px; /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. Default is 1.7, ~85% of the slider's 0-2 range. */
+  --vol-scale-thickness: 3.125px; /* Hard-coded to the old slider's maximum now — the SCALE LINES THICKNESS slider itself was removed from COLOR settings. */
   --vol-scale-opacity: 0.9; /* SCALE LINES OPACITY slider in COLOR settings — opacity of that same ruler. Default is now 90% (was 100%). Color follows --top-row-highlight-color directly, not independently pickable. */
+  --vol-scale-invert: 0; /* INVERT SCALE COLOR toggle in COLOR settings — 0 = normal, 1 = inverted, applied on top of --top-row-highlight-color rather than being its own separate color pick. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { overflow-y: auto; overflow-x: hidden; min-height: 100svh; overscroll-behavior: none; }
@@ -585,6 +586,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   position: absolute; top: 15%; left: clamp(2px, 1vw, 5px); right: clamp(2px, 1vw, 5px); bottom: 15%; /* same inset as the fill layers above it, so the ruler lines up with exactly the area the fill actually covers */
   pointer-events: none;
   opacity: calc(var(--vol-scale-opacity, 0.25) / var(--track-default-opacity, 1)); /* SCALE LINES OPACITY slider in COLOR settings — divided by TRACK BUTTON OPACITY to cancel it back out: this element is a child of .track-vol-bar, and CSS opacity on a parent always compounds onto children too, so without this the ruler was landing at scale-opacity × track-opacity instead of just scale-opacity (badly faded, invisible at low TRACK BUTTON OPACITY settings) */
+  filter: invert(var(--vol-scale-invert, 0)); /* INVERT SCALE COLOR toggle in COLOR settings — applied on top of whatever --top-row-highlight-color already resolved to (auto-contrast pick or manual), not a separate color choice of its own. Sits on the parent so it covers both the tick divs (real children) and the horizontal line (::before) in one place. */
 }
 /* 14 real absolutely-positioned tick divs (created in the JS loop where
    .track-vol-scale itself is built), not a single big linear-gradient —
@@ -601,7 +603,7 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   transform: translateX(-50%);
   background-color: var(--top-row-highlight-color, #f8ff00);
 }
-body.vol-scale-no-vertical .track-vol-scale-tick { display: none; }
+body.vol-scale-style-horizontal .track-vol-scale-tick { display: none; } /* SCALE STYLE toggle — horizontal or vertical, never both */
 /* Horizontal line — its own layer (::before), independent of the tick
    divs above, so SCALE HORIZONTAL LINE (COLOR settings) can hide just
    this piece and SCALE VERTICAL LINES above can hide just the ticks,
@@ -613,7 +615,7 @@ body.vol-scale-no-vertical .track-vol-scale-tick { display: none; }
   transform: translateY(-50%);
   background-color: var(--top-row-highlight-color, #f8ff00);
 }
-body.vol-scale-no-horizontal .track-vol-scale::before { display: none; }
+body:not(.vol-scale-style-horizontal) .track-vol-scale::before { display: none; }
 /* 14 real flex children, not a width-percentage fill with a gradient
    overlay on top — flexbox's own boundary-per-child (explicit flex-basis
    set at creation time, not equal flex:1 — see VOL_STEP_BOUNDARIES) is
@@ -973,7 +975,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 07:08</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 07:31</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1089,21 +1091,15 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     <div style="font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center;">COLOR MENU</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-        <span>SCALE LINES THICKNESS</span><span id="volScaleThicknessVal" style="color:#adff00;">1.7</span>
-      </div>
-      <input type="range" id="volScaleThicknessBar" min="0" max="3.125" step="0.1" value="1.7" class="master-vol-slider" style="width:100%;" oninput="setVolScaleThickness(this.value); document.getElementById('volScaleThicknessVal').textContent=this.value">
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
         <span>SCALE LINES OPACITY</span><span id="volScaleOpacityVal" style="color:#adff00;">90</span>
       </div>
       <input type="range" id="volScaleOpacityBar" min="0" max="100" value="90" class="master-vol-slider" style="width:100%;" oninput="setVolScaleOpacity(this.value); document.getElementById('volScaleOpacityVal').textContent=this.value">
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="volScaleHorizontalToggle" checked onchange="setVolScaleHorizontal(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE HORIZONTAL LINE
+      <input type="checkbox" id="volScaleStyleToggle" onchange="setVolScaleStyle(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE STYLE: HORIZONTAL (OFF = VERTICAL)
     </label>
     <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-      <input type="checkbox" id="volScaleVerticalToggle" checked onchange="setVolScaleVertical(this.checked)" style="width:14px;height:14px;cursor:pointer;">SCALE VERTICAL LINES
+      <input type="checkbox" id="volScaleInvertToggle" onchange="setVolScaleInvert(this.checked)" style="width:14px;height:14px;cursor:pointer;">INVERT SCALE COLOR
     </label>
     <div style="display:flex;flex-direction:column;gap:6px;margin:15px 0;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
@@ -14838,17 +14834,16 @@ function setVolScaleThickness(v) {
 function setVolScaleOpacity(v) {
   document.documentElement.style.setProperty('--vol-scale-opacity', v / 100);
 }
-// SCALE HORIZONTAL LINE — hides just the horizontal line (.track-vol-scale's
-// own ::before) and leaves the 12 vertical ticks (.track-vol-scale's main
-// background-image) alone. On by default.
-function setVolScaleHorizontal(on) {
-  document.body.classList.toggle('vol-scale-no-horizontal', !on);
+// SCALE STYLE — horizontal or vertical, never both at once. Off (default)
+// = vertical ticks only; on = the horizontal line only.
+function setVolScaleStyle(horizontal) {
+  document.body.classList.toggle('vol-scale-style-horizontal', !!horizontal);
 }
-// SCALE VERTICAL LINES — hides just the 14 vertical ticks (.track-vol-scale's
-// own background-image) and leaves the horizontal line (::before) alone.
-// On by default.
-function setVolScaleVertical(on) {
-  document.body.classList.toggle('vol-scale-no-vertical', !on);
+// INVERT SCALE COLOR — a filter(invert()) on top of whatever
+// --top-row-highlight-color already resolved to, not a separate color
+// choice.
+function setVolScaleInvert(on) {
+  document.documentElement.style.setProperty('--vol-scale-invert', on ? 1 : 0);
 }
 // TOP ROW COLOR SATURATION — independent of the TOP ROW color picker
 // itself; just a saturate() filter on every .btn.
