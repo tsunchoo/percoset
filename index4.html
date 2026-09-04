@@ -925,7 +925,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:20</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 04:24</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3694,7 +3694,8 @@ function fireStepAudio(step, t) {
           else playSnare(t);
         }
         if (doKick) {
-          fireBeatKick(t);
+          const _halftimeSecondKick = (_beatType === 'halftime' && bstep === 4) ? 0.75 : undefined; // HALFTIME's 2nd kick (1+2 feel) at 75% velocity, first kick untouched
+          fireBeatKick(t, _halftimeSecondKick);
           if (_beatType === 'reggae2') fireBeatSidestick(t); // ONE DROP — ties to its kicks on beats 2 & 4
         }
         if (_beatType === 'reggae' && (bstep === 4 || bstep === 12)) fireBeatSidestick(t); // ROCKERS — sidestick specifically on 2 & 4
@@ -7178,8 +7179,8 @@ function duckEchoTrack(t) {
     g.setTargetAtTime(1, t + 0.04, 0.12);
   }
 }
-function fireBeatKick(t) {
-  playKick(t);
+function fireBeatKick(t, velMult) {
+  playKick(t, velMult);
   if (window._duckGain) {
     const dg = window._duckGain.gain;
     dg.cancelScheduledValues(t); dg.setValueAtTime(1, t);
@@ -7189,18 +7190,19 @@ function fireBeatKick(t) {
   duckPumpTracks(t);
   duckSidechainTracks(t);
 }
-function playKick(t) {
+function playKick(t, velMult) {
   if (!_renderTapBeat) return;
   // Matches playSynthKick — same character, slightly louder for the beat,
   // tightened up for a drier hit (shorter pitch ramp and decay, less boom)
   const beatDest = window._beatGain || masterGain;
   const _pushAtten = (_beatType === 'push') ? 0.5623 : 1; // -5dB, PUSH only
   const _jazzAtten = (_beatType === 'jazz') ? 0.1995 : 1; // -14dB — JAZZ's "feathered" kick, felt more than heard
+  const _velAtten = velMult !== undefined ? velMult : 1; // per-hit velocity, e.g. HALFTIME's second kick at 75%
   const osc = ctx.createOscillator(), g = ctx.createGain();
   osc.connect(g); g.connect(beatDest);
   osc.frequency.setValueAtTime(160, t);
   osc.frequency.exponentialRampToValueAtTime(38, t + 0.22);
-  g.gain.setValueAtTime(0.504 * _pushAtten * _jazzAtten, t);
+  g.gain.setValueAtTime(0.504 * _pushAtten * _jazzAtten * _velAtten, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.30);
   osc.start(t); osc.stop(t + 0.31);
   osc.onended = () => { try { g.disconnect(); } catch(e) {} };
