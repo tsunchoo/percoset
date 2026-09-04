@@ -28,7 +28,7 @@
   --vol-slider-saturation: 2; /* TRACK VOLUME COLOR SATURATION slider in COLOR settings — a saturate() filter multiplier on the lit volume-slider notches only, independent of which color/hue is chosen above it. Default is now maximum (slider's own max of 200%); 1 = unchanged, 0 = grayscale. */
   --top-row-saturation: 1; /* TOP ROW COLOR SATURATION slider in COLOR settings — a saturate() filter on every top-row .btn, independent of the TOP ROW color picker itself. Default is now maximum (the slider's own max of 100 = saturate(1), full original color, no desaturation). Plain linear mapping, no curve. 0 = grayscale, >1 not reachable at this slider's current 0-100 range. */
   --note-marker-opacity: 0.8; /* NOTE MARKER OPACITY slider in COLOR settings — a multiplier on the step-cell note markers' own opacity (soft/on, playing or not), preserving the relative difference between soft and accented notes rather than flattening them to the same value. Default is now 80%; 1 = unchanged, 0 = invisible. */
-  --vol-scale-thickness: 2px; /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. Default is 2 (was 3.5, brought down 3 notches at the slider's own 0.5 step). */
+  --vol-scale-thickness: clamp(2px, 1vw, 5px); /* SCALE LINES THICKNESS slider in COLOR settings — the volume slider's ruler (.track-vol-scale): both the horizontal line's height and the vertical ticks' width. Default now matches .track-ctrl-row's own gap exactly (the same distance between FX and R), responsively; the slider still overrides it with a fixed px number once touched. */
   --vol-scale-opacity: 0.9; /* SCALE LINES OPACITY slider in COLOR settings — opacity of that same ruler. Default is now 90% (was 100%). Color follows --top-row-highlight-color directly, not independently pickable. */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -588,15 +588,70 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
   /* Same color as the top row buttons' own highlight/engaged color
      (--top-row-highlight-color, whatever HIGHLIGHT/2/3/TOP/AUTO is
      currently picked in COLOR settings) — not an auto-contrast pick
-     anymore. */
+     anymore. 12 lines, each explicitly centered in its own equal 1/12
+     slot (rather than a repeating gradient that starts a line at 0% and
+     just tiles every 100%/12) — a repeating gradient's own tiling always
+     leaves the trailing gap, from the last line to the right edge, equal
+     to a FULL period width, not the same as the gap between two lines
+     (which is period-minus-thickness); centering each line in its slot
+     instead makes every gap — including both outer margins — genuinely
+     equal. */
   background-image:
     linear-gradient(var(--top-row-highlight-color, #f8ff00), var(--top-row-highlight-color, #f8ff00)),
-    repeating-linear-gradient(to right, var(--top-row-highlight-color, #f8ff00) 0, var(--top-row-highlight-color, #f8ff00) var(--vol-scale-thickness, 1px), transparent var(--vol-scale-thickness, 1px), transparent calc(100% / 12)); /* 12 ticks now, was 10 — repeat period is just 100% divided by however many lines are wanted */
+    linear-gradient(to right,
+      transparent calc(100% * 1 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 1 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 1 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 3 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 3 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 3 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 5 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 5 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 5 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 7 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 7 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 7 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 9 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 9 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 9 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 11 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 11 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 11 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 13 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 13 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 13 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 15 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 15 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 15 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 17 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 17 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 17 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 19 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 19 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 19 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 21 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 21 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 21 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 23 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 24 - var(--vol-scale-thickness) / 2),
+      var(--top-row-highlight-color, #f8ff00) calc(100% * 23 / 24 + var(--vol-scale-thickness) / 2),
+      transparent calc(100% * 23 / 24 + var(--vol-scale-thickness) / 2));
   background-size: 100% var(--vol-scale-thickness, 1px), 100% 80%;
   background-position: center center, center center;
   background-repeat: no-repeat, no-repeat;
 }
-/* 10 real flex children, not a width-percentage fill with a gradient
+/* 12 real flex children, not a width-percentage fill with a gradient
    overlay on top — flexbox's own equal-distribution (flex:1 on every
    child, same gap on every side) is the only way to guarantee genuinely
    identical notch widths with no partial/mid-notch fill ever possible,
@@ -607,8 +662,9 @@ body.top-row-black .btn { background: #000; color: var(--neutral-track, #b0b0b0)
 }
 .track-vol-notch { flex: 1; background: transparent; } /* unlit — lets .track-vol-bar's own background show through instead of introducing a separate gray, and automatically matches whatever that background is (including .muted's gray) */
 .track-vol-notch.lit { background: var(--vol-slider-color, var(--playhead-color, #f8ff00)); filter: saturate(var(--vol-slider-saturation, 1)); }
-/* SOLID VOLUME BAR (COLOR settings) — continuous width-based alternative
-   to the 10 notches above, same inset, same color/saturation. Only one of
+/* SOLID VOLUME BAR (COLOR settings) — snapped-width alternative to the 12
+   notches above (not smoothly continuous — same 12 increments, see
+   _setVolFillPct), same inset, same color/saturation. Only one of
    the two is ever visible at once — .track-vol-fill is hidden outright in
    solid mode instead of just layering underneath, so its pointer-events
    and lit children can't interfere. */
@@ -953,7 +1009,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:01</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 06:13</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -3141,20 +3197,22 @@ function volGainToPos(gain) {
 // per-pixel dynamic coloring here.
 function _setVolFillPct(el, pct) {
   if (!el) return;
-  // el is the .track-vol-fill flex container holding 10 .track-vol-notch
+  // el is the .track-vol-fill flex container holding 12 .track-vol-notch
   // children (see attachVolBarEvents/track row setup) — light however many
   // of them the current value reaches, rather than setting a width. Every
   // notch is identically sized via flex:1, so this can never show a
-  // partial/mid-notch fill the way a width-percentage bar could.
-  const lit = Math.round(pct * 10);
+  // partial/mid-notch fill the way a width-percentage bar could. 12, not
+  // a smoothly continuous value, matching the 12-line ruler behind it —
+  // the fader doesn't need to track every in-between position visually.
+  const lit = Math.round(pct * 12);
   const notches = el.children;
   for (let i = 0; i < notches.length; i++) notches[i].classList.toggle('lit', i < lit);
-  // Solid-bar alternative (SEGMENTED/SOLID toggle in COLOR settings) — a
-  // plain continuous width, kept in sync here regardless of which one is
-  // actually visible right now, so switching the toggle never shows a
-  // stale value until the next volume change.
+  // Solid-bar alternative (SEGMENTED/SOLID toggle in COLOR settings) —
+  // snapped to the same 12 increments, not a smooth continuous width,
+  // for the same reason and so switching between the two modes shows the
+  // same coarse level either way.
   const solid = el.parentElement && el.parentElement.querySelector('.track-vol-fill-solid');
-  if (solid) solid.style.width = Math.round(pct * 100) + '%';
+  if (solid) solid.style.width = (Math.round(pct * 12) / 12 * 100) + '%';
 }
 function updateVolFillDisplay(tr) {
   const vb = document.getElementById(`vbar-${tr}`);
@@ -8154,7 +8212,7 @@ function buildUI() {
     const volScale = document.createElement('div'); volScale.className = 'track-vol-scale'; // ruler behind the fill — one horizontal line through the middle, 10 vertical tick marks crossing it, appended first so it paints behind everything else added below
     volBar.appendChild(volScale);
     const volFill = document.createElement('div'); volFill.className = 'track-vol-fill';
-    for (let n = 0; n < 10; n++) volFill.appendChild(document.createElement('div')).className = 'track-vol-notch'; // 10 fixed, equal-width notches — see _setVolFillPct
+    for (let n = 0; n < 12; n++) volFill.appendChild(document.createElement('div')).className = 'track-vol-notch'; // 12 fixed, equal-width notches (was 10 — matches the 12-line ruler behind it) — see _setVolFillPct
     volBar.appendChild(volFill);
     const volFillSolid = document.createElement('div'); volFillSolid.className = 'track-vol-fill-solid'; // continuous width-based alternative to the notches above — SEGMENTED/SOLID toggle in COLOR settings picks which one is visible; _setVolFillPct keeps both in sync regardless
     volBar.appendChild(volFillSolid);
