@@ -381,6 +381,7 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
 #saveBtn.rec-active { background: var(--top-row-pressed-bg); }
 .transport .btn.press-pulse { animation: press-pulse 0.5s ease-out; }
 #randomizeColorsBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
+#randomizeReverbIconBtn.press-pulse { animation: press-pulse 0.5s ease-out; }
 @keyframes press-pulse { 0% { transform: scale(1); } 40% { transform: scale(0.85); } 100% { transform: scale(1); } }
 #saveBtn.rec-active #recBtnMask { background: #ff0000 !important; animation: rec-icon-pulse 0.5s infinite alternate; }
 #recBtnMask { display: none; position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); background: var(--highlight3-color, #adff00); -webkit-mask-image: url("data:image/png;base64,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"); mask-image: url("data:image/png;base64,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"); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
@@ -939,7 +940,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">04 Sep 26 23:41</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 04:31</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -964,6 +965,13 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 <header>
   <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;padding-left:0;"><span style="display:inline-block;background:#000;padding:2px 4px;">JBX<span style="display:inline-block;width:4px;"></span>84</span></h1>
+  <button id="randomizeReverbIconBtn" onclick="_pressPulse('randomizeReverbIconBtn'); _randomizeReverbSettings();" style="position:absolute;top:0;right:36px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;" title="Randomize reverb settings">
+    <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 13a10 10 0 0 1 20 0" stroke="#555" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M3.6 13a7.4 7.4 0 0 1 14.8 0" stroke="#555" stroke-width="2.6" stroke-linecap="round" opacity="0.6"/>
+      <path d="M6.2 13a4.8 4.8 0 0 1 9.6 0" stroke="#555" stroke-width="2.6" stroke-linecap="round" opacity="0.3"/>
+    </svg>
+  </button>
   <button id="devMenuBtn" onclick="showDevMenu()" style="position:absolute;top:0;right:2px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;">
     <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M1 13a10 10 0 0 1 20 0" stroke="#e0524d" stroke-width="2.6" stroke-linecap="round"/>
@@ -1197,16 +1205,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button id="exportTapeBtn" class="rec-mode-btn" onclick="hideSettings(); exportTape();">SAVE TAPE</button>
-          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
-          <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
-          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain" style="display:none;" onchange="importTapeFile(this.files[0])">
-        </div>
-      </div>
-
       <div style="display:flex;flex-direction:column;gap:5px;">
         <div style="display:flex;justify-content:space-between;">
           <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">SWING</div>
@@ -1238,6 +1236,16 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
       </label>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
+
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">TAPES</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button id="exportTapeBtn" class="rec-mode-btn" onclick="hideSettings(); exportTape();">SAVE TAPE</button>
+          <button id="shareTapeLinkBtn" class="rec-mode-btn" onclick="shareTapeLink()">SEND TAPE LINK</button>
+          <button id="importTapeBtn" class="rec-mode-btn" onclick="document.getElementById('tapeFileInput').click()">LOAD TAPE</button>
+          <input type="file" id="tapeFileInput" accept=".SiFiTape,.json,.txt,application/json,text/plain" style="display:none;" onchange="importTapeFile(this.files[0])">
+        </div>
+      </div>
 
       <div style="display:flex;flex-direction:column;gap:15px;">
         <div style="font-size:0.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);">OFFSET STEP SIZE</div>
@@ -10812,6 +10820,30 @@ function tempoNoteFactor() {
   const t = Math.max(0, Math.min(1, (bpm - lo) / (hi - lo)));
   return 1 - 0.20 * t;
 }
+// Rerolls the global REVERB SIZE and MIX (Settings sliders), plus BEAT's
+// own reverb on/off and its separate REVERB MIX — all four together, same
+// as the RANDOMIZE REVERB toggle already does inside every full pattern
+// regen. Standalone here so the top-row icon (next to the color-randomize
+// rainbow icon) can trigger just this, without touching the loaded/
+// playing pattern at all. UI elements for all four are updated directly
+// too, so they're accurate whenever Settings/BEAT controls are next
+// opened, even though neither panel needs to be open right now.
+function _randomizeReverbSettings() {
+  const _newReverbSize = Math.random();
+  setReverbIntensity(_newReverbSize);
+  const rib = document.getElementById('reverbIntensityBar'); if (rib) rib.value = Math.round(_newReverbSize * 100);
+  const riv = document.getElementById('reverbIntensityVal'); if (riv) riv.textContent = Math.round(_newReverbSize * 100);
+  const _newReverbMix = Math.random();
+  setGlobalDelayMix(_newReverbMix);
+  const dmb = document.getElementById('delayMixBar'); if (dmb) dmb.value = Math.round(_newReverbMix * 100);
+  const rmv = document.getElementById('reverbMixVal'); if (rmv) rmv.textContent = Math.round(_newReverbMix * 100);
+  const _wantBeatReverbOn = Math.random() < 0.5;
+  if (_beatDelay !== _wantBeatReverbOn) beatCtrlToggleDelay();
+  const _newBeatReverbMix = Math.random();
+  setBeatReverbMix(_newBeatReverbMix);
+  const brmb = document.getElementById('beatReverbMixBar'); if (brmb) brmb.value = Math.round(_newBeatReverbMix * 100);
+  const brmv = document.getElementById('beatReverbMixVal'); if (brmv) brmv.textContent = Math.round(_newBeatReverbMix * 100);
+}
 function randAll(mode, opts) {
   opts = opts || {};
   _clearAllSolo(); // a new pattern replaces every track — solo state from the old one isn't meaningful anymore
@@ -10827,27 +10859,13 @@ function randAll(mode, opts) {
     else randomizeAppColors();
   }
   // RANDOMIZE REVERB (Settings toggle) — same "goes along with every new
-  // pattern" reasoning as WILD colors just above: the global REVERB SIZE
-  // and MIX (Settings sliders), plus BEAT's own reverb on/off and its
-  // separate REVERB MIX, all reroll together. UI elements for all four
-  // are updated directly too (not just the underlying state) so they're
-  // accurate whenever Settings/BEAT controls are next opened, even though
-  // neither panel needs to be open right now for this to apply.
+  // pattern" reasoning as WILD colors just above: fires on every full
+  // pattern regen when the toggle is on. Also available as its own
+  // standalone icon (top row, next to the color-randomize rainbow icon)
+  // that fires this alone, without touching the pattern — see
+  // _randomizeReverbSettings() below.
   if (window._randomizeReverbEnabled) {
-    const _newReverbSize = Math.random();
-    setReverbIntensity(_newReverbSize);
-    const rib = document.getElementById('reverbIntensityBar'); if (rib) rib.value = Math.round(_newReverbSize * 100);
-    const riv = document.getElementById('reverbIntensityVal'); if (riv) riv.textContent = Math.round(_newReverbSize * 100);
-    const _newReverbMix = Math.random();
-    setGlobalDelayMix(_newReverbMix);
-    const dmb = document.getElementById('delayMixBar'); if (dmb) dmb.value = Math.round(_newReverbMix * 100);
-    const rmv = document.getElementById('reverbMixVal'); if (rmv) rmv.textContent = Math.round(_newReverbMix * 100);
-    const _wantBeatReverbOn = Math.random() < 0.5;
-    if (_beatDelay !== _wantBeatReverbOn) beatCtrlToggleDelay();
-    const _newBeatReverbMix = Math.random();
-    setBeatReverbMix(_newBeatReverbMix);
-    const brmb = document.getElementById('beatReverbMixBar'); if (brmb) brmb.value = Math.round(_newBeatReverbMix * 100);
-    const brmv = document.getElementById('beatReverbMixVal'); if (brmv) brmv.textContent = Math.round(_newBeatReverbMix * 100);
+    _randomizeReverbSettings();
   }
   _split32CycleCount = 0;
   mode = mode || 'all';
