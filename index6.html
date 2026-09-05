@@ -974,7 +974,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 05:56</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 06:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -1429,7 +1429,6 @@ const INSTRUMENTS = {
   skick:  { name: 'KICK',        soft: null, accent: null, group: 'kit' },
   ssnare: { name: 'SNARE',       soft: 'Sounds/Snare50.wav', accent: 'Sounds/Snare100.wav', group: 'kit' },
   sidestick: { name: 'SIDESTICK', soft: 'Sounds/Sidestick50.wav', accent: 'Sounds/Sidestick100.wav', group: 'kit' },
-  snare2: { name: 'SNARE 2', soft: null, accent: null, group: 'kit' },
   shihat: { name: 'HIHAT',       soft: null, accent: null, group: 'kit' },
   ride:   { name: 'RIDE',        soft: 'Sounds/Ride50.wav',  accent: 'Sounds/Ride100.wav',  group: 'kit'  },
   tomHi:  { name: 'Tom Hi',      soft: 'Sounds/TomHigh50.wav', accent: 'Sounds/TomHigh100.wav', group: 'kit' },
@@ -2763,7 +2762,6 @@ function _rawSynthConnectNode(tr) {
 function playBuffer(key, isAccent, time, tr, stepIdx) {
   if (key === 'toms') key = (stepIdx === 7) ? 'tomHi' : 'tomLo'; // MOZAMBIQUE's combined toms track — step 7 is the hi hit, steps 14/15 are the lo hits (see _applyMozambiqueTracksToCurrentPattern); remapped to a real sample key before anything else below touches it, so gain/buffer lookups work exactly like the old separate tracks did
   if (key === 'skick')  { triggerFxEnvelope(tr, time); playSynthKick(isAccent, time, tr); return; }
-  if (key === 'snare2') { triggerFxEnvelope(tr, time); playSynthSnare_reinstated(isAccent, time, tr); return; }
   if (key === 'shihat') { triggerFxEnvelope(tr, time); playSynthHihat(isAccent, time, tr); return; }
   if (key === 'amlgm')  {
     triggerFxEnvelope(tr, time);
@@ -3531,7 +3529,7 @@ function fireStepAudio(step, t) {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSnare(t); // restored original off-beat snare — double-time feel
       } else if (_beatType === 'samba') {
         if (bstep === 2 || bstep === 6 || bstep === 10 || bstep === 14) playSynthHihat(false, t, -1);
-        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playSynthSnare_reinstated(false, t, undefined, 0.5956); }
+        if (bstep === 3 || bstep === 6 || bstep === 9 || bstep === 11 || bstep === 14) { if (_sambaSnareVariant === 'sidestick') playBeatSidestickSample(t); else playBeatSnareSample(t); }
       } else if (_beatType === 'swagger') {
         if (bstep === 15 || bstep === 7) fireBeatKick(t); // single kick leading into each snare — was paired with an "anticipating" kick a few steps later, which doubled up right at the start of the bar
         if (bstep === 4 || bstep === 12) playSnare(t);     // snare lands exactly on 2 & 4
@@ -3723,7 +3721,7 @@ function togglePlay() {
 let beatPlaying = true, _beatPending = false; // BEAT on by default at page load
 let _beatType = 'disco'; // 'disco' | 'halftime' | 'reggae'
 let _snareVariant = 'regular'; // 'regular' | 'dmx' — re-rolled fresh each time setBeatType() picks a new type
-let _sambaSnareVariant = 'snare2'; // 'snare2' | 'sidestick' — SAMBA's own snare voice, re-rolled fresh on selection
+let _sambaSnareVariant = 'ssnare'; // 'ssnare' | 'sidestick' — SAMBA's own snare voice, re-rolled fresh on selection
 let _beatOffset = 0; // BEAT ctrl-row '<' — steps the whole pattern is shifted by, same idea as trackOffset
 
 const _revBufCache = new WeakMap();
@@ -3756,29 +3754,6 @@ function playSynthKick(isAccent, time, tr) {
   g.gain.exponentialRampToValueAtTime(0.001, time + 0.45);
   osc.start(time); osc.stop(time + 0.46);
   _cleanupNodes([g], time + 0.47);
-}
-function playSynthSnare_reinstated(isAccent, time, tr, gainScale) {
-  if (!ctx) return;
-  gainScale = gainScale === undefined ? 1 : gainScale;
-  const dest = getSynthConnectNode(tr);
-  const dur = isAccent ? 0.22 : 0.15, vol = (isAccent ? 0.325 : 0.210) * gainScale;
-  // Noise: shorter, crisper, higher filtered — jazzy rimshot character
-  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/d.length, 2.2);
-  const src = ctx.createBufferSource(), g = ctx.createGain();
-  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1800;
-  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.8;
-  src.buffer = buf; src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(dest);
-  g.gain.setValueAtTime(vol, time); g.gain.exponentialRampToValueAtTime(0.001, time + dur);
-  src.start(time);
-  _cleanupNodes([hp, bp, g], time + 0.25);
-  // Body: higher pitch, faster decay — less thud, more snap
-  const body = ctx.createOscillator(), bg = ctx.createGain();
-  body.frequency.setValueAtTime(320, time); body.frequency.exponentialRampToValueAtTime(160, time + 0.04);
-  bg.gain.setValueAtTime(vol * 0.35, time); bg.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-  body.connect(bg); bg.connect(dest); body.start(time); body.stop(time + 0.06);
-  body.onended = () => { try { bg.disconnect(); } catch(e) {} };
 }
 function playSynthSnare(isAccent, time, tr) {
   // Natural sidestick: wood-body thud + high rimshot crack + subtle snare rattle
@@ -7223,6 +7198,22 @@ function playBeatSidestickSample(t) {
   src.buffer = buf;
   const g = ctx.createGain();
   g.gain.value = 0.2812; // -1dB more (was 0.3155)
+  src.connect(g);
+  g.connect(window._beatGain || masterGain);
+  src.start(t);
+}
+// Real snare sample for BEAT-menu-only synthesis (SAMBA's own built-in
+// snare hits) — replaces the higher-pitched synth snare
+// (playSynthSnare_reinstated) that used to alternate in here sometimes,
+// per direct request to just have the one snare sound everywhere.
+function playBeatSnareSample(t) {
+  if (!ctx || !buffers['ssnare']) return;
+  const buf = buffers['ssnare']['accent'] || buffers['ssnare']['soft'];
+  if (!buf) return;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const g = ctx.createGain();
+  g.gain.value = 0.2812; // same level as playBeatSidestickSample, so SAMBA's own alternation between the two doesn't jump in volume
   src.connect(g);
   g.connect(window._beatGain || masterGain);
   src.start(t);
@@ -10979,7 +10970,7 @@ function randAll(mode, opts) {
   const soloLeadKeys = new Set(['fflute', 'damask', 'yamask']); // max one of these
   const soloUniqueKeys = new Set(['jcmgtr','clar','boog']); // max one of these — JCX GUITAR / JENNY / BOOG
   const soloHatKeys = new Set(['shihat','tamb','shak']); // max one of these — hihat/shaker/tambourine never together
-  const snareKeys = new Set(['ssnare','snare2']); // SNARE and SNARE 2 are treated as the same instrument for pool purposes — never both at once
+  const snareKeys = new Set(['ssnare']); // just the one snare now
   const soloRareLeadKeys = new Set(['jcmgtr','sflute','rhodes','sprkls','boog','dulc']); // max one of these — JINX/XYLOPHONE/SPACE KOTO/SPARKLES/DREAM PIANO/BOOBOO
   const jinxClashKeys = new Set(['jcmgtr', 'damask', 'yamask']); // JINX never coexists with DAMASK or YAMASK specifically
   const padKeys = new Set(['fflute', 'blunt', 'sstring', 'sleg', 'opening', 'drone', 'magic']); // max one PAD-classified instrument per pattern — HASSELL/STRINGS/etc. never together
@@ -10989,7 +10980,7 @@ function randAll(mode, opts) {
     if (trackSweep[tr]) lockedInstruments.add(trackInstruments[tr]);
   }
   // Prefer non-locked instruments but allow locked ones if category is depleted
-  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'toms' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia') && !((k === 'skick' || k === 'ssnare' || k === 'snare2' || k === 'shihat') && _beatType === 'mozambique')); // 'toms' excluded — MOZAMBIQUE-only, assigned directly by _applyMozambiqueTracksToCurrentPattern/the mozambique RAND branch, not through this general pool (it has no real samples of its own outside that fixed step-7-is-hi/else-is-lo context); KICK/SNARE/SNARE 2/HIHAT also excluded for MOZAMBIQUE specifically — that beat's own kick/hihat are BEAT-menu-only synthesis, never tracks, so having a track-based kick/snare/hihat competing alongside them doesn't fit the style
+  const percKeysAll = Object.keys(INSTRUMENTS).filter(k => k !== 'toms' && !TONAL_KEYS.has(k) && !(k === 'guiro' && Math.random() < 0.5) && !(k === 'shihat' && (_beatType === 'reggae' || _beatType === 'reggae2' || _beatType === 'samba' || _beatType === 'cumbia' || _beatType === 'afrobeat' || _beatType === 'jazz')) && !((k === 'skick' || k === 'ssnare') && _beatType === 'samba') && !(k === 'skick' && _beatType === 'cumbia') && !((k === 'skick' || k === 'ssnare' || k === 'shihat') && _beatType === 'mozambique')); // 'toms' excluded — MOZAMBIQUE-only, assigned directly by _applyMozambiqueTracksToCurrentPattern/the mozambique RAND branch, not through this general pool (it has no real samples of its own outside that fixed step-7-is-hi/else-is-lo context); KICK/SNARE/HIHAT also excluded for MOZAMBIQUE specifically — that beat's own kick/hihat are BEAT-menu-only synthesis, never tracks, so having a track-based kick/snare/hihat competing alongside them doesn't fit the style
   const tonalKeysAll = Object.keys(INSTRUMENTS).filter(k => TONAL_KEYS.has(k) && ((k !== 'jcmgtr' && k !== 'dulc') || _intensitySliderVal > 80)); // JINX and BOOBOO stay out of RAND below 80% INTENSITY — still fully selectable manually from the sound picker regardless
   const percKeys = percKeysAll.filter(k => !lockedInstruments.has(k)).length > 0
     ? percKeysAll.filter(k => !lockedInstruments.has(k))
@@ -11271,7 +11262,7 @@ function randAll(mode, opts) {
   // of the TONAL/PERC BALANCE slider — these tracks come bundled with
   // JAZZ itself, not something the slider is meant to compete with; the
   // slider governs the remaining, non-forced slots.
-  const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'snare2';
+  const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'ssnare';
   const _jazzTrackKeys = ['ride', _jazzCompingKey];
   if (_beatType === 'jazz') {
     const bassKeysLocal2 = new Set(['sbass', 'sbass3', 'sbass4', 'dbass', 'pbass', 'sludge']);
@@ -11507,7 +11498,7 @@ function randAll(mode, opts) {
         // backbone of the jazz feel, not something that should ever
         // reinterpret itself. Not locked (L) though — free to be
         // re-randomized like any other track if you actually want to.
-      } else if (_beatType === 'jazz' && (trackInstruments[_tr] === 'sidestick' || trackInstruments[_tr] === 'snare2')) {
+      } else if (_beatType === 'jazz' && (trackInstruments[_tr] === 'sidestick' || trackInstruments[_tr] === 'ssnare')) {
         grid[_tr].fill(0);
         const _offBeatSteps = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]; // never on the downbeats — comping stays out of the way of the main beat
         const _ghostCount = Math.max(1, Math.min(_offBeatSteps.length, Math.round((2 + Math.floor(Math.random() * 4)) * intensityMult()))); // scaled by INTENSITY — was flat 2-5
@@ -16109,7 +16100,7 @@ function setBeatType(type) {
   _snareVariant = Math.random() < 0.5 ? 'regular' : 'dmx';
   // SAMBA's own snare voice — SNARE 2 or SIDESTICK, 50/50, re-rolled
   // fresh each time SAMBA gets selected.
-  _sambaSnareVariant = Math.random() < 0.5 ? 'snare2' : 'sidestick';
+  _sambaSnareVariant = Math.random() < 0.5 ? 'ssnare' : 'sidestick';
   const btns = { disco: 'beatTypeDiscoBtn', halftime: 'beatTypeHalfBtn', reggae: 'beatTypeReggaeBtn', breaks: 'beatTypeBreaksBtn', bounce: 'beatTypeBounceBtn', reggae2: 'beatTypeReggae2Btn' };
   Object.entries(btns).forEach(([t, id]) => {
     const b = document.getElementById(id);
@@ -16164,7 +16155,7 @@ function _maybeEngageJazzAutoRand(tr, chance) {
 // track if the pattern already has one, rather than creating a second,
 // duplicate hihat track; only picks a fresh target if it has to.
 function _applyDiscoHihatToCurrentPattern() {
-  const _essentialKeys = new Set(['skick', 'shihat', ...TONAL_KEYS, 'congHi', 'congLo', 'bongHi', 'bongLo', 'ride', 'sidestick', 'snare2']);
+  const _essentialKeys = new Set(['skick', 'shihat', ...TONAL_KEYS, 'congHi', 'congLo', 'bongHi', 'bongLo', 'ride', 'sidestick', 'ssnare']);
   const _existingHihatTr = trackInstruments.findIndex((k, tr) => k === 'shihat' && !trackSweep[tr]);
   let targetTr = _existingHihatTr;
   if (targetTr === -1) {
@@ -16196,7 +16187,7 @@ function _applyJazzTracksToCurrentPattern() {
   // leave the old RIDE track in place while a second, different track
   // also gets forced to RIDE, ending up with two identical RIDE tracks.
   const _existingRideTr = trackInstruments.findIndex(k => k === 'ride');
-  const _existingCompingTr = trackInstruments.findIndex(k => k === 'sidestick' || k === 'snare2');
+  const _existingCompingTr = trackInstruments.findIndex(k => k === 'sidestick' || k === 'ssnare');
   const _essentialKeys = new Set(['skick', 'shihat', ...TONAL_KEYS, 'congHi', 'congLo', 'bongHi', 'bongLo']);
   const _unlocked = [];
   for (let tr = 0; tr < NUM_TRACKS; tr++) if (!trackSweep[tr]) _unlocked.push(tr);
@@ -16209,7 +16200,7 @@ function _applyJazzTracksToCurrentPattern() {
   for (const tr of _unlocked) { if (_targets.length < 2 && !_targets.includes(tr)) _targets.push(tr); }
   if (_targets.length < 2) return;
   const [rideTr, compingTr] = _targets;
-  const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'snare2';
+  const _jazzCompingKey = Math.random() < 0.5 ? 'sidestick' : 'ssnare';
   const _applyOne = (tr, key) => {
     trackInstruments[tr] = key;
     const tb = document.getElementById(`tbtn-${tr}`); if (tb) tb.textContent = INSTRUMENTS[key]?.name || key;
@@ -16236,7 +16227,7 @@ function _applyJazzTracksToCurrentPattern() {
       _shuffledOff.slice(0, _ghostCount).forEach(s => { grid[tr][s] = Math.random() < 0.2 ? 2 : 1; });
     }
     redrawTrackCells(tr);
-    if (key === 'sidestick' || key === 'snare2') _maybeEngageJazzAutoRand(tr, 0.5);
+    if (key === 'sidestick' || key === 'ssnare') _maybeEngageJazzAutoRand(tr, 0.5);
   };
   _applyOne(rideTr, 'ride');
   _applyOne(compingTr, _jazzCompingKey);
