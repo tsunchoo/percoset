@@ -974,7 +974,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 06:02</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 06:10</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -999,8 +999,8 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 
 <header>
   <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;padding-left:0;"><span style="display:inline-block;background:#000;padding:2px 4px;">JBX<span style="display:inline-block;width:4px;"></span>84</span></h1>
-  <button id="randomizeReverbIconBtn" onclick="_pressPulse('randomizeReverbIconBtn'); _randomizeReverbSettings();" style="position:absolute;top:3px;right:36px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;" title="Randomize reverb settings">
-    <svg width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <button id="randomizeReverbIconBtn" onclick="_pressPulse('randomizeReverbIconBtn'); _randomizeReverbSettings();" style="position:absolute;top:1px;right:36px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;" title="Randomize reverb settings">
+    <svg width="24" height="16" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="1" y="1" width="20" height="12" stroke="#555" stroke-width="1.3"/>
       <rect x="7" y="4" width="8" height="6" stroke="#555" stroke-width="1.3"/>
       <line x1="1" y1="1" x2="7" y2="4" stroke="#555" stroke-width="1.3"/>
@@ -1090,7 +1090,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
   </div>
 </div>
 
-<div id="nameBar" style="width:100%;max-width:960px;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:46.08px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
+<div id="nameBar" style="width:100vw;max-width:100vw;display:flex;justify-content:center;align-items:center;padding:6px 8px;min-height:46.08px;margin-bottom:0;font-family:'DM Sans',sans-serif;font-size:1.0rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;background:#aa64a6;cursor:pointer;user-select:none;-webkit-user-select:none;"><span id="nameDisplay" style="text-align:center;"></span></div>
 
 
 
@@ -9175,7 +9175,7 @@ function _flashScratchBtnText() {
 }
 function _syncFxBtnText(tr) {
   const fb = document.getElementById(`fxbtn-${tr}`);
-  if (fb) fb.textContent = trackPump[tr] ? 'X' : 'FX';
+  if (fb) fb.textContent = 'FX';
 }
 function setBtnBlueHeld(id) {
   const b = document.getElementById(id); if (!b) return;
@@ -12200,6 +12200,24 @@ function restoreState(snap, opts) {
       if (snap.colors.highlight2) _applyHighlight2Color(snap.colors.highlight2);
       if (snap.colors.highlight3) _applyHighlight3Color(snap.colors.highlight3);
       if (snap.colors.bg) _applyBgColor(snap.colors.bg);
+      // The six lines above only restore the base colors — everything
+      // auto-contrast-computed FROM them (top-row text, track button
+      // text, track button ON color, top-row highlight, vol slider
+      // color, EQ meter color) is separate, independently-cached state
+      // that doesn't get touched by just setting the base variables back.
+      // Without re-running these, a recalled/restored palette's
+      // backgrounds would flip back correctly but the text/contrast
+      // colors drawn on top of them would stay stuck on whatever the
+      // CURRENT (about-to-be-replaced) palette had — exactly the
+      // mismatched "wrong color scheme" RECALL was producing. This is
+      // the same six-call block randomizeAppColors() already runs right
+      // after ITS OWN base-color randomization, for the same reason.
+      if (window._topRowHighlightMode === 'auto') _autoPickTopRowHighlight();
+      if (window._volSliderColorMode === 'auto') _autoPickVolSliderColor();
+      if (window._trackBtnOnColorMode === 'auto') _autoPickTrackBtnOnColor();
+      if (window._eqMeterColorMode === 'auto') _autoPickEqMeterColor();
+      if (window._topRowTextColorMode === 'auto') _autoPickTopRowTextColor();
+      if (window._trackBtnTextColorMode === 'auto') _autoPickTrackBtnTextColor();
     }
   } catch (err) { console.error('restoreState: color palette restore failed', err); }
   for (let tr=0; tr<NUM_TRACKS; tr++) {
@@ -12225,7 +12243,7 @@ function restoreState(snap, opts) {
     } catch (err) { console.error('restoreState: pitch/legato restore failed for track', tr, err); }
     if (snap.trackVolume) { trackVolume[tr]=snap.trackVolume[tr]; if(trackGainNodes[tr]&&ctx) trackGainNodes[tr].gain.setTargetAtTime(trackVolume[tr],ctx.currentTime,0.01); }
     if (snap.trackFx) { trackFx[tr] = snap.trackFx[tr] || {x:0,y:0}; const fb=document.getElementById(`fxbtn-${tr}`); const on=trackFx[tr].x>0||trackFx[tr].y>0; if(fb){ fb.classList.toggle('on',on); } if(ctx) setFxActive(tr,trackFx[tr]); }
-    if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) { fb2.classList.toggle('blast-on', trackPump[tr]); fb2.textContent = trackPump[tr] ? 'X' : 'FX'; } }
+    if (snap.trackPump) { trackPump[tr] = !!snap.trackPump[tr]; const fb2=document.getElementById(`fxbtn-${tr}`); if(fb2) { fb2.classList.toggle('blast-on', trackPump[tr]); fb2.textContent = 'FX'; } }
     if (snap.trackFxMode) { trackFxMode[tr] = snap.trackFxMode[tr] || 0; }
     if (snap.trackSweep) { trackSweep[tr] = snap.trackSweep[tr] || false; }
     if (snap.trackChop)  { trackChop[tr]  = snap.trackChop[tr]  || false; }
