@@ -822,17 +822,18 @@ body.seq-playing:not(.logo-note-jump-mode):not(.logo-color-static) .track-vol-ba
    colors were converting to genuinely different shades of gray instead
    of one consistent pair. This throws the color away entirely instead,
    so accent state is the only thing distinguishing the two levels. */
-body.notes-grayscale .step-cell.soft:not(.playing)::after { background: #999 !important; opacity: 1 !important; filter: none; }
-body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #555 !important; opacity: 1 !important; filter: none; }
+body.notes-grayscale .step-cell.soft:not(.playing)::after { background: #999 !important; opacity: 0.7 !important; filter: none; }
+body.notes-grayscale .step-cell.on:not(.playing)::after   { background: #555 !important; opacity: 0.7 !important; filter: none; }
 /* split32 and legato-tail both pull --track-color directly, independent
    of the .on/.soft classes above, so they slipped through untouched —
    32nds showing striped color, and the back half of a legato note (its
    sustain "tail") showing solid color, even with grayscale on. */
 body.notes-grayscale .step-cell.split32::after {
   background: repeating-linear-gradient(to right, #555 0%, #555 45%, transparent 45%, transparent 55%, #555 55%, #555 100%) !important;
+  opacity: 0.7 !important;
   filter: none;
 }
-body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important; filter: none; }
+body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important; opacity: 0.7 !important; filter: none; }
 .step-cell.playing { background: rgba(192,57,43,0.07); }
 .step-cell.playing::after { background: var(--playhead-color, #f8ff00); opacity: 0.15; }
 .step-cell.on.playing::after   { background: var(--playhead-color, #f8ff00); opacity: var(--note-marker-opacity, 1); }
@@ -940,7 +941,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 05:05</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 05:16</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
