@@ -355,6 +355,18 @@ body.bg-beat-pulse { animation: bg-pulse var(--bg-pulse-duration, 0.15s) ease-ou
   box-shadow: 0 6px 24px rgba(0,0,0,0.35);
 }
 .record-menu.visible { display: flex; }
+.reverb-menu {
+  display: none; flex-direction: column; gap: 14px;
+  position: fixed; z-index: 501; width: 220px;
+  background: #f5f0e8; border-radius: 6px; padding: 16px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+}
+.reverb-menu.visible { display: flex; }
+.reverb-menu-title { font-size: 0.78rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #111; }
+.reverb-menu label.reverb-menu-row { display: flex; flex-direction: column; gap: 8px; }
+.reverb-menu label.reverb-menu-row .reverb-menu-row-head { font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; }
+.reverb-menu label.reverb-menu-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #111; cursor: pointer; }
+.reverb-menu label.reverb-menu-toggle input { width: 14px; height: 14px; cursor: pointer; }
 .beat-type-menu {
   display: none; position: fixed; inset: 0; z-index: 500;
   align-items: center; justify-content: center;
@@ -974,7 +986,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
     </div>
     <div id="loadingStatus" style="margin-top:8px;font-size:0.85rem;color:#f17d21;font-family:'DM Sans',sans-serif;letter-spacing:1px;"></div>
   </div>
-  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">05 Sep 26 15:36</div>
+  <div id="loadingVersion" style="font-size:1.0rem;color:#111;font-weight:700;letter-spacing:1px;font-family:'DM Sans',sans-serif;margin-top:8px;">08 Sep 26 02:02</div>
 </button>
 
 <!-- Sound picker: flat list for one track at a time -->
@@ -998,7 +1010,7 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
 </div>
 
 <header>
-  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;padding-left:0;"><span style="display:inline-block;background:#000;padding:2px 4px;">JBX<span style="display:inline-block;width:4px;"></span>84</span></h1>
+  <h1 id="siFiTitle" style="touch-action:none;-webkit-user-select:none;user-select:none;padding-left:0;"><span style="display:inline-block;background:#000;padding:2px 4px 2px 6px;margin-left:-2px;">JBX<span style="display:inline-block;width:4px;"></span>84</span></h1>
   <button id="randomizeReverbIconBtn" onclick="_pressPulse('randomizeReverbIconBtn'); _randomizeReverbSettings();" style="position:absolute;top:1px;right:36px;background:none;border:none;padding:4px;cursor:pointer;line-height:0;" title="Randomize reverb settings">
     <svg width="24" height="16" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="1" y="1" width="20" height="12" stroke="#555" stroke-width="1.3"/>
@@ -1050,22 +1062,34 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
   <button class="rec-mode-btn" id="recordMenuExportStems">EXPORT STEMS</button>
 </div>
 
+<div id="reverbMenu" class="reverb-menu">
+  <div class="reverb-menu-title">REVERB</div>
+  <label class="reverb-menu-row">
+    <span class="reverb-menu-row-head"><span>REVERB MIX (OVERALL)</span><span id="reverbMixVal" style="color:#adff00;">30</span></span>
+    <input type="range" id="delayMixBar" min="0" max="100" value="30" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
+  </label>
+  <label class="reverb-menu-row">
+    <span class="reverb-menu-row-head"><span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">51</span></span>
+    <input type="range" id="reverbIntensityBar" min="0" max="100" value="51" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
+  </label>
+  <label class="reverb-menu-row">
+    <span class="reverb-menu-row-head"><span>REVERB ON BEAT</span><span id="beatReverbMixVal" style="color:#adff00;">24</span></span>
+    <input type="range" id="beatReverbMixBar" min="0" max="100" value="24" class="master-vol-slider" style="width:100%;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
+  </label>
+  <label class="reverb-menu-toggle">
+    <input type="checkbox" id="randomizeReverbToggle" onchange="setRandomizeReverb(this.checked)">RANDOMIZE REVERB WITH +
+  </label>
+</div>
+
 <div id="beatTypeMenu" class="beat-type-menu">
   <div class="beat-type-menu-inner">
     <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
       <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">BEAT VOL</div>
       <input type="range" id="beatVolBar" min="0" max="100" value="43" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatVol(this.value/100)">
     </div>
-    <div style="display:block;width:100%;margin-bottom:22px;position:relative;z-index:2;">
-      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;">
-        <span>REVERB MIX</span><span id="beatReverbMixVal" style="color:#adff00;">24</span>
-      </div>
-      <input type="range" id="beatReverbMixBar" min="0" max="100" value="24" class="master-vol-slider" style="width:100%;flex:none;display:block;touch-action:manipulation;position:relative;z-index:2;" oninput="setBeatReverbMix(this.value/100); document.getElementById('beatReverbMixVal').textContent=this.value">
-    </div>
     <div class="beat-ctrl-row" style="margin-top:0;margin-bottom:12px;">
       <button class="track-ctrl-icon-btn lock-btn" id="beatCtrlL">L</button>
       <button class="shift-btn" id="beatCtrlShift">&lt;</button>
-      <button class="shift-btn right" id="beatCtrlDelay">R</button>
       <button class="track-ctrl-icon-btn fx-btn" id="beatCtrlFx">FX</button>
       <button class="track-ctrl-icon-btn rand-btn" id="beatCtrlRand">N</button>
     </div>
@@ -1254,23 +1278,6 @@ body.notes-grayscale .step-cell.legato-tail::after { background: #999 !important
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">VOL</div>
         <input type="range" id="masterVolBar" min="0" max="100" value="80" class="master-vol-slider" style="width:100%;">
       </div>
-
-      <div style="display:flex;flex-direction:column;gap:15px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB SIZE</span><span id="reverbIntensityVal" style="color:#adff00;">51</span>
-        </div>
-        <input type="range" id="reverbIntensityBar" min="0" max="100" value="51" class="master-vol-slider" style="width:100%;" oninput="setReverbIntensity(this.value/100); document.getElementById('reverbIntensityVal').textContent=this.value">
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:15px;">
-        <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between;">
-          <span>REVERB MIX</span><span id="reverbMixVal" style="color:#adff00;">30</span>
-        </div>
-        <input type="range" id="delayMixBar" min="0" max="100" value="30" class="master-vol-slider" style="width:100%;" oninput="setGlobalDelayMix(this.value/100); document.getElementById('reverbMixVal').textContent=this.value">
-      </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:0.66rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#111;cursor:pointer;">
-        <input type="checkbox" id="randomizeReverbToggle" onchange="setRandomizeReverb(this.checked)" style="width:14px;height:14px;cursor:pointer;">RANDOMIZE REVERB
-      </label>
 
       <button id="turboBtn" onclick="toggleTurbo()" style="width:100%;background:#555;color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:14px 0;cursor:pointer;margin-top:20px;">BOOST</button>
 
@@ -7416,8 +7423,6 @@ function commitBeatMenuSelection(item) {
     beatCtrlToggleL();
   } else if (item.id === 'beatCtrlShift') {
     beatCtrlShift();
-  } else if (item.id === 'beatCtrlDelay') {
-    beatCtrlToggleDelay();
   } else if (item.id === 'beatCtrlFx') {
     beatCtrlCycleFx();
   } else if (item.id === 'beatCtrlRand') {
@@ -10848,14 +10853,16 @@ function tempoNoteFactor() {
   const t = Math.max(0, Math.min(1, (bpm - lo) / (hi - lo)));
   return 1 - 0.20 * t;
 }
-// Rerolls the global REVERB SIZE and MIX (Settings sliders), plus BEAT's
-// own reverb on/off and its separate REVERB MIX — all four together, same
-// as the RANDOMIZE REVERB toggle already does inside every full pattern
-// regen. Standalone here so the top-row icon (next to the color-randomize
-// rainbow icon) can trigger just this, without touching the loaded/
-// playing pattern at all. UI elements for all four are updated directly
-// too, so they're accurate whenever Settings/BEAT controls are next
-// opened, even though neither panel needs to be open right now.
+// Rerolls the global REVERB SIZE and MIX, plus BEAT's own REVERB MIX — all
+// three together, same as the RANDOMIZE REVERB toggle already does inside
+// every full pattern regen. Standalone here so the top-row icon (next to
+// the color-randomize rainbow icon) can trigger just this, without
+// touching the loaded/playing pattern at all. UI elements for all three
+// are updated directly too, so they're accurate whenever the REVERB menu
+// is next opened, even though it doesn't need to be open right now.
+// There's no separate on/off for BEAT's reverb any more — its mix alone
+// (0 = silent) covers that, so a random roll here can land anywhere
+// including effectively off, same as any other mix value.
 function _randomizeReverbSettings() {
   const _newReverbSize = Math.random();
   setReverbIntensity(_newReverbSize);
@@ -10865,8 +10872,6 @@ function _randomizeReverbSettings() {
   setGlobalDelayMix(_newReverbMix);
   const dmb = document.getElementById('delayMixBar'); if (dmb) dmb.value = Math.round(_newReverbMix * 100);
   const rmv = document.getElementById('reverbMixVal'); if (rmv) rmv.textContent = Math.round(_newReverbMix * 100);
-  const _wantBeatReverbOn = Math.random() < 0.5;
-  if (_beatDelay !== _wantBeatReverbOn) beatCtrlToggleDelay();
   const _newBeatReverbMix = Math.random();
   setBeatReverbMix(_newBeatReverbMix);
   const brmb = document.getElementById('beatReverbMixBar'); if (brmb) brmb.value = Math.round(_newBeatReverbMix * 100);
@@ -14773,7 +14778,7 @@ function fullReset() {
   const _topTempoBpmNum = document.getElementById('topTempoBpmNum'); if (_topTempoBpmNum) _topTempoBpmNum.textContent = bpm;
   const _bpmSliderEl = document.getElementById('bpmSlider'); if (_bpmSliderEl) _bpmSliderEl.value = bpm;
   const _bpmSettingsSliderEl = document.getElementById('bpmSettingsSlider'); if (_bpmSettingsSliderEl) _bpmSettingsSliderEl.value = bpm;
-  _beatOffset = 0; _beatDelay = true; _beatReverbMix = 0.24; _beatFx = false; _beatPump = false;
+  _beatOffset = 0; _beatReverbMix = 0.24; _beatFx = false; _beatPump = false;
   _beatAutoRandActive = false; _beatAutoRandBarCount = 0;
   _beatVolRaw = 0.4043; _applyBeatVolWithDuck();
   const _bbFullReset = document.getElementById('beatBtn'); if (_bbFullReset) _bbFullReset.classList.remove('beat-auto-active');
@@ -14893,6 +14898,50 @@ function fullReset() {
   if (exportLoopBtn) exportLoopBtn.addEventListener('click', () => { closeMenu(); bounceLoop(); });
   const exportStemsBtn = document.getElementById('recordMenuExportStems');
   if (exportStemsBtn) exportStemsBtn.addEventListener('click', () => { closeMenu(); bounceLoopStems(); });
+})();
+// REVERB icon hold-menu — holding it (rather than a quick tap, which still
+// does its normal _randomizeReverbSettings() behavior) opens the REVERB
+// menu: overall mix, size, beat's own mix, and the RANDOMIZE REVERB WITH +
+// toggle — same hold-to-open pattern as the RECORD button's menu above.
+(function() {
+  const btn = document.getElementById('randomizeReverbIconBtn');
+  const menu = document.getElementById('reverbMenu');
+  if (!btn || !menu) return;
+  const HOLD_MS = 400;
+  let holdTimer = null, holdFired = false;
+
+  function openMenu() {
+    holdFired = true;
+    const r = btn.getBoundingClientRect();
+    menu.style.top = (r.bottom + 6) + 'px';
+    // Keep it on-screen — anchor from the right edge instead of the left
+    // if left-aligning would run it off the right side of the viewport.
+    const menuWidth = 220;
+    let left = r.left;
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+    menu.style.left = Math.max(8, left) + 'px';
+    menu.classList.add('visible');
+    playUiSound('click');
+  }
+  function closeMenu() { menu.classList.remove('visible'); }
+
+  const startHold = () => { holdFired = false; if (holdTimer) clearTimeout(holdTimer); holdTimer = setTimeout(openMenu, HOLD_MS); };
+  const endHold = e => {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    if (holdFired && e && e.cancelable) e.preventDefault(); // suppress the click _randomizeReverbSettings() would otherwise get from this same touch
+  };
+  btn.addEventListener('touchstart', startHold, { passive: true });
+  btn.addEventListener('touchend', endHold, { passive: false });
+  btn.addEventListener('touchcancel', endHold);
+  btn.addEventListener('mousedown', startHold);
+  document.addEventListener('mouseup', endHold);
+
+  document.addEventListener('touchstart', e => {
+    if (menu.classList.contains('visible') && !e.target.closest('#reverbMenu') && !e.target.closest('#randomizeReverbIconBtn')) closeMenu();
+  }, { passive: true });
+  document.addEventListener('mousedown', e => {
+    if (menu.classList.contains('visible') && !e.target.closest('#reverbMenu') && !e.target.closest('#randomizeReverbIconBtn')) closeMenu();
+  });
 })();
 // Drag across multiple track names to mute/unmute them all to match
 // whatever the first one toggled to — rather than tapping each one
@@ -15943,7 +15992,6 @@ function setBeatVol(v) {
 // ── BEAT control row: L / < / R / FX / R(rand) — mirrors the per-track
 // control row exactly (same toggle/cycle logic), just aimed at the shared
 // BEAT bus (window._beatGain) instead of a single track's gain node.
-let _beatDelay = true;                   // 'R' — reverb send on/off — on by default
 let _beatReverbMix = 0.24;               // slider under BEAT VOL — 0-1, scales the send level whenever 'R' is on — 24% default (up another 10% relative from 22%)
 let _beatFx = false, _beatPump = false;  // 'FX' — 3-state cycle: off / on / on+blast
 let _beatAutoRandActive = false, _beatAutoRandBarCount = 0; // rand 'R' double-tap auto mode
@@ -15967,7 +16015,7 @@ function _ensureBeatFxChain() {
   const ws = ctx.createWaveShaper(); ws.oversample = '2x'; ws.curve = makeDistCurve(0.5);
   const postGain = ctx.createGain(); postGain.gain.value = 0.599;
   const reverbSend = ctx.createGain();
-  reverbSend.gain.value = _beatDelay ? _beatReverbGainForMix(_beatReverbMix) : 0; // reflect the current on/off + mix state right away, not always silent
+  reverbSend.gain.value = _beatReverbGainForMix(_beatReverbMix); // reflect the current mix right away, not always silent
   // Two cascaded highpass stages (~-24dB/octave combined) at 500Hz — a
   // single gentle filter was still letting plenty of kick fundamental and
   // click-transient energy through into the reverb.
@@ -15995,8 +16043,6 @@ function updateBeatCtrlRow() {
   if (lBtn) lBtn.classList.toggle('sweep-on', _beatTypeLocked);
   // '<' deliberately has no persistent 'on' state here — it doesn't stay
   // engaged, so it only gets the momentary flash in beatCtrlShift() below.
-  const dBtn = document.getElementById('beatCtrlDelay');
-  if (dBtn) dBtn.classList.toggle('on', _beatDelay);
   const fBtn = document.getElementById('beatCtrlFx');
   if (fBtn) { fBtn.classList.toggle('on', _beatFx); fBtn.classList.toggle('blast-on', _beatPump); }
   const rBtn = document.getElementById('beatCtrlRand');
@@ -16028,20 +16074,14 @@ function beatCtrlShift() {
 }
 
 // R — reverb send toggle, same on/off as a track's delay button
-function beatCtrlToggleDelay() {
-  _beatDelay = !_beatDelay;
-  _ensureBeatFxChain();
-  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatDelay ? _beatReverbGainForMix(_beatReverbMix) : 0, ctx.currentTime, 0.02);
-  updateBeatCtrlRow();
-  markModified();
-}
-
-// REVERB MIX slider under BEAT VOL — only ever affects the BEAT bus's own
-// reverb send, independent of the global REVERB MIX in Settings.
+// REVERB ON BEAT slider in the REVERB menu — only ever affects the BEAT
+// bus's own reverb send, independent of the overall REVERB MIX. No
+// separate on/off any more (see _randomizeReverbSettings comment above) —
+// this mix alone covers that, all the way down to 0 for silent.
 function setBeatReverbMix(v) {
   _beatReverbMix = v;
   _ensureBeatFxChain();
-  if (_beatDelay && window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatReverbGainForMix(v), ctx.currentTime, 0.02);
+  if (window._beatReverbSend && ctx) window._beatReverbSend.gain.setTargetAtTime(_beatReverbGainForMix(v), ctx.currentTime, 0.02);
 }
 
 // FX — 3-state cycle: off -> crunch on -> crunch+blast -> off, same as a track's FX button
